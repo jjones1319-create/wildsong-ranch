@@ -18,54 +18,54 @@
 
 **Goal:** an empty-but-real app the owner can open and install on their phone.
 
-- [ ] Check the computer: Node.js LTS (24 or newer), npm ≥ 11, Git, GitHub CLI (`gh`, optional but preferred).
+- [x] Check the computer: Node.js LTS (24 or newer), npm ≥ 11, Git, GitHub CLI (`gh`, optional but preferred).
   - If anything is missing, give the owner step-by-step install instructions (see `PHONE_AND_GITHUB_SETUP.md`) and wait.
-- [ ] Scaffold in this folder: `npm create vite@latest . -- --template preact-ts`.
+- [x] Scaffold in this folder: `npm create vite@latest . -- --template preact-ts`.
   - Keep the template's Preact 10 and TypeScript versions; don't bump majors without asking.
   - Merge with the existing docs rather than overwriting them.
-- [ ] Add dev dependencies: Vitest, `vite-plugin-pwa`, `@vite-pwa/assets-generator`.
-- [ ] Add dependencies: `@preact/signals`, `idb-keyval`, `valibot`, `zzfx`, `qrcode`.
-- [ ] Add scripts: `dev`, `build`, `preview`, `test` (`vitest run`), `typecheck` (`tsc --noEmit`), `verify` (typecheck && test && build).
-- [ ] Create the folder structure from `CLAUDE.md` with placeholder modules and `src/data/tuning.ts`.
-- [ ] Set up the PWA:
+- [x] Add dev dependencies: Vitest, `vite-plugin-pwa`, `@vite-pwa/assets-generator`.
+- [x] Add dependencies: `@preact/signals`, `idb-keyval`, `valibot`, `zzfx`, `qrcode`.
+- [x] Add scripts: `dev`, `build`, `preview`, `test` (`vitest run`), `typecheck` (`tsc --noEmit`), `verify` (typecheck && test && build).
+- [x] Create the folder structure from `CLAUDE.md` with placeholder modules and `src/data/tuning.ts`.
+- [x] Set up the PWA:
   - Manifest: `id` and `scope` = `/<repo>/`, `display: standalone`, `orientation: portrait`.
   - `registerType: 'prompt'` with an "Update ready → Restart" toast.
   - Workbox `globPatterns` covering js, css, html, svg, png, webp, woff2 and json.
   - Generate icons from a simple original SVG logo (a singing stone with a little sprout).
-- [ ] Mobile base CSS:
+- [x] Mobile base CSS:
   - Viewport `viewport-fit=cover`, `100dvh`, safe-area padding.
   - `touch-action: manipulation`, `overscroll-behavior: none`, no text selection or long-press callouts on game UI.
   - Dark theme base colors.
-- [ ] Title screen with the game name, "New Game / Continue / Monster Lab / Settings" (placeholders), the app version, and the non-affiliation disclaimer in Credits.
-- [ ] Hash-based screen state. No path routing; GitHub Pages can't rewrite URLs.
-- [ ] Git:
+- [x] Title screen with the game name, "New Game / Continue / Monster Lab / Settings" (placeholders), the app version, and the non-affiliation disclaimer in Credits.
+- [x] Hash-based screen state. No path routing; GitHub Pages can't rewrite URLs.
+- [x] Git:
   - `git init`, a `.gitignore` (node_modules, dist), `.gitattributes` (`* text=auto eol=lf`).
   - `LICENSE` (MIT unless the owner chooses otherwise), `CREDITS.md`, and a short `README.md`.
-- [ ] Create a **public** GitHub repo `wildsong-ranch`.
+- [x] Create a **public** GitHub repo `wildsong-ranch`.
   - Ask first: with `gh repo create`, or guide the owner through github.com.
   - Push `main`, and commit `package-lock.json` (npm ≥ 11).
-- [ ] Add `.github/workflows/deploy.yml`:
+- [x] Add `.github/workflows/deploy.yml`:
   - Checkout, setup-node (Node 24 or `lts/*`), `npm ci`, `npm test`, `npm run build`, configure-pages, upload-pages-artifact (`./dist`), deploy-pages.
   - Use the current major versions shown in Vite's static-deploy guide.
-- [ ] Turn Pages on (Settings → Pages → Source: GitHub Actions), or `gh api -X POST repos/OWNER/wildsong-ranch/pages -f build_type=workflow`.
-- [ ] Confirm the live URL `https://<user>.github.io/wildsong-ranch/` loads, then send the owner the link with install steps.
+- [x] Turn Pages on (Settings → Pages → Source: GitHub Actions), or `gh api -X POST repos/OWNER/wildsong-ranch/pages -f build_type=workflow`.
+- [x] Confirm the live URL `https://<user>.github.io/wildsong-ranch/` loads, then send the owner the link with install steps.
 
 **Detailed plan (written 2026-10-22):**
-- [ ] 1. Scaffold from the `preact-ts` template (copied from a scratch scaffold, because `npm create vite .` would wipe this folder) and drop the template's demo assets. `package.json`: name `wildsong-ranch`, version `0.1.0`.
-- [ ] 2. Dependencies: `preact ^10.29`, `@preact/signals ^2.11`, `idb-keyval ^6.3`, `valibot ^1.5`, `zzfx ^1.4`, `qrcode ^1.5`. Dev: `typescript ~6.0` (the template's), `vite ^8`, `@preact/preset-vite`, `vitest ^5`, `vite-plugin-pwa ^2`, `@vite-pwa/assets-generator ^2`, `@types/node`, `@types/qrcode`.
-- [ ] 3. Scripts: `dev`, `build`, `preview`, `test` (vitest run), `typecheck` (`tsc -b`, because the template uses project references and `tsc --noEmit` alone would check nothing), `verify`, `icons`.
-- [ ] 4. `vite.config.ts`: `base '/wildsong-ranch/'`, `__APP_VERSION__` from package.json, Vitest block, VitePWA (`registerType: 'prompt'`, manifest id/scope/start_url `/wildsong-ranch/`, standalone, portrait, Workbox globs for js/css/html/svg/png/webp/woff2/json).
-- [ ] 5. Original logo `public/logo.svg` (a singing stone with a sprout) and generated icons (64/192/512, maskable 512, Apple 180, favicon.ico) committed to `public/`.
-- [ ] 6. `index.html`: `viewport-fit=cover`, theme-color, Apple web-app metas, icon links built from `%BASE_URL%`.
-- [ ] 7. `src/ui/styles/base.css`: dark cozy palette as CSS variables, `100dvh`, safe-area padding, `touch-action: manipulation`, `overscroll-behavior: none`, no text selection or long-press callouts, 48 px buttons, 520 px max width, reduced-motion support.
-- [ ] 8. `src/ui/router.ts`: hash ↔ screen (`title`, `credits`, `newGame`, `continue`, `lab`, `settings`), unknown hash → title; a `screen` signal mirrored to `location.hash`. Unit tests.
-- [ ] 9. Screens: Title (logo, name, tagline, four menu buttons, Credits link, version), Placeholder (says which milestone brings it, Back), Credits (disclaimer, MIT, tools). All strings in `src/data/text/ui.ts`.
-- [ ] 10. `UpdateToast`: "Update ready → Restart / Later" on the title screen only; "Ready to play offline" once; re-check for updates when the app returns to the foreground.
-- [ ] 11. Folder structure from CLAUDE.md with one-line placeholder modules and `src/data/tuning.ts`.
-- [ ] 12. Git: `git init -b main`, `.gitignore`, `.gitattributes` (`* text=auto eol=lf`), `LICENSE` (MIT), `CREDITS.md`, README live link, `docs/PROGRESS.md`. Commits use the GitHub no-reply email for this repo only (the global git email is a work address).
-- [ ] 13. `.github/workflows/deploy.yml`: checkout v7 → setup-node v7 (Node 24) → `npm ci` → typecheck → test → build → configure-pages v6 → upload-pages-artifact v5 → deploy-pages v5.
-- [ ] 14. `npm run verify` green, then commit `M0: …`, `gh repo create wildsong-ranch --public` (no push yet), enable Pages with `build_type=workflow`, push `main`, watch the run, `curl` the live page.
-- [ ] 15. Send the owner the link and Home Screen steps, then stop.
+- [x] 1. Scaffold from the `preact-ts` template (copied from a scratch scaffold, because `npm create vite .` would wipe this folder) and drop the template's demo assets. `package.json`: name `wildsong-ranch`, version `0.1.0`.
+- [x] 2. Dependencies: `preact ^10.29`, `@preact/signals ^2.11`, `idb-keyval ^6.3`, `valibot ^1.5`, `zzfx ^1.4`, `qrcode ^1.5`. Dev: `typescript ~6.0` (the template's), `vite ^8`, `@preact/preset-vite`, `vitest ^5`, `vite-plugin-pwa ^2`, `@vite-pwa/assets-generator ^2`, `@types/node`, `@types/qrcode`.
+- [x] 3. Scripts: `dev`, `build`, `preview`, `test` (vitest run), `typecheck` (`tsc -b`, because the template uses project references and `tsc --noEmit` alone would check nothing), `verify`, `icons`.
+- [x] 4. `vite.config.ts`: `base '/wildsong-ranch/'`, `__APP_VERSION__` from package.json, Vitest block, VitePWA (`registerType: 'prompt'`, manifest id/scope/start_url `/wildsong-ranch/`, standalone, portrait, Workbox globs for js/css/html/svg/png/webp/woff2/json).
+- [x] 5. Original logo `public/logo.svg` (a singing stone with a sprout) and generated icons (64/192/512, maskable 512, Apple 180, favicon.ico) committed to `public/`.
+- [x] 6. `index.html`: `viewport-fit=cover`, theme-color, Apple web-app metas, icon links built from `%BASE_URL%`.
+- [x] 7. `src/ui/styles/base.css`: dark cozy palette as CSS variables, `100dvh`, safe-area padding, `touch-action: manipulation`, `overscroll-behavior: none`, no text selection or long-press callouts, 48 px buttons, 520 px max width, reduced-motion support.
+- [x] 8. `src/ui/router.ts`: hash ↔ screen (`title`, `credits`, `newGame`, `continue`, `lab`, `settings`), unknown hash → title; a `screen` signal mirrored to `location.hash`. Unit tests.
+- [x] 9. Screens: Title (logo, name, tagline, four menu buttons, Credits link, version), Placeholder (says which milestone brings it, Back), Credits (disclaimer, MIT, tools). All strings in `src/data/text/ui.ts`.
+- [x] 10. `UpdateToast`: "Update ready → Restart / Later" on the title screen only; "Ready to play offline" once; re-check for updates when the app returns to the foreground.
+- [x] 11. Folder structure from CLAUDE.md with one-line placeholder modules and `src/data/tuning.ts`.
+- [x] 12. Git: `git init -b main`, `.gitignore`, `.gitattributes` (`* text=auto eol=lf`), `LICENSE` (MIT), `CREDITS.md`, README live link, `docs/PROGRESS.md`. Commits use the GitHub no-reply email for this repo only (the global git email is a work address).
+- [x] 13. `.github/workflows/deploy.yml`: checkout v7 → setup-node v7 (Node 24) → `npm ci` → typecheck → test → build → configure-pages v6 → upload-pages-artifact v5 → deploy-pages v5.
+- [x] 14. `npm run verify` green, then commit `M0: …`, `gh repo create wildsong-ranch --public` (no push yet), enable Pages with `build_type=workflow`, push `main`, watch the run, `curl` the live page.
+- [x] 15. Send the owner the link and Home Screen steps, then stop.
 
 **Phone check:** open the link, add it to the Home Screen, open it from the icon (full screen, no browser bar), and see the version number.
 
