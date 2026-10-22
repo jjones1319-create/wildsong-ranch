@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { makeMonster } from '../../core/test-helpers.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { STAGES } from '../../data/tuning.ts'
-import { BODY_PLANS, BREED_IDS } from '../../data/types.ts'
+import { BODY_PLANS, BREED_IDS, type BreedId } from '../../data/types.ts'
 import { EXPRESSIONS, expressionFromCues, faceFor } from './expressions.ts'
-import { paletteFor } from './palettes.ts'
-import { renderMonster, renderMonsterSvg, specForBreed, specFromMonster } from './render.ts'
+import { POLISH } from './looks.ts'
+import { buildPalette, paletteFor } from './palettes.ts'
+import { formForStage, hasGrownForm, renderMonster, renderMonsterSvg, specForBreed, specFromMonster } from './render.ts'
+
+const OLD = BREED_IDS.slice(0, 20) as BreedId[]
+const NEW = BREED_IDS.slice(20) as BreedId[]
+const GROWING: BreedId[] = ['hearthwing', 'pluckrex', 'paladove']
 
 function tagBalance(svg: string, tag: string): number {
   const opens = svg.match(new RegExp(`<${tag}[\\s>]`, 'g'))?.length ?? 0
@@ -19,20 +24,21 @@ function expectClean(svg: string) {
   expect(svg).not.toMatch(/NaN|undefined|\[object|Infinity/)
   expect(tagBalance(svg, 'svg')).toBe(0)
   expect(tagBalance(svg, 'g')).toBe(0)
+  expect(tagBalance(svg, 'defs')).toBe(0)
 }
 
 describe('procedural monster art (§22)', () => {
-  it('renders every main/sub pair cleanly (400 combinations)', () => {
+  it('renders every main/sub pair cleanly (900 combinations)', () => {
     for (const main of BREED_IDS) {
       for (const sub of BREED_IDS) {
         const svg = renderMonsterSvg(specForBreed(main, { sub }))
         expectClean(svg)
-        expect(svg.length).toBeGreaterThan(800)
+        expect(svg.length).toBeGreaterThan(1500)
       }
     }
   })
 
-  it('uses all nine body plans across the twenty breeds', () => {
+  it('uses all nine body plans across the thirty breeds', () => {
     const plans = new Set(BREED_IDS.map((id) => BREED_BY_ID[id].art.plan))
     for (const plan of BODY_PLANS) expect(plans.has(plan)).toBe(true)
   })
@@ -114,5 +120,99 @@ describe('procedural monster art (§22)', () => {
     expect(renderMonsterSvg(specForBreed('quillion'), { mirror: true })).toContain('scale(-1 1)')
     expect(renderMonsterSvg(specForBreed('wishlume'))).toContain('ws-mon__float')
     expect(renderMonsterSvg(specForBreed('puddlepup'))).toContain('ws-mon__bob')
+  })
+})
+
+describe('breeds 21–30 and the growth forms (NEW_MONSTERS §3, §5)', () => {
+  it('renders every new breed at every stage and expression', () => {
+    for (const breed of NEW) {
+      for (let stage = 1; stage <= STAGES.count; stage++) expectClean(renderMonsterSvg(specForBreed(breed, { stage })))
+      for (const expression of EXPRESSIONS) expectClean(renderMonsterSvg(specForBreed(breed, { expression, sparkle: expression === 'happy' })))
+    }
+  })
+
+  it('switches the three growing breeds to their grown look at Prime, and nobody else', () => {
+    for (const breed of BREED_IDS) expect(hasGrownForm(breed)).toBe(GROWING.includes(breed))
+    for (const breed of GROWING) {
+      expect(formForStage(breed, STAGES.prime[0]! - 1)).toBe('young')
+      expect(formForStage(breed, STAGES.prime[0]!)).toBe('grown')
+      expect(formForStage(breed, STAGES.count)).toBe('grown')
+      const strip = (svg: string) => svg.replace(/scale\([\d.]+\)/g, 'scale(S)')
+      const young = strip(renderMonsterSvg(specForBreed(breed, { stage: 4 })))
+      const grown = strip(renderMonsterSvg(specForBreed(breed, { stage: 5 })))
+      expect(young).not.toBe(grown)
+      expect(grown.length).toBeGreaterThan(young.length)
+    }
+    expect(formForStage('puddlepup', 10)).toBe('young')
+    const m = makeMonster({ main: 'hearthwing', sub: 'hearthwing' })
+    m.lifespanTotal = 100
+    m.ageWeeks = 50
+    expect(formForStage(m.mainBreed, specFromMonster(m).stage)).toBe('young')
+    m.ageWeeks = 60
+    expect(formForStage(m.mainBreed, specFromMonster(m).stage)).toBe('grown')
+  })
+
+  it('mixes every new breed with every old breed, both ways, with the sub accent and palette', () => {
+    for (const fresh of NEW) {
+      for (const old of OLD) {
+        const a = renderMonsterSvg(specForBreed(fresh, { sub: old }))
+        const b = renderMonsterSvg(specForBreed(old, { sub: fresh }))
+        expectClean(a)
+        expectClean(b)
+        expect(a).toContain(BREED_BY_ID[old].art.palette.body)
+        expect(b).toContain(BREED_BY_ID[fresh].art.palette.body)
+        expect(a).not.toBe(renderMonsterSvg(specForBreed(fresh)))
+      }
+    }
+  })
+})
+
+describe('high-end polish (NEW_MONSTERS §6)', () => {
+  it('paints with gradients whose ids follow the palette', () => {
+    const a = buildPalette(BREED_BY_ID.puddlepup.art.palette, undefined, { gradients: true })
+    const b = buildPalette(BREED_BY_ID.coilfang.art.palette, undefined, { gradients: true })
+    const flat = buildPalette(BREED_BY_ID.puddlepup.art.palette)
+    expect(a.id).not.toBe(b.id)
+    expect(a.id).toBe(buildPalette(BREED_BY_ID.puddlepup.art.palette, undefined, { gradients: true }).id)
+    expect(a.paint(a.body)).toBe(`url(#${a.id}-b)`)
+    expect(a.paint('#123456')).toBe('#123456')
+    expect(flat.paint(flat.body)).toBe(flat.body)
+    const svg = renderMonsterSvg(specForBreed('puddlepup'))
+    expect(svg).toContain('<defs>')
+    expect(svg).toContain(`id="${a.id}-b"`)
+    expect(svg).toContain(`url(#${a.id}-b)`)
+    expect(svg).toContain(`url(#${a.id}-s)`)
+  })
+
+  it('adds the texture pattern only for breeds that have one', () => {
+    for (const breed of BREED_IDS) {
+      const svg = renderMonsterSvg(specForBreed(breed))
+      expect(svg.includes('<pattern')).toBe(POLISH[breed].texture !== null)
+    }
+  })
+
+  it('draws signature particles, and drops them in lite mode or for a static picture', () => {
+    for (const breed of BREED_IDS) {
+      const svg = renderMonsterSvg(specForBreed(breed))
+      expect(svg.includes('ws-mon__particles')).toBe(POLISH[breed].particles !== null)
+    }
+    expect(renderMonsterSvg(specForBreed('hearthwing', { lite: true }))).not.toContain('ws-mon__particles')
+    expect(renderMonsterSvg(specForBreed('hearthwing', { lite: true }))).toContain('ws-mon--lite')
+    expect(renderMonsterSvg(specForBreed('hearthwing', { animate: false }))).not.toContain('ws-mon__particles')
+    expect(renderMonsterSvg(specForBreed('hearthwing', { particles: false }))).not.toContain('ws-mon__particles')
+    const m = makeMonster({ main: 'frostlance', sub: 'frostlance' })
+    expect(specFromMonster(m, { animate: false }).particles).toBe(false)
+    expect(specFromMonster(m).particles).toBe(true)
+  })
+
+  it('gives the parts secondary motion classes and the eyes a glance group', () => {
+    const svg = renderMonsterSvg(specForBreed('hearthwing'))
+    expect(svg).toContain('ws-mon__wing')
+    expect(svg).toContain('ws-mon__pupil')
+    expect(svg).toContain('ws-mon__glow')
+    expect(renderMonsterSvg(specForBreed('puddlepup'))).toContain('ws-mon__ear')
+    expect(renderMonsterSvg(specForBreed('starhowl'))).toContain('ws-mon__mane')
+    expect(renderMonsterSvg(specForBreed('scrollopus'))).toContain('ws-mon__tentacle')
+    expect(renderMonsterSvg(specForBreed('frostlance'))).toContain('ws-mon__fin')
   })
 })

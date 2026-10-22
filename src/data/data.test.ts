@@ -9,10 +9,14 @@ import { TRAITS } from './traits.ts'
 import { BREED_IDS, FAMILIES, STAT_KEYS, type Family, type Technique } from './types.ts'
 
 describe('breeds (CONTENT §2)', () => {
-  it('has the 20 breeds with unique ids in table order', () => {
-    expect(BREEDS).toHaveLength(20)
+  it('has the 30 breeds with unique ids in table order', () => {
+    expect(BREEDS).toHaveLength(30)
     expect(BREEDS.map((b) => b.id)).toEqual([...BREED_IDS])
-    expect(new Set(BREEDS.map((b) => b.name)).size).toBe(20)
+    expect(new Set(BREEDS.map((b) => b.name)).size).toBe(30)
+  })
+
+  it('gives the three growing breeds a grown look and nobody else', () => {
+    expect(BREEDS.filter((b) => b.art.grown).map((b) => b.id)).toEqual(['hearthwing', 'pluckrex', 'paladove'])
   })
 
   it('keeps every stat, grade, lifespan and guts rate inside its range', () => {
@@ -34,7 +38,7 @@ describe('breeds (CONTENT §2)', () => {
     const locked = BREEDS.filter((b) => b.availability === 'locked')
     expect(locked).toHaveLength(8)
     expect(new Set(locked.map((b) => b.unlockChain)).size).toBe(8)
-    expect(BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === null).map((b) => b.id)).toEqual(['puddlepup', 'tumblefox', 'quillion'])
+    expect(BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === null).map((b) => b.id)).toEqual(['puddlepup', 'tumblefox', 'quillion', 'pluckrex'])
   })
 
   it('spot-checks transcribed rows', () => {
@@ -43,13 +47,18 @@ describe('breeds (CONTENT §2)', () => {
     expect(BREED_BY_ID.aurelwyrm.gutsRate).toBe(18)
     expect(BREED_BY_ID.nimbusheep.lifespan).toBe(480)
     expect(BREED_BY_ID.lootlid.trait).toBe('gilded')
+    expect(BREED_BY_ID.hearthwing.base).toEqual({ LIF: 130, POW: 120, INT: 90, SKI: 60, SPD: 60, DEF: 100 })
+    expect(BREED_BY_ID.hearthwing.commonness).toBe(3)
+    expect(BREED_BY_ID.grumblestone.grades).toEqual({ LIF: 'B', POW: 'B', INT: 'E', SKI: 'E', SPD: 'E', DEF: 'A' })
+    expect(BREED_BY_ID.petalphant.lifespan).toBe(480)
+    expect(BREED_BY_ID.frostlance.trait).toBe('chill')
   })
 })
 
 describe('traits, drills, foods, items, journeys', () => {
-  it('has 20 traits, one per breed', () => {
-    expect(TRAITS).toHaveLength(20)
-    expect(new Set(BREEDS.map((b) => b.trait)).size).toBe(20)
+  it('has 30 traits, one per breed', () => {
+    expect(TRAITS).toHaveLength(30)
+    expect(new Set(BREEDS.map((b) => b.trait)).size).toBe(30)
   })
 
   it('has 6 light drills (one per stat) and 5 heavy drills', () => {
@@ -90,10 +99,13 @@ describe('traits, drills, foods, items, journeys', () => {
 })
 
 describe('techniques (CONTENT §3)', () => {
-  it('has 180 breed techniques + 24 universal with unique ids', () => {
-    expect(BREED_TECHNIQUES).toHaveLength(180)
+  it('has 270 breed techniques + 24 universal with unique ids and unique names', () => {
+    expect(BREED_TECHNIQUES).toHaveLength(270)
     expect(UNIVERSAL_TECHNIQUES).toHaveLength(24)
-    expect(new Set(TECHNIQUES.map((t) => t.id)).size).toBe(204)
+    expect(new Set(TECHNIQUES.map((t) => t.id)).size).toBe(294)
+    const names = TECHNIQUES.map((t) => t.name.toLowerCase())
+    const dupes = names.filter((n, i) => names.indexOf(n) !== i)
+    expect(dupes).toEqual([])
   })
 
   it('gives every breed 2 Basics, one of each other family, one sub-quirk Basic and at least 3 ranges', () => {

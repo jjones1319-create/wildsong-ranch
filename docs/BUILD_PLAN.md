@@ -147,6 +147,23 @@
 3. Download a file and re-import it.
 4. Look at all 20 breeds in the presets.
 
+## M2.5: Ten new monsters (batch 2)
+
+**Goal:** breeds 21–30 from `docs/NEW_MONSTERS.md`, with two-form growth for three of them and an art polish pass for all 30, before the ranch loop. Version `0.4.0`.
+
+- [x] 1. Docs: CONTENT §2, §2.1, §2.2 and §3 gain the ten breeds (30 breeds, 270 + 24 = 294 techniques); GAME_DESIGN §14.2 (four starters), §14.3 (900 mixes), §18, §19 and the §22 growth-forms and polish rules; M4 gets the ten trait effects.
+- [x] 2. Data: breed, trait and technique ids and rows; `art.grown` briefs; Pluckrex always at the Market. Tests updated for 30 / 294; the §10.2 pinned list unchanged; technique names unique; the Shrine snapshot regenerated on purpose.
+- [x] 3. Art: new plan knobs (neck, hulk, squat, dino, chick, stout, tentacles, horizontal), ten looks, three grown forms, ten accent parts.
+- [x] 4. Polish for all 30: gradients and rim light, contact shadow, textures, secondary motion, squash-and-stretch hop, eyes that follow taps, signature particles, automatic lite mode.
+- [x] 5. PNG contact sheets of every new monster (young and grown, every expression, mixes) and of the old 20 after the polish, reviewed and fixed; nothing resembles another franchise.
+- [x] 6. `npm run verify`, PROGRESS.md, commit `M2.5: ten new monsters`, push, confirm the deploy, phone checklist, stop.
+
+**Phone check:**
+1. Monster Lab → Presets: the ten new monsters are there.
+2. Edit a Hearthwing, Pluckrex or Paladove and slide its age past Prime. It grows into its grown form.
+3. Make a few mixes, e.g. Pluckrex with a Starhowl sub-breed, or Grumblestone with a Frostlance sub-breed.
+4. Check that animations and particles look smooth, and that Settings → Reduce motion turns them off.
+
 ## M3: The ranch loop
 
 **Goal:** raise one monster from birth to old age.
@@ -183,6 +200,7 @@
   - Engine (30 Hz fixed step, pure and deterministic), formulas (GAME_DESIGN §12.5), ranges, movement, dash, push, guts.
   - Distraction, specials, traits, effects, end conditions.
 - [ ] `core/battle/ai.ts`: personalities, the use-rate model, band targeting, push and dash, rookie guts reserve.
+- [ ] Battle traits for breeds 21–30 (`docs/NEW_MONSTERS.md` §2): Dragonheart (once per battle, +20 guts when HP first drops below 50 %), Unshakable (no push-back or stun; damage taken −10 %), Underdog (+8 hit and +10 % damage against a higher stat total), Blessed (regenerates 1 % max HP every 5 s), Moonlit (crit +6 %), Green Thumb (heal and drain +50 %), Eight Arms (multi-hit techniques get one extra hit), Statue Pose (after 2 s still, −30 % damage taken until it moves), Battering Ram (dashing costs no guts; the first technique after a dash +15 %), Chill (hits slow walking 25 % for 3 s).
 - [ ] Battle screen (SVG/DOM):
   - Arena with the range ruler, HP and guts bars, technique columns, thumb pads, Assist.
   - Auto toggle, speed ×1/×2/×4, pause and forfeit, haptics, reduced motion.
@@ -248,7 +266,7 @@
 ## M9: Balance, QA and the v1.0 release
 
 - [ ] Run whole-life sims for every breed under all 4 care policies; adjust tuning to meet GAME_DESIGN §26; record results in `docs/BALANCE_REPORT.md`.
-- [ ] Battle matrix for all 20 breeds at totals 1,000, 2,000 and 3,000; fix any matchup outside 30–70%.
+- [ ] Battle matrix for all 30 breeds at totals 1,000, 2,000 and 3,000; fix any matchup outside 30–70%.
 - [ ] Optional Playwright smoke test (Pixel and iPhone emulation): new game → train → battle → save → reload. It needs Windows 11; skip it if unsupported.
 - [ ] Bug bash from the owner's notes; final README (how to play, install, back up) and CREDITS.
 - [ ] Tag `v1.0.0`.

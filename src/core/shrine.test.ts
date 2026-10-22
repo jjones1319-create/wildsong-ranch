@@ -71,11 +71,11 @@ describe('the Shrine of Echoes (§14.1)', () => {
       summary('a', 'b'),
     ]).toMatchInlineSnapshot(`
       [
-        "nibblegrub/cobblemaw Wildsong 162/109/60/66/25/105 life 432 guts 15 nature -4 river-fish",
-        "coilfang/nibblegrub Twinkle 120/95/45/111/86/87 life 335 guts 13 nature -26 river-fish",
-        "cinderlynx/cinderlynx Hello 98/144/48/73/103/54 life 403 guts 14 nature -7 berry-pudding",
-        "puddlepup/nimbusheep 夜明けの歌 143/66/77/68/60/67 life 417 guts 12 nature -27 berry-pudding",
-        "nimbusheep/nibblegrub A 144/46/100/54/42/88 life 462 guts 14 nature -24 honey-bread",
+        "scrollopus/moatshell Wildsong 107/59/133/113/55/92 life 428 guts 13 nature -4 river-fish",
+        "grumblestone/petalphant Twinkle 177/92/55/58/36/137 life 463 guts 18 nature -26 river-fish",
+        "nibblegrub/galeheron Hello 148/94/60/65/45/92 life 413 guts 14 nature -7 berry-pudding",
+        "tumblefox/pluckrex 夜明けの歌 113/74/79/75/90/50 life 357 guts 11 nature -27 berry-pudding",
+        "grumblestone/starhowl A 141/104/60/51/45/116 life 434 guts 17 nature -24 honey-bread",
       ]
     `)
   })

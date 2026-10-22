@@ -1,5 +1,6 @@
 /* Idle animation for the procedural monsters (GAME_DESIGN §22): transforms and opacity only.
-   Everything stops under prefers-reduced-motion or when the svg carries data-animate="false". */
+   Everything stops under prefers-reduced-motion or when the svg carries data-animate="false";
+   lite mode (weaker phones) keeps the main motion but drops particles and secondary motion. */
 
 .ws-mon {
   display: block;
@@ -13,21 +14,74 @@
   animation: ws-breathe calc(3.2s * var(--ws-rate)) ease-in-out infinite alternate;
 }
 
+/* The idle hop with a little squash and stretch, anchored at the ground. */
 .ws-mon__bob {
-  animation: ws-bob calc(2.6s * var(--ws-rate)) ease-in-out infinite alternate;
+  transform-box: view-box;
+  transform-origin: 128px 232px;
+  animation: ws-hop calc(2.6s * var(--ws-rate)) ease-in-out infinite;
 }
 
 .ws-mon__float {
   animation: ws-float calc(3.4s * var(--ws-rate)) ease-in-out infinite alternate;
 }
 
-.ws-mon__tail {
+.ws-mon__tail,
+.ws-mon__ear,
+.ws-mon__wing,
+.ws-mon__mane,
+.ws-mon__fin,
+.ws-mon__tentacle {
   transform-box: view-box;
+}
+
+.ws-mon__tail {
   animation: ws-wag calc(1.6s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+/* Secondary motion: these lag a little behind the body. */
+.ws-mon__ear {
+  animation: ws-ear calc(2.6s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__wing {
+  animation: ws-flap calc(1.9s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__mane {
+  animation: ws-sway calc(2.8s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__fin {
+  animation: ws-sway calc(2.2s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__tentacle {
+  animation: ws-sway calc(2.4s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__gear {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ws-spin 6s linear infinite;
+}
+
+.ws-mon__glow {
+  animation: ws-glow calc(2.2s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__halo {
+  animation: ws-bob 2.2s ease-in-out infinite alternate;
+  animation-delay: -1s;
 }
 
 .ws-mon__lids {
   animation: ws-blink calc(4.6s * var(--ws-rate)) linear infinite;
+}
+
+/* The eyes glance toward a tap: the portrait sets these two variables. */
+.ws-mon__pupil {
+  transform: translate(var(--ws-look-x, 0px), var(--ws-look-y, 0px));
+  transition: transform 0.35s ease;
 }
 
 .ws-mon__sparkle {
@@ -50,10 +104,54 @@
   animation: ws-chew 0.5s ease-in-out infinite alternate;
 }
 
+/* Signature particles. */
+.ws-mon__particles .ws-p {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.ws-p--rise {
+  animation-name: ws-rise;
+}
+
+.ws-p--fall {
+  animation-name: ws-fall;
+}
+
+.ws-p--twinkle {
+  animation-name: ws-glint;
+}
+
+.ws-p--puff {
+  animation-name: ws-puff;
+}
+
+.ws-p--steam {
+  animation-name: ws-steam;
+}
+
 /* Stage 8 and up: slower and a little faded (§5.3). */
 .ws-mon--old {
   --ws-rate: 1.7;
   filter: saturate(0.72);
+}
+
+/* Lite mode: keep the breathing and the hop, drop the rest. */
+.ws-mon--lite .ws-mon__particles {
+  display: none;
+}
+
+.ws-mon--lite .ws-mon__ear,
+.ws-mon--lite .ws-mon__wing,
+.ws-mon--lite .ws-mon__mane,
+.ws-mon--lite .ws-mon__fin,
+.ws-mon--lite .ws-mon__tentacle,
+.ws-mon--lite .ws-mon__gear,
+.ws-mon--lite .ws-mon__glow {
+  animation: none !important;
 }
 
 .ws-mon[data-animate='false'] *,
@@ -61,9 +159,18 @@
   animation: none !important;
 }
 
+.ws-mon[data-animate='false'] .ws-mon__particles {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ws-mon * {
     animation: none !important;
+    transition: none !important;
+  }
+
+  .ws-mon .ws-mon__particles {
+    display: none;
   }
 }
 
@@ -73,6 +180,25 @@
   }
   to {
     transform: scale(1.015, 1.03);
+  }
+}
+
+@keyframes ws-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  32% {
+    transform: translateY(0) scale(1.03, 0.965);
+  }
+  52% {
+    transform: translateY(-5px) scale(0.985, 1.035);
+  }
+  74% {
+    transform: translateY(0) scale(1.02, 0.975);
+  }
+  86% {
+    transform: translateY(0) scale(1, 1);
   }
 }
 
@@ -103,6 +229,48 @@
   }
 }
 
+@keyframes ws-ear {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes ws-flap {
+  from {
+    transform: rotate(-4deg) scaleY(0.96);
+  }
+  to {
+    transform: rotate(5deg) scaleY(1.03);
+  }
+}
+
+@keyframes ws-sway {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes ws-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ws-glow {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes ws-blink {
   0%,
   93%,
@@ -124,6 +292,71 @@
   50% {
     opacity: 0.55;
     transform: scale(0.8);
+  }
+}
+
+@keyframes ws-glint {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.4) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(45deg);
+  }
+}
+
+@keyframes ws-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-46px) translateX(6px);
+  }
+}
+
+@keyframes ws-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-24px) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(44px) translateX(10px) rotate(70deg);
+  }
+}
+
+@keyframes ws-puff {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.6) translateY(-6px);
+  }
+}
+
+@keyframes ws-steam {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(4px);
+  }
+  25% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5) translateY(-40px);
   }
 }
 

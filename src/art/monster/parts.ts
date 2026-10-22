@@ -1,4 +1,3 @@
-import type { BreedId } from '../../data/types.ts'
 import { outlined, type Pt, type Sockets } from './bodyPlans.ts'
 import type { Palette } from './palettes.ts'
 import { circle, ellipse, g, lighten, line, path, poly, polygon, polyline, rect } from './svg.ts'
@@ -20,48 +19,63 @@ export interface PartPiece {
 
 const S = (p: Pt, dx: number, dy: number): Pt => ({ x: p.x + dx, y: p.y + dy })
 
+/** Secondary motion: a part that lags a little behind the body (ears, wings, manes, fins). */
+export function lagGroup(cls: 'ws-mon__ear' | 'ws-mon__wing' | 'ws-mon__mane' | 'ws-mon__fin', origin: Pt, delay: number, inner: string): string {
+  return g({ class: cls, style: `transform-origin:${origin.x}px ${origin.y}px;animation-delay:${delay}s` }, inner)
+}
+
 /* ---------- ears, crowns ---------- */
 
 export function finEars(s: Sockets, fill: string, inner: string, pal: Palette): PartPiece {
   const ear = (p: Pt, dir: number) => {
     const d = `M${p.x} ${p.y + 6} C${p.x + dir * 6} ${p.y - 22} ${p.x + dir * 34} ${p.y - 18} ${p.x + dir * 30} ${p.y + 8} C${p.x + dir * 28} ${p.y + 22} ${p.x + dir * 8} ${p.y + 20} ${p.x} ${p.y + 6} Z`
     const i = `M${p.x + dir * 6} ${p.y + 6} C${p.x + dir * 9} ${p.y - 10} ${p.x + dir * 26} ${p.y - 8} ${p.x + dir * 22} ${p.y + 8} Z`
-    return path(d, { fill, ...outlined(pal) }) + path(i, { fill: inner, opacity: 0.8 })
+    return lagGroup('ws-mon__ear', { x: p.x, y: p.y + 6 }, dir * 0.2, path(d, { fill: pal.paint(fill), ...outlined(pal) }) + path(i, { fill: inner, opacity: 0.8 }))
   }
   return { back: ear(S(s.earL, 2, 0), -1) + ear(S(s.earR, -2, 0), 1) }
 }
 
 export function pointedEars(s: Sockets, fill: string, inner: string, pal: Palette): PartPiece {
   const ear = (p: Pt, dir: number) =>
-    polygon(
-      [
-        [p.x - 10, p.y + 10],
-        [p.x + dir * 6, p.y - 24],
-        [p.x + 12, p.y + 8],
-      ],
-      { fill, ...outlined(pal) },
-    ) +
-    polygon(
-      [
-        [p.x - 4, p.y + 6],
-        [p.x + dir * 4, p.y - 12],
-        [p.x + 7, p.y + 5],
-      ],
-      { fill: inner, opacity: 0.85 },
+    lagGroup(
+      'ws-mon__ear',
+      { x: p.x, y: p.y + 8 },
+      dir * 0.3,
+      polygon(
+        [
+          [p.x - 10, p.y + 10],
+          [p.x + dir * 6, p.y - 24],
+          [p.x + 12, p.y + 8],
+        ],
+        { fill: pal.paint(fill), ...outlined(pal) },
+      ) +
+        polygon(
+          [
+            [p.x - 4, p.y + 6],
+            [p.x + dir * 4, p.y - 12],
+            [p.x + 7, p.y + 5],
+          ],
+          { fill: inner, opacity: 0.85 },
+        ),
     )
   return { back: ear(s.earL, -0.4) + ear(s.earR, 0.4) }
 }
 
 export function emberTufts(s: Sockets, fill: string, pal: Palette): PartPiece {
   const tuft = (p: Pt, dir: number) =>
-    polygon(
-      [
-        [p.x - 8, p.y + 2],
-        [p.x + dir * 4, p.y - 30],
-        [p.x + 9, p.y + 2],
-      ],
-      { fill, ...outlined(pal) },
-    ) + circle(p.x + dir * 4, p.y - 24, 3, { fill: lighten(fill, 45) })
+    lagGroup(
+      'ws-mon__ear',
+      { x: p.x, y: p.y + 2 },
+      dir * 0.25,
+      polygon(
+        [
+          [p.x - 8, p.y + 2],
+          [p.x + dir * 4, p.y - 30],
+          [p.x + 9, p.y + 2],
+        ],
+        { fill: pal.paint(fill), ...outlined(pal) },
+      ) + circle(p.x + dir * 4, p.y - 24, 3, { fill: lighten(fill, 45) }),
+    )
   return { back: tuft(S(s.earL, 0, -8), -0.5) + tuft(S(s.earR, 0, -8), 0.5) }
 }
 
@@ -82,7 +96,7 @@ export function crestPlumes(s: Sockets, fill: string, pal: Palette): PartPiece {
 }
 
 export function antennaNubs(s: Sockets, fill: string, pal: Palette): PartPiece {
-  const nub = (p: Pt, dir: number) => line(p.x, p.y + 6, p.x + dir * 8, p.y - 14, { stroke: pal.outline, 'stroke-width': 5, 'stroke-linecap': 'round' }) + circle(p.x + dir * 8, p.y - 14, 5, { fill, ...outlined(pal) })
+  const nub = (p: Pt, dir: number) => line(p.x, p.y + 6, p.x + dir * 8, p.y - 14, { stroke: pal.outline, 'stroke-width': 5, 'stroke-linecap': 'round' }) + circle(p.x + dir * 8, p.y - 14, 5, { fill: pal.paint(fill), ...outlined(pal) })
   return { back: nub(S(s.crown, -10, 2), -1) + nub(S(s.crown, 10, 2), 1) }
 }
 
@@ -120,7 +134,7 @@ export function antlers(s: Sockets, fill: string, pal: Palette): PartPiece {
 export function tadpoleTail(s: Sockets, fill: string, pal: Palette): PartPiece {
   const t = s.tail
   const d = `M${t.x + 10} ${t.y - 6} C${t.x - 10} ${t.y - 30} ${t.x - 40} ${t.y - 10} ${t.x - 26} ${t.y + 12} C${t.x - 16} ${t.y + 26} ${t.x} ${t.y + 14} ${t.x + 10} ${t.y + 6} Z`
-  return { back: g({ class: 'ws-mon__tail', style: `transform-origin:${t.x + 8}px ${t.y}px` }, path(d, { fill, ...outlined(pal) })) }
+  return { back: g({ class: 'ws-mon__tail', style: `transform-origin:${t.x + 8}px ${t.y}px` }, path(d, { fill: pal.paint(fill), ...outlined(pal) })) }
 }
 
 export function curledTail(s: Sockets, fill: string, tip: string, pal: Palette): PartPiece {
@@ -129,7 +143,7 @@ export function curledTail(s: Sockets, fill: string, tip: string, pal: Palette):
   return {
     back: g({ class: 'ws-mon__tail', style: `transform-origin:${t.x + 10}px ${t.y + 8}px` }, [
       path(d, { fill: 'none', stroke: pal.outline, 'stroke-width': 30, 'stroke-linecap': 'round' }),
-      path(d, { fill: 'none', stroke: fill, 'stroke-width': 23, 'stroke-linecap': 'round' }),
+      path(d, { fill: 'none', stroke: pal.paint(fill), 'stroke-width': 23, 'stroke-linecap': 'round' }),
       circle(t.x - 14, t.y - 30, 9, { fill: tip }),
     ]),
   }
@@ -150,7 +164,7 @@ export function tasselTail(s: Sockets, fill: string, pal: Palette): PartPiece {
   return {
     front: g({ class: 'ws-mon__tail', style: `transform-origin:${t.x}px ${t.y}px` }, [
       path(stem, { fill: 'none', stroke: pal.outline, 'stroke-width': 4, 'stroke-linecap': 'round' }),
-      path(tassel, { fill, ...outlined(pal) }),
+      path(tassel, { fill: pal.paint(fill), ...outlined(pal) }),
       line(t.x - 4, t.y + 36, t.x - 4, t.y + 48, { stroke: pal.outline, 'stroke-width': 2 }),
       line(t.x + 2, t.y + 36, t.x + 2, t.y + 48, { stroke: pal.outline, 'stroke-width': 2 }),
       line(t.x + 8, t.y + 36, t.x + 8, t.y + 48, { stroke: pal.outline, 'stroke-width': 2 }),
@@ -200,14 +214,14 @@ export function ribbonFins(s: Sockets, fill: string, pal: Palette): PartPiece {
   const b = s.back
   const ribbon = (ox: number, oy: number, len: number) => `M${b.x + ox} ${b.y + oy} C${b.x + ox - 10} ${b.y + oy - 30} ${b.x + ox - len * 0.5} ${b.y + oy - 10} ${b.x + ox - len} ${b.y + oy - 40} C${b.x + ox - len * 0.7} ${b.y + oy - 46} ${b.x + ox - 24} ${b.y + oy - 24} ${b.x + ox - 6} ${b.y + oy + 6} Z`
   const ds = [ribbon(0, 0, 60), ribbon(30, 6, 48), ribbon(-28, 10, 40)]
-  return { back: g({ class: 'ws-mon__tail', style: `transform-origin:${b.x}px ${b.y}px` }, ds.map((d) => path(d, { fill, ...outlined(pal) }))) }
+  return { back: g({ class: 'ws-mon__tail', style: `transform-origin:${b.x}px ${b.y}px` }, ds.map((d) => path(d, { fill: pal.paint(fill), ...outlined(pal) }))) }
 }
 
 /* ---------- backs ---------- */
 
 export function stonePlates(s: Sockets, fill: string, moss: string, pal: Palette): PartPiece {
   const b = s.back
-  const plate = (x: number, y: number, w: number, h: number) => rect(x, y, w, h, 7, { fill, ...outlined(pal) })
+  const plate = (x: number, y: number, w: number, h: number) => rect(x, y, w, h, 7, { fill: pal.paint(fill), ...outlined(pal) })
   return {
     over: g({}, [plate(b.x - 24, b.y - 10, 30, 20), plate(b.x + 10, b.y - 14, 34, 22), plate(b.x - 6, b.y + 10, 26, 16), circle(b.x + 2, b.y - 12, 6, { fill: moss }), circle(b.x + 30, b.y - 18, 5, { fill: moss }), circle(b.x - 18, b.y + 8, 4, { fill: moss })]),
   }
@@ -215,8 +229,8 @@ export function stonePlates(s: Sockets, fill: string, moss: string, pal: Palette
 
 export function crenellatedRim(s: Sockets, fill: string, pal: Palette): PartPiece {
   const b = s.back
-  const teeth = [-30, -10, 10, 30].map((dx) => rect(b.x + dx - 7, b.y - 14, 14, 16, 2, { fill, ...outlined(pal) }))
-  return { over: g({}, [rect(b.x - 40, b.y - 2, 80, 10, 3, { fill, ...outlined(pal) }), ...teeth]) }
+  const teeth = [-30, -10, 10, 30].map((dx) => rect(b.x + dx - 7, b.y - 14, 14, 16, 2, { fill: pal.paint(fill), ...outlined(pal) }))
+  return { over: g({}, [rect(b.x - 40, b.y - 2, 80, 10, 3, { fill: pal.paint(fill), ...outlined(pal) }), ...teeth]) }
 }
 
 export function backQuills(s: Sockets, fill: string, pal: Palette): PartPiece {
@@ -230,7 +244,7 @@ export function backQuills(s: Sockets, fill: string, pal: Palette): PartPiece {
         [x - 10 + i * 2, y - 26],
         [x + 6, y + 8],
       ],
-      { fill, ...outlined(pal) },
+      { fill: pal.paint(fill), ...outlined(pal) },
     )
   })
   return { back: g({}, quills) }
@@ -238,13 +252,13 @@ export function backQuills(s: Sockets, fill: string, pal: Palette): PartPiece {
 
 export function cloudTufts(s: Sockets, fill: string, pal: Palette): PartPiece {
   const b = s.back
-  return { over: g({}, [circle(b.x - 18, b.y + 2, 13, { fill, ...outlined(pal) }), circle(b.x, b.y - 8, 16, { fill, ...outlined(pal) }), circle(b.x + 20, b.y + 2, 13, { fill, ...outlined(pal) }), circle(b.x, b.y - 8, 13, { fill }), circle(b.x - 18, b.y + 2, 10, { fill }), circle(b.x + 20, b.y + 2, 10, { fill })]) }
+  return { over: g({}, [circle(b.x - 18, b.y + 2, 13, { fill: pal.paint(fill), ...outlined(pal) }), circle(b.x, b.y - 8, 16, { fill: pal.paint(fill), ...outlined(pal) }), circle(b.x + 20, b.y + 2, 13, { fill: pal.paint(fill), ...outlined(pal) }), circle(b.x, b.y - 8, 13, { fill: pal.paint(fill) }), circle(b.x - 18, b.y + 2, 10, { fill: pal.paint(fill) }), circle(b.x + 20, b.y + 2, 10, { fill: pal.paint(fill) })]) }
 }
 
 export function ribbonCloak(s: Sockets, fill: string, pal: Palette): PartPiece {
   const b = s.body
   const d = `M${b.x - b.rx * 0.5} ${b.y - b.ry * 0.7} C${b.x - b.rx * 1.3} ${b.y - b.ry * 0.2} ${b.x - b.rx * 1.2} ${b.y + b.ry * 0.9} ${b.x - b.rx * 0.9} ${b.y + b.ry * 1.05} L${b.x - b.rx * 0.5} ${b.y + b.ry * 0.8} L${b.x - b.rx * 0.2} ${b.y + b.ry * 1.1} L${b.x + b.rx * 0.2} ${b.y + b.ry * 0.85} L${b.x + b.rx * 0.6} ${b.y + b.ry * 1.05} C${b.x + b.rx * 1.2} ${b.y + b.ry * 0.9} ${b.x + b.rx * 1.3} ${b.y - b.ry * 0.2} ${b.x + b.rx * 0.5} ${b.y - b.ry * 0.7} Z`
-  return { back: path(d, { fill, ...outlined(pal) }) + circle(b.x, b.y - b.ry * 0.68, 7, { fill: lighten(fill, 30), ...outlined(pal) }) }
+  return { back: lagGroup('ws-mon__mane', { x: b.x, y: b.y - b.ry * 0.7 }, -0.4, path(d, { fill: pal.paint(fill), ...outlined(pal) }) + circle(b.x, b.y - b.ry * 0.68, 7, { fill: lighten(fill, 30), ...outlined(pal) })) }
 }
 
 export function gearWings(s: Sockets, fill: string, pal: Palette): PartPiece {
@@ -256,7 +270,7 @@ export function gearWings(s: Sockets, fill: string, pal: Palette): PartPiece {
       const rr = i % 2 === 0 ? r : r * 0.78
       teeth.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr])
     }
-    return polygon(teeth, { fill, ...outlined(pal) }) + circle(cx, cy, r * 0.3, { fill: pal.outline })
+    return g({ class: 'ws-mon__gear', style: `animation-duration:${(r / 4).toFixed(1)}s` }, polygon(teeth, { fill: pal.paint(fill), ...outlined(pal) }) + circle(cx, cy, r * 0.3, { fill: pal.outline }))
   }
   return { back: g({}, [gear(b.x - b.rx - 4, b.y - 6, 26), gear(b.x - b.rx - 22, b.y + 20, 17), gear(b.x + b.rx + 4, b.y - 6, 26), gear(b.x + b.rx + 22, b.y + 20, 17)]) }
 }
@@ -265,7 +279,7 @@ export function gearWings(s: Sockets, fill: string, pal: Palette): PartPiece {
 
 export function throatSac(s: Sockets, fill: string, pal: Palette): PartPiece {
   const c = s.chin
-  return { front: g({ class: 'ws-mon__body' }, circle(c.x, c.y + 10, 22, { fill, ...outlined(pal) }) + ellipse(c.x - 6, c.y + 4, 7, 4, { fill: lighten(fill, 35), opacity: 0.8 })) }
+  return { front: g({ class: 'ws-mon__body' }, circle(c.x, c.y + 10, 22, { fill: pal.paint(fill), ...outlined(pal) }) + ellipse(c.x - 6, c.y + 4, 7, 4, { fill: lighten(fill, 35), opacity: 0.8 })) }
 }
 
 export function coralClaw(s: Sockets, fill: string, pal: Palette): PartPiece {
@@ -274,38 +288,13 @@ export function coralClaw(s: Sockets, fill: string, pal: Palette): PartPiece {
   const claw = `M${f.x - 4} ${f.y + 12} C${f.x + 20} ${f.y + 30} ${f.x + 50} ${f.y + 10} ${f.x + 34} ${f.y - 16} C${f.x + 26} ${f.y - 30} ${f.x + 6} ${f.y - 24} ${f.x + 2} ${f.y - 10} Z`
   const branches = [`M${f.x + 30} ${f.y - 16} l10 -14 M${f.x + 34} ${f.y - 20} l12 -4`, `M${f.x + 36} ${f.y + 4} l14 6 M${f.x + 40} ${f.y + 10} l6 10`]
   return {
-    front: g({}, [path(arm, { fill: 'none', stroke: pal.outline, 'stroke-width': 14, 'stroke-linecap': 'round' }), path(arm, { fill: 'none', stroke: fill, 'stroke-width': 8, 'stroke-linecap': 'round' }), ...branches.map((d) => path(d, { fill: 'none', stroke: pal.outline, 'stroke-width': 9, 'stroke-linecap': 'round' })), ...branches.map((d) => path(d, { fill: 'none', stroke: fill, 'stroke-width': 5, 'stroke-linecap': 'round' })), path(claw, { fill, ...outlined(pal) }), path(`M${f.x + 8} ${f.y - 2} L${f.x + 30} ${f.y + 2}`, { stroke: pal.outline, 'stroke-width': 3, 'stroke-linecap': 'round' })]),
+    front: g({}, [path(arm, { fill: 'none', stroke: pal.outline, 'stroke-width': 14, 'stroke-linecap': 'round' }), path(arm, { fill: 'none', stroke: fill, 'stroke-width': 8, 'stroke-linecap': 'round' }), ...branches.map((d) => path(d, { fill: 'none', stroke: pal.outline, 'stroke-width': 9, 'stroke-linecap': 'round' })), ...branches.map((d) => path(d, { fill: 'none', stroke: fill, 'stroke-width': 5, 'stroke-linecap': 'round' })), path(claw, { fill: pal.paint(fill), ...outlined(pal) }), path(`M${f.x + 8} ${f.y - 2} L${f.x + 30} ${f.y + 2}`, { stroke: pal.outline, 'stroke-width': 3, 'stroke-linecap': 'round' })]),
   }
 }
 
 export function goldLid(s: Sockets, fill: string, pal: Palette): PartPiece {
   const c = s.crown
-  return { over: g({}, [rect(c.x - 26, c.y - 18, 52, 20, 6, { fill: pal.shade, ...outlined(pal) }), rect(c.x - 28, c.y - 4, 56, 8, 3, { fill, ...outlined(pal) }), rect(c.x - 6, c.y - 22, 12, 10, 2, { fill, ...outlined(pal) })]) }
-}
-
-/* ---------- the one part each breed lends as a sub (CONTENT §2.2 "accent") ---------- */
-
-export const ACCENTS: Record<BreedId, (s: Sockets, color: string, pal: Palette) => PartPiece> = {
-  puddlepup: (s, c, p) => finEars(s, c, p.belly, p),
-  tumblefox: (s, c, p) => curledTail(s, c, p.belly, p),
-  cobblemaw: (s, c, p) => stonePlates(s, p.light, c, p),
-  moatshell: (s, c, p) => crenellatedRim(s, c, p),
-  wishlume: (s, c, p) => tasselTail(s, c, p),
-  quillion: (s, c, p) => backQuills(s, c, p),
-  cinderlynx: (s, c, p) => emberTufts(s, c, p),
-  bloatoad: (s, c, p) => throatSac(s, c, p),
-  coilfang: (s, c, p) => featherCrest(s, c, p),
-  nimbusheep: (s, _c, p) => cloudTufts(s, '#E9EEF6', p),
-  galeheron: (s, c, p) => crestPlumes(s, c, p),
-  nibblegrub: (s, c, p) => antennaNubs(s, c, p),
-  velvesper: (s, c, p) => featheryAntennae(s, c, p),
-  ashwraith: (s, c, p) => trailingWisps(s, c, p),
-  zipwisp: (s, c, p) => zigzagTail(s, c, p),
-  mirrorkin: (s, c, p) => ribbonCloak(s, c, p),
-  gearhoot: (s, c, p) => gearWings(s, c, p),
-  reefclaw: (s, c, p) => coralClaw(s, c, p),
-  lootlid: (s, c, p) => goldLid(s, c, p),
-  aurelwyrm: (s, c, p) => ribbonFins(s, c, p),
+  return { over: g({}, [rect(c.x - 26, c.y - 18, 52, 20, 6, { fill: pal.shade, ...outlined(pal) }), rect(c.x - 28, c.y - 4, 56, 8, 3, { fill: pal.paint(fill), ...outlined(pal) }), rect(c.x - 6, c.y - 22, 12, 10, 2, { fill: pal.paint(fill), ...outlined(pal) })]) }
 }
 
 /* ---------- faces ---------- */
@@ -324,13 +313,16 @@ export interface FaceOptions {
 
 export type EyeMood = 'open' | 'happy' | 'droopy' | 'closed' | 'angry' | 'sad' | 'narrow'
 
+/** The moving part of an eye follows two CSS variables (`--ws-look-x/y`) so the eyes can glance toward a tap. */
+const pupil = (inner: string) => g({ class: 'ws-mon__pupil' }, inner)
+
 function eyeWhites(p: Pt, r: number, pal: Palette, style: EyeStyle, rim?: string): string {
-  if (style === 'ember') return circle(p.x, p.y, r * 1.1, { fill: pal.eye, opacity: 0.35 }) + circle(p.x, p.y, r * 0.7, { fill: pal.eye })
-  if (style === 'dot') return circle(p.x, p.y, r * 0.6, { fill: pal.eye }) + circle(p.x - r * 0.2, p.y - r * 0.2, r * 0.18, { fill: '#fff' })
-  if (style === 'painted') return ellipse(p.x, p.y, r * 1.1, r * 0.8, { fill: pal.eye }) + circle(p.x + r * 0.3, p.y - r * 0.2, r * 0.25, { fill: '#fff' })
+  if (style === 'ember') return circle(p.x, p.y, r * 1.4, { fill: pal.eye, opacity: 0.22 }) + pupil(circle(p.x, p.y, r * 1.05, { fill: pal.eye, opacity: 0.4 }) + circle(p.x, p.y, r * 0.7, { fill: pal.eye }) + circle(p.x - r * 0.2, p.y - r * 0.25, r * 0.22, { fill: '#fff', opacity: 0.9 }))
+  if (style === 'dot') return pupil(circle(p.x, p.y, r * 0.6, { fill: pal.eye }) + circle(p.x - r * 0.2, p.y - r * 0.2, r * 0.18, { fill: '#fff' }))
+  if (style === 'painted') return pupil(ellipse(p.x, p.y, r * 1.1, r * 0.8, { fill: pal.eye }) + circle(p.x + r * 0.3, p.y - r * 0.2, r * 0.25, { fill: '#fff' }))
   const whites = ellipse(p.x, p.y, r * 1.25, r * 1.35, { fill: '#fff', stroke: rim ?? pal.outline, 'stroke-width': rim ? 3 : 2.5 })
   const pupilR = style === 'beady' ? r * 0.55 : r * 0.78
-  return whites + circle(p.x + r * 0.15, p.y + r * 0.15, pupilR, { fill: pal.eye }) + circle(p.x + r * 0.42, p.y - r * 0.3, r * 0.3, { fill: '#fff' })
+  return whites + pupil(circle(p.x + r * 0.15, p.y + r * 0.15, pupilR, { fill: pal.eye }) + circle(p.x + r * 0.42, p.y - r * 0.3, r * 0.3, { fill: '#fff' }))
 }
 
 function eyeMoodOverlay(p: Pt, r: number, pal: Palette, mood: EyeMood, skin: string): string {

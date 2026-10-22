@@ -66,6 +66,16 @@ export const BREED_IDS = [
   'reefclaw',
   'lootlid',
   'aurelwyrm',
+  'hearthwing',
+  'grumblestone',
+  'pluckrex',
+  'paladove',
+  'starhowl',
+  'petalphant',
+  'scrollopus',
+  'gloomgrin',
+  'rammerjack',
+  'frostlance',
 ] as const
 export type BreedId = (typeof BREED_IDS)[number]
 
@@ -90,6 +100,16 @@ export const TRAIT_IDS = [
   'hard-shell',
   'gilded',
   'regal',
+  'dragonheart',
+  'unshakable',
+  'underdog',
+  'blessed',
+  'moonlit',
+  'green-thumb',
+  'eight-arms',
+  'statue-pose',
+  'battering-ram',
+  'chill',
 ] as const
 export type TraitId = (typeof TRAIT_IDS)[number]
 
@@ -151,6 +171,8 @@ export interface BreedArt {
   accentPart: string
   /** Variant-name adjective when this breed is the sub-breed ("Cinder Puddlepup"). */
   adjective: string
+  /** GAME_DESIGN §22 growth forms: the look from Prime onward, for breeds that grow up. Anything left out falls back to the base look. */
+  grown?: { brief: string }
 }
 
 export interface Breed {

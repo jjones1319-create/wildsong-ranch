@@ -1,6 +1,52 @@
 import type { BreedId } from '../../data/types.ts'
 import { outlined, type PlanKnobs, type Sockets } from './bodyPlans.ts'
-import type { Palette } from './palettes.ts'
+import type { Palette, TextureKind } from './palettes.ts'
+import type { ParticleKind } from './particles.ts'
+import {
+  auroraMane,
+  backRidges,
+  batWings,
+  beard,
+  bracers,
+  brows,
+  dinoJaw,
+  chestArmor,
+  chestGlow,
+  chestGrate,
+  constellations,
+  crystalKnuckles,
+  dragonWings,
+  fanCrest,
+  featherShield,
+  fourWings,
+  frostFins,
+  geodeCracks,
+  haloRing,
+  hooves,
+  iceTusk,
+  impTail,
+  inkFreckles,
+  leafTail,
+  ledgeBrows,
+  littleWings,
+  nubHorns,
+  petalEars,
+  runeLines,
+  scarf,
+  scholarCap,
+  spadeTail,
+  spectacles,
+  spiralHorns,
+  squareGrin,
+  starTail,
+  stubbyHorns,
+  sweptHorns,
+  tealBack,
+  tentacleItems,
+  thickTail,
+  tinyCrest,
+  trunk,
+} from './parts2.ts'
 import {
   antennaNubs,
   antlers,
@@ -37,16 +83,59 @@ import { circle, ellipse, g, line, path, polygon, rect } from './svg.ts'
  * (a brick, a glow, a tongue) stay the same whatever palette the sub breed brings.
  */
 
+export interface LookContext {
+  /** True when the monster is drawn happy (buds open, crests glow). */
+  happy: boolean
+}
+
 export interface Look {
   knobs: PlanKnobs
   face: FaceOptions
   /** Moves sockets before anything is drawn (a chest creature's mouth is its lid). */
   adjust?: (s: Sockets) => void
-  parts: (s: Sockets, pal: Palette) => PartPiece[]
+  parts: (s: Sockets, pal: Palette, ctx: LookContext) => PartPiece[]
   /** Extra overlay when the monster is happy. */
   happyExtra?: 'rainbow'
   /** A class on the whole figure (Zipwisp jitters). */
   figureClass?: string
+  /** Custom mouth drawing instead of the standard styles. */
+  mouthSvg?: (s: Sockets, pal: Palette) => string
+  /** GAME_DESIGN §22 growth forms: the look from Prime onward. */
+  grown?: Look
+}
+
+/** Per-breed polish (§22): a subtle texture pattern and a signature particle effect, or none. */
+export const POLISH: Record<BreedId, { texture: TextureKind | null; particles: ParticleKind | null }> = {
+  puddlepup: { texture: null, particles: 'bubble' },
+  tumblefox: { texture: 'fur', particles: 'leaf' },
+  cobblemaw: { texture: 'stone', particles: 'puff' },
+  moatshell: { texture: 'stone', particles: 'puff' },
+  wishlume: { texture: null, particles: 'mote' },
+  quillion: { texture: 'fur', particles: null },
+  cinderlynx: { texture: 'fur', particles: 'ember' },
+  bloatoad: { texture: null, particles: 'bubble' },
+  coilfang: { texture: 'scales', particles: null },
+  nimbusheep: { texture: null, particles: 'rain' },
+  galeheron: { texture: 'feathers', particles: 'feather' },
+  nibblegrub: { texture: null, particles: null },
+  velvesper: { texture: null, particles: 'mote' },
+  ashwraith: { texture: null, particles: 'ash' },
+  zipwisp: { texture: null, particles: 'spark' },
+  mirrorkin: { texture: null, particles: 'glint' },
+  gearhoot: { texture: null, particles: 'steam' },
+  reefclaw: { texture: null, particles: 'bubble' },
+  lootlid: { texture: null, particles: 'coin' },
+  aurelwyrm: { texture: 'scales', particles: 'mote' },
+  hearthwing: { texture: 'scales', particles: 'ember' },
+  grumblestone: { texture: 'stone', particles: 'glint' },
+  pluckrex: { texture: 'scales', particles: null },
+  paladove: { texture: 'feathers', particles: 'mote' },
+  starhowl: { texture: 'fur', particles: 'twinkle' },
+  petalphant: { texture: null, particles: 'petal' },
+  scrollopus: { texture: null, particles: 'bubble' },
+  gloomgrin: { texture: 'stone', particles: 'puff' },
+  rammerjack: { texture: 'fur', particles: null },
+  frostlance: { texture: null, particles: 'flake' },
 }
 
 const stroke = (pal: Palette, width: number, color = pal.outline) => ({ fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })
@@ -418,5 +507,74 @@ export const LOOKS: Record<BreedId, Look> = {
       antlers(s, '#6B2D0F', pal),
       { front: g({}, [path(`M${s.mouth.x + 10} ${s.mouth.y - 2} c14 2 20 14 30 10`, stroke(pal, 2.5)), path(`M${s.mouth.x - 14} ${s.mouth.y + 2} c-14 2 -18 14 -28 10`, stroke(pal, 2.5))]) },
     ],
+  },
+  // Breeds 21–30 (docs/NEW_MONSTERS.md §3).
+  hearthwing: {
+    knobs: { bodyRx: 54, bodyRy: 40, headR: 36, snout: true },
+    face: { eyes: 'round', mouth: 'smile' },
+    parts: (s, pal) => [littleWings(s, pal.body, pal), nubHorns(s, '#B87333', pal), chestGlow(s, pal.accent), tadpoleTail(s, pal.body, pal)],
+    grown: {
+      knobs: { neck: true, bodyRx: 62, bodyRy: 44, headR: 30, snoutLong: true },
+      face: { eyes: 'round', mouth: 'smile' },
+      parts: (s, pal) => [dragonWings(s, pal.body, pal.accent, pal), sweptHorns(s, '#B87333', pal), chestGrate(s, pal.accent, pal), spadeTail(s, pal.body, pal.accent, pal)],
+    },
+  },
+  grumblestone: {
+    knobs: { hulk: true },
+    face: { eyes: 'beady', mouth: 'frown', eyeScale: 0.9 },
+    parts: (s, pal) => [geodeCracks(s, pal.accent, pal), ledgeBrows(s, pal.belly, pal), crystalKnuckles(pal.accent, pal)],
+  },
+  pluckrex: {
+    knobs: { dino: true },
+    face: { eyes: 'round', mouth: 'none' },
+    mouthSvg: (s, pal) => dinoJaw(s, pal),
+    parts: (s, pal, ctx) => [fanCrest(s, pal.accent, pal, ctx.happy, 1.15), backRidges(s, pal.accent, pal), thickTail(s, pal.body, pal)],
+    grown: {
+      knobs: { grownDino: true },
+      face: { eyes: 'round', mouth: 'none' },
+      mouthSvg: (s, pal) => dinoJaw(s, pal),
+      parts: (s, pal, ctx) => [fanCrest(s, pal.accent, pal, ctx.happy, 1.6), backRidges(s, pal.accent, pal), thickTail(s, pal.body, pal), bracers(s, '#8E94A4', pal)],
+    },
+  },
+  paladove: {
+    knobs: { chick: true },
+    face: { eyes: 'round', mouth: 'beak', eyeScale: 1.1 },
+    parts: (s, pal) => [tinyCrest(s, pal.accent, pal), haloRing(s, pal.accent), { back: g({}, [ellipse(s.body.x - s.body.rx + 4, s.body.y - 6, 14, 22, { fill: pal.paint(pal.body), ...outlined(pal) }), ellipse(s.body.x + s.body.rx - 4, s.body.y - 6, 14, 22, { fill: pal.paint(pal.body), ...outlined(pal) })]) }],
+    grown: {
+      knobs: { stout: true },
+      face: { eyes: 'round', mouth: 'beak' },
+      parts: (s, pal) => [fourWings(s, pal.body, pal.accent, pal), haloRing(s, pal.accent), chestArmor(s, pal.accent, pal), featherShield(s, pal.accent, pal), crestPlumes(s, pal.accent, pal)],
+    },
+  },
+  starhowl: {
+    knobs: { bodyRx: 56, bodyRy: 34, headR: 32, snoutLong: true },
+    face: { eyes: 'ember', mouth: 'smile', eyeScale: 0.95 },
+    parts: (s, pal) => [auroraMane(s, pal.accent, '#F49AC1', pal), pointedEars(s, pal.body, pal.belly, pal), constellations(s, pal), starTail(s, pal.body, '#FFF2B0', pal)],
+  },
+  petalphant: {
+    knobs: { bodyRx: 60, bodyRy: 44, headR: 38 },
+    face: { eyes: 'round', mouth: 'none' },
+    parts: (s, pal, ctx) => [petalEars(s, pal.accent, pal), trunk(s, pal.body, pal.accent, ctx.happy, pal), leafTail(s, '#7FAF5A', pal)],
+  },
+  scrollopus: {
+    knobs: { tentacles: true },
+    face: { eyes: 'round', mouth: 'smile' },
+    parts: (s, pal) => [scholarCap(s, '#3A3A55', '#F2C94C', pal), spectacles(s, pal.accent, pal), tentacleItems(s, pal), inkFreckles(s, pal.accent)],
+  },
+  gloomgrin: {
+    knobs: { squat: true },
+    face: { eyes: 'round', mouth: 'none' },
+    mouthSvg: (s, pal) => squareGrin(s, pal),
+    parts: (s, pal) => [batWings(s, pal.body, pal), stubbyHorns(s, pal.belly, pal), runeLines(s, pal.accent), impTail(s, pal.body, pal)],
+  },
+  rammerjack: {
+    knobs: { bodyRx: 58, bodyRy: 40, headR: 34, snoutLong: true },
+    face: { eyes: 'round', mouth: 'flat' },
+    parts: (s, pal) => [spiralHorns(s, pal.accent, '#C9A66B', pal), beard(s, pal.belly, pal), scarf(s, '#D1495B', pal), hooves([96, 114, 148, 168], pal.accent, pal), brows(s, pal)],
+  },
+  frostlance: {
+    knobs: { horizontal: true },
+    face: { eyes: 'round', mouth: 'smile', eyeScale: 0.9 },
+    parts: (s, pal) => [frostFins(s, pal.belly, pal), tealBack(s, pal.accent), iceTusk(s, '#BDE8F5', pal)],
   },
 }

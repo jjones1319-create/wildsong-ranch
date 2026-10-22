@@ -126,6 +126,88 @@ export const BREEDS: readonly Breed[] = [
     bonusDrill: 'plow-pull', strength: 9, commonness: 1, trait: 'regal',
     art: { plan: 'serpent', brief: 'A golden serpentine dragon with long crimson ribbon fins, small branching antlers and whiskers, floating without wings.', palette: { body: '#F2C14E', belly: '#FFF4D6', accent: '#D64545', eye: '#6B2D0F' }, accentPart: 'ribbon fins', adjective: 'Golden' },
   },
+  // Breeds 21–30 (docs/NEW_MONSTERS.md, batch 2). None is locked.
+  {
+    id: 'hearthwing', name: 'Hearthwing', niche: 'Late-blooming dragon powerhouse (grows up at Prime)', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Late', lifespan: 400, gutsRate: 16, lean: 'Both', base: stats(130, 120, 90, 60, 60, 100), grades: grades('B', 'A', 'C', 'D', 'D', 'C'),
+    bonusDrill: 'plow-pull', strength: 8, commonness: 3, trait: 'dragonheart',
+    art: {
+      plan: 'quadruped',
+      brief: 'Young: a round, stubby dragonet with tiny flappy wings, a short snout, nub horns and a faint glow in its chest.',
+      palette: { body: '#1F6F6A', belly: '#E9D8B4', accent: '#FF8A3D', eye: '#FFD166' },
+      accentPart: 'little wings',
+      adjective: 'Hearth',
+      grown: { brief: 'A broad-winged dragon with a long neck and swept-back copper horns; the scales of its stocky chest part like a fireplace grate to show a molten glow, with ember-edged wing membranes and a spade-tipped tail.' },
+    },
+  },
+  {
+    id: 'grumblestone', name: 'Grumblestone', niche: 'Unmovable crystal tank', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Late', lifespan: 460, gutsRate: 18, lean: 'POW', base: stats(160, 110, 40, 40, 20, 140), grades: grades('B', 'B', 'E', 'E', 'E', 'A'),
+    bonusDrill: 'waterfall-stand', strength: 7, commonness: 7, trait: 'unshakable',
+    art: { plan: 'biped', brief: 'A hulking, hunched boulder giant with a cracked granite shell; violet crystals glow through the cracks like the inside of a geode, with heavy stone-ledge eyebrows over small grumpy eyes, pillar arms with crystal knuckles and short thick legs.', palette: { body: '#7A7068', belly: '#9C938A', accent: '#9B5DE5', eye: '#F5E663' }, accentPart: 'crystal-studded shoulders', adjective: 'Geode' },
+  },
+  {
+    id: 'pluckrex', name: 'Pluckrex', niche: 'Brave rookie hero (grows up at Prime)', availability: 'market', marketSeason: null, unlockChain: null,
+    growth: 'Early', lifespan: 360, gutsRate: 12, lean: 'POW', base: stats(110, 100, 50, 90, 80, 80), grades: grades('C', 'B', 'D', 'C', 'C', 'C'),
+    bonusDrill: 'log-toss', strength: 7, commonness: 9, trait: 'underdog',
+    art: {
+      plan: 'biped',
+      brief: 'Young: a little dinosaur with a big head, a wide toothy grin, stubby arms and a thick short tail; its fan-shaped head crest glows sunflower-gold when it is fired up.',
+      palette: { body: '#4F6D8F', belly: '#F1E6CF', accent: '#F7C548', eye: '#2B2D42' },
+      accentPart: 'fan crest',
+      adjective: 'Plucky',
+      grown: { brief: 'Taller and sturdier, with a bigger crest, stone-plated forearm bracers and a tougher, scalier hide.' },
+    },
+  },
+  {
+    id: 'paladove', name: 'Paladove', niche: 'Holy guardian healer (grows up at Prime)', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Evergreen', lifespan: 420, gutsRate: 13, lean: 'INT', base: stats(130, 50, 110, 80, 70, 110), grades: grades('B', 'E', 'B', 'C', 'D', 'B'),
+    bonusDrill: 'moon-meditation', strength: 6, commonness: 6, trait: 'blessed',
+    art: {
+      plan: 'avian',
+      brief: 'Young: a fluffy, round dove chick with a tiny feather crest and a little gold ring floating above its head. Not humanoid.',
+      palette: { body: '#F7F4EE', belly: '#FFFFFF', accent: '#E3B448', eye: '#4A6FA5' },
+      accentPart: 'halo ring',
+      adjective: 'Haloed',
+      grown: { brief: 'A stately dove-knight in white-and-gold chest armor, with four broad wings, a glowing ring halo, and a round feather-emblem shield on one wing.' },
+    },
+  },
+  {
+    id: 'starhowl', name: 'Starhowl', niche: 'Swift night hunter', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Steady', lifespan: 360, gutsRate: 10, lean: 'Mixed', base: stats(90, 110, 70, 100, 130, 50), grades: grades('D', 'B', 'C', 'C', 'A', 'E'),
+    bonusDrill: 'wind-chase', strength: 6, commonness: 7, trait: 'moonlit',
+    art: { plan: 'quadruped', brief: 'A wolf with midnight-indigo fur speckled with tiny twinkling constellations, a flowing aurora mane (teal shading to rose), a star-cluster pattern across the brow, glowing pale eyes and a bushy star-tipped tail.', palette: { body: '#2B2F6B', belly: '#4C5199', accent: '#6EE7C8', eye: '#E8F1FF' }, accentPart: 'aurora mane', adjective: 'Starry' },
+  },
+  {
+    id: 'petalphant', name: 'Petalphant', niche: 'Blooming support tank', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Late', lifespan: 480, gutsRate: 14, lean: 'INT', base: stats(180, 80, 90, 50, 40, 80), grades: grades('A', 'C', 'B', 'D', 'E', 'C'),
+    bonusDrill: 'hill-sprints', strength: 5, commonness: 7, trait: 'green-thumb',
+    art: { plan: 'quadruped', brief: 'A round, sage-green elephant calf with huge blush-pink ears shaped like magnolia petals; a flower bud at the tip of its trunk opens when it is happy, with a leafy tail tuft and chubby legs.', palette: { body: '#8FB996', belly: '#DCEFD9', accent: '#F4A7B9', eye: '#3B3B3B' }, accentPart: 'petal ears', adjective: 'Blossom' },
+  },
+  {
+    id: 'scrollopus', name: 'Scrollopus', niche: 'Inky trickster scholar', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Steady', lifespan: 380, gutsRate: 11, lean: 'INT', base: stats(90, 40, 140, 110, 70, 60), grades: grades('D', 'E', 'A', 'B', 'C', 'D'),
+    bonusDrill: 'puzzle-stones', strength: 5, commonness: 6, trait: 'eight-arms',
+    art: { plan: 'blob', brief: 'A plump violet octopus in round spectacles and a little tasseled scholar’s cap; each tentacle curls around a scroll, a quill or a book, with ink-spot freckles.', palette: { body: '#7D5BA6', belly: '#CDB4E6', accent: '#2E2A4F', eye: '#1E1E2E' }, accentPart: "scholar's cap", adjective: 'Inky' },
+  },
+  {
+    id: 'gloomgrin', name: 'Gloomgrin', niche: 'Stone-skinned counter-puncher', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Steady', lifespan: 380, gutsRate: 13, lean: 'POW', base: stats(100, 110, 60, 100, 50, 120), grades: grades('C', 'B', 'D', 'B', 'E', 'B'),
+    bonusDrill: 'target-toss', strength: 6, commonness: 6, trait: 'statue-pose',
+    art: { plan: 'biped', brief: 'A squat gargoyle imp with charcoal-stone skin and faint violet rune lines, stubby horns, small bat wings and a curled tail; a wide cheeky grin of square teeth and amber eyes that glow at night. It crouches like a rooftop statue when idle.', palette: { body: '#4B4F58', belly: '#6B7079', accent: '#8E7CC3', eye: '#FFB347' }, accentPart: 'bat wings', adjective: 'Gloomy' },
+  },
+  {
+    id: 'rammerjack', name: 'Rammerjack', niche: 'Charging brawler', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Early', lifespan: 340, gutsRate: 13, lean: 'POW', base: stats(110, 130, 40, 70, 110, 70), grades: grades('C', 'A', 'E', 'D', 'B', 'C'),
+    bonusDrill: 'plow-pull', strength: 7, commonness: 8, trait: 'battering-ram',
+    art: { plan: 'quadruped', brief: 'A stocky cream-and-chestnut mountain goat with huge spiral horns banded with rope wraps, a shaggy beard, a red knitted scarf, sturdy hooves and determined eyebrows.', palette: { body: '#EFE6D2', belly: '#FFF8EA', accent: '#A0522D', eye: '#3A2E26' }, accentPart: 'spiral horns', adjective: 'Rammy' },
+  },
+  {
+    id: 'frostlance', name: 'Frostlance', niche: 'Icy precision lancer', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Evergreen', lifespan: 400, gutsRate: 12, lean: 'Mixed', base: stats(100, 90, 90, 130, 70, 70), grades: grades('C', 'C', 'C', 'A', 'D', 'D'),
+    bonusDrill: 'target-toss', strength: 6, commonness: 6, trait: 'chill',
+    art: { plan: 'floater', brief: 'A pale blue-white narwhal that swims through the air and leaves a trail of snowflakes, with a long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.', palette: { body: '#D8EEF7', belly: '#F5FBFE', accent: '#1F7A8C', eye: '#1B263B' }, accentPart: 'ice tusk', adjective: 'Frosty' },
+  },
 ]
 
 export const BREED_BY_ID = Object.fromEntries(BREEDS.map((b) => [b.id, b])) as Record<BreedId, Breed>

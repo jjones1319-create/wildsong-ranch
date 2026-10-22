@@ -16,6 +16,18 @@ export const UI = {
   toastMs: 2600,
   /** Pause after typing in the Import box before the preview updates. */
   importDebounceMs: 200,
+  /** §22 polish: when to fall back to lite portraits (no particles, no secondary motion). */
+  perf: {
+    /** Phones reporting this much memory (GB) or less, or this many cores or fewer, start in lite mode. */
+    liteMemoryGb: 2,
+    liteCores: 4,
+    /** Otherwise the frame rate is sampled once, after this pause, over this many frames. */
+    sampleDelayMs: 1500,
+    sampleFrames: 60,
+    minFps: 45,
+  },
+  /** §22 polish: how far the pupils move toward a tap, and how long they hold. */
+  glance: { maxPx: 3, holdMs: 1600 },
 } as const
 
 /** §5.2 grade factor gf, in hundredths. */

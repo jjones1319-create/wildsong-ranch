@@ -862,7 +862,7 @@ So "Hello,  World!" equals "hello world".
 
 ### 14.2 Market (MUST)
 
-- Three starters are always available, plus one seasonal breed (CONTENT §2).
+- Four starters are always available (Puddlepup, Tumblefox, Quillion and Pluckrex), plus one seasonal breed (CONTENT §2).
 - The first monster is free; after that 1,500G, or 2,500G for the seasonal breed.
 - Market monsters use fixed seeds (so they are the same for everyone) with zero offsets.
 
@@ -881,7 +881,7 @@ So "Hello,  World!" equals "hello world".
 | Pure (main = sub) | +10% lifespan, the classic palette, Signature technique access, "(Pure)" badge |
 | Variant name | "{sub adjective} {Main name}", e.g. "Cinder Puddlepup"; pure → "Puddlepup" |
 
-That gives 20 × 20 = 400 combinations, plus special variants.
+That gives 30 × 30 = 900 combinations, plus special variants.
 
 ---
 
@@ -975,7 +975,7 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 
 ## 18. Unlocks, secrets and the Journal (MUST)
 
-- **Locked breeds:** 8 of the 20 breeds start locked (CONTENT §11). Each unlock chain uses a different kind of trigger:
+- **Locked breeds:** 8 of the 30 breeds start locked (CONTENT §11). Each unlock chain uses a different kind of trigger:
   - care-based metamorphosis
   - a memorial event after a natural death
   - a seasonal weather event with condition checks
@@ -1028,7 +1028,7 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 5. **Personality:** liked and disliked food, favorite toy, battle like, liked and disliked drill.
 6. **Techniques:**
    - The learned list with uses and level.
-   - Add from the breed kit, the sub's quirk and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 204.
+   - Add from the breed kit, the sub's quirk and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 294.
    - Set uses and level; remove.
 7. **Records** (optional): grade, wins and losses, titles.
 8. **Appearance:** palette (main, sub or variant), size stage preview.
@@ -1148,6 +1148,20 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 - **Backgrounds:** layered SVG (ranch, town, shrine, lab, arena, journey sites, expedition tiles) with seasonal tints and weather overlays.
 - **UI icons:** a small in-house SVG icon set.
 - **External art:** none, unless CC0. Log every asset in `CREDITS.md`.
+
+**Growth forms** (added with breeds 21–30, 2026-10-22; source: `docs/NEW_MONSTERS.md` §5):
+- **Hearthwing**, **Pluckrex** and **Paladove** have two looks: **young** for life stages 1–4 and **grown** from stage 5 (Prime). Every other breed has one look.
+- The switch happens the week the monster enters Prime, with a short, skippable "grow up" moment (a glow, then the new form) and a Wren line ("{name} has grown up!"). The ranch scene for it arrives with M3; the Lab preview and the presets already switch by stage.
+- The breed's art data carries an optional `grown` look; anything it leaves out falls back to the base look.
+- **Mixes:** the main breed's forms apply. The sub breed's palette and accent part are used on both forms.
+- Size by life stage still applies (young 70–85 %, grown 100 %). The form is derived from the life stage and never stored in a save.
+
+**High-end phone polish** (same date; the owner plays on a Galaxy S25 Ultra-class phone; source: `docs/NEW_MONSTERS.md` §6):
+- The procedural SVG system and its palettes stay, so every main/sub mix (30 × 30 = 900) recolours automatically. No pre-rendered images or 3D.
+- **Richer shading:** a soft top-left-lit gradient on every body part plus a rim highlight; a soft contact shadow; optional subtle textures per breed (scales, fur strokes, stone grain, feathers).
+- **More life:** secondary motion (ears, tails, wings, manes and tentacles lag slightly behind the body), squash-and-stretch on hops, and eyes that glance toward where the player taps.
+- **Signature particles** in a lightweight layer, off under reduced motion: Hearthwing embers · Grumblestone crystal glints · Paladove light motes · Starhowl twinkles · Petalphant drifting petals · Scrollopus ink bubbles · Gloomgrin dust puffs · Frostlance snowflakes · one fitting effect for each older breed where it suits (rain for Nimbusheep, sparks for Zipwisp, steam for Gearhoot…).
+- **Performance budget:** a steady 60 fps on that class of phone with the ranch scene, two animated monsters and particles. Library and picker thumbnails stay static. On weaker phones, or when the frame rate drops, particles are reduced automatically.
 
 ## 23. Audio (SHOULD)
 

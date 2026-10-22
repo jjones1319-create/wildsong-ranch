@@ -22,6 +22,16 @@ export const TRAITS: readonly Trait[] = [
   { id: 'hard-shell', name: 'Hard Shell', description: 'POW damage taken −15%' },
   { id: 'gilded', name: 'Gilded', description: 'Tournament prizes +15%; chore pay ×2' },
   { id: 'regal', name: 'Regal', description: '+5 extra fame per tournament win; +5 to the fame-crit cap' },
+  { id: 'dragonheart', name: 'Dragonheart', description: 'Once per battle, when its HP first drops below 50%, it gains 20 guts' },
+  { id: 'unshakable', name: 'Unshakable', description: "Can't be pushed back or stunned; damage taken −10%" },
+  { id: 'underdog', name: 'Underdog', description: '+8 hit and +10% damage against opponents with a higher stat total' },
+  { id: 'blessed', name: 'Blessed', description: 'Regenerates 1% of max HP every 5 seconds in battle' },
+  { id: 'moonlit', name: 'Moonlit', description: 'Crit chance +6%' },
+  { id: 'green-thumb', name: 'Green Thumb', description: 'Heal and drain techniques restore 50% more' },
+  { id: 'eight-arms', name: 'Eight Arms', description: 'Multi-hit techniques get one extra hit' },
+  { id: 'statue-pose', name: 'Statue Pose', description: 'After standing still for 2 seconds, takes 30% less damage until it moves' },
+  { id: 'battering-ram', name: 'Battering Ram', description: 'Dashing costs no guts, and the first technique after a dash deals +15% damage' },
+  { id: 'chill', name: 'Chill', description: "Its hits slow the target's walking by 25% for 3 seconds" },
 ]
 
 export const TRAIT_BY_ID = Object.fromEntries(TRAITS.map((t) => [t.id, t])) as Record<TraitId, Trait>

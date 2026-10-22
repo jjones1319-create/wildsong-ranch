@@ -14,6 +14,7 @@ export const WREN = {
   requestPlay: '{name} keeps nudging the ball toward you. I think someone wants to play.',
   requestTreat: '{name} is staring at the shelf where the treats live. Not subtle.',
   prime: '{name} is in {their} prime! This is the time to push.',
+  grewUp: '{name} has grown up! Just look at {them}!',
   pastPrime: "{name}'s growing older… {they} won't improve as fast from here.",
   quarterLifeLeft: "{name} is getting on in years. Let's make every week count.",
   fortyEightWeeksLeft: "A year left, maybe. Let's make it a good one, {name}.",
