@@ -1,7 +1,7 @@
 {
   "name": "wildsong-ranch",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
   "type": "module",
   "license": "MIT",
@@ -16,7 +16,8 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "verify": "npm run typecheck && npm test && npm run build",
-    "icons": "pwa-assets-generator"
+    "icons": "pwa-assets-generator",
+    "sim:life": "node scripts/sim-life.ts"
   },
   "dependencies": {
     "@preact/signals": "^2.11.3",

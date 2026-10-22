@@ -73,39 +73,39 @@
 
 **Goal:** the rules of raising, fully tested.
 
-- [ ] `core/rng.ts`: mulberry32 with saveable state; `core/hash.ts`: cyrb53-style 53-bit hash and phrase normalization.
-- [ ] Data:
+- [x] `core/rng.ts`: mulberry32 with saveable state; `core/hash.ts`: cyrb53-style 53-bit hash and phrase normalization.
+- [x] Data:
   - `data/breeds.ts`, `data/techniques.ts` (180 breed + 24 universal), `data/drills.ts`, `data/foods.ts`, `data/items.ts`, typed and generated from `CONTENT.md`.
   - A test that the data matches CONTENT: counts, ids, and every breed has techniques in at least 3 ranges.
-- [ ] `core/monster.ts`: the model and derived values; creation from breed + sub + offsets; mixing rules (GAME_DESIGN §14.3).
-- [ ] `core/calendar.ts`: weeks, months, seasons, weather, the week order of operations (GAME_DESIGN §3).
-- [ ] `core/training.ts`: truancy, outcome weights, gains, praise/scold, rest, play, requests.
-- [ ] `core/aging.ts`: life stages, strain, lifespan, illness, breakdowns, warnings.
-- [ ] `core/food.ts` and `core/items.ts`: monthly food, boredom, **unlimited item use** (with the optional one-per-week rule), Stat Sweets (and per-stat "from sweets" tracking), Potential Pearl, Tempo Bell, charms, tonics (stacking rules), fruits (once each).
-- [ ] `core/songbook.ts`: Songsheets, the Songbook (owned sheets are permanent), compatibility (universal / breed kit / sub quirk / Signature = pure only), learn, forget, relearn, and the 12-technique cap.
-- [ ] `core/save/schema.ts`: valibot schema v1 and a `migrate()` skeleton.
-- [ ] **Tests:**
+- [x] `core/monster.ts`: the model and derived values; creation from breed + sub + offsets; mixing rules (GAME_DESIGN §14.3).
+- [x] `core/calendar.ts`: weeks, months, seasons, weather, the week order of operations (GAME_DESIGN §3).
+- [x] `core/training.ts`: truancy, outcome weights, gains, praise/scold, rest, play, requests.
+- [x] `core/aging.ts`: life stages, strain, lifespan, illness, breakdowns, warnings.
+- [x] `core/food.ts` and `core/items.ts`: monthly food, boredom, **unlimited item use** (with the optional one-per-week rule), Stat Sweets (and per-stat "from sweets" tracking), Potential Pearl, Tempo Bell, charms, tonics (stacking rules), fruits (once each).
+- [x] `core/songbook.ts`: Songsheets, the Songbook (owned sheets are permanent), compatibility (universal / breed kit / sub quirk / Signature = pure only), learn, forget, relearn, and the 12-technique cap.
+- [x] `core/save/schema.ts`: valibot schema v1 and a `migrate()` skeleton.
+- [x] **Tests:**
   - Every reference table in GAME_DESIGN §5–§7 and §11.
   - Determinism (same seed → same life).
   - **Sim tests** for the raising targets in GAME_DESIGN §26.
-- [ ] A dev-only script `npm run sim:life` that prints a full simulated life for a breed and care policy.
+- [x] A dev-only script `npm run sim:life` that prints a full simulated life for a breed and care policy.
 
 **Detailed plan (written 2026-10-22; building starts after the owner confirms M0 on their phone):** version `0.2.0`. Everything in `src/core/` is pure (injected RNG, integer math, no Date/DOM); every number lives in `src/data/tuning.ts`; relative imports keep their `.ts` extension so Node 24 can run core code directly.
-- [ ] 1. `core/rng.ts`: mulberry32 with get/set state, `nextU32`, `nextInt(lo, hi)` inclusive, `nextFloat`, `pick`, `weightedPick`, `shuffle`, `chance(pct)`. Tests: fixed-seed sequence, determinism, save/restore resumes identically, inclusive ranges.
-- [ ] 2. `core/hash.ts`: `normalizePhrase` (NFKC → lowercase → trim → collapse spaces → keep letters, digits and spaces of any script) and `cyrb53(str, seed)`. Tests: `"Hello,  World!"` → `"hello world"`, a snapshot of 10 hash values (the contract that keeps every phrase's monster stable), seeds 1 and 2 differ.
-- [ ] 3. Data from CONTENT: `breeds.ts` (20), `traits.ts`, `techniques.ts` (180 breed + 24 universal, ids like `puddlepup.splash-nip`, structured `learn` requirements, `subQuirk` flag, parsed effects), `drills.ts` (11), `foods.ts` (7), `items.ts` (every row of CONTENT §6 with category, price, effect and gate). Data tests: counts and unique ids; each breed has 2 Basics, one each of the other families, exactly one sub-quirk (a Basic) and techniques in ≥ 3 ranges; band sanity for Basic/Hit/Heavy/Wither/Sharp rows (rows outside a band are reported to the owner, not changed).
-- [ ] 4. `core/monster.ts`: types, `gradeFactor` (§5.2), derived values (loyalty, style + band, life stage, stage factor, strain, stars, total), `createMonster(main, sub, offsets, rng)` with the §14.3 mixing rules, `clampMonster`. Tests: grade factor, stage boundaries for all 4 growth types, the `sf` table, mixing examples including pure and tie-breaks.
-- [ ] 5. `core/calendar.ts` (week index ↔ year/month/week, season, month start, seeded weather with Storm only in summer and Snow only in winter) and `core/week.ts` (`runWeek` in the strict §3 order, returning a phase log). Tests: the order, and that items never use a turn.
-- [ ] 6. `core/training.ts`: stars, truancy, outcome weights with trait and Training Yard modifiers, normalization, `resolveDrill`, gains (light/heavy/secondary with Great/Cheat/Fail rules, lowered stat, breed bonus +1, tonic +3), chore pay, praise/scold/skip table (Cheerful halves scold stress), rest and play, request trigger/type/deny. Tests: the six §6.2 reference rows, the three §6.3 gain tables, the §6.5 rest/play table, request chances at 40/60/100.
-- [ ] 7. `core/aging.ts`: `extraLifespanLoss` thresholds, illness and breakdown rolls with difficulty modifiers, weekly tick, warnings (25 % left, 48 weeks, 10 weeks), prime and past-prime notices, size stage, assistant labels, expression cues. Tests for every threshold and difficulty.
-- [ ] 8. `core/food.ts` (neutral/liked/disliked, boredom halves positives from the 3rd month, Big Appetite ×1.5, Hungry Grub form ×1.5, Hearty Stew +1 week) and `core/items.ts` (unlimited quantities and use; only the optional one-per-week rule and once-per-monster fruits; Stat Sweets with per-stat "from sweets" tracking and the 999 cap; Potential Pearl max A; Tempo Bell min 6; tonics stack across stats and re-use resets them; toys with 5 uses; charms best-per-category). Tests cover every item class and prove there is no hidden limit (100 sweets in one call).
-- [ ] 9. `core/songbook.ts`: `canLearn` (universal → anyone; breed sheet → main kit or sub quirk; Signature → pure only; a Chain from a sheet needs no Lv3), `learn` with the 12-cap "which one to forget" result, `forget`, `relearn`, ★ good fit; owned sheets are permanent. Tests for each rule.
-- [ ] 10. `core/journey.ts` (M1 scope: weekly check, gains, technique roll; Trial, mentor bond and sale months wait for M5). Tests: the §11 reference table by exact enumeration of `rnd(0..29)`, plus the A/B and E/E variants.
-- [ ] 11. `save/schema.ts` + `save/migrate.ts`: valibot v1 schema, `SAVE_VERSION = 1`, `migrate()` skeleton, `validateSave()` that clamps and never throws. Tests: round trip, garbage input gives a friendly error, out-of-range values are clamped.
-- [ ] 12. `core/sim/lifeSim.ts`: whole-life simulator with the §26 care policies (Great / Good / OK / Neglect; money ignored) returning weeks lived, lifespan at birth, yearly stat totals, outcome counts and breakdowns.
-- [ ] 13. Sim tests (§26, ≥ 40 seeds each): life lived per policy, Good-care totals for a Steady mostly-C breed and a Late A/B breed, Good-care outcome rates. Misses are fixed in `tuning.ts` only; a formula that looks wrong is reported and discussed first.
-- [ ] 14. `scripts/sim-life.ts` + `npm run sim:life -- <breed> <policy>` (runs on Node 24 directly, no new dependency) printing a readable life.
-- [ ] 15. `npm run verify`, update `docs/PROGRESS.md`, commit `M1: core simulation`, push, confirm the deploy, give the owner a plain-language summary of the sim results.
+- [x] 1. `core/rng.ts`: mulberry32 with get/set state, `nextU32`, `nextInt(lo, hi)` inclusive, `nextFloat`, `pick`, `weightedPick`, `shuffle`, `chance(pct)`. Tests: fixed-seed sequence, determinism, save/restore resumes identically, inclusive ranges.
+- [x] 2. `core/hash.ts`: `normalizePhrase` (NFKC → lowercase → trim → collapse spaces → keep letters, digits and spaces of any script) and `cyrb53(str, seed)`. Tests: `"Hello,  World!"` → `"hello world"`, a snapshot of 10 hash values (the contract that keeps every phrase's monster stable), seeds 1 and 2 differ.
+- [x] 3. Data from CONTENT: `breeds.ts` (20), `traits.ts`, `techniques.ts` (180 breed + 24 universal, ids like `puddlepup.splash-nip`, structured `learn` requirements, `subQuirk` flag, parsed effects), `drills.ts` (11), `foods.ts` (7), `items.ts` (every row of CONTENT §6 with category, price, effect and gate). Data tests: counts and unique ids; each breed has 2 Basics, one each of the other families, exactly one sub-quirk (a Basic) and techniques in ≥ 3 ranges; band sanity for Basic/Hit/Heavy/Wither/Sharp rows (rows outside a band are reported to the owner, not changed).
+- [x] 4. `core/monster.ts`: types, `gradeFactor` (§5.2), derived values (loyalty, style + band, life stage, stage factor, strain, stars, total), `createMonster(main, sub, offsets, rng)` with the §14.3 mixing rules, `clampMonster`. Tests: grade factor, stage boundaries for all 4 growth types, the `sf` table, mixing examples including pure and tie-breaks.
+- [x] 5. `core/calendar.ts` (week index ↔ year/month/week, season, month start, seeded weather with Storm only in summer and Snow only in winter) and `core/week.ts` (`runWeek` in the strict §3 order, returning a phase log). Tests: the order, and that items never use a turn.
+- [x] 6. `core/training.ts`: stars, truancy, outcome weights with trait and Training Yard modifiers, normalization, `resolveDrill`, gains (light/heavy/secondary with Great/Cheat/Fail rules, lowered stat, breed bonus +1, tonic +3), chore pay, praise/scold/skip table (Cheerful halves scold stress), rest and play, request trigger/type/deny. Tests: the six §6.2 reference rows, the three §6.3 gain tables, the §6.5 rest/play table, request chances at 40/60/100.
+- [x] 7. `core/aging.ts`: `extraLifespanLoss` thresholds, illness and breakdown rolls with difficulty modifiers, weekly tick, warnings (25 % left, 48 weeks, 10 weeks), prime and past-prime notices, size stage, assistant labels, expression cues. Tests for every threshold and difficulty.
+- [x] 8. `core/food.ts` (neutral/liked/disliked, boredom halves positives from the 3rd month, Big Appetite ×1.5, Hungry Grub form ×1.5, Hearty Stew +1 week) and `core/items.ts` (unlimited quantities and use; only the optional one-per-week rule and once-per-monster fruits; Stat Sweets with per-stat "from sweets" tracking and the 999 cap; Potential Pearl max A; Tempo Bell min 6; tonics stack across stats and re-use resets them; toys with 5 uses; charms best-per-category). Tests cover every item class and prove there is no hidden limit (100 sweets in one call).
+- [x] 9. `core/songbook.ts`: `canLearn` (universal → anyone; breed sheet → main kit or sub quirk; Signature → pure only; a Chain from a sheet needs no Lv3), `learn` with the 12-cap "which one to forget" result, `forget`, `relearn`, ★ good fit; owned sheets are permanent. Tests for each rule.
+- [x] 10. `core/journey.ts` (M1 scope: weekly check, gains, technique roll; Trial, mentor bond and sale months wait for M5). Tests: the §11 reference table by exact enumeration of `rnd(0..29)`, plus the A/B and E/E variants.
+- [x] 11. `save/schema.ts` + `save/migrate.ts`: valibot v1 schema, `SAVE_VERSION = 1`, `migrate()` skeleton, `validateSave()` that clamps and never throws. Tests: round trip, garbage input gives a friendly error, out-of-range values are clamped.
+- [x] 12. `core/sim/lifeSim.ts`: whole-life simulator with the §26 care policies (Great / Good / OK / Neglect; money ignored) returning weeks lived, lifespan at birth, yearly stat totals, outcome counts and breakdowns.
+- [x] 13. Sim tests (§26, ≥ 40 seeds each): life lived per policy, Good-care totals for a Steady mostly-C breed and a Late A/B breed, Good-care outcome rates. Misses are fixed in `tuning.ts` only; a formula that looks wrong is reported and discussed first.
+- [x] 14. `scripts/sim-life.ts` + `npm run sim:life -- <breed> <policy>` (runs on Node 24 directly, no new dependency) printing a readable life.
+- [x] 15. `npm run verify`, update `docs/PROGRESS.md`, commit `M1: core simulation`, push, confirm the deploy, give the owner a plain-language summary of the sim results.
 
 **Phone check:** nothing new on screen. The owner gets a short plain-language summary of the sim test results instead.
 

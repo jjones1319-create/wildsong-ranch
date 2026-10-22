@@ -1,0 +1,29 @@
+/**
+ * Wren's lines (CONTENT §15 and the GAME_DESIGN moments). {name} is the monster's name, {them}/{their} its pronoun,
+ * {technique} a technique name. Keep the voice: upbeat, observant, a little dramatic about good news.
+ */
+export const WREN = {
+  weeklyFresh: '{name} is bright-eyed and raring to go!',
+  weeklyTired: '{name} looks a bit tired. Maybe go easy this week?',
+  weeklyExhausted: '{name} can barely keep {their} eyes open. Please let {them} rest!',
+  stressed: "{name} seems tense… something's bugging {them}.",
+  greatDrill: "Did you SEE that?! {name}, you're amazing!",
+  cheat: '{name} only pretended to do that one…',
+  slacked: '{name} wandered off halfway through. Hmm.',
+  requestRest: '{name} keeps yawning and looking at the barn. I think someone wants a day off.',
+  requestPlay: '{name} keeps nudging the ball toward you. I think someone wants to play.',
+  requestTreat: '{name} is staring at the shelf where the treats live. Not subtle.',
+  prime: '{name} is in {their} prime! This is the time to push.',
+  pastPrime: "{name}'s growing older… {they} won't improve as fast from here.",
+  quarterLifeLeft: "{name} is getting on in years. Let's make every week count.",
+  fortyEightWeeksLeft: "A year left, maybe. Let's make it a good one, {name}.",
+  tenWeeksLeft: "I don't think {name} has much time left. Let's make it a peaceful few weeks.",
+  breakdownRunAway: '{name} ran off! We found {them} at the creek… I think we pushed too hard.',
+  breakdownCollapse: '{name} collapsed during chores. The clinic says rest, and so do I.',
+  sick: '{name} has caught something. Only rest until it passes.',
+  bored: "{name}'s getting tired of {food}…",
+  learnedFromSheet: '{name} hummed the tune twice… and now knows {technique}!',
+  ateSweet: 'Mmm! {name} looks stronger already.',
+  farewell: "Thank you for everything, {name}. We'll take good care of your Heartstone.",
+  retire: '{name} is heading to the Elder Grove. Visit often!',
+} as const
