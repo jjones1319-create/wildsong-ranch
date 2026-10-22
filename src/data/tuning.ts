@@ -183,12 +183,12 @@ export type StrainMode = 'ladder' | 'debt'
 
 /**
  * §6.6 strain → extra lifespan loss per week.
- * `mode: 'ladder'` is the rule as written (0 below 80 strain; 80–124 → 1, 125–169 → 2, 170+ → 3).
- * `mode: 'debt'` is the proposed smoother rule (M1 finding, awaiting the owner's decision): every week adds
- * max(0, strain − threshold) to a running debt, and each `perWeek` of debt costs one week of life.
+ * `mode: 'debt'` (the rule, chosen by the owner after the M1 sims): every week adds max(0, strain − threshold)
+ * to a running debt (compounding above `tailFrom`), and each `perWeek` of debt costs one week of life.
+ * `mode: 'ladder'` is the original step rule (0 below 80 strain; 80–124 → 1, 125–169 → 2, 170+ → 3), kept for comparison.
  */
 export const STRAIN = {
-  mode: 'ladder' as StrainMode,
+  mode: 'debt' as StrainMode,
   threshold: 80,
   step: 45,
   cap: 3,

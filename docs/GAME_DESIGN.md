@@ -305,14 +305,21 @@ Play (only when the monster requests it): fatigue −round(14 + 10·sf), stress 
 
 ```
 strain = fatigue + 2·stress
-extraLifespanLoss per week = strain < 80 ? 0 : min(3, 1 + floor((strain − 80) / 45))
-  (80–124 → 1, 125–169 → 2, 170+ → 3)
+Strain debt (every week, at the end of the week):
+  over  = max(0, strain − 10) · (100 + max(0, strain − 150)) / 100     (strain above 150 compounds)
+  debt += over                                                         (Gentle ×0.5, Classic ×1.25)
+  extraLifespanLoss = min(cap, floor(debt / 160)); debt −= 160 · extraLifespanLoss
+  cap = 3 (Standard), 1 (Gentle), 4 (Classic)
+  Examples: a calm week (strain 30) adds 20 debt, so a lazy ranch loses about 1 week in 8; a tired week
+  (strain 90) adds 80, about 1 week in 2; a wrecked week (strain 250) adds 480, the full 3 weeks.
 Illness: end of week with fatigue ≥ 90 → 10% chance: Sick for 2 weeks (only Rest allowed), −2 weeks lifespan.
 Breakdown: end of week with strain ≥ 200 → 25% chance of one of:
   • Runs away: 2 weeks missing (they still age), 300G search fee, then fatigue = 30, stress = 30, spoil −5, fear −5
   • Collapses: 2 weeks at the clinic (they still age), 200G, −2 weeks lifespan, then fatigue = 30, stress = 30
 ```
 Breakdowns are dramatic, teachable moments: Wren explains what happened and how to prevent it.
+
+*History (M1, 2026-10-22):* the first draft used a step ladder (no loss below 80 strain; 80–124 → 1, 125–169 → 2, 170+ → 3). The M1 sims showed it made a cliff instead of a slope: a player who praised and rested on time never lost a week, while OK care lost half its life, so the §26 bands could not be met. The owner chose this smoother "strain debt" rule, which lands all four bands. The ladder stays selectable in `tuning.ts` (`STRAIN.mode = 'ladder'`) for comparison.
 
 **Weekly assistant labels** (Guided and Classic modes show these words instead of numbers):
 
@@ -361,8 +368,8 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 ```
 
 **Ongoing changes:**
-- **Every week:** `ageWeeks +1`, and `lifespanTotal −= extraLifespanLoss` (§6.6). Journeys tick normally, once per week; never double-charge.
-- **Tournament:** `lifespanTotal −= 1 + extraLifespanLoss + (KO'd ? 2 : 0)`.
+- **Every week:** `ageWeeks +1`, and `lifespanTotal −= extraLifespanLoss` from the strain debt (§6.6). Journeys tick normally, once per week; never double-charge.
+- **Tournament:** `lifespanTotal −= 1 + (KO'd ? 2 : 0)`, on top of that week's normal strain debt.
 - **Fruits:** Sunfruit +40 weeks and Moonfruit +20 weeks, each **once per monster**. These rewind the life stage because the stage is `age / total`.
 - **Tonics** cost 6 weeks each, shown clearly before use.
 - **Hearty Stew** as the monthly food gives +1 week per month.
@@ -377,7 +384,7 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 |---|---|---|---|
 | End of life | Retires to the Elder Grove (no death) | Passes away of old age | Passes away of old age |
 | KO consequences | No injury | Injury chance: 5% + fatigue/2 % | Injury chance as Standard; KO with fatigue ≥ 80 → 15% chance of death |
-| Strain penalty | Max +1 extra week | As §6.6 | +1 more step (max 4) |
+| Strain penalty | Debt builds half as fast; max 1 week per week | As §6.6 (max 3) | Debt builds a quarter faster; max 4 |
 | Breakdowns | 10% | 25% | 25% |
 | Prize money | ×1.25 | ×1 | ×1 |
 | Items | Unlimited | Unlimited | One item per week (can be switched off in Settings) |

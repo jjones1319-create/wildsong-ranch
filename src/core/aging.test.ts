@@ -25,17 +25,33 @@ describe('strain → extra lifespan loss (§6.6)', () => {
 })
 
 describe('end-of-week tick (§7)', () => {
-  it('ages one week and subtracts the strain loss from the lifespan total', () => {
-    const calm = makeMonster({ fatigue: 10, stress: 10 })
+  it('ages one week and lets strain debt eat into the lifespan total', () => {
+    const calm = makeMonster({ fatigue: 10, stress: 10 }) // strain 30 → debt 20, no loss yet
     const r = endOfWeekTick(calm, 'Standard', createRng(1))
     expect(r.monster.ageWeeks).toBe(1)
     expect(r.monster.lifespanTotal).toBe(418)
+    expect(r.monster.status.strainDebt).toBe(20)
     expect(r.lifespanLost).toBe(0)
-    const strained = makeMonster({ fatigue: 60, stress: 60 }) // strain 180 → 3
+    const strained = makeMonster({ fatigue: 60, stress: 60 }) // strain 180 → 170 × 1.3 = 221 debt → 1 week
     const s = endOfWeekTick(strained, 'Standard', createRng(1))
-    expect(s.monster.lifespanTotal).toBe(415)
-    expect(s.lifespanLost).toBe(3)
+    expect(s.monster.lifespanTotal).toBe(417)
+    expect(s.monster.status.strainDebt).toBe(61)
+    expect(s.lifespanLost).toBe(1)
     expect(strained.ageWeeks).toBe(0) // input untouched
+  })
+
+  it('a calm life loses nothing; a steadily strained one loses a week every few weeks', () => {
+    let m = makeMonster({ fatigue: 0, stress: 5 }) // strain 10 → never over the threshold
+    for (let i = 0; i < 20; i++) m = endOfWeekTick(m, 'Standard', createRng(i)).monster
+    expect(m.lifespanTotal).toBe(418)
+    let tired = makeMonster({ fatigue: 40, stress: 25 }) // strain 90 → +80 debt a week → one week per two
+    let lost = 0
+    for (let i = 0; i < 20; i++) {
+      const r = endOfWeekTick(tired, 'Standard', createRng(i))
+      tired = r.monster
+      lost += r.lifespanLost
+    }
+    expect(lost).toBe(10)
   })
 
   it('rolls illness only at fatigue ≥ 90, about 10% of the time, for 2 weeks and −2 lifespan', () => {
@@ -46,7 +62,7 @@ describe('end-of-week tick (§7)', () => {
       if (r.events.some((e) => e.kind === 'illness')) {
         sick++
         expect(r.monster.status.sickWeeks).toBe(2)
-        expect(r.monster.lifespanTotal).toBe(418 - 1 - 2)
+        expect(r.monster.lifespanTotal).toBe(418 - 2) // strain 90 only builds debt this week
         expect(availability(r.monster)).toMatchObject({ restOnly: true, reason: 'sick' })
       }
     }
@@ -75,7 +91,9 @@ describe('end-of-week tick (§7)', () => {
           collapse++
           expect(r.monster.status.clinicWeeks).toBe(2)
           expect(r.fees).toBe(200)
-          expect(r.monster.lifespanTotal).toBeLessThanOrEqual(418 - 3 - 2)
+          // strain debt loss + the clinic's −2, and sometimes an illness roll (−2) on the same week
+          expect(r.monster.lifespanTotal).toBeLessThanOrEqual(418 - strainDebtStep(0, 220).loss - 2)
+          expect(r.monster.lifespanTotal).toBeGreaterThanOrEqual(418 - strainDebtStep(0, 220).loss - 4)
         }
       }
       if (endOfWeekTick(wrecked, 'Gentle', createRng(seed)).events.some((e) => e.kind === 'breakdown')) gentle++

@@ -21,11 +21,9 @@ Nothing new on the phone; this milestone is the rules of raising, as pure TypeSc
 | Stat total with Good care, years 1 / 3 / 5 | ≈ 700 / 1,450 / 2,350 | 669 / 1,409 / 2,419 ✓ |
 | Late A/B monster, years 5 / 6 | ≈ 2,550 / 2,950 | 2,878 / 3,557 (a bit hot; our test monster is all A/B) |
 | Outcome rates, Good care | G 17–23 · S 55–65 · C 7–12 · F 8–14 % | 20 / 60 / 10 / 10 ✓ |
-| Life lived: Great / Good / OK / Neglect | 82–92 / 76–88 / 62–78 / 25–45 % | **101 / 88 / 53 / 31 %** |
+| Life lived: Great / Good / OK / Neglect | 82–92 / 76–88 / 62–78 / 25–45 % | with the original ladder rule: **101 / 88 / 53 / 31 %** · with the smooth rule now in use: **86 / 81 / 66 / 38 %** ✓ |
 
-**Finding (needs the owner's decision):** the §6.6 strain ladder (no loss below 80 strain, then 1–3 weeks) cannot produce the doc's life-lived gradient. A player who praises after drills and rests at the stated thresholds keeps strain under 80 and never loses a week (Great care lives 100%+), while OK care sits just over the threshold and loses half its life. No reading of the scripted policies fixes this without breaking the stat-total and outcome-rate targets, which match closely.
-- Proposed smoother rule, built behind a switch and off by default (`STRAIN.mode = 'debt'` in `src/data/tuning.ts`): every week adds `max(0, strain − 10)` to a running debt (compounding above 150 strain), and each 160 points of debt cost one week of life. Measured with it: **Great 86 · Good 81 · OK 66 · Neglect 38 %**, all four in band, with the other targets unchanged.
-- Until the owner chooses, the game uses the ladder as written and the three unreachable life-band tests are skipped (`it.skipIf`) with this note; the "better care means a longer life" ordering test always runs.
+**Design change (owner's decision, 2026-10-22):** the original §6.6 strain ladder (no loss below 80 strain, then 1–3 weeks) could not produce the doc's life-lived gradient: a player who praises after drills and rests at the stated thresholds never crossed 80 and lost nothing, while OK care sat just over it and lost half its life. The owner chose the smoother **strain debt** rule: every week adds `max(0, strain − 10)` to a running debt (compounding above 150 strain), and each 160 points of debt cost one week of life (Gentle builds debt half as fast with a cap of 1; Classic a quarter faster with a cap of 4). GAME_DESIGN §6.6 and §7 are updated; the ladder stays selectable in `tuning.ts` for comparison. All four life bands and every other §26 target now pass as real tests.
 
 **Also for the owner:** 12 technique rows in CONTENT sit just outside the §10.2 value bands (listed in `src/data/data.test.ts`). They are kept as written; the test pins them so the list cannot grow unnoticed.
 

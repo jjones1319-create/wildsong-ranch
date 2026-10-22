@@ -5,10 +5,8 @@ import { averageReports, simulateLife, type PolicyName } from './lifeSim.ts'
 /**
  * GAME_DESIGN §26 raising targets, measured over 40 seeds each, without Stat Sweets, Songsheets or edits.
  *
- * M1 finding: with the §6.6 strain ladder as written (STRAIN.mode = 'ladder'), a player who praises and rests
- * never loses life to strain, so the Great / Good / OK life bands cannot be reached by any scripted player
- * while the stat-total and outcome-rate targets are met. Those three bands are only asserted under the proposed
- * smooth rule (STRAIN.mode = 'debt'); see docs/PROGRESS.md. The ordering test below always runs.
+ * The Great / Good / OK life bands need the strain-debt rule (STRAIN.mode = 'debt', the rule since the owner's
+ * M1 decision); under the original ladder they are unreachable and are skipped. See docs/PROGRESS.md.
  */
 
 const SEEDS = 40
