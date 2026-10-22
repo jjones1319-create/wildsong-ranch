@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Wildsong Ranch logo: a singing stone with a little sprout. Original artwork made for this project. -->
+  <rect width="256" height="256" rx="56" fill="#1b262c"/>
+  <ellipse cx="128" cy="214" rx="80" ry="12" fill="#243139"/>
+  <path d="M86 206 C70 206 62 192 64 170 C68 120 84 72 128 68 C172 72 188 120 192 170 C194 192 186 206 170 206 Z" fill="#7a8ca3" stroke="#24323a" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M92 190 C84 160 92 108 128 96 C150 100 160 124 158 150 C150 150 140 160 142 180 Z" fill="#94a6bd" opacity="0.55"/>
+  <path d="M100 138 q10 -12 20 0" fill="none" stroke="#24323a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M136 138 q10 -12 20 0" fill="none" stroke="#24323a" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="128" cy="166" rx="11" ry="14" fill="#24323a"/>
+  <ellipse cx="128" cy="171" rx="6" ry="6" fill="#e86a7c"/>
+  <path d="M128 72 v-22" stroke="#7faf5a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M128 56 c-4 -18 -22 -22 -30 -14 c6 12 18 18 30 14z" fill="#7faf5a" stroke="#24323a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M128 50 c4 -18 22 -22 30 -14 c-6 12 -18 18 -30 14z" fill="#9bc96e" stroke="#24323a" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M200 92 v-34 l18 -6 v30" fill="none" stroke="#f2b544" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="194" cy="94" r="8" fill="#f2b544" stroke="#24323a" stroke-width="4"/>
+  <circle cx="212" cy="84" r="8" fill="#f2b544" stroke="#24323a" stroke-width="4"/>
+  <path d="M44 120 v-26" fill="none" stroke="#f2b544" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="39" cy="122" r="6" fill="#f2b544" stroke="#24323a" stroke-width="3"/>
+</svg>

@@ -1,0 +1,39 @@
+{
+  "name": "wildsong-ranch",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "icons": "pwa-assets-generator"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.3",
+    "idb-keyval": "^6.3.0",
+    "preact": "^10.29.8",
+    "qrcode": "^1.5.4",
+    "valibot": "^1.5.0",
+    "zzfx": "^1.4.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^24.19.2",
+    "@types/qrcode": "^1.5.6",
+    "@vite-pwa/assets-generator": "^2.0.0",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.4",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5"
+  }
+}
