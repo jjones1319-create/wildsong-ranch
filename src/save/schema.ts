@@ -1,11 +1,13 @@
 import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
-import { RANGES, SONGBOOK } from '../data/tuning.ts'
+import { fill } from '../data/text/format.ts'
+import { UI_TEXT } from '../data/text/ui.ts'
+import { LAB, RANGES, SONGBOOK } from '../data/tuning.ts'
 import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, JOURNEY_SITE_IDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, WEATHERS } from '../data/types.ts'
 import { clamp } from '../core/mathx.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
 import type { GameState } from '../core/state.ts'
-import { migrate, SAVE_VERSION } from './migrate.ts'
+import { isRawSave, migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
  * GAME_DESIGN §20: every save is validated with valibot on load and import. Unknown fields are dropped,
@@ -194,25 +196,121 @@ export const GameStateSchema = v.object({
   breeder: v.fallback(v.object({ name: text('Breeder', 24), ranchName: text('Wildsong Ranch', 24), rank: int(1, 10, 1) }), { name: 'Breeder', ranchName: 'Wildsong Ranch', rank: 1 }),
 })
 
+const stamp = () => int(0, Number.MAX_SAFE_INTEGER, 0)
+
+const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
+
 export const SaveSchema = v.object({
   schemaVersion: v.literal(SAVE_VERSION),
   kind: v.literal('save'),
   game: GameStateSchema,
   /** mulberry32 state. */
   rng: int(0, 4_294_967_295, 1),
+  meta: MetaSchema,
 })
+
+/** A list whose broken entries are dropped instead of failing the whole file. */
+const listOf = <S extends v.GenericSchema>(schema: S) => v.fallback(v.array(v.fallback(v.nullable(schema), null)), [])
+
+const HistoryEntrySchema = v.object({ monster: MonsterSchema, savedAt: stamp() })
+
+/** A single exported monster (share code, .json, .txt). The edit history travels in files but not in codes. */
+export const MonsterFileSchema = v.object({
+  schemaVersion: v.literal(SAVE_VERSION),
+  kind: v.literal('monster'),
+  monster: MonsterSchema,
+  history: listOf(HistoryEntrySchema),
+})
+
+const LibraryEntrySchema = v.object({
+  monster: MonsterSchema,
+  history: listOf(HistoryEntrySchema),
+  createdAt: stamp(),
+  updatedAt: stamp(),
+})
+
+/**
+ * The global Library of Lab creations (§19, §20): shared by every save slot. The entry list itself is
+ * strict (a library without a list is unreadable, so the mirror copy gets its turn); broken entries are dropped.
+ */
+export const LibrarySchema = v.object({
+  schemaVersion: v.literal(SAVE_VERSION),
+  kind: v.literal('library'),
+  entries: v.array(v.fallback(v.nullable(LibraryEntrySchema), null)),
+})
+
+/** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
+export const SettingsSchema = v.fallback(v.object({ showEditedBadge: bool(false), reduceMotion: bool(false) }), { showEditedBadge: false, reduceMotion: false })
+
+export interface SaveMeta {
+  /** Real-world time (ms since the epoch) when it was written; 0 when unknown. */
+  savedAt: number
+  appVersion: string
+}
 
 export interface SaveFile {
   schemaVersion: typeof SAVE_VERSION
   kind: 'save'
   game: GameState
   rng: number
+  meta: SaveMeta
 }
 
-export type SaveValidation = { ok: true; save: SaveFile } | { ok: false; error: string }
+export interface HistoryEntry {
+  monster: Monster
+  savedAt: number
+}
 
-export function makeSave(game: GameState, rng: number): SaveFile {
-  return { schemaVersion: SAVE_VERSION, kind: 'save', game, rng }
+export interface MonsterFile {
+  schemaVersion: typeof SAVE_VERSION
+  kind: 'monster'
+  monster: Monster
+  history: HistoryEntry[]
+}
+
+export interface LibraryEntry {
+  monster: Monster
+  /** Previous versions, oldest first, at most LAB.historyLimit. */
+  history: HistoryEntry[]
+  createdAt: number
+  updatedAt: number
+}
+
+export interface Library {
+  schemaVersion: typeof SAVE_VERSION
+  kind: 'library'
+  entries: LibraryEntry[]
+}
+
+export interface AppSettings {
+  showEditedBadge: boolean
+  reduceMotion: boolean
+}
+
+type Fail = { ok: false; error: string }
+export type SaveValidation = { ok: true; save: SaveFile } | Fail
+export type MonsterFileValidation = { ok: true; file: MonsterFile } | Fail
+export type LibraryValidation = { ok: true; library: Library } | Fail
+export type AnyValidation =
+  | { ok: true; kind: 'save'; save: SaveFile }
+  | { ok: true; kind: 'monster'; file: MonsterFile }
+  | { ok: true; kind: 'library'; library: Library }
+  | Fail
+
+export function makeSave(game: GameState, rng: number, meta: Partial<SaveMeta> = {}): SaveFile {
+  return { schemaVersion: SAVE_VERSION, kind: 'save', game, rng, meta: { savedAt: 0, appVersion: '', ...meta } }
+}
+
+export function makeMonsterFile(monster: Monster, history: HistoryEntry[] = []): MonsterFile {
+  return { schemaVersion: SAVE_VERSION, kind: 'monster', monster, history }
+}
+
+export function emptyLibrary(): Library {
+  return { schemaVersion: SAVE_VERSION, kind: 'library', entries: [] }
+}
+
+export function defaultSettings(): AppSettings {
+  return { showEditedBadge: false, reduceMotion: false }
 }
 
 /** Drops unknown technique and sheet ids, caps the technique list and clamps the monster. */
@@ -232,34 +330,116 @@ function tidyGame(game: GameState): GameState {
   return game
 }
 
+function tidyHistory(list: (HistoryEntry | null)[]): HistoryEntry[] {
+  return list
+    .filter((h): h is HistoryEntry => h !== null)
+    .map((h) => ({ monster: tidyMonster(h.monster), savedAt: h.savedAt }))
+    .slice(-LAB.historyLimit)
+}
+
 function describeIssue(issue: v.BaseIssue<unknown>): string {
   const path = issue.path?.map((p) => String(p.key)).join('.') ?? ''
   return path ? `${path}: ${issue.message}` : issue.message
 }
 
-/** Migrate, validate and tidy any raw save. Never throws. */
-export function validateSave(raw: unknown): SaveValidation {
+/** Runs the migrations, and turns a too-new file into a clear message instead of a cryptic "invalid literal". */
+function prepare(raw: unknown): { ok: true; value: unknown } | Fail {
   let migrated: unknown
   try {
     migrated = migrate(raw)
   } catch {
-    return { ok: false, error: 'This save could not be read.' }
+    return { ok: false, error: UI_TEXT.errors.saveUnreadable }
   }
-  const parsed = v.safeParse(SaveSchema, migrated)
+  if (isRawSave(migrated) && typeof migrated.schemaVersion === 'number' && migrated.schemaVersion > SAVE_VERSION) {
+    return { ok: false, error: UI_TEXT.errors.newerVersion }
+  }
+  return { ok: true, value: migrated }
+}
+
+/** Migrate, validate and tidy any raw save. Never throws. */
+export function validateSave(raw: unknown): SaveValidation {
+  const prepared = prepare(raw)
+  if (!prepared.ok) return prepared
+  const parsed = v.safeParse(SaveSchema, prepared.value)
   if (!parsed.success) {
-    const first = parsed.issues[0]
-    return { ok: false, error: `This save is not valid (${describeIssue(first)}).` }
+    return { ok: false, error: fill(UI_TEXT.errors.saveInvalid, { detail: describeIssue(parsed.issues[0]) }) }
   }
   const output = parsed.output as unknown as SaveFile
   output.game = tidyGame(output.game)
   return { ok: true, save: output }
 }
 
-/** Validate a single monster (Monster Lab import). Never throws. */
-export function validateMonster(raw: unknown): { ok: true; monster: Monster } | { ok: false; error: string } {
+/** Validate a bare monster object. Never throws. */
+export function validateMonster(raw: unknown): { ok: true; monster: Monster } | Fail {
   const parsed = v.safeParse(MonsterSchema, raw)
-  if (!parsed.success) return { ok: false, error: `This monster is not valid (${describeIssue(parsed.issues[0])}).` }
+  if (!parsed.success) return { ok: false, error: fill(UI_TEXT.errors.monsterInvalid, { detail: describeIssue(parsed.issues[0]) }) }
   return { ok: true, monster: tidyMonster(parsed.output as unknown as Monster) }
+}
+
+function looksLikeBareMonster(raw: unknown): boolean {
+  return isRawSave(raw) && raw.kind === undefined && typeof raw.mainBreed === 'string'
+}
+
+/** Validate a monster file (`kind: 'monster'`), or a bare monster object, for the Monster Lab. Never throws. */
+export function validateMonsterFile(raw: unknown): MonsterFileValidation {
+  if (looksLikeBareMonster(raw)) {
+    const bare = validateMonster(raw)
+    return bare.ok ? { ok: true, file: makeMonsterFile(bare.monster) } : bare
+  }
+  const prepared = prepare(raw)
+  if (!prepared.ok) return prepared
+  const parsed = v.safeParse(MonsterFileSchema, prepared.value)
+  if (!parsed.success) return { ok: false, error: fill(UI_TEXT.errors.monsterInvalid, { detail: describeIssue(parsed.issues[0]) }) }
+  const output = parsed.output as unknown as { monster: Monster; history: (HistoryEntry | null)[] }
+  return { ok: true, file: makeMonsterFile(tidyMonster(output.monster), tidyHistory(output.history)) }
+}
+
+/** Validate the global Library. Broken entries are dropped; duplicate ids keep the first copy. Never throws. */
+export function validateLibrary(raw: unknown): LibraryValidation {
+  const prepared = prepare(raw)
+  if (!prepared.ok) return prepared
+  const parsed = v.safeParse(LibrarySchema, prepared.value)
+  if (!parsed.success) return { ok: false, error: fill(UI_TEXT.errors.libraryInvalid, { detail: describeIssue(parsed.issues[0]) }) }
+  const output = parsed.output as unknown as { entries: ({ monster: Monster; history: (HistoryEntry | null)[]; createdAt: number; updatedAt: number } | null)[] }
+  const seen = new Set<string>()
+  const entries: LibraryEntry[] = []
+  for (const e of output.entries) {
+    if (!e || seen.has(e.monster.id)) continue
+    seen.add(e.monster.id)
+    entries.push({ monster: tidyMonster(e.monster), history: tidyHistory(e.history), createdAt: e.createdAt, updatedAt: e.updatedAt })
+  }
+  return { ok: true, library: { schemaVersion: SAVE_VERSION, kind: 'library', entries } }
+}
+
+/** Settings never fail: anything unreadable becomes the defaults. */
+export function validateSettings(raw: unknown): AppSettings {
+  const parsed = v.safeParse(SettingsSchema, raw)
+  return parsed.success ? (parsed.output as AppSettings) : defaultSettings()
+}
+
+/** Sorts out any pasted or opened object by its `kind` (a bare monster counts as a monster). Never throws. */
+export function validateAny(raw: unknown): AnyValidation {
+  if (looksLikeBareMonster(raw)) {
+    const r = validateMonsterFile(raw)
+    return r.ok ? { ok: true, kind: 'monster', file: r.file } : r
+  }
+  if (!isRawSave(raw)) return { ok: false, error: UI_TEXT.errors.unknownKind }
+  switch (raw.kind) {
+    case 'save': {
+      const r = validateSave(raw)
+      return r.ok ? { ok: true, kind: 'save', save: r.save } : r
+    }
+    case 'monster': {
+      const r = validateMonsterFile(raw)
+      return r.ok ? { ok: true, kind: 'monster', file: r.file } : r
+    }
+    case 'library': {
+      const r = validateLibrary(raw)
+      return r.ok ? { ok: true, kind: 'library', library: r.library } : r
+    }
+    default:
+      return { ok: false, error: UI_TEXT.errors.unknownKind }
+  }
 }
 
 export { STAT_KEYS }

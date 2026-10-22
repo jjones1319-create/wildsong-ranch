@@ -113,16 +113,33 @@
 
 **Goal:** create, load, edit, import and export monsters on the phone. This is also our main debug tool.
 
-- [ ] `save/`:
+- [x] `save/`:
   - IndexedDB (idb-keyval, `wildsong/` key prefix): 3 slots, rotating autosave, localStorage mirror, global Library.
   - `persist()` request; schema validation on every load.
-- [ ] Share codes (`WS1-` + deflate-raw + base64url), file export (`.json` download; Web Share `.txt`), file import (`.json` and `.txt`), `#import=` links, QR codes.
-- [ ] **Procedural monster art v1** (`art/monster/`):
+- [x] Share codes (`WS1-` + deflate-raw + base64url), file export (`.json` download; Web Share `.txt`), file import (`.json` and `.txt`), `#import=` links, QR codes.
+- [x] **Procedural monster art v1** (`art/monster/`):
   - All 9 body plans, the 20 breed briefs, palettes, sub accents, size stages and expressions.
   - Idle animation; respects reduced motion.
-- [ ] **Monster Lab** UI: Library, Create, Editor (all sections in GAME_DESIGN §19, including Allow any technique, breed-change handling, and Edit history with Restore), Import, Export, and the optional edited badge.
-- [ ] Presets: pure babies for every breed, plus trained presets at E / C / A / S power.
-- [ ] Tests: share-code round trip, schema validation (bad input never crashes), clamping, migration test scaffold.
+- [x] **Monster Lab** UI: Library, Create, Editor (all sections in GAME_DESIGN §19, including Allow any technique, breed-change handling, and Edit history with Restore), Import, Export, and the optional edited badge.
+- [x] Presets: pure babies for every breed, plus trained presets at E / C / A / S power.
+- [x] Tests: share-code round trip, schema validation (bad input never crashes), clamping, migration test scaffold.
+
+**Detailed plan (written 2026-10-22, after the owner confirmed M1):** version `0.3.0`. No new dependencies: share codes use the browser's built-in `CompressionStream`, art is pure SVG strings, and the UI is checked on the phone while everything below it has unit tests. Later-milestone parts of GAME_DESIGN §19 stay out: Versus and Battle Lab (M4), Freezer / Memorial / Make Active (M3, M6), variant overrides and secret phrases (M6), Sandbox tools (M3+).
+- [x] 1. `tuning.ts`: `LAB` (edit-history limit 10, blank template, randomize spread), `PRESETS` (E/C/A/S totals 600 / 1,200 / 2,000 / 2,800 and technique counts), `SAVES` (3 slots, autosave with 3 backups).
+- [x] 2. `save/schema.ts` + `save/migrate.ts`: `SAVE_VERSION = 2` (adds a `meta` block: saved time and app version) with a migration and a test; `MonsterFile` (`kind: 'monster'`), `Library` (`kind: 'library'`, entries with a 10-deep edit history), `Settings`, and `validateAny()` that sorts out any pasted object by its `kind`. Error strings live in `text/ui.ts`.
+- [x] 3. `save/shareCode.ts`: `WS1-` + base64url(deflate-raw(JSON)); decoding tolerates whitespace, case and missing padding and never throws. Tests: round trip, a pinned code that must always decode, garbage.
+- [x] 4. `save/exportImport.ts`: JSON text, code text, `parseImportText` (JSON, a code anywhere in the text, or an `#import=` link), import URLs, QR SVG via `qrcode` (null when too long). Tests for all forms.
+- [x] 5. `save/db.ts`: a tiny `KeyValueStore` (idb-keyval with `wildsong/` keys, plus an in-memory store for tests); 3 slots; autosave ring (latest + 3 backups); Library; Settings; localStorage mirror with fallback. Every read validates and never throws; timestamps are passed in. Tests on the memory store.
+- [x] 6. `core/lab.ts`: `scaleToTotal` (by grade factor, exact total, 1–999), breed base / max all / seeded randomize, blank template, duplicate, breed change (removes techniques outside kit ∪ sub quirk ∪ universal unless Keep all), allowed technique lists (with Allow any), the edited rule (anything but the name), edit history push / restore. Tests for each.
+- [x] 7. `core/shrine.ts`: §14.1 steps 1–8 in order (secret phrases, teasers and Sleeping Stones wait for M6). A 5-phrase snapshot test is the "same phrase, same monster forever" contract.
+- [x] 8. `core/presets.ts`: 20 pure babies and 80 trained presets (E/C/A/S at the start of Prime), deterministic. Tests: counts, totals, determinism.
+- [x] 9. Art `art/monster/`: `render.ts` (pure SVG string, 256×256, life-stage size, stage-8 fade, animate flag), `bodyPlans.ts` (9 plans with sockets), `parts.ts` (20 breed feature sets + 20 accent parts), `palettes.ts` (§14.3 palette rule), `expressions.ts` (cues + preview override), `monster.css` (idle breathe / bob / blink / wag / hover on transform and opacity only; off under reduced motion). Tests: all 400 main/sub pairs render cleanly. Visual check: every breed rasterised to PNG with the already-installed `sharp`.
+- [x] 10. Router: `#lab/create`, `#lab/view`, `#lab/edit`, `#lab/import`, `#lab/export`, Back returns to `#lab`; `#import=CODE` links open Import with the code and clear the hash. Tests.
+- [x] 11. App store: loads Settings and the Library at start (IndexedDB, then the mirror), saves on every change, asks for storage persistence after the first save, toasts.
+- [x] 12. Lab screens: Library (Library / Presets chips, breed filter, sort, cards with portraits and badges, action sheet: View · Edit · Duplicate · Export · Delete), Create (from a breed with portraits and the "Not discovered yet" prompt, from a phrase with a live preview, or blank), Editor (every §19 section, live portrait, Allow any technique, breed-change list with Keep all, Save · Save as copy · Cancel · Revert, Edit history with Restore), View, Import (paste, file, link, preview card), Export (code + Copy, QR, Download .json, Share .txt, Copy link).
+- [x] 13. Minimal Settings: show the 🔧 edited badge (off by default), reduce motion, storage persistence status.
+- [x] 14. CSS building blocks (top bar, chips, segmented tabs, bottom action bar, lists, bottom sheet, inputs, steppers, badges, toast), all tap targets ≥ 44 px; every string in `text/ui.ts`.
+- [x] 15. `npm run verify`, `docs/PROGRESS.md`, commit `M2: saves, share codes, monster art and the Monster Lab`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:**
 1. Make a monster from scratch and edit its stats.

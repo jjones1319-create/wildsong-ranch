@@ -1,8 +1,14 @@
 /**
  * Save migrations. Every schema change bumps SAVE_VERSION and adds one step here, with a test.
  * A migration takes the previous version's raw object and returns the next version's raw object.
+ * The same version number covers every file kind (save, monster, library); a step that only
+ * concerns one kind checks `raw.kind` and leaves the others alone.
+ *
+ * History:
+ * - v1 (M1): first schema: `{ schemaVersion, kind: 'save', game, rng }`.
+ * - v2 (M2): saves gain `meta: { savedAt, appVersion }`; monster files and libraries appear.
  */
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 type RawSave = Record<string, unknown>
 
@@ -11,6 +17,11 @@ type Migration = (raw: RawSave) => RawSave
 /** Keyed by the version it upgrades FROM. Version 0 means "no version field" (pre-release saves). */
 const MIGRATIONS: Record<number, Migration> = {
   0: (raw) => ({ ...raw, schemaVersion: 1 }),
+  1: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 2 }
+    if (raw.kind === 'save' && !isRawSave(raw.meta)) next.meta = { savedAt: 0, appVersion: '' }
+    return next
+  },
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {

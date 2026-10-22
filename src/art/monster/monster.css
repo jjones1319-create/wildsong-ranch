@@ -1,0 +1,155 @@
+/* Idle animation for the procedural monsters (GAME_DESIGN §22): transforms and opacity only.
+   Everything stops under prefers-reduced-motion or when the svg carries data-animate="false". */
+
+.ws-mon {
+  display: block;
+  overflow: visible;
+  --ws-rate: 1;
+}
+
+.ws-mon__breathe {
+  transform-box: view-box;
+  transform-origin: 128px 232px;
+  animation: ws-breathe calc(3.2s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__bob {
+  animation: ws-bob calc(2.6s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__float {
+  animation: ws-float calc(3.4s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__tail {
+  transform-box: view-box;
+  animation: ws-wag calc(1.6s * var(--ws-rate)) ease-in-out infinite alternate;
+}
+
+.ws-mon__lids {
+  animation: ws-blink calc(4.6s * var(--ws-rate)) linear infinite;
+}
+
+.ws-mon__sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ws-twinkle 1.4s ease-in-out infinite;
+}
+
+.ws-mon__sweat {
+  animation: ws-bob 0.9s ease-in-out infinite alternate;
+}
+
+.ws-mon__jitter {
+  animation: ws-jitter 0.18s steps(1) infinite;
+}
+
+.ws-mon__chew {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ws-chew 0.5s ease-in-out infinite alternate;
+}
+
+/* Stage 8 and up: slower and a little faded (§5.3). */
+.ws-mon--old {
+  --ws-rate: 1.7;
+  filter: saturate(0.72);
+}
+
+.ws-mon[data-animate='false'] *,
+.ws-mon[data-animate='false'] {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-mon * {
+    animation: none !important;
+  }
+}
+
+@keyframes ws-breathe {
+  from {
+    transform: scale(1, 1);
+  }
+  to {
+    transform: scale(1.015, 1.03);
+  }
+}
+
+@keyframes ws-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes ws-float {
+  from {
+    transform: translateY(-3px);
+  }
+  to {
+    transform: translateY(4px);
+  }
+}
+
+@keyframes ws-wag {
+  from {
+    transform: rotate(-5deg);
+  }
+  to {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes ws-blink {
+  0%,
+  93%,
+  100% {
+    opacity: 0;
+  }
+  94.5%,
+  97.5% {
+    opacity: 1;
+  }
+}
+
+@keyframes ws-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes ws-jitter {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(1px, -1px);
+  }
+  50% {
+    transform: translate(-1px, 1px);
+  }
+  75% {
+    transform: translate(1px, 1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes ws-chew {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0.35);
+  }
+}

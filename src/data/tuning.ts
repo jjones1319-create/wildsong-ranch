@@ -12,6 +12,10 @@ export const UI = {
   offlineToastMs: 4000,
   /** How often the installed app asks GitHub Pages for a newer build while open. */
   updateCheckIntervalMs: 60 * 60 * 1000,
+  /** How long an in-app message ("Saved", "Copied") stays up. */
+  toastMs: 2600,
+  /** Pause after typing in the Import box before the preview updates. */
+  importDebounceMs: 200,
 } as const
 
 /** §5.2 grade factor gf, in hundredths. */
@@ -277,6 +281,41 @@ export const ITEMS = {
 
 /** §10.4 techniques and mastery. */
 export const SONGBOOK = { maxTechniques: 12, lv2Uses: 15, lv3Uses: 40, lv2HitBonus: 2, lv3ForceBonus: 2 } as const
+
+/** §19 Monster Lab editor rules. */
+export const LAB = {
+  /** Previous versions kept per monster ("Edit history", Restore). */
+  historyLimit: 10,
+  /** The blank template a player can start from. */
+  blank: { stat: 100, grade: 'C' as Grade, growth: 'Steady' as GrowthType, gutsRate: 12, lifespan: 360, spoil: BIRTH.spoil, fear: BIRTH.fear },
+  /** Randomize keeps every stat within ± this percentage of its current value. */
+  randomizeSpreadPct: 50,
+} as const
+
+/** §19 presets: trained presets at E / C / A / S power, shown at the start of Prime. */
+export const PRESETS = {
+  tiers: {
+    E: { total: 600, techniques: 2, uses: 0, fame: 0, wins: 0, losses: 0 },
+    C: { total: 1200, techniques: 4, uses: SONGBOOK.lv2Uses, fame: 20, wins: 6, losses: 3 },
+    A: { total: 2000, techniques: 7, uses: SONGBOOK.lv3Uses, fame: 55, wins: 24, losses: 6 },
+    /** 9 = the whole kit (2 Basics, one of each other family, the Signature). */
+    S: { total: 2800, techniques: 9, uses: SONGBOOK.lv3Uses + 20, fame: 85, wins: 48, losses: 8 },
+  },
+  /** Trained presets are aged to the first week of this stage. */
+  stage: 5,
+  /** Trained presets are devoted (spoil/fear) rather than newborn-neutral. */
+  spoil: 70,
+  fear: 50,
+} as const
+
+/** §20 saves on the phone. */
+export const SAVES = {
+  slots: 3,
+  /** Autosave keeps the latest plus this many older copies. */
+  autosaveBackups: 3,
+  backupReminderDays: 7,
+  backupReminderWeeks: 8,
+} as const
 
 /** §11 Journeys. */
 export const JOURNEY = {
