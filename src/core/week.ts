@@ -1,6 +1,7 @@
 import { DRILL_BY_ID } from '../data/drills.ts'
+import { FOOD_BY_ID } from '../data/foods.ts'
 import { JOURNEY, UPGRADES } from '../data/tuning.ts'
-import type { DrillId, FoodId, FoodEffect, JourneySiteId, StatKey, Weather } from '../data/types.ts'
+import type { FoodId, FoodEffect, JourneySiteId, StatKey, Weather } from '../data/types.ts'
 import { availability, endOfWeekTick, type AgingEvent } from './aging.ts'
 import { dateOf, isMonthStart, isUpgradeOfferWeek, rollWeather, seasonOf } from './calendar.ts'
 import { applyMonthlyFood, type FoodRelation } from './food.ts'
@@ -8,7 +9,7 @@ import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
 import { canEnterSite, isJourneyDone, isSiteOpen, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
 import { addCondition } from './monster.ts'
 import type { Rng } from './rng.ts'
-import type { GameState } from './state.ts'
+import type { GameState, WeekAction } from './state.ts'
 import { applyReaction, denyRequest, playMonster, resolveDrill, restMonster, rollRequest, type DrillOutcome, type DrillResult, type MonsterRequest, type Reaction } from './training.ts'
 
 /**
@@ -19,13 +20,13 @@ import { applyReaction, denyRequest, playMonster, resolveDrill, restMonster, rol
  * Every exported function is pure: it returns a new state and leaves its input untouched.
  */
 
-export type WeekAction = { kind: 'drill'; drill: DrillId } | { kind: 'rest' } | { kind: 'play' } | { kind: 'journey'; site: JourneySiteId } | { kind: 'none' }
+export type { WeekAction } from './state.ts'
 
 export type WeekPhase = 'startOfWeek' | 'requestCheck' | 'action' | 'endOfWeek'
 
 export type WeekEvent =
   | { kind: 'phase'; phase: WeekPhase }
-  | { kind: 'food'; food: FoodId; relation: FoodRelation; bored: boolean; effect: FoodEffect }
+  | { kind: 'food'; food: FoodId; relation: FoodRelation; bored: boolean; effect: FoodEffect; price: number }
   | { kind: 'charm'; stress: number }
   | { kind: 'upgradeOffer' }
   | { kind: 'request'; request: MonsterRequest }
@@ -64,7 +65,10 @@ export function startWeek(input: GameState, rng: Rng, food?: FoodId): StartWeekR
     if (food) state.foodChoice = food
     const fed = applyMonthlyFood(m, state.foodChoice)
     m = fed.monster
-    events.push({ kind: 'food', food: state.foodChoice, relation: fed.relation, bored: fed.bored, effect: fed.effect })
+    // §9: food is an expense; the Guild Loan covers it when money runs out, so it is never refused.
+    const price = FOOD_BY_ID[state.foodChoice].price
+    state.money -= price
+    events.push({ kind: 'food', food: state.foodChoice, relation: fed.relation, bored: fed.bored, effect: fed.effect, price })
     const comfort = charmValue(state.inventory, 'comfort')
     if (comfort > 0) {
       m.stress = addCondition(m.stress, -comfort)

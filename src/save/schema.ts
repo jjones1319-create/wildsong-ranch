@@ -2,8 +2,8 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { LAB, RANGES, SONGBOOK } from '../data/tuning.ts'
-import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, JOURNEY_SITE_IDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, WEATHERS } from '../data/types.ts'
+import { LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, JOURNEY_SITE_IDS, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
 import { clamp } from '../core/mathx.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
 import type { GameState } from '../core/state.ts'
@@ -174,6 +174,36 @@ const JourneySchema = v.object({
   gains: v.fallback(SweetsSchema, { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }),
 })
 
+const stamp = () => int(0, Number.MAX_SAFE_INTEGER, 0)
+
+const HistoryEntrySchema = v.object({ monster: MonsterSchema, savedAt: stamp() })
+
+/** A list whose broken entries are dropped instead of failing the whole file. */
+const listOf = <S extends v.GenericSchema>(schema: S) => v.fallback(v.array(v.fallback(v.nullable(schema), null)), [])
+
+const RequestSchema = v.fallback(
+  v.nullable(v.object({ kind: v.picklist(['rest', 'play', 'treat'] as const), toy: v.fallback(v.nullable(v.picklist(TOY_IDS)), null) })),
+  null,
+)
+
+const WeekActionSchema = v.fallback(
+  v.nullable(
+    v.variant('kind', [
+      v.object({ kind: v.literal('drill'), drill: v.picklist(DRILL_IDS) }),
+      v.object({ kind: v.literal('rest') }),
+      v.object({ kind: v.literal('play') }),
+      v.object({ kind: v.literal('journey'), site: v.picklist(JOURNEY_SITE_IDS) }),
+      v.object({ kind: v.literal('none') }),
+    ]),
+  ),
+  null,
+)
+
+const CountersSchema = v.fallback(
+  v.object({ sweetsEaten: int(0, 1_000_000_000, 0), sheetsLearned: int(0, 1_000_000_000, 0), drillsDone: int(0, 1_000_000_000, 0), restsTaken: int(0, 1_000_000_000, 0) }),
+  { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 },
+)
+
 export const GameStateSchema = v.object({
   week: int(0, 1_000_000, 0),
   money: int(-1_000_000_000, 1_000_000_000, 0),
@@ -194,9 +224,14 @@ export const GameStateSchema = v.object({
   journey: v.fallback(v.nullable(JourneySchema), null),
   ended: v.fallback(v.nullable(v.picklist(['passed', 'retired'] as const)), null),
   breeder: v.fallback(v.object({ name: text('Breeder', 24), ranchName: text('Wildsong Ranch', 24), rank: int(1, 10, 1) }), { name: 'Breeder', ranchName: 'Wildsong Ranch', rank: 1 }),
+  weekPhase: oneOf(['start', 'action'] as const, 'start'),
+  pendingRequest: RequestSchema,
+  lastAction: WeekActionSchema,
+  monsterHistory: listOf(HistoryEntrySchema),
+  tipsSeen: v.fallback(v.array(v.string()), []),
+  counters: CountersSchema,
+  sandbox: bool(false),
 })
-
-const stamp = () => int(0, Number.MAX_SAFE_INTEGER, 0)
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
 
@@ -208,11 +243,6 @@ export const SaveSchema = v.object({
   rng: int(0, 4_294_967_295, 1),
   meta: MetaSchema,
 })
-
-/** A list whose broken entries are dropped instead of failing the whole file. */
-const listOf = <S extends v.GenericSchema>(schema: S) => v.fallback(v.array(v.fallback(v.nullable(schema), null)), [])
-
-const HistoryEntrySchema = v.object({ monster: MonsterSchema, savedAt: stamp() })
 
 /** A single exported monster (share code, .json, .txt). The edit history travels in files but not in codes. */
 export const MonsterFileSchema = v.object({
@@ -239,8 +269,31 @@ export const LibrarySchema = v.object({
   entries: v.array(v.fallback(v.nullable(LibraryEntrySchema), null)),
 })
 
+const SETTINGS_DEFAULTS = {
+  showEditedBadge: false,
+  reduceMotion: false,
+  transparency: 'guided' as TransparencyMode,
+  textSize: TEXT_SIZES[0],
+  speed: 'normal' as Speed,
+  sound: true,
+  music: true,
+  haptics: true,
+}
+
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
-export const SettingsSchema = v.fallback(v.object({ showEditedBadge: bool(false), reduceMotion: bool(false) }), { showEditedBadge: false, reduceMotion: false })
+export const SettingsSchema = v.fallback(
+  v.object({
+    showEditedBadge: bool(false),
+    reduceMotion: bool(false),
+    transparency: oneOf(TRANSPARENCY_MODES, 'guided'),
+    textSize: oneOf(TEXT_SIZES, TEXT_SIZES[0]),
+    speed: oneOf(SPEEDS, 'normal'),
+    sound: bool(true),
+    music: bool(true),
+    haptics: bool(true),
+  }),
+  SETTINGS_DEFAULTS,
+)
 
 export interface SaveMeta {
   /** Real-world time (ms since the epoch) when it was written; 0 when unknown. */
@@ -285,6 +338,16 @@ export interface Library {
 export interface AppSettings {
   showEditedBadge: boolean
   reduceMotion: boolean
+  /** §6.8. */
+  transparency: TransparencyMode
+  /** §24: 100, 115 or 130 percent. */
+  textSize: number
+  /** §21: the global animation speed. */
+  speed: Speed
+  /** Placeholders until M8 brings audio; stored now so the toggles keep their state. */
+  sound: boolean
+  music: boolean
+  haptics: boolean
 }
 
 type Fail = { ok: false; error: string }
@@ -310,7 +373,7 @@ export function emptyLibrary(): Library {
 }
 
 export function defaultSettings(): AppSettings {
-  return { showEditedBadge: false, reduceMotion: false }
+  return { ...SETTINGS_DEFAULTS }
 }
 
 /** Drops unknown technique and sheet ids, caps the technique list and clamps the monster. */
@@ -323,18 +386,25 @@ function tidyMonster(m: Monster): Monster {
   return clampMonsterMut(m)
 }
 
-function tidyGame(game: GameState): GameState {
-  if (game.monster) game.monster = tidyMonster(game.monster)
-  game.songbook = [...new Set(game.songbook.filter((id) => TECHNIQUE_BY_ID[id] !== undefined))].sort()
-  for (const id of Object.keys(game.inventory)) if (game.inventory[id]! <= 0) delete game.inventory[id]
-  return game
-}
-
 function tidyHistory(list: (HistoryEntry | null)[]): HistoryEntry[] {
   return list
     .filter((h): h is HistoryEntry => h !== null)
     .map((h) => ({ monster: tidyMonster(h.monster), savedAt: h.savedAt }))
     .slice(-LAB.historyLimit)
+}
+
+function tidyGame(game: GameState): GameState {
+  if (game.monster) game.monster = tidyMonster(game.monster)
+  game.songbook = [...new Set(game.songbook.filter((id) => TECHNIQUE_BY_ID[id] !== undefined))].sort()
+  for (const id of Object.keys(game.inventory)) if (game.inventory[id]! <= 0) delete game.inventory[id]
+  game.monsterHistory = tidyHistory(game.monsterHistory as (HistoryEntry | null)[])
+  game.tipsSeen = [...new Set(game.tipsSeen)]
+  // A request or a phase only makes sense with a living monster.
+  if (!game.monster || game.ended) {
+    game.pendingRequest = null
+    game.weekPhase = 'start'
+  }
+  return game
 }
 
 function describeIssue(issue: v.BaseIssue<unknown>): string {

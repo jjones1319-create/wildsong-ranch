@@ -2,7 +2,7 @@ import { toString as qrToString } from 'qrcode'
 import type { Monster } from '../core/monster.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { makeMonsterFile, validateAny, type AnyValidation, type HistoryEntry } from './schema.ts'
+import { makeMonsterFile, validateAny, type AnyValidation, type HistoryEntry, type SaveFile } from './schema.ts'
 import { decodeShareCode, extractShareCode } from './shareCode.ts'
 import { encodeShareCode } from './shareCode.ts'
 
@@ -59,6 +59,15 @@ export async function parseImportText(text: string): Promise<ImportParse> {
       /* fall through: maybe a code is hiding in there */
     }
   }
+  // A shared save `.txt` has one friendly line and then the JSON object.
+  const brace = trimmed.indexOf('{')
+  if (brace > 0 && trimmed.endsWith('}')) {
+    try {
+      return { ok: true, value: JSON.parse(trimmed.slice(brace)) as unknown }
+    } catch {
+      /* not JSON after all */
+    }
+  }
   const linkCode = trimmed.includes(`${IMPORT_HASH_KEY}=`) ? importCodeFromHash(trimmed.slice(trimmed.indexOf('#'))) : null
   if (linkCode) return decodeShareCode(linkCode)
   if (extractShareCode(trimmed)) return decodeShareCode(trimmed)
@@ -81,13 +90,30 @@ export async function qrSvgFor(url: string): Promise<string | null> {
   }
 }
 
-/** `wildsong-<name>.<ext>` with anything odd stripped from the name. */
-export function fileNameFor(m: Monster, ext: 'json' | 'txt'): string {
-  const slug = m.name
+function slugOf(text: string): string {
+  return text
     .normalize('NFKD')
     .replace(/[^\w\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
     .toLowerCase()
-  return `wildsong-${slug || m.mainBreed}.${ext}`
+}
+
+/** `wildsong-<name>.<ext>` with anything odd stripped from the name. */
+export function fileNameFor(m: Monster, ext: 'json' | 'txt'): string {
+  return `wildsong-${slugOf(m.name) || m.mainBreed}.${ext}`
+}
+
+/** The whole-save backup (§20): readable JSON, the same shape `validateAny` accepts back. */
+export function saveJsonText(save: SaveFile): string {
+  return JSON.stringify(save, null, 2)
+}
+
+/** What goes into a shared save `.txt`: one friendly line, then the JSON. `parseImportText` finds the JSON again. */
+export function saveShareText(save: SaveFile): string {
+  return `${fill(UI_TEXT.export.saveIntro, { ranch: save.game.breeder.ranchName })}\n${JSON.stringify(save)}\n`
+}
+
+export function fileNameForSave(save: SaveFile, ext: 'json' | 'txt'): string {
+  return `wildsong-save-${slugOf(save.game.breeder.ranchName) || 'ranch'}.${ext}`
 }

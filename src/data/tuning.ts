@@ -28,7 +28,36 @@ export const UI = {
   },
   /** §22 polish: how far the pupils move toward a tap, and how long they hold. */
   glance: { maxPx: 3, holdMs: 1600 },
+  /** §21 drill vignette length at normal speed; the speed setting multiplies it (instant = 0). */
+  vignetteMs: 2200,
+  /** The global speed setting (§21): a multiplier on every skippable animation. */
+  speed: { normal: 100, fast: 50, instant: 0 },
+  /** §6.4 petting: a finger has to travel this far across the monster to count as a swipe. */
+  petSwipePx: 60,
+  /** How long the grow-up glow and the stat-delta pop stay on screen (normal speed). */
+  glowMs: 1400,
 } as const
+
+/** §24 text sizes, as percentages of the base size. */
+export const TEXT_SIZES = [100, 115, 130] as const
+
+/** §6.8 Guided-mode odds words: the chance of a good outcome (Great + Success) at or above each bound. */
+export const TRANSPARENCY = {
+  oddsBands: { eager: 80, likely: 65, risky: 45 },
+} as const
+
+/** §14.2 Market: fixed seeds so everyone gets the same gift monsters, the first one free. */
+export const MARKET = {
+  seedBase: 7_421_000,
+  price: 1500,
+  seasonalPrice: 2500,
+} as const
+
+/** §8 Shop: the multi-buy quantities offered before "Max", and the most of one item in a single purchase. */
+export const SHOP = { quantities: [1, 5, 10] as readonly number[], maxPerPurchase: 99 } as const
+
+/** §21 onboarding: Wren guides the first month (in weeks), then one-time contextual tips. */
+export const ONBOARDING = { guidedWeeks: 4 } as const
 
 /** §5.2 grade factor gf, in hundredths. */
 export const GRADE_FACTOR_100: Record<Grade, number> = { E: 58, D: 79, C: 100, B: 132, A: 155 }
@@ -368,6 +397,9 @@ export const LABEL_BANDS = {
 
 /** §6.6 expression cues. */
 export const EXPRESSION = { droopyFatigue: 55, sweatStress: 45, sparkleLoyalty: 80, grinNature: -60 } as const
+
+/** Wren's weekly report (CONTENT §15): which line she picks from the condition. */
+export const REPORT = { tiredFatigue: 55, exhaustedFatigue: 75, stressed: 45, fresh: { fatigueMax: 34, stressMax: 24 } } as const
 
 /** §6.4 style bands (spoil − fear), lower bound of each band from the top. */
 export const STYLE_BANDS = { doting: 80, fond: 50, gentle: 20, even: -19, firm: -49, strict: -79 } as const

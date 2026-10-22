@@ -7,8 +7,10 @@
  * History:
  * - v1 (M1): first schema: `{ schemaVersion, kind: 'save', game, rng }`.
  * - v2 (M2): saves gain `meta: { savedAt, appVersion }`; monster files and libraries appear.
+ * - v3 (M3): the game state gains the week phase, the pending request, the last action (Repeat last week),
+ *   the active monster's edit history, the onboarding tips seen and a few counters.
  */
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 3
 
 type RawSave = Record<string, unknown>
 
@@ -20,6 +22,22 @@ const MIGRATIONS: Record<number, Migration> = {
   1: (raw) => {
     const next: RawSave = { ...raw, schemaVersion: 2 }
     if (raw.kind === 'save' && !isRawSave(raw.meta)) next.meta = { savedAt: 0, appVersion: '' }
+    return next
+  },
+  2: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 3 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      next.game = {
+        weekPhase: 'start',
+        pendingRequest: null,
+        lastAction: null,
+        monsterHistory: [],
+        tipsSeen: [],
+        counters: { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 },
+        sandbox: false,
+        ...raw.game,
+      }
+    }
     return next
   },
 }

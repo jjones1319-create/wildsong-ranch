@@ -21,7 +21,7 @@ import {
   writeSlot,
   type KeyValueStore,
 } from './db.ts'
-import { emptyLibrary, makeSave, type Library } from './schema.ts'
+import { defaultSettings, emptyLibrary, makeSave, type Library } from './schema.ts'
 
 const saveNamed = (name: string, savedAt = 0) => makeSave(createGameState({ monster: makeMonster(), breederName: name }), 1, { savedAt })
 
@@ -131,10 +131,10 @@ describe('library, settings and the mirror (§20)', () => {
 
   it('settings default when missing or broken', async () => {
     const store = memoryStore()
-    expect(await readSettings(store)).toEqual({ showEditedBadge: false, reduceMotion: false })
-    await writeSettings(store, { showEditedBadge: true, reduceMotion: false })
+    expect(await readSettings(store)).toEqual(defaultSettings())
+    await writeSettings(store, { ...defaultSettings(), showEditedBadge: true })
     expect((await readSettings(store)).showEditedBadge).toBe(true)
     await store.set(KEYS.settings, 42)
-    expect(await readSettings(store)).toEqual({ showEditedBadge: false, reduceMotion: false })
+    expect(await readSettings(store)).toEqual(defaultSettings())
   })
 })

@@ -209,10 +209,12 @@ export function LabEditorScreen() {
 
   const save = async (asCopy: boolean) => {
     const name = m.name
+    const active = d.origin === 'active' && !asCopy
     const saved = await saveDraft(asCopy)
     if (saved) {
-      showToast(fill(asCopy ? t.savedCopy : t.saved, { name: saved.name || name }))
-      navigate('labView')
+      showToast(fill(active ? t.savedActive : asCopy ? t.savedCopy : t.saved, { name: saved.name || name }))
+      if (active) goBack()
+      else navigate('labView')
     }
   }
 
@@ -234,7 +236,7 @@ export function LabEditorScreen() {
   return (
     <main class="screen">
       <TopBar
-        title={d.origin === 'new' ? t.titleNew : t.title}
+        title={d.origin === 'new' ? t.titleNew : d.origin === 'active' ? fill(t.titleActive, { name: d.original.name }) : t.title}
         onBack={leave}
         right={
           <button
@@ -443,12 +445,12 @@ export function LabEditorScreen() {
         )}
       </Section>
 
-      <p class="muted small center">{t.editedNote}</p>
+      <p class="muted small center">{d.origin === 'active' ? t.activeNote : t.editedNote}</p>
       <div class="actionbar">
         <button type="button" class="btn btn--primary btn--half" onClick={() => void save(false)}>
           {t.save}
         </button>
-        {d.origin === 'library' && (
+        {(d.origin === 'library' || d.origin === 'active') && (
           <button type="button" class="btn btn--half" onClick={() => void save(true)}>
             {t.saveCopy}
           </button>

@@ -4,17 +4,43 @@ import { importCodeFromHash } from '../save/exportImport.ts'
 /**
  * Hash-based screen state. The screen is app state (a signal) mirrored to `location.hash`,
  * so the browser back button works and GitHub Pages never has to rewrite a URL.
- * Lab sub-screens live under `#lab/...` and Back returns to `#lab`; an `#import=CODE` link
- * opens the Lab's Import screen with the code and then clears the code from the hash.
+ * Lab sub-screens live under `#lab/...` and Back returns to `#lab`; ranch sub-screens live under
+ * `#ranch/...`; an `#import=CODE` link opens the Lab's Import screen with the code and then clears it.
  */
-export const SCREENS = ['title', 'credits', 'newGame', 'continue', 'lab', 'labCreate', 'labView', 'labEdit', 'labImport', 'labExport', 'settings'] as const
+export const SCREENS = [
+  'title',
+  'credits',
+  'newGame',
+  'ranch',
+  'ranchCard',
+  'bag',
+  'songbook',
+  'town',
+  'shop',
+  'library',
+  'farewell',
+  'lab',
+  'labCreate',
+  'labView',
+  'labEdit',
+  'labImport',
+  'labExport',
+  'settings',
+] as const
 export type Screen = (typeof SCREENS)[number]
 
 const SLUGS: Record<Screen, string> = {
   title: 'title',
   credits: 'credits',
   newGame: 'new-game',
-  continue: 'continue',
+  ranch: 'ranch',
+  ranchCard: 'ranch/card',
+  bag: 'ranch/bag',
+  songbook: 'ranch/songbook',
+  town: 'town',
+  shop: 'town/shop',
+  library: 'town/library',
+  farewell: 'farewell',
   lab: 'lab',
   labCreate: 'lab/create',
   labView: 'lab/view',
@@ -29,7 +55,14 @@ const PARENT: Record<Screen, Screen | null> = {
   title: null,
   credits: 'title',
   newGame: 'title',
-  continue: 'title',
+  ranch: 'title',
+  ranchCard: 'ranch',
+  bag: 'ranch',
+  songbook: 'ranch',
+  town: 'ranch',
+  shop: 'town',
+  library: 'town',
+  farewell: 'title',
   lab: 'title',
   labCreate: 'lab',
   labView: 'lab',
@@ -44,6 +77,9 @@ export const screen = signal<Screen>('title')
 
 /** A share code that arrived in an `#import=` link and is waiting for the Import screen. */
 export const pendingImport = signal<string | null>(null)
+
+/** Where a screen opened with `navigateFrom` should return to (the ranch card for the editor, Town for the Lab…). */
+export const returnTo = signal<{ screen: Screen; back: Screen } | null>(null)
 
 export interface Route {
   screen: Screen
@@ -71,6 +107,10 @@ export function hashFor(target: Screen): string {
 
 export function parentOf(target: Screen): Screen | null {
   return PARENT[target]
+}
+
+export function isRanchScreen(s: Screen): boolean {
+  return s === 'ranch' || s === 'ranchCard' || s === 'bag' || s === 'songbook' || s === 'town' || s === 'shop' || s === 'library' || s === 'farewell'
 }
 
 /** A minimal window-like host, so the router can be installed on a fake in tests. */
@@ -115,7 +155,25 @@ export function navigate(target: Screen): void {
   }
 }
 
-/** Back goes to the screen's parent: Lab sub-screens return to the Lab, everything else to the title. */
+/** Back goes to the screen's parent, or to where a screen was opened from (the ranch, for Settings and the editor). */
 export function goBack(): void {
+  const r = returnTo.value
+  if (r && r.screen === screen.value) {
+    returnTo.value = null
+    navigate(r.back)
+    return
+  }
   navigate(PARENT[screen.value] ?? 'title')
+}
+
+/** Opens a screen and remembers where its Back should go. Sub-screens of the target still climb to their own parent. */
+export function navigateFrom(from: Screen, target: Screen): void {
+  returnTo.value = { screen: target, back: from }
+  navigate(target)
+}
+
+/** The screen Back would go to from `target` right now. */
+export function backTargetOf(target: Screen): Screen {
+  const r = returnTo.value
+  return r && r.screen === target ? r.back : (PARENT[target] ?? 'title')
 }

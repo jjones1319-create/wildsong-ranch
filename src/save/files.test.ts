@@ -3,7 +3,7 @@ import { createGameState } from '../core/state.ts'
 import { makeMonster } from '../core/test-helpers.ts'
 import { LAB } from '../data/tuning.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
-import { emptyLibrary, makeMonsterFile, makeSave, validateAny, validateLibrary, validateMonsterFile, validateSettings, type Library } from './schema.ts'
+import { defaultSettings, emptyLibrary, makeMonsterFile, makeSave, validateAny, validateLibrary, validateMonsterFile, validateSettings, type Library } from './schema.ts'
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
 
@@ -19,6 +19,62 @@ describe('schema version 2 (M2)', () => {
     expect(upMonster.meta).toBeUndefined()
     const r = validateAny(clone(v1))
     expect(r.ok && r.kind === 'save' && r.save.meta.savedAt === 0).toBe(true)
+  })
+
+  it('migrates a version-2 save by adding the M3 week fields (schema version 3)', () => {
+    const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
+    for (const k of ['weekPhase', 'pendingRequest', 'lastAction', 'monsterHistory', 'tipsSeen', 'counters', 'sandbox']) delete game[k]
+    const v2 = { schemaVersion: 2, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.4.0' } }
+    const up = migrate(clone(v2)) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(3)
+    expect(up.game).toMatchObject({ weekPhase: 'start', pendingRequest: null, lastAction: null, monsterHistory: [], tipsSeen: [], sandbox: false })
+    const r = validateAny(clone(v2))
+    expect(r.ok && r.kind === 'save').toBe(true)
+    if (r.ok && r.kind === 'save') {
+      expect(r.save.game.weekPhase).toBe('start')
+      expect(r.save.game.counters).toEqual({ sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 })
+      expect(r.save.game.monster?.name).toBe(game.monster && (game.monster as { name: string }).name)
+    }
+    // A v2 monster file only gets its version bumped.
+    const v2Monster = { schemaVersion: 2, kind: 'monster', monster: makeMonster(), history: [] }
+    expect((migrate(clone(v2Monster)) as Record<string, unknown>).game).toBeUndefined()
+    expect(validateAny(clone(v2Monster)).ok).toBe(true)
+  })
+
+  it('keeps and validates the M3 week fields on a round trip', () => {
+    const game = createGameState({ monster: makeMonster() })
+    game.weekPhase = 'action'
+    game.pendingRequest = { kind: 'treat', toy: 'rubber-ball' }
+    game.lastAction = { kind: 'drill', drill: 'log-toss' }
+    game.tipsSeen = ['firstDrill', 'firstDrill']
+    game.monsterHistory = [{ monster: makeMonster(), savedAt: 10 }]
+    const r = validateAny(clone(makeSave(game, 1)))
+    expect(r.ok && r.kind === 'save').toBe(true)
+    if (r.ok && r.kind === 'save') {
+      expect(r.save.game.pendingRequest).toEqual({ kind: 'treat', toy: 'rubber-ball' })
+      expect(r.save.game.lastAction).toEqual({ kind: 'drill', drill: 'log-toss' })
+      expect(r.save.game.tipsSeen).toEqual(['firstDrill'])
+      expect(r.save.game.monsterHistory).toHaveLength(1)
+    }
+    const broken = clone(makeSave(game, 1)) as unknown as { game: Record<string, unknown> }
+    broken.game.pendingRequest = { kind: 'nap' }
+    broken.game.lastAction = { kind: 'drill', drill: 'not-a-drill' }
+    broken.game.weekPhase = 'middle'
+    broken.game.monsterHistory = [null, 'x', { monster: makeMonster(), savedAt: 2 }]
+    const r2 = validateAny(broken)
+    expect(r2.ok && r2.kind === 'save').toBe(true)
+    if (r2.ok && r2.kind === 'save') {
+      expect(r2.save.game.pendingRequest).toBeNull()
+      expect(r2.save.game.lastAction).toBeNull()
+      expect(r2.save.game.weekPhase).toBe('start')
+      expect(r2.save.game.monsterHistory).toHaveLength(1)
+    }
+    // Without a monster a pending request makes no sense and is dropped.
+    const empty = createGameState({ monster: null })
+    empty.pendingRequest = { kind: 'rest', toy: null }
+    empty.weekPhase = 'action'
+    const r3 = validateAny(clone(makeSave(empty, 1)))
+    expect(r3.ok && r3.kind === 'save' && r3.save.game.pendingRequest === null && r3.save.game.weekPhase === 'start').toBe(true)
   })
 
   it('keeps meta on a round trip and clamps it', () => {
@@ -138,8 +194,9 @@ describe('validateAny never throws', () => {
   })
 
   it('settings never fail', () => {
-    expect(validateSettings(undefined)).toEqual({ showEditedBadge: false, reduceMotion: false })
-    expect(validateSettings({ showEditedBadge: 'yes', reduceMotion: true })).toEqual({ showEditedBadge: false, reduceMotion: true })
-    expect(validateSettings('???')).toEqual({ showEditedBadge: false, reduceMotion: false })
+    expect(validateSettings(undefined)).toEqual(defaultSettings())
+    expect(validateSettings({ showEditedBadge: 'yes', reduceMotion: true, textSize: 999, transparency: 'x-ray' })).toEqual({ ...defaultSettings(), reduceMotion: true })
+    expect(validateSettings({ ...defaultSettings(), transparency: 'lens', textSize: 130, speed: 'instant' })).toMatchObject({ transparency: 'lens', textSize: 130, speed: 'instant' })
+    expect(validateSettings('???')).toEqual(defaultSettings())
   })
 })

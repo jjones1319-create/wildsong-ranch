@@ -70,7 +70,7 @@ describe('the week (§3)', () => {
   it('a Journey takes four weeks, costs 2,000G and then clears', () => {
     const state = createGameState({ monster: makeMonster({ agePct: 50, fear: 30, stats: { POW: 400 } }) })
     const first = runWeek(state, createRng(1), { ...trainer, action: () => ({ kind: 'journey', site: 'iron-quarry' }) })
-    expect(first.state.money).toBe(1000)
+    expect(first.state.money).toBe(3000 - 120 - 2000) // honey bread for the month, then the Journey fee
     expect(first.state.journey?.weekNo).toBe(2)
     let cur = first.state
     for (let i = 0; i < 3; i++) {

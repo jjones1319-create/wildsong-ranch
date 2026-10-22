@@ -20,11 +20,13 @@ export const toast = signal<{ id: number; text: string } | null>(null)
 let store: KeyValueStore | null = null
 let text: TextStore | null = null
 
-function kv(): KeyValueStore {
+/** The IndexedDB-backed store (shared with the game store). */
+export function kv(): KeyValueStore {
   return (store ??= idbStore())
 }
 
-function ls(): TextStore {
+/** The localStorage mirror (shared with the game store). */
+export function ls(): TextStore {
   if (text) return text
   try {
     text = window.localStorage
@@ -40,6 +42,12 @@ export function useStores(k: KeyValueStore, t: TextStore): void {
   text = t
 }
 
+/** Called by the game store once it has loaded the latest save, so the app can finish booting. */
+let gameBoot: (() => Promise<void>) | null = null
+export function onBoot(fn: () => Promise<void>): void {
+  gameBoot = fn
+}
+
 export async function refreshPersisted(): Promise<void> {
   try {
     persisted.value = typeof navigator !== 'undefined' && navigator.storage?.persisted ? await navigator.storage.persisted() : null
@@ -50,17 +58,28 @@ export async function refreshPersisted(): Promise<void> {
 
 export async function bootApp(): Promise<void> {
   settings.value = await readSettings(kv())
+  applyTextSize(settings.value.textSize)
   const loaded = await loadLibrary(kv(), ls())
   library.value = loaded.library
   librarySource.value = loaded.source
+  if (gameBoot) await gameBoot()
   await refreshPersisted()
   ready.value = true
+}
+
+/** §24 text size: a CSS variable on the root, so every `em` follows. */
+export function applyTextSize(pct: number): void {
+  try {
+    document.documentElement.style.setProperty('--text-scale', String(pct / 100))
+  } catch {
+    /* no DOM (tests) */
+  }
 }
 
 let askedForPersistence = false
 
 /** §20: ask the browser to protect our storage after the first save. */
-async function askPersistence(): Promise<void> {
+export async function askPersistence(): Promise<void> {
   if (askedForPersistence) return
   askedForPersistence = true
   try {
@@ -81,7 +100,13 @@ export async function commitLibrary(next: Library): Promise<boolean> {
 
 export async function updateSettings(patch: Partial<AppSettings>): Promise<void> {
   settings.value = { ...settings.value, ...patch }
+  if (patch.textSize !== undefined) applyTextSize(patch.textSize)
   await writeSettings(kv(), settings.value)
+}
+
+/** §21 speed setting → a multiplier for skippable animations (0 = instant). */
+export function speedFactor(): number {
+  return UI.speed[settings.value.speed] / 100
 }
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null

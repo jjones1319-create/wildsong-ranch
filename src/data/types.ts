@@ -32,6 +32,14 @@ export type Weather = (typeof WEATHERS)[number]
 export const DIFFICULTIES = ['Gentle', 'Standard', 'Classic'] as const
 export type Difficulty = (typeof DIFFICULTIES)[number]
 
+/** GAME_DESIGN §6.8 transparency modes. */
+export const TRANSPARENCY_MODES = ['classic', 'guided', 'lens'] as const
+export type TransparencyMode = (typeof TRANSPARENCY_MODES)[number]
+
+/** GAME_DESIGN §21 global animation speed. */
+export const SPEEDS = ['normal', 'fast', 'instant'] as const
+export type Speed = (typeof SPEEDS)[number]
+
 export const BODY_PLANS = [
   'blob',
   'quadruped',

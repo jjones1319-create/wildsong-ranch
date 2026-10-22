@@ -168,22 +168,38 @@
 
 **Goal:** raise one monster from birth to old age.
 
-- [ ] New Game flow: names, difficulty, first monster (Market gift or a basic Shrine with phrase generation).
-- [ ] Ranch screen:
+- [x] New Game flow: names, difficulty, first monster (Market gift or a basic Shrine with phrase generation).
+- [x] Ranch screen:
   - Monster on stage, calendar strip, Wren's report.
   - Action bar, item button (opens the Bag), and "Repeat last week".
-- [ ] Train sheet: light and heavy drills, stars, odds by transparency mode.
-- [ ] Drill result: vignette, banner, stat changes, praise/scold (swipe to pet, wag button).
-- [ ] Rest, requests, monthly food prompt, Shop (multi-buy, Stat Sweets counter), charms.
-- [ ] **Items and Songsheets in play:**
+- [x] Train sheet: light and heavy drills, stars, odds by transparency mode.
+- [x] Drill result: vignette, banner, stat changes, praise/scold (swipe to pet, wag button).
+- [x] Rest, requests, monthly food prompt, Shop (multi-buy, Stat Sweets counter), charms.
+- [x] **Items and Songsheets in play:**
   - Bag screen (Use ×1 / ×5 / ×10 / Max), Guild Library (Songsheets), Songbook screen (★ good fit, learn, forget).
   - Monster Card buttons: **Use item · Learn technique · ✏️ Edit**.
   - **Edit before you start** after creating a monster.
-- [ ] Monster Card: stats, grades, life bar, condition, techniques, personality.
-- [ ] Settings: sound placeholders, text size, reduced motion, transparency mode, speed, export/import, persistence status.
-- [ ] Aging: warnings, illness, breakdowns, death or retirement placeholder screen. The full farewell comes in M6.
-- [ ] Onboarding: Wren guides the first month.
-- [ ] Tests: UI-free integration test "a scripted player raises a monster for 3 in-game years without errors".
+- [x] Monster Card: stats, grades, life bar, condition, techniques, personality.
+- [x] Settings: sound placeholders, text size, reduced motion, transparency mode, speed, export/import, persistence status.
+- [x] Aging: warnings, illness, breakdowns, death or retirement placeholder screen. The full farewell comes in M6.
+- [x] Onboarding: Wren guides the first month.
+- [x] Tests: UI-free integration test "a scripted player raises a monster for 3 in-game years without errors".
+
+**Detailed plan (written 2026-10-22, after the owner confirmed M2.5):** version `0.5.0`. No new dependencies. The pure week loop from M1 (`core/week.ts`) is driven by a new turn controller (`core/game.ts`); the UI only reads signals and calls it. Later-milestone buttons (Journey, Battle, Market, Shrine, Freezer, Mailbox, Odd Jobs) are shown as "coming soon" where the screen expects them.
+- [x] 1. `tuning.ts` (transparency odds bands, Market seeds, shop quantities, onboarding, vignette and speed timings, text sizes), `text/ui.ts` + `text/wren.ts` + `text/labels.ts` (every new string), `core/state.ts` (week phase, pending request, last action, the active monster's edit history, tips seen, counters).
+- [x] 2. Schema v3 (`SAVE_VERSION = 3`): the new GameState fields with a migration and a test; `AppSettings` gains transparency, text size, speed and sound placeholders (never-fail validation).
+- [x] 3. `core/game.ts`: begin week (phase bookkeeping, request stored in the save), answer request, choose action (stores "last week" for Repeat), react, finish week (then begins the next), wait a week while away, the action menu with reasons. `core/week.ts` charges the monthly food. Tests.
+- [x] 4. `core/economy.ts` (buy with reasons, max affordable, shop stock with gates, the §9 loan fee), `core/market.ts` (fixed-seed gifts, seasonal pick), `core/guild.ts` (sheets for sale, buy a sheet), `core/odds.ts` (exact and Guided words), `core/report.ts` (Wren's weekly and event lines), `core/onboarding.ts` (the first-month tips). Tests for each.
+- [x] 5. Integration test: a scripted player raises a monster for 3 in-game years through the controller (shopping, 10 sweets at once, a Songsheet, toys, requests, one edit), with a save round trip every year.
+- [x] 6. `ui/store/gameStore.ts`: boot (latest autosave), new game, commit + autosave (end of week, every free action, on hide), the week flow signals, item use, shop, sheets, learn/forget, replace monster (from the editor), tips, export/import, difficulty switch. Router screens and `app.tsx` wiring; Title's Continue.
+- [x] 7. New Game: names, difficulty, first monster (Market gift or Shrine with the locked-breed teaser), result card with Begin and **Edit before you start**; replace-confirm with an export offer.
+- [x] 8. Ranch: calendar strip, monster stage (tap → card, swipe → pet), Wren's report and tip card, condition bars by transparency, action bar (Train · Rest · Journey · Battle · Town), Bag button, Repeat last week, locked weeks. Overlays: monthly food prompt, request card, Train sheet (odds by mode), drill result (prop vignette, banner, deltas, praise/scold/skip), week summary (aging events, breakdown card, grow-up glow).
+- [x] 9. Monster Card in play (shared `MonsterSheet` with the Lab view; transparency-aware) with **Use item · Learn technique · ✏️ Edit**; the Lab editor's `active` origin saves straight to the ranch with edit history.
+- [x] 10. Bag (×1 / ×5 / ×10 / Max, pearl stat picker, tonic and fruit confirmations, charms placed), Songbook (★ good fit, learn, forget, relearn, the forget-one prompt at 12).
+- [x] 11. Town: Shop with Basil (food, care, the Stat Sweets bakery counter, charms, toys, tonics, potential; multi-buy; gates with reasons; debt notice), Guild Library with Ines (universal and breed sheets, rank gates, ★ fit, owned marks), Monster Lab link, coming-soon rows.
+- [x] 12. Settings: sound placeholders, text size, reduce motion, transparency, speed, Gentle ↔ Standard, one item per week, edited badge, export/import a whole save, storage status.
+- [x] 13. Farewell placeholder (Wren, the old portrait, age and records, start a new ranch, keep a Lab copy); the full scene comes in M6.
+- [x] 14. `npm run verify`, PROGRESS.md, commit `M3: the ranch loop`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:**
 1. Raise a monster for a few in-game years; try resting, food, praise and scold.

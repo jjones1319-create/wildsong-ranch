@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SCREENS, goBack, hashFor, installRouter, parentOf, parseHash, parseRoute, pendingImport, screen, type RouterHost } from './router.ts'
+import { SCREENS, goBack, hashFor, installRouter, navigateFrom, parentOf, parseHash, parseRoute, pendingImport, returnTo, screen, type RouterHost } from './router.ts'
 
 describe('parseHash', () => {
   it('treats an empty or unknown hash as the title screen', () => {
@@ -38,6 +38,28 @@ describe('parseHash', () => {
     expect(parentOf('title')).toBeNull()
     expect(parentOf('lab')).toBe('title')
     for (const s of ['labCreate', 'labView', 'labEdit', 'labImport', 'labExport'] as const) expect(parentOf(s)).toBe('lab')
+    for (const s of ['ranchCard', 'bag', 'songbook', 'town'] as const) expect(parentOf(s)).toBe('ranch')
+    for (const s of ['shop', 'library'] as const) expect(parentOf(s)).toBe('town')
+    expect(parseHash('#ranch/card')).toBe('ranchCard')
+    expect(parseHash('#town/shop')).toBe('shop')
+  })
+
+  it('Back returns to where a screen was opened from when asked to', () => {
+    returnTo.value = null
+    navigateFrom('ranchCard', 'labEdit')
+    expect(screen.value).toBe('labEdit')
+    goBack()
+    expect(screen.value).toBe('ranchCard')
+    expect(returnTo.value).toBeNull()
+    goBack()
+    expect(screen.value).toBe('ranch')
+    // Sub-screens of the opened screen still climb to their own parent; only the opened screen returns.
+    navigateFrom('town', 'lab')
+    screen.value = 'labCreate'
+    goBack()
+    expect(screen.value).toBe('lab')
+    goBack()
+    expect(screen.value).toBe('town')
   })
 })
 

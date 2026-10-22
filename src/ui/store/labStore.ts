@@ -8,6 +8,7 @@ import type { LibraryEntry } from '../../save/schema.ts'
 import { now } from '../lib/clock.ts'
 import { newId } from '../lib/ids.ts'
 import { findEntry, library, upsertEntry } from './appStore.ts'
+import { replaceMonster } from './gameStore.ts'
 
 /** Monster Lab screen state (§19): the Library view, what is selected, and the editor's draft. */
 
@@ -77,8 +78,8 @@ export function selectedListed(): Listed | null {
 /* ---------- the editor draft ---------- */
 
 export interface EditorDraft {
-  /** Where Save goes back to. A preset or a brand-new monster is saved as a new Library entry. */
-  origin: 'library' | 'preset' | 'new'
+  /** Where Save goes back to. A preset or a brand-new monster is saved as a new Library entry; `active` is the ranch's monster. */
+  origin: 'library' | 'preset' | 'new' | 'active'
   original: Monster
   monster: Monster
   history: EditHistoryEntry[]
@@ -98,6 +99,21 @@ export function startEdit(listed: Listed): void {
     monster: structuredClone(listed.monster),
     history: listed.history,
     createdAt: listed.createdAt,
+    keepAll: false,
+    allowAny: false,
+    preview: 'auto',
+    openSection: 'stats',
+  }
+}
+
+/** §19: editing the monster on the ranch. Save goes straight back to the game (gameStore.replaceMonster). */
+export function startEditActive(monster: Monster, history: EditHistoryEntry[]): void {
+  draft.value = {
+    origin: 'active',
+    original: structuredClone(monster),
+    monster: structuredClone(monster),
+    history,
+    createdAt: 0,
     keepAll: false,
     allowAny: false,
     preview: 'auto',
@@ -153,6 +169,11 @@ export async function saveDraft(asCopy: boolean): Promise<Monster | null> {
   const removals = draftRemovals(d)
   const cleaned = structuredClone(d.monster)
   cleaned.techniques = cleaned.techniques.filter((t) => !removals.includes(t.id))
+  if (d.origin === 'active' && !asCopy) {
+    replaceMonster(cleaned)
+    draft.value = null
+    return cleaned
+  }
   let finished = finishEdit(d.original, cleaned)
   let entry: LibraryEntry
   if (asCopy || d.origin !== 'library') {
