@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks'
 import { duplicateMonster } from '../../../core/lab.ts'
+import { freezerFull } from '../../../core/legacy.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
@@ -11,22 +12,27 @@ import { now } from '../../lib/clock.ts'
 import { newId } from '../../lib/ids.ts'
 import { navigate } from '../../router.ts'
 import { library, removeEntry, showToast, upsertEntry } from '../../store/appStore.ts'
+import { adoptMonster, game, makeActive, sendToFreezer } from '../../store/gameStore.ts'
 import { labBreedFilter, labSort, labTab, selected, startEdit, visible, type LabSort, type LabSource, type Listed } from '../../store/labStore.ts'
 
 const BREED_OPTIONS: { value: BreedId | 'all'; label: string }[] = [{ value: 'all', label: UI_TEXT.lab.filterAll }, ...BREED_IDS.map((id) => ({ value: id, label: BREED_BY_ID[id].name }))]
 const SORT_OPTIONS: { value: LabSort; label: string }[] = (['date', 'total', 'age', 'name'] as const).map((v) => ({ value: v, label: UI_TEXT.lab.sort[v] }))
-const TAB_OPTIONS: { value: LabSource; label: string }[] = [
-  { value: 'library', label: UI_TEXT.lab.tabs.library },
-  { value: 'presets', label: UI_TEXT.lab.tabs.presets },
-]
 
-/** §19 Library: Library creations and Presets, filter, sort, and the action sheet for a card. */
+/** §19 Library: Library creations, the ranch's Freezer and Memorial, and Presets; filter, sort, and the action sheet for a card. */
 export function LabLibraryScreen() {
   const t = UI_TEXT.lab
+  const g = game.value
   const [sheetFor, setSheetFor] = useState<Listed | null>(null)
   const [deleting, setDeleting] = useState<Listed | null>(null)
+  const [activating, setActivating] = useState<Listed | null>(null)
   const items = visible.value
   const libraryEmpty = library.value.entries.length === 0
+  const tabs: { value: LabSource; label: string }[] = [
+    { value: 'library', label: t.tabs.library },
+    ...(g ? [{ value: 'freezer' as const, label: UI_TEXT.labSources.freezer }, { value: 'memorial' as const, label: UI_TEXT.labSources.memorial }] : []),
+    { value: 'presets', label: t.tabs.presets },
+  ]
+  const tab = tabs.some((x) => x.value === labTab.value) ? labTab.value : 'library'
 
   const open = (l: Listed, target: 'labView' | 'labEdit' | 'labExport') => {
     selected.value = { source: l.source, id: l.id }
@@ -45,6 +51,23 @@ export function LabLibraryScreen() {
     showToast(fill(t.duplicated, { name: l.monster.name }))
   }
 
+  const toFreezer = (l: Listed) => {
+    setSheetFor(null)
+    const refused = sendToFreezer({ ...structuredClone(l.monster), id: newId() })
+    showToast(refused === 'full' ? UI_TEXT.pellLab.freezeFull : refused ? UI_TEXT.pellLab.freezeBusy : fill(UI_TEXT.pellLab.sentToFreezer, { name: l.monster.name }))
+  }
+
+  const confirmActivate = () => {
+    const l = activating
+    setActivating(null)
+    if (!l) return
+    const refused = l.source === 'freezer' ? makeActive(l.id) : adoptMonster({ ...structuredClone(l.monster), id: newId() })
+    if (!refused) {
+      showToast(fill(UI_TEXT.pellLab.madeActive, { name: l.monster.name }))
+      navigate('ranch')
+    } else showToast(refused === 'busy' ? UI_TEXT.pellLab.freezeBusy : refused === 'full' ? UI_TEXT.pellLab.freezeFull : UI_TEXT.pellLab.freezeBusy)
+  }
+
   const confirmDelete = async () => {
     const l = deleting
     setDeleting(null)
@@ -53,6 +76,7 @@ export function LabLibraryScreen() {
     showToast(fill(t.deleted, { name: l.monster.name }))
   }
 
+  const canStore = g !== null && !g.ended
   return (
     <main class="screen">
       <TopBar
@@ -63,7 +87,7 @@ export function LabLibraryScreen() {
           </button>
         }
       />
-      {libraryEmpty && labTab.value === 'library' && (
+      {libraryEmpty && tab === 'library' && (
         <section class="card">
           <p class="speaker">{UI_TEXT.pell}</p>
           <p>{t.welcome}</p>
@@ -77,7 +101,7 @@ export function LabLibraryScreen() {
           🧪 {t.battleLab}
         </button>
       </div>
-      <Segmented options={TAB_OPTIONS} value={labTab.value} onChange={(v) => (labTab.value = v)} label={t.title} />
+      <Segmented options={tabs} value={tab} onChange={(v) => (labTab.value = v)} label={t.title} />
       <Chips options={BREED_OPTIONS} value={labBreedFilter.value} onChange={(v) => (labBreedFilter.value = v)} label={t.filterAll} />
       <Chips options={SORT_OPTIONS} value={labSort.value} onChange={(v) => (labSort.value = v)} />
       <div class="list">
@@ -85,7 +109,7 @@ export function LabLibraryScreen() {
           <MonsterCard key={l.id} listed={l} onTap={setSheetFor} />
         ))}
       </div>
-      {items.length === 0 && <p class="empty">{labTab.value === 'library' && labBreedFilter.value === 'all' ? t.empty : t.emptyFilter}</p>}
+      {items.length === 0 && <p class="empty">{tab === 'library' && labBreedFilter.value === 'all' ? t.empty : tab === 'freezer' ? UI_TEXT.pellLab.empty : tab === 'memorial' ? UI_TEXT.pellLab.memorialEmpty : t.emptyFilter}</p>}
       <div class="spacer" />
       <div class="actionbar">
         <button type="button" class="btn btn--primary" onClick={() => navigate('labCreate')}>
@@ -99,15 +123,34 @@ export function LabLibraryScreen() {
             <button type="button" class="btn btn--primary" onClick={() => open(sheetFor, 'labView')}>
               {t.actions.view}
             </button>
-            <button type="button" class="btn" onClick={() => open(sheetFor, 'labEdit')}>
-              {t.actions.edit}
-            </button>
+            {sheetFor.source !== 'memorial' && (
+              <button type="button" class="btn" onClick={() => open(sheetFor, 'labEdit')}>
+                {t.actions.edit}
+              </button>
+            )}
             <button type="button" class="btn" onClick={() => void duplicate(sheetFor)}>
-              {t.actions.duplicate}
+              {sheetFor.source === 'memorial' ? UI_TEXT.pellLab.duplicate : t.actions.duplicate}
             </button>
             <button type="button" class="btn" onClick={() => open(sheetFor, 'labExport')}>
               {t.actions.export}
             </button>
+            {canStore && sheetFor.source !== 'memorial' && (
+              <button
+                type="button"
+                class="btn"
+                onClick={() => {
+                  setActivating(sheetFor)
+                  setSheetFor(null)
+                }}
+              >
+                {UI_TEXT.labActions.makeActive}
+              </button>
+            )}
+            {canStore && (sheetFor.source === 'library' || sheetFor.source === 'presets') && (
+              <button type="button" class="btn" disabled={g !== null && freezerFull(g)} onClick={() => toFreezer(sheetFor)}>
+                {UI_TEXT.labActions.sendToFreezer}
+              </button>
+            )}
             {sheetFor.source === 'library' && (
               <button
                 type="button"
@@ -127,6 +170,13 @@ export function LabLibraryScreen() {
         )}
       </Sheet>
       <Confirm open={deleting !== null} text={fill(t.deleteAsk, { name: deleting?.monster.name ?? '' })} confirmLabel={t.actions.delete} danger onConfirm={() => void confirmDelete()} onCancel={() => setDeleting(null)} />
+      <Confirm
+        open={activating !== null}
+        text={activating ? (g?.monster ? fill(UI_TEXT.pellLab.makeActiveAsk, { name: activating.monster.name, current: g.monster.name }) : fill(UI_TEXT.pellLab.makeActiveAskEmpty, { name: activating.monster.name })) : ''}
+        confirmLabel={UI_TEXT.labActions.makeActive}
+        onConfirm={confirmActivate}
+        onCancel={() => setActivating(null)}
+      />
     </main>
   )
 }

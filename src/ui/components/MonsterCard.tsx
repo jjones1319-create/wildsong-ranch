@@ -1,4 +1,5 @@
-import { isPure, mixBreeds, totalStats } from '../../core/monster.ts'
+import { isPure, totalStats } from '../../core/monster.ts'
+import { variantNameOf as coreVariantName } from '../../core/variants.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { settings } from '../store/appStore.ts'
 import type { Listed } from '../store/labStore.ts'
@@ -6,7 +7,7 @@ import { Badge } from './Controls.tsx'
 import { MonsterPortrait } from './MonsterPortrait.tsx'
 
 export function variantNameOf(l: Listed['monster']): string {
-  return mixBreeds(l.mainBreed, l.subBreed).variantName
+  return coreVariantName(l)
 }
 
 /** A row in the Library: portrait, name, variant, total, grade and badges. */
@@ -32,6 +33,9 @@ export function MonsterCard({ listed, onTap }: { listed: Listed; onTap: (l: List
           </span>
           {isPure(m) && <Badge tone="pure">✦ {t.badges.pure}</Badge>}
           {showEdited && <Badge tone="edited">🔧 {t.badges.edited}</Badge>}
+          {listed.badge === 'elder' && <Badge>🌳 {UI_TEXT.pellLab.elderBadge}</Badge>}
+          {listed.badge === 'frozen' && <Badge>❄️ {UI_TEXT.labSources.freezer}</Badge>}
+          {listed.badge === 'memorial' && <Badge>🕯️ {listed.cause ? UI_TEXT.pellLab.cause[listed.cause] : UI_TEXT.labSources.memorial}</Badge>}
         </span>
       </span>
     </button>

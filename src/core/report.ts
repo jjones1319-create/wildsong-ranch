@@ -99,6 +99,8 @@ function agingLine(m: Monster, e: AgingEvent): WrenLine[] {
       ]
     case 'endOfLife':
       return [e.how === 'retired' ? say('retire', WREN.retire, m) : say('farewell', WREN.farewell, m)]
+    case 'birthday':
+      return [say('birthday', WREN.birthday, m)]
   }
 }
 
@@ -147,6 +149,9 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
         break
       case 'journeyDone':
         lines.push(say('journeyDone', WREN.journeyDone, m))
+        break
+      case 'elderMentor':
+        lines.push(say('elderMentor', WREN.elderMentor, m, { elder: e.elder }))
         break
       default:
         break

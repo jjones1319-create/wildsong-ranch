@@ -3,13 +3,14 @@ import { FOOD, RANGES, TRAIT_EFFECTS } from '../data/tuning.ts'
 import type { FoodEffect, FoodId } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
 import { addCondition, addForm, traitOf, type Monster } from './monster.ts'
+import { likesEveryFood } from './variants.ts'
 
 /** GAME_DESIGN §8 monthly food (tables in CONTENT §5). */
 
 export type FoodRelation = 'liked' | 'disliked' | 'neutral'
 
 export function foodRelation(m: Monster, food: FoodId): FoodRelation {
-  if (m.likes.food === food) return 'liked'
+  if (m.likes.food === food || likesEveryFood(m)) return 'liked'
   if (m.likes.dislikedFood === food) return 'disliked'
   return 'neutral'
 }

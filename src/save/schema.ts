@@ -2,9 +2,11 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { FREEZER, HEARTSTONE, LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
-import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
+import { STARTING_UNLOCKED } from '../data/breeds.ts'
+import { SECRET_BY_ID } from '../data/secrets.ts'
+import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
 import { clamp } from '../core/mathx.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
 import type { GameState } from '../core/state.ts'
@@ -143,6 +145,7 @@ export const MonsterSchema = v.object({
   generation: int(1, 1_000_000, 1),
   parents: v.fallback(v.union([v.tuple([v.string(), v.string()]), v.tuple([])]), []),
   seedPhrase: text('', 200),
+  heirloom: v.fallback(v.nullable(v.picklist(FAMILIES)), null),
   stats: v.fallback(StatsSchema, { LIF: 1, POW: 1, INT: 1, SKI: 1, SPD: 1, DEF: 1 }),
   grades: v.fallback(GradesSchema, { LIF: 'C', POW: 'C', INT: 'C', SKI: 'C', SPD: 'C', DEF: 'C' }),
   growthType: oneOf(GROWTH_TYPES, 'Steady'),
@@ -173,6 +176,7 @@ const JourneySchema = v.object({
   learned: v.fallback(v.nullable(v.string()), null),
   pendingTechnique: v.fallback(v.nullable(v.string()), null),
   gains: v.fallback(SweetsSchema, { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }),
+  elderMentor: bool(false),
 })
 
 const stamp = () => int(0, Number.MAX_SAFE_INTEGER, 0)
@@ -269,6 +273,47 @@ const JourneysBySiteSchema = v.fallback(
   { 'iron-quarry': 0, 'windrun-steppe': 0, 'starfall-observatory': 0, 'archers-glade': 0, 'glacier-bastion': 0 },
 )
 
+/* ---------- M6: legacy ---------- */
+
+const MemorialSchema = v.object({
+  monster: MonsterSchema,
+  cause: oneOf(['passed', 'retired', 'fused'] as const, 'passed'),
+  epitaph: text('', 80),
+  week: int(0, 1_000_000, 0),
+})
+
+const HeartstoneSchema = v.object({
+  id: v.string(),
+  donorId: text('', 64),
+  donorName: text('', RANGES.nameLength.max),
+  donorBreed: v.picklist(BREED_IDS),
+  donorSub: v.fallback(v.picklist(BREED_IDS), 'puddlepup'),
+  donorVariant: v.fallback(v.nullable(v.string()), null),
+  gains: v.fallback(SweetsSchema, { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }),
+  family: oneOf(FAMILIES, 'Basic'),
+  week: int(0, 1_000_000, 0),
+})
+
+const EncyclopediaPhraseSchema = v.object({
+  phrase: text('', 200),
+  artist: text('', 200),
+  name: text('', RANGES.nameLength.max),
+  mainBreed: v.picklist(BREED_IDS),
+  subBreed: v.picklist(BREED_IDS),
+  variantId: v.fallback(v.nullable(v.string()), null),
+})
+
+const EncyclopediaSchema = v.fallback(
+  v.object({
+    breeds: v.fallback(v.array(v.picklist(BREED_IDS)), []),
+    variants: v.fallback(v.array(v.string()), []),
+    phrases: listOf(EncyclopediaPhraseSchema),
+  }),
+  { breeds: [], variants: [], phrases: [] },
+)
+
+const SleepingStoneSchema = v.object({ phrase: text('', 200), artist: text('', 200), breed: v.picklist(BREED_IDS), week: int(0, 1_000_000, 0) })
+
 const CountersSchema = v.fallback(
   v.object({ sweetsEaten: int(0, 1_000_000_000, 0), sheetsLearned: int(0, 1_000_000_000, 0), drillsDone: int(0, 1_000_000_000, 0), restsTaken: int(0, 1_000_000_000, 0) }),
   { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 },
@@ -309,6 +354,14 @@ export const GameStateSchema = v.object({
   saleMonths: v.fallback(v.array(int(1, 12, 1)), []),
   journeysBySite: JourneysBySiteSchema,
   titles: v.fallback(v.array(v.string()), []),
+  freezer: listOf(MonsterSchema),
+  elderGrove: listOf(MonsterSchema),
+  memorial: listOf(MemorialSchema),
+  heartstones: listOf(HeartstoneSchema),
+  encyclopedia: EncyclopediaSchema,
+  sleepingStones: listOf(SleepingStoneSchema),
+  unlocked: v.fallback(v.array(v.picklist(BREED_IDS)), [...STARTING_UNLOCKED]),
+  elderMentorMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -489,6 +542,23 @@ function tidyGame(game: GameState): GameState {
     game.tournament.participants = game.tournament.participants.map((p) => ({ ...p, monster: tidyMonster(p.monster) }))
     if (!game.tournament.participants[0]?.player) game.tournament = null
   }
+  // M6 legacy lists: broken entries are already dropped; tidy the monsters, keep ids unique, honour the caps.
+  const uniqueMonsters = (list: (Monster | null)[], seen: Set<string>): Monster[] =>
+    list.filter((m): m is Monster => m !== null && !seen.has(m.id) && (seen.add(m.id), true)).map(tidyMonster)
+  const ids = new Set<string>()
+  if (game.monster) ids.add(game.monster.id)
+  game.freezer = uniqueMonsters(game.freezer as (Monster | null)[], ids).slice(0, FREEZER.slots)
+  game.elderGrove = uniqueMonsters(game.elderGrove as (Monster | null)[], ids)
+  game.memorial = (game.memorial as (GameState['memorial'][number] | null)[]).filter((e): e is GameState['memorial'][number] => e !== null).map((e) => ({ ...e, monster: tidyMonster(e.monster) }))
+  const stoneIds = new Set<string>()
+  game.heartstones = (game.heartstones as (GameState['heartstones'][number] | null)[])
+    .filter((h): h is GameState['heartstones'][number] => h !== null && !stoneIds.has(h.id) && (stoneIds.add(h.id), true))
+    .slice(0, HEARTSTONE.maxWithLanternGarden)
+  game.encyclopedia.breeds = [...new Set(game.encyclopedia.breeds)]
+  game.encyclopedia.variants = [...new Set(game.encyclopedia.variants.filter((id) => SECRET_BY_ID[id] !== undefined))]
+  game.encyclopedia.phrases = (game.encyclopedia.phrases as (GameState['encyclopedia']['phrases'][number] | null)[]).filter((p): p is GameState['encyclopedia']['phrases'][number] => p !== null)
+  game.sleepingStones = (game.sleepingStones as (GameState['sleepingStones'][number] | null)[]).filter((p): p is GameState['sleepingStones'][number] => p !== null)
+  game.unlocked = [...new Set([...STARTING_UNLOCKED, ...game.unlocked])]
   if (!game.monster || game.ended) {
     game.tournament = null
     game.trial = null

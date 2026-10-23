@@ -16,6 +16,29 @@ import {
   useItems as useItemsCore,
 } from '../../core/game.ts'
 import { buySheet, type SheetRefusal } from '../../core/guild.ts'
+import { awaken as awakenCore, buyFromMarket as buyFromMarketCore, recreate as recreateCore, wakeStone as wakeStoneCore, type AwakenResult } from '../../core/creation.ts'
+import { fuse as fuseCore, type FuseOutput } from '../../core/fusion.ts'
+import {
+  adopt as adoptCore,
+  concludeLife as concludeLifeCore,
+  editMemorial as editMemorialCore,
+  freezeActive as freezeActiveCore,
+  giveHeartstone as giveHeartstoneCore,
+  makeActive as makeActiveCore,
+  releaseStored as releaseStoredCore,
+  replaceStored as replaceStoredCore,
+  sendToFreezer as sendToFreezerCore,
+  type AdoptRefusal,
+  type ConcludeResult,
+  type FreezeRefusal,
+  type GiveRefusal,
+  type SendRefusal,
+  type ThawRefusal,
+} from '../../core/legacy.ts'
+import { randomPhrase as randomPhraseCore } from '../../core/shrine.ts'
+import { SHRINE_WORDS } from '../../data/text/shrine.ts'
+import type { BreedId } from '../../data/types.ts'
+import { newId } from '../lib/ids.ts'
 import type { UseItemResult } from '../../core/items.ts'
 import type { Monster } from '../../core/monster.ts'
 import { markTipSeen, nextTip, type TipContext, type TipId } from '../../core/onboarding.ts'
@@ -340,4 +363,153 @@ export function resetGameStoreForTests(): void {
   flow.value = { kind: 'idle' }
   weekNews.value = []
   rng = createRng(0)
+}
+
+/* ---------- M6: the Freezer, the farewell, Heartstones, Fusion, the Shrine and the Market ---------- */
+
+export function freezeActive(): FreezeRefusal | null {
+  const g = game.value
+  if (!g) return 'noMonster'
+  const r = freezeActiveCore(g)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function makeActive(id: string): ThawRefusal | null {
+  const g = game.value
+  if (!g) return 'notFound'
+  const r = makeActiveCore(g, id)
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    weekNews.value = []
+    commit(r.state)
+  }
+  return r.refused
+}
+
+/** The Lab's Make active for a monster that is not on this ranch yet (a Library creation or a preset). */
+export function adoptMonster(m: Monster): AdoptRefusal | null {
+  const g = game.value
+  if (!g) return 'ended'
+  const r = adoptCore(g, m)
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    weekNews.value = []
+    commit(r.state)
+  }
+  return r.refused
+}
+
+export function sendToFreezer(m: Monster): SendRefusal | null {
+  const g = game.value
+  if (!g) return 'full'
+  const r = sendToFreezerCore(g, m)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function releaseStored(id: string): void {
+  const g = game.value
+  if (!g) return
+  const next = releaseStoredCore(g, id)
+  if (next !== g) commit(next)
+}
+
+/** The Lab editor saved a frozen monster. */
+export function replaceStored(edited: Monster): void {
+  const g = game.value
+  if (!g) return
+  const next = replaceStoredCore(g, edited)
+  if (next !== g) commit(next)
+}
+
+export function concludeLife(epitaph: string): ConcludeResult | null {
+  const g = game.value
+  if (!g) return null
+  const r = concludeLifeCore(g, epitaph)
+  if (r) {
+    flow.value = { kind: 'idle' }
+    weekNews.value = []
+    commit(r.state)
+  }
+  return r
+}
+
+export function giveHeartstone(stoneId: string, targetId?: string): GiveRefusal | null {
+  const g = game.value
+  if (!g) return 'noTarget'
+  const r = giveHeartstoneCore(g, stoneId, targetId)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function editMemorial(id: string, name: string, epitaph: string): void {
+  const g = game.value
+  if (!g) return
+  const next = editMemorialCore(g, id, name, epitaph)
+  if (next !== g) commit(next)
+}
+
+export function fuse(id1: string, id2: string, catalystId: string | null): FuseOutput | null {
+  const g = game.value
+  if (!g) return null
+  const r = fuseCore(g, id1, id2, catalystId, newId(), rng)
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    weekNews.value = []
+    commit(r.state)
+  }
+  return r
+}
+
+export function awaken(phrase: string, artist: string): AwakenResult | null {
+  const g = game.value
+  if (!g) return null
+  const r = awakenCore(g, phrase, artist, newId())
+  if (r.state !== g) {
+    flow.value = { kind: 'idle' }
+    weekNews.value = []
+    commit(r.state)
+  }
+  return r
+}
+
+export function recreate(index: number): ReturnType<typeof recreateCore> | null {
+  const g = game.value
+  if (!g) return null
+  const r = recreateCore(g, index, newId())
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    commit(r.state)
+  }
+  return r
+}
+
+export function wakeStone(index: number): ReturnType<typeof wakeStoneCore> | null {
+  const g = game.value
+  if (!g) return null
+  const r = wakeStoneCore(g, index, newId())
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    commit(r.state)
+  }
+  return r
+}
+
+export function buyFromMarket(breed: BreedId): ReturnType<typeof buyFromMarketCore> | null {
+  const g = game.value
+  if (!g) return null
+  const r = buyFromMarketCore(g, breed, newId())
+  if (!r.refused) {
+    flow.value = { kind: 'idle' }
+    commit(r.state)
+  }
+  return r
+}
+
+/** Randomize at the Shrine: draws from the game's RNG so it is saved with everything else. */
+export function randomPhrase(): string {
+  const phrase = randomPhraseCore(rng, SHRINE_WORDS)
+  void persist()
+  return phrase
 }

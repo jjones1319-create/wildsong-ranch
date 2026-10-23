@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { BREED_IDS, STAT_KEYS } from '../data/types.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { BIRTH } from '../data/tuning.ts'
-import { monsterFromRoll, rollShrine, suggestName } from './shrine.ts'
+import { SECRETS } from '../data/secrets.ts'
+import { cyrb53 } from './hash.ts'
+import { monsterFromRoll, randomPhrase, rollShrine, suggestName } from './shrine.ts'
+import { createRng } from './rng.ts'
+import { mixBreeds } from './monster.ts'
 
 const ALL = [...BREED_IDS]
 
@@ -57,7 +61,7 @@ describe('the Shrine of Echoes (§14.1)', () => {
     expect(m.nature).toBe(r.offsets.nature)
   })
 
-  it('pins five phrases forever (the contract: changing any roll order changes every monster)', () => {
+  it('pins five phrases forever (the contract: changing any roll order changes every monster; two of them are secret phrases since M6)', () => {
     const summary = (phrase: string, artist: string) => {
       const r = rollShrine(phrase, artist, ALL)
       const m = monsterFromRoll(r, 'x')
@@ -71,12 +75,72 @@ describe('the Shrine of Echoes (§14.1)', () => {
       summary('a', 'b'),
     ]).toMatchInlineSnapshot(`
       [
-        "scrollopus/moatshell Wildsong 107/59/133/113/55/92 life 428 guts 13 nature -4 river-fish",
+        "puddlepup/puddlepup Wildsong 145/92/86/110/103/80 life 411 guts 12 nature 21 berry-pudding",
         "grumblestone/petalphant Twinkle 177/92/55/58/36/137 life 463 guts 18 nature -26 river-fish",
-        "nibblegrub/galeheron Hello 148/94/60/65/45/92 life 413 guts 14 nature -7 berry-pudding",
+        "tumblefox/tumblefox Hello 100/68/94/78/163/23 life 387 guts 10 nature 16 herbal-pellets",
         "tumblefox/pluckrex 夜明けの歌 113/74/79/75/90/50 life 357 guts 11 nature -27 berry-pudding",
         "grumblestone/starhowl A 141/104/60/51/45/116 life 434 guts 17 nature -24 honey-bread",
       ]
     `)
+  })
+})
+
+const SECRET_PHRASES = [
+  'wildsong', 'tunewick', 'hello world', 'happy birthday', 'thunderstorm', 'teatime', 'ember', 'jade garden', 'pancakes', 'lighthouse', 'fencing',
+  'sunrise', 'bedrock', 'midnight', 'farewell', 'static', 'clockwork', 'reflection', 'high tide', 'treasure', 'golden hour',
+]
+
+describe('secret phrases (CONTENT §12)', () => {
+  it('every secret phrase wakes its variant: pure, with its colours id, bonus and perk', () => {
+    const seen = new Set<string>()
+    for (const phrase of SECRET_PHRASES) {
+      const r = rollShrine(phrase, '', ALL)
+      expect(r.secret).not.toBeNull()
+      const s = r.secret!
+      seen.add(s.id)
+      expect(r.mainBreed).toBe(s.breed)
+      expect(r.subBreed).toBe(s.breed)
+      expect(r.variantName).toBe(`${s.adjective} ${mixBreeds(s.breed, s.breed).variantName}`)
+      const m = monsterFromRoll(r, 'x')
+      expect(m.variantId).toBe(s.id)
+      expect(m.flags.pure).toBe(true)
+      const base = mixBreeds(s.breed, s.breed).base
+      for (const k of STAT_KEYS) expect(m.stats[k]).toBe(Math.min(999, Math.max(1, base[k] + r.offsets.stats[k] + (s.stats[k] ?? 0))))
+      expect(m.lifespanTotal).toBe(mixBreeds(s.breed, s.breed).lifespan + r.offsets.lifespan + s.lifespan)
+      if (s.perk === 'lovesHoneyBread') expect(m.likes.food).toBe('honey-bread')
+    }
+    expect(seen.size).toBe(SECRETS.length)
+  })
+
+  it('is case- and punctuation-blind, and the artist field never hides a secret', () => {
+    expect(rollShrine('  Hello, WORLD!! ', '', ALL).secret?.id).toBe('glitch-tumblefox')
+    expect(rollShrine('wildsong', 'anyone', ALL).secret?.id).toBe('songheart-puddlepup')
+    expect(rollShrine('wild song', '', ALL).secret).toBeNull()
+  })
+
+  it('a secret of a sleeping breed becomes a Sleeping Stone like any other', () => {
+    const r = rollShrine('treasure', '', STARTING_UNLOCKED)
+    expect(r.secret?.breed).toBe('lootlid')
+    expect(r.mainLocked).toBe(true)
+  })
+
+  it('Randomize draws one to three words from the list, deterministically', () => {
+    const words = ['river', 'lantern', 'moon']
+    const a = randomPhrase(createRng(5), words)
+    expect(a).toBe(randomPhrase(createRng(5), words))
+    const n = a.split(' ').length
+    expect(n).toBeGreaterThanOrEqual(1)
+    expect(n).toBeLessThanOrEqual(3)
+    expect(a.split(' ').every((w) => words.includes(w))).toBe(true)
+  })
+
+  it('pins 1,000 phrases at once (one hash over every roll)', () => {
+    const lines: string[] = []
+    for (let i = 0; i < 1000; i++) {
+      const r = rollShrine(`echo ${i} ${['dawn', 'dusk', 'rain'][i % 3]}`, i % 4 === 0 ? `voice ${i % 7}` : '', ALL)
+      const m = monsterFromRoll(r, 'x')
+      lines.push(`${r.mainBreed}/${r.subBreed}/${m.variantId ?? '-'} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} ${m.lifespanTotal} ${m.gutsRate} ${m.nature} ${m.likes.food} ${m.likes.drill}`)
+    }
+    expect(cyrb53(lines.join('\n'))).toBe(2515594754645409)
   })
 })

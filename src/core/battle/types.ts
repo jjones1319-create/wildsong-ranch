@@ -49,6 +49,8 @@ export interface TechniqueRef {
   /** Mastery bonuses (§10.4): +2 hit at Lv2, +2 force at Lv3. */
   hitBonus: number
   forceBonus: number
+  /** CONTENT §12 Lantern-bearer: +wither on Wither techniques. */
+  witherBonus: number
 }
 
 export interface FighterState {

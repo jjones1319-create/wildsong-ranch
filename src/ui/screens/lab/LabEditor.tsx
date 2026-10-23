@@ -213,7 +213,7 @@ export function LabEditorScreen() {
     const saved = await saveDraft(asCopy)
     if (saved) {
       showToast(fill(active ? t.savedActive : asCopy ? t.savedCopy : t.saved, { name: saved.name || name }))
-      if (active) goBack()
+      if (active || (d.origin === 'freezer' && !asCopy)) goBack()
       else navigate('labView')
     }
   }
@@ -450,7 +450,7 @@ export function LabEditorScreen() {
         <button type="button" class="btn btn--primary btn--half" onClick={() => void save(false)}>
           {t.save}
         </button>
-        {(d.origin === 'library' || d.origin === 'active') && (
+        {(d.origin === 'library' || d.origin === 'active' || d.origin === 'freezer') && (
           <button type="button" class="btn btn--half" onClick={() => void save(true)}>
             {t.saveCopy}
           </button>

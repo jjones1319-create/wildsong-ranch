@@ -1,4 +1,6 @@
 /** Player-facing strings for the app shell, the ranch, Town, the Monster Lab and Settings. Wren's voice is warm and simple; Basil gossips; Ines is formal; Dr. Pell is brisk and kind. */
+import { LEGACY_TEXT } from './legacy.ts'
+
 export const UI_TEXT = {
   title: 'Wildsong Ranch',
   tagline: 'Every monster is born from a song.',
@@ -219,8 +221,11 @@ export const UI_TEXT = {
     lab: 'Monster Lab',
     labHint: 'Edit, create and share monsters.',
     market: 'Market',
+    marketHint: 'The four starters and this season’s breed, for gold.',
     shrine: 'Shrine of Echoes',
+    shrineHint: 'Sing a song; wake a monster. Sleeping Stones and the Encyclopedia.',
     pell: "Dr. Pell's Lab",
+    pellHint: 'Freezer, Fusion, the Memorial wall and Heartstones.',
     guild: "Breeders' Guild",
     mail: 'Mailbox',
     mailHint: 'Sale notices, invitations and Guild news.',
@@ -727,17 +732,7 @@ export const UI_TEXT = {
     done: 'Back to the ranch',
   },
   /** Farewell placeholder (the full scene arrives with the Memorial). */
-  farewell: {
-    passed: 'In memory of {name}',
-    retired: '{name} retires',
-    lived: 'Lived {n} weeks ({pct}% of {total})',
-    total: 'Final stat total {n}',
-    care: '{drills} drills · {rests} rests · {sweets} sweets',
-    newRanch: 'Start a new ranch',
-    keepCopy: 'Keep a copy in the Lab',
-    kept: 'Added {name} to the Lab Library.',
-    toTitle: 'Back to the title',
-  },
+  ...LEGACY_TEXT,
   settings: {
     title: 'Settings',
     sections: { play: 'Play', display: 'Display', audio: 'Sound', ranch: 'This ranch', backup: 'Backup', storage: 'Storage', sandbox: 'Sandbox tools' },

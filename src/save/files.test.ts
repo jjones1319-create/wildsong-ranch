@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createGameState } from '../core/state.ts'
 import { makeMonster } from '../core/test-helpers.ts'
 import { LAB } from '../data/tuning.ts'
-import { migrate, SAVE_VERSION } from './migrate.ts'
+import { SAVE_VERSION, migrate } from './migrate.ts'
 import { defaultSettings, emptyLibrary, makeMonsterFile, makeSave, validateAny, validateLibrary, validateMonsterFile, validateSettings, type Library } from './schema.ts'
 
 const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x)) as T
@@ -41,13 +41,13 @@ describe('schema version 2 (M2)', () => {
     expect(validateAny(clone(v2Monster)).ok).toBe(true)
   })
 
-  it('migrates a version-3 save by adding the M5 Guild, tournament and mail fields (schema version 4)', () => {
+  it('migrates a version-3 save by adding the M5 Guild, tournament and mail fields (and on to the current version)', () => {
     const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
     for (const k of ['tournament', 'trial', 'guild', 'hallOfFame', 'mail', 'saleMonths', 'journeysBySite', 'titles']) delete game[k]
     const v3 = { schemaVersion: 3, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.6.0' } }
     const up = migrate(clone(v3)) as { schemaVersion: number; game: Record<string, unknown> }
-    expect(up.schemaVersion).toBe(4)
-    expect(up.game).toMatchObject({ tournament: null, trial: null, hallOfFame: [], mail: [], saleMonths: [], titles: [] })
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game).toMatchObject({ tournament: null, trial: null, hallOfFame: [], mail: [], saleMonths: [], titles: [], freezer: [], memorial: [], heartstones: [] })
     const r = validateAny(clone(v3))
     expect(r.ok && r.kind === 'save').toBe(true)
     if (r.ok && r.kind === 'save') {

@@ -11,6 +11,7 @@ import { expressionFromCues, faceFor, type Expression } from './expressions.ts'
 import { LOOKS, POLISH, type Look } from './looks.ts'
 import { buildPalette } from './palettes.ts'
 import { drawParticles } from './particles.ts'
+import { variantPalette, type VariantPalette } from './variants.ts'
 import { cheeks, drawEyes, drawMouth, rainbow, sickTint, sparkles, sweatDrop, type PartPiece } from './parts.ts'
 import { el, g } from './svg.ts'
 
@@ -29,6 +30,8 @@ export interface RenderSpec {
   /** Whose accent part is attached (the sub when not pure). */
   accentBreed: BreedId | null
   eyeColor: string
+  /** A secret variant's own colours (CONTENT §12); they replace the palette breed's. */
+  palette?: VariantPalette | null
   /** Life stage 1–10: sets the size (§5.3), the "visibly old" look from stage 8, and the growth form. */
   stage: number
   expression: Expression
@@ -80,6 +83,7 @@ export function specFromMonster(m: Monster, o: SpecOverrides = {}): RenderSpec {
     paletteBreed,
     accentBreed: m.mainBreed === m.subBreed ? null : m.subBreed,
     eyeColor: BREED_BY_ID[m.mainBreed].art.palette.eye,
+    palette: variantPalette(m.variantId),
     stage: o.stage ?? stageOf(m),
     expression: o.expression ?? cues.expression,
     sparkle: o.sparkle ?? cues.sparkle,
@@ -118,7 +122,7 @@ export function renderMonsterSvg(spec: RenderSpec, o: RenderOptions = {}): strin
   const base = LOOKS[spec.mainBreed]
   const look: Look = formForStage(spec.mainBreed, spec.stage) === 'grown' && base.grown ? base.grown : base
   const polish = POLISH[spec.mainBreed]
-  const pal = buildPalette(BREED_BY_ID[spec.paletteBreed].art.palette, spec.eyeColor, { gradients: true, texture: polish.texture })
+  const pal = buildPalette(spec.palette ?? BREED_BY_ID[spec.paletteBreed].art.palette, spec.palette ? spec.palette.eye : spec.eyeColor, { gradients: true, texture: polish.texture })
   const plan = drawPlan(breed.art.plan, pal, look.knobs)
   const s: Sockets = plan.sockets
   look.adjust?.(s)

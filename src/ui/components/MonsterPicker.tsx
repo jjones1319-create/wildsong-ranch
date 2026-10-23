@@ -1,17 +1,18 @@
 import { useState } from 'preact/hooks'
-import { mixBreeds, totalStats, type Monster } from '../../core/monster.ts'
+import { totalStats, type Monster } from '../../core/monster.ts'
+import { variantNameOf } from '../../core/variants.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { Segmented, Sheet } from './Controls.tsx'
 import { MonsterCard } from './MonsterCard.tsx'
 import { MonsterPortrait } from './MonsterPortrait.tsx'
 import { game } from '../store/gameStore.ts'
 import { library } from '../store/appStore.ts'
-import { listPresets, type Listed } from '../store/labStore.ts'
+import { listFreezer, listPresets, type Listed } from '../store/labStore.ts'
 
 /** A monster chosen for Versus or the Battle Lab, with where it came from. */
 export interface Picked {
   monster: Monster
-  source: 'active' | 'library' | 'presets'
+  source: 'active' | 'library' | 'freezer' | 'presets'
 }
 
 type Source = Picked['source']
@@ -28,7 +29,7 @@ export function PickSlot({ label, picked, onPick }: { label: string; picked: Pic
           <span class="pick__name">{picked ? picked.monster.name : UI_TEXT.versus.pick}</span>
           {picked && (
             <span class="muted small">
-              {mixBreeds(picked.monster.mainBreed, picked.monster.subBreed).variantName} · {UI_TEXT.lab.total} {totalStats(picked.monster.stats)}
+              {variantNameOf(picked.monster)} · {UI_TEXT.lab.total} {totalStats(picked.monster.stats)}
             </span>
           )}
         </span>
@@ -48,7 +49,8 @@ export function PickSlot({ label, picked, onPick }: { label: string; picked: Pic
 export function PickerSheet({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (p: Picked) => void }) {
   const t = UI_TEXT.versus
   const g = game.value
-  const [source, setSource] = useState<Source>(g?.monster ? 'active' : 'library')
+  const frozen = listFreezer()
+  const [source, setSource] = useState<Source>(g?.monster ? 'active' : frozen.length ? 'freezer' : 'library')
   const rows: Listed[] =
     source === 'active'
       ? g?.monster
@@ -56,9 +58,12 @@ export function PickerSheet({ open, onClose, onPick }: { open: boolean; onClose:
         : []
       : source === 'library'
         ? library.value.entries.map((e) => ({ id: e.monster.id, monster: e.monster, source: 'library' as const, history: e.history, createdAt: e.createdAt, updatedAt: e.updatedAt }))
-        : listPresets()
+        : source === 'freezer'
+          ? frozen
+          : listPresets()
   const options: { value: Source; label: string }[] = [
     ...(g?.monster ? [{ value: 'active' as const, label: t.sources.active }] : []),
+    ...(g && frozen.length ? [{ value: 'freezer' as const, label: UI_TEXT.versusSources.freezer }] : []),
     { value: 'library', label: t.sources.library },
     { value: 'presets', label: t.sources.presets },
   ]

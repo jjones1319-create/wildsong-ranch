@@ -9,6 +9,7 @@ import {
   TOY_IDS,
   type BreedId,
   type DrillId,
+  type Family,
   type FoodId,
   type Grade,
   type Grades,
@@ -92,6 +93,8 @@ export interface Monster {
   generation: number
   parents: [string, string] | []
   seedPhrase: string
+  /** §16 the Heirloom: +hit for this family's techniques, from a Heartstone's donor. */
+  heirloom: Family | null
   stats: Stats
   grades: Grades
   growthType: GrowthType
@@ -307,6 +310,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
     generation: input.generation ?? 1,
     parents: input.parents ?? [],
     seedPhrase: input.seedPhrase ?? '',
+    heirloom: null,
     stats,
     grades: mix.grades,
     growthType: main.growth,

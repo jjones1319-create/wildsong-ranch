@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { marketMonster, marketStock } from '../../core/market.ts'
-import { mixBreeds, type Monster } from '../../core/monster.ts'
+import type { Monster } from '../../core/monster.ts'
+import { variantNameOf } from '../../core/variants.ts'
 import { monsterFromRoll, rollShrine } from '../../core/shrine.ts'
 import { BREED_BY_ID, STARTING_UNLOCKED } from '../../data/breeds.ts'
 import { fill } from '../../data/text/format.ts'
@@ -163,7 +164,7 @@ export function NewGameScreen() {
                   </SpeakerCard>
                 ) : (
                   <div class="preview">
-                    <MonsterPortrait breed={roll.mainBreed} sub={roll.subBreed} size={120} label={roll.variantName} />
+                    <MonsterPortrait monster={monsterFromRoll(roll, 'preview')} size={120} label={roll.variantName} expression="neutral" />
                     <div class="preview__info">
                       <span class="preview__name">{roll.variantName}</span>
                       <span class="muted small">{WREN.shrineHums}</span>
@@ -190,7 +191,7 @@ export function NewGameScreen() {
           <div class="farewell__art">
             <MonsterPortrait monster={{ ...monster, name }} size={200} expression="happy" />
           </div>
-          <p class="center muted">{mixBreeds(monster.mainBreed, monster.subBreed).variantName}</p>
+          <p class="center muted">{variantNameOf(monster)}</p>
           <SpeakerCard speaker={UI_TEXT.wren} tone="muted">
             <p>{mode === 'gift' ? WREN.marketGift : WREN.shrineHums}</p>
           </SpeakerCard>

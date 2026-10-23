@@ -1,5 +1,6 @@
+import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { DIFFICULTY, ECONOMY } from '../data/tuning.ts'
-import type { Difficulty, DrillId, FoodId, Habit, JourneySiteId, Personality, TournamentGrade, Weather } from '../data/types.ts'
+import type { BreedId, Difficulty, DrillId, Family, FoodId, Habit, JourneySiteId, Personality, Stats, TournamentGrade, Weather } from '../data/types.ts'
 import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
@@ -120,6 +121,58 @@ export interface MailItem {
   read: boolean
 }
 
+/* ---------- legacy (§14.1, §15, §16) ---------- */
+
+export type MemorialCause = 'passed' | 'retired' | 'fused'
+
+export interface MemorialEntry {
+  /** The monster as it was at the end; its id stays the monster's id (the family tree points at it). */
+  monster: Monster
+  cause: MemorialCause
+  epitaph: string
+  week: number
+}
+
+export interface Heartstone {
+  id: string
+  donorId: string
+  donorName: string
+  donorBreed: BreedId
+  donorSub: BreedId
+  donorVariant: string | null
+  /** The donor's trained gains per stat (stat − breed base at birth, never below 0). */
+  gains: Stats
+  /** The donor's most-used technique family: the Heirloom. */
+  family: Family
+  week: number
+}
+
+/** A Shrine creation that can be re-created for a fee. */
+export interface EncyclopediaPhrase {
+  phrase: string
+  artist: string
+  name: string
+  mainBreed: BreedId
+  subBreed: BreedId
+  variantId: string | null
+}
+
+export interface Encyclopedia {
+  /** Breeds owned (as a main) on this ranch. */
+  breeds: BreedId[]
+  /** Secret variants owned. */
+  variants: string[]
+  phrases: EncyclopediaPhrase[]
+}
+
+/** A phrase whose main breed was still asleep (§14.1). It wakes for free once the breed unlocks. */
+export interface SleepingStone {
+  phrase: string
+  artist: string
+  breed: BreedId
+  week: number
+}
+
 export interface GameState {
   /** Week index: 0 = Year 1, January, week 1. */
   week: number
@@ -163,6 +216,19 @@ export interface GameState {
   journeysBySite: Record<JourneySiteId, number>
   /** CONTENT §14 titles earned on this ranch. */
   titles: string[]
+  /** §16 the Freezer (FREEZER.slots). Time stops for frozen monsters. */
+  freezer: Monster[]
+  /** §7 Gentle retirees. They can fuse like frozen monsters and mentor Journeys. */
+  elderGrove: Monster[]
+  /** §16 every monster that passed away, retired or was fused. Never deleted. */
+  memorial: MemorialEntry[]
+  heartstones: Heartstone[]
+  encyclopedia: Encyclopedia
+  sleepingStones: SleepingStone[]
+  /** Breeds the Shrine may wake. Starts as every breed that isn't locked; M7's unlock chains add the rest. */
+  unlocked: BreedId[]
+  /** The absolute month (week ÷ 4) an Elder last mentored, or null. One mentoring per month. */
+  elderMentorMonth: number | null
 }
 
 export interface NewGameOptions {
@@ -218,5 +284,17 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     saleMonths: [],
     journeysBySite: zeroJourneys(),
     titles: [],
+    freezer: [],
+    elderGrove: [],
+    memorial: [],
+    heartstones: [],
+    encyclopedia: emptyEncyclopedia(),
+    sleepingStones: [],
+    unlocked: [...STARTING_UNLOCKED],
+    elderMentorMonth: null,
   }
+}
+
+export function emptyEncyclopedia(): Encyclopedia {
+  return { breeds: [], variants: [], phrases: [] }
 }

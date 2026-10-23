@@ -1,11 +1,12 @@
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
-import { BATTLE, BATTLE_TRAITS } from '../../data/tuning.ts'
+import { BATTLE, BATTLE_TRAITS, HEARTSTONE } from '../../data/tuning.ts'
 import { TOURNAMENT_GRADES, type Technique } from '../../data/types.ts'
 import { clamp, divRound } from '../mathx.ts'
 import { loyaltyOf, totalStats } from '../monster.ts'
 import { createRng, type Rng } from '../rng.ts'
 import { masteryBonuses } from '../songbook.ts'
+import { variantFarHit, variantWitherPlus } from '../variants.ts'
 import { decideAi } from './ai.ts'
 import { bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
 import { bulwarkPct, clutchPct, composurePct, lastStandPct, ragePct, specialMods, tickSpecial, tryTrigger, valorPct } from './specials.ts'
@@ -58,7 +59,11 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     .filter((t) => TECHNIQUE_BY_ID[t.id] !== undefined)
     .map((t) => {
       const b = masteryBonuses(t)
-      return { id: t.id, hitBonus: b.hit, forceBonus: b.force }
+      const tech = TECHNIQUE_BY_ID[t.id]!
+      // §16 the Heirloom (+hit on the donor's family) and CONTENT §12 variant perks.
+      const heirloom = m.heirloom === tech.family ? HEARTSTONE.heirloomHit : 0
+      const far = tech.range === 4 ? variantFarHit(m) : 0
+      return { id: t.id, hitBonus: b.hit + heirloom + far, forceBonus: b.force, witherBonus: variantWitherPlus(m, tech.family) }
     })
   return {
     side,
@@ -508,7 +513,7 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     mults.push(BATTLE.damage.rnd.min * 10 + rng.nextInt(0, (BATTLE.damage.rnd.max - BATTLE.damage.rnd.min) * 10))
     const damage = jackpot === 'fizzle' ? 0 : finishDamage(base, mults)
 
-    let wither = tech.wither
+    let wither = tech.wither + ref.witherBonus
     if (crit) wither = divRound(wither * BATTLE.damage.critMul, 100)
     wither = divRound(wither * myMods.witherDealtPct, 100)
     wither = divRound(wither * traitWitherTakenMul(opp.trait), 1000)

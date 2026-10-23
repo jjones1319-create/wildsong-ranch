@@ -268,12 +268,18 @@
 
 ## M6: Legacy (Freezer, Fusion, Memorial, Heartstones)
 
-- [ ] Freezer (20 slots), freeze and thaw, Freezer use in Lab, Versus and Battle Lab.
-- [ ] Fusion: candidate odds, compatibility comment, inheritance math, catalysts, Ancestors, lineage tree.
-- [ ] Farewell scene, epitaph, Memorial wall, Heartstones and Heirloom, Gentle-mode Elder Grove and mentoring.
-- [ ] Full Shrine: two-field input, Randomize, teasers, Sleeping Stones, Encyclopedia re-creation (500G), secret phrases (hashed).
-- [ ] Market seasonal stock.
-- [ ] Tests: fusion odds normalization, inheritance math, Heartstone caps, Shrine determinism across 1,000 phrases (snapshot test), secret phrases.
+- [x] Freezer (20 slots), freeze and thaw, Freezer use in Lab, Versus and Battle Lab.
+- [x] Fusion: candidate odds, compatibility comment, inheritance math, catalysts, Ancestors, lineage tree.
+- [x] Farewell scene, epitaph, Memorial wall, Heartstones and Heirloom, Gentle-mode Elder Grove and mentoring.
+- [x] Full Shrine: two-field input, Randomize, teasers, Sleeping Stones, Encyclopedia re-creation (500G), secret phrases (hashed).
+- [x] Market seasonal stock.
+- [x] Tests: fusion odds normalization, inheritance math, Heartstone caps, Shrine determinism across 1,000 phrases (snapshot test), secret phrases.
+
+**Detailed plan (written 2026-10-23, after the owner confirmed M5):** version `0.8.0`. No new dependencies. Legacy lives in the save (schema v5): `freezer` (20), `elderGrove` (Gentle retirees), `memorial` (snapshots with cause and epitaph), `heartstones` (10, 15 with the Lantern Garden), `encyclopedia`, `sleepingStones`, `unlocked`. The farewell is a flow that ends in `concludeLife`; an empty ranch offers the Freezer, the Market and the Shrine. Secret phrases are stored as cyrb53 hashes of the normalized phrase. Unlock chains, the Lantern Vigil mail, the Journal pages and the Lantern Garden purchase stay in M7.
+- [x] 1. Data: `FUSION`, `HEARTSTONE`, `FREEZER`, `SHRINE`, `VARIANTS` and `ELDER` numbers in `tuning.ts`; `data/secrets.ts` (hash → variant, palette, bonus); the new text; `art/monster/variants.ts` palettes and the render override; schema v5 (`freezer`, `elderGrove`, `memorial`, `heartstones`, `encyclopedia`, `sleepingStones`, `unlocked`, `elderMentorMonth`; the monster's `heirloom`) with a migration and tests.
+- [x] 2. `core/legacy.ts`: freeze, make active (swap), send to the Freezer, release, `concludeLife` (Memorial, Heartstone, Elder Grove), `heartstoneFrom`, `giveHeartstone`, caps, the Elder mentor. `core/fusion.ts`: outcome odds (4/3/2/1 and 3/2/2/1, × strength/5, locked mains removed, normalized, < 1 % dropped, ≤ 6; the Lineage Seal), compatibility M and Pell's comment, the baby (offsets × P × K, catalysts, grades/guts/lifespan/trait from the baby's breed, the two technique cases, nature and form (2·P1 + P2)/3, generation), parents to the Memorial. `core/shrine.ts`: secret variants, Sleeping Stones, Randomize, the Encyclopedia's 500G re-creation; `core/variants.ts`: birth bonuses and the rule hooks (every food liked, Honey Bread liked, birthday calm, Far +5 hit, Wither +5, prizes +25 %); `core/market.ts`: buying after the first monster. Hooks in the engine (Heirloom +3 hit), food, aging and the cup finish. Tests: odds normalization, inheritance math, Heartstone caps, a 1,000-phrase determinism snapshot, every secret phrase, the migration, and a life → farewell → Heartstone → Fusion integration test.
+- [x] 3. UI: the Farewell scene (dusk, best moments, the epitaph, Say goodbye), the empty ranch card, Dr. Pell's Lab in Town (Freezer with Make Active / Edit / Release, Fusion with the odds and the comment, the Memorial wall with epitaph editing and Duplicate to edit, Heartstones with Give, the Elder Grove on Gentle, the family tree on a fused monster's card), the Shrine (two fields, Awaken, Randomize, the stone's teaser, Sleeping Stones, the Encyclopedia with re-creation), the Market (starters and the season's breed; to the ranch or the Freezer); the Freezer in the Lab's Library, Versus and the Battle Lab; Send to Freezer and Make Active in the Library; variant names and badges; `legacy.css`.
+- [x] 4. `npm run verify`, a headless Chrome run (a farewell with an epitaph and a Heartstone, two monsters frozen and fused, a secret phrase), PROGRESS.md, commit `M6: legacy`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:** freeze two monsters and fuse them; check the odds screen; let a monster pass away (or retire) and use its Heartstone; find a secret phrase.
 

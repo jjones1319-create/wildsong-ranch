@@ -5,6 +5,8 @@ import { FOODS } from './foods.ts'
 import { ITEMS } from './items.ts'
 import { JOURNEY_SITES } from './journeys.ts'
 import { BREED_TECHNIQUES, TECHNIQUES, UNIVERSAL_TECHNIQUES, parseEffect, parseLearn, slugify, subQuirkOf, techniquesOfBreed } from './techniques.ts'
+import { SECRETS, SECRET_BY_HASH } from './secrets.ts'
+import { VARIANT_PALETTES } from '../art/monster/variants.ts'
 import { TRAITS } from './traits.ts'
 import { BREED_IDS, FAMILIES, STAT_KEYS, type Family, type Technique } from './types.ts'
 
@@ -200,5 +202,20 @@ describe('techniques (CONTENT §3)', () => {
       'universal.piccolo-dart hit=13 (band 14..20)',
       'universal.fortissimo-blast hit=-13 (band -12..-6)',
     ])
+  })
+})
+
+describe('secret variants (CONTENT §12)', () => {
+  it('lists 21 variants with unique ids and hashes, real breeds and a palette each', () => {
+    expect(SECRETS).toHaveLength(21)
+    expect(new Set(SECRETS.map((s) => s.id)).size).toBe(21)
+    expect(SECRET_BY_HASH.size).toBe(21)
+    for (const s of SECRETS) {
+      expect(BREED_IDS).toContain(s.breed)
+      expect(VARIANT_PALETTES[s.id]).toBeDefined()
+      expect(s.adjective.length).toBeGreaterThan(0)
+      expect(Number.isSafeInteger(s.hash)).toBe(true)
+    }
+    expect(SECRETS.filter((s) => s.perk !== null)).toHaveLength(6)
   })
 })

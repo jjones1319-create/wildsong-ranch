@@ -18,6 +18,9 @@ export const SCREENS = [
   'town',
   'shop',
   'library',
+  'pell',
+  'shrine',
+  'market',
   'farewell',
   'lab',
   'labCreate',
@@ -50,6 +53,9 @@ const SLUGS: Record<Screen, string> = {
   town: 'town',
   shop: 'town/shop',
   library: 'town/library',
+  pell: 'town/pell',
+  shrine: 'town/shrine',
+  market: 'town/market',
   farewell: 'farewell',
   lab: 'lab',
   labCreate: 'lab/create',
@@ -82,6 +88,9 @@ const PARENT: Record<Screen, Screen | null> = {
   town: 'ranch',
   shop: 'town',
   library: 'town',
+  pell: 'town',
+  shrine: 'town',
+  market: 'town',
   farewell: 'title',
   lab: 'title',
   labCreate: 'lab',
@@ -140,7 +149,7 @@ export function parentOf(target: Screen): Screen | null {
 }
 
 export function isRanchScreen(s: Screen): boolean {
-  return s === 'ranch' || s === 'ranchCard' || s === 'bag' || s === 'songbook' || s === 'town' || s === 'shop' || s === 'library' || s === 'farewell'
+  return s === 'ranch' || s === 'ranchCard' || s === 'bag' || s === 'songbook' || s === 'town' || s === 'shop' || s === 'library' || s === 'pell' || s === 'shrine' || s === 'market' || s === 'farewell'
 }
 
 /** A minimal window-like host, so the router can be installed on a fake in tests. */

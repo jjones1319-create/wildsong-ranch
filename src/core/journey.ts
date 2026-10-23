@@ -23,10 +23,12 @@ export interface JourneyProgress {
   /** Technique that was earned but could not be added because the monster already knows 12. */
   pendingTechnique: string | null
   gains: Stats
+  /** §7 Gentle: an Elder from the Grove mentors this Journey (+JOURNEY.technique.elderMentorPct). */
+  elderMentor: boolean
 }
 
-export function startJourney(site: JourneySiteId): JourneyProgress {
-  return { site, weekNo: 1, successes: 0, learned: null, pendingTechnique: null, gains: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } }
+export function startJourney(site: JourneySiteId, elderMentor = false): JourneyProgress {
+  return { site, weekNo: 1, successes: 0, learned: null, pendingTechnique: null, gains: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }, elderMentor }
 }
 
 export function isJourneyDone(p: JourneyProgress): boolean {

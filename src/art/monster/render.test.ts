@@ -54,6 +54,18 @@ describe('procedural monster art (§22)', () => {
     expect(mixed.length).toBeGreaterThan(pure.length)
   })
 
+  it('a secret variant wears its own colours instead of the sub palette', () => {
+    const m = makeMonster({ main: 'puddlepup' })
+    const plain = renderMonsterSvg(specFromMonster(m, { animate: false }))
+    m.variantId = 'songheart-puddlepup'
+    const special = renderMonsterSvg(specFromMonster(m, { animate: false }))
+    expect(special).not.toBe(plain)
+    expect(special).toContain('#5FC7B0')
+    expect(special).not.toContain(BREED_BY_ID.puddlepup.art.palette.body)
+    m.variantId = 'not-a-variant'
+    expect(renderMonsterSvg(specFromMonster(m, { animate: false }))).toBe(plain)
+  })
+
   it('reads the palette and expression from a real monster', () => {
     const m = makeMonster({ main: 'coilfang', sub: 'wishlume' })
     expect(paletteFor(m).body).toBe(BREED_BY_ID.wishlume.art.palette.body)

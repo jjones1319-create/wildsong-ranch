@@ -1,0 +1,143 @@
+/* M6: the farewell, the empty ranch, Dr. Pell's Lab, the Shrine and the Market. */
+
+.dusk {
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #2b2340 0%, #5a3a4a 55%, #c7733f 100%);
+  padding: 18px 0;
+}
+
+.stage--empty {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  padding: 16px;
+}
+
+/* Fusion: the two parent slots and the odds board. */
+.parents {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.odds {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.odds__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.odds__row--top {
+  border-color: var(--accent);
+}
+
+.odds__name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.odds__pct {
+  font-weight: 800;
+  font-size: 1.15em;
+  min-width: 52px;
+  text-align: right;
+}
+
+.odds__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.odds__fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+/* The Memorial wall and the Heartstone shelf. */
+.memorial {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.memorial__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.memorial__name {
+  font-weight: 700;
+}
+
+.memorial__epitaph {
+  font-style: italic;
+  color: var(--muted);
+}
+
+.stone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.stone__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.stone__phrase {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.stone .btn {
+  flex: 0 0 auto;
+}
+
+.gift .btn--small {
+  margin-top: 6px;
+}
+
+/* Dr. Pell's five tabs wrap instead of scrolling off the phone. */
+.pell-tabs .chips {
+  flex-wrap: wrap;
+  overflow: visible;
+}

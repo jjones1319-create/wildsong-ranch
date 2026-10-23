@@ -18,6 +18,7 @@ import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
 import { trialOutcome } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../lab/LabVersus.tsx'
 import { DrillResult } from './DrillResult.tsx'
+import { EmptyRanch } from './EmptyRanch.tsx'
 import { TrialCard } from './TrialCard.tsx'
 import { FoodPrompt } from './FoodPrompt.tsx'
 import { RequestCard } from './RequestCard.tsx'
@@ -40,7 +41,8 @@ export function RanchScreen() {
     settle()
   }, [g?.week, g?.weekPhase, f.kind])
 
-  if (!g || !g.monster || g.ended) return null
+  if (!g || g.ended) return null
+  if (!g.monster) return <EmptyRanch g={g} />
   const m = g.monster
   const mn = menu.value!
   const ranchTip = tipFor({ screen: 'ranch' })

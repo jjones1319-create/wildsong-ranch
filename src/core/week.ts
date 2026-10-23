@@ -7,6 +7,7 @@ import { dateOf, isMonthStart, isUpgradeOfferWeek, rollWeather, seasonOf } from 
 import { applyMonthlyFood, type FoodRelation } from './food.ts'
 import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
 import { bondCharmId, canEnterSite, isJourneyDone, isSiteOpen, journeyCost, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
+import { elderMentorFor, monthIndexOf } from './legacy.ts'
 import { addCondition } from './monster.ts'
 import type { Rng } from './rng.ts'
 import type { GameState, WeekAction } from './state.ts'
@@ -51,6 +52,8 @@ export type WeekEvent =
   /** §11 mentor bond: a Mentor's Charm was earned (added by the controller). */
   | { kind: 'bond'; site: JourneySiteId }
   | { kind: 'sale'; month: number }
+  /** §7 Gentle: an Elder from the Grove mentors this Journey. */
+  | { kind: 'elderMentor'; elder: string }
 
 export interface StartWeekResult {
   state: GameState
@@ -154,7 +157,7 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
   }
 
   if (state.journey) {
-    const r = journeyWeek(m, state.journey, rng, false, countOf(state.inventory, bondCharmId(state.journey.site)))
+    const r = journeyWeek(m, state.journey, rng, state.journey.elderMentor, countOf(state.inventory, bondCharmId(state.journey.site)))
     state.monster = r.monster
     state.journey = r.progress
     events.push({ kind: 'journeyWeek', result: r.result })
@@ -205,7 +208,12 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
       const cost = journeyCost(state.saleMonths, month)
       state.money -= cost
       events.push({ kind: 'journeyStart', site: chosen.site, cost })
-      const r = journeyWeek(m, startJourney(chosen.site), rng, false, countOf(state.inventory, bondCharmId(chosen.site)))
+      const elder = elderMentorFor(state, chosen.site)
+      if (elder) {
+        state.elderMentorMonth = monthIndexOf(state.week)
+        events.push({ kind: 'elderMentor', elder: elder.name })
+      }
+      const r = journeyWeek(m, startJourney(chosen.site, elder !== null), rng, elder !== null, countOf(state.inventory, bondCharmId(chosen.site)))
       state.monster = r.monster
       state.journey = isJourneyDone(r.progress) ? null : r.progress
       events.push({ kind: 'journeyWeek', result: r.result })

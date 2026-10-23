@@ -30,6 +30,9 @@ import { TitleScreen } from './screens/Title.tsx'
 import { GuildLibraryScreen } from './screens/town/GuildLibrary.tsx'
 import { ShopScreen } from './screens/town/Shop.tsx'
 import { TownScreen } from './screens/town/Town.tsx'
+import { PellLabScreen } from './screens/town/PellLab.tsx'
+import { ShrineScreen } from './screens/town/Shrine.tsx'
+import { MarketScreen } from './screens/town/Market.tsx'
 import { ready } from './store/appStore.ts'
 import { flow } from './store/gameStore.ts'
 
@@ -63,6 +66,12 @@ function Current({ current }: { current: Screen }) {
       return <ShopScreen />
     case 'library':
       return <GuildLibraryScreen />
+    case 'pell':
+      return <PellLabScreen />
+    case 'shrine':
+      return <ShrineScreen />
+    case 'market':
+      return <MarketScreen />
     case 'farewell':
       return <FarewellScreen />
     case 'settings':

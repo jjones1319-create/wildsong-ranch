@@ -2,6 +2,38 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## M6: Legacy (2026-10-23) · v0.8.0
+
+**Live:** loss has meaning. A life ends in a farewell scene with an epitaph; the monster joins the Memorial wall and leaves a Heartstone; the ranch waits while you thaw, buy or sing up the next one. Dr. Pell's Lab holds the Freezer, the fusion table with its odds, the Memorial, the Heartstone shelf and (on Gentle) the Elder Grove. The Shrine of Echoes is open in Town with Sleeping Stones, the Encyclopedia and 21 secret phrases. The Market sells monsters after the first.
+
+**Done**
+- **Schema v5** with a migration and tests: `freezer`, `elderGrove`, `memorial`, `heartstones`, `encyclopedia`, `sleepingStones`, `unlocked`, `elderMentorMonth`; a Journey remembers its Elder mentor; monsters gain `heirloom`. Loading tidies the lists (duplicates, broken entries, the 20-slot and Heartstone caps, unknown variants) and always keeps the starters unlocked.
+- **The farewell** (`core/legacy.ts`, `screens/Farewell.tsx`): the ranch at dusk, Wren's scene and two "remember when" moments, the best-moments card, a one-line epitaph (80 characters, editable later), Say goodbye → the Memorial (cause, epitaph, week) plus a Heartstone when the shelf has room; on Gentle the monster also walks to the Elder Grove. The ranch is then empty: the calendar waits, and the empty-ranch card offers the Freezer, the Market, the Shrine and the Lab.
+- **The Freezer** (20 slots): freeze the active monster from Dr. Pell's (free, instant, not during a cup, Journey or Trial), Make active (the current one takes the freed slot), Move to the Lab Library, View / Edit / Export. Frozen monsters and Elders appear as a source in the Lab Library, Versus and the Battle Lab; the Library's cards gained Send to the Freezer and Make active (the current monster goes to the Freezer after a confirm). The editor has a `freezer` origin that saves back in place.
+- **Fusion** (`core/fusion.ts`, §15 exactly): candidate mains 4/3/2/1 and subs 3/2/2/1 × lineage strength, locked mains removed, normalized with largest-remainder rounding so the board sums to 100, under-1 % outcomes dropped, at most six shown; the Lineage Seal doubles P1's main weight. Compatibility ranks the parents' stats and the baby breed's grades (ties by base stat), M = agreeing ranks, Dr. Pell's four comments. Baby stats = base + round(offset · P · K) + catalyst with P = 20 % + 9 %·M and K by rarity; grades, guts, lifespan and trait from the baby's breed; techniques by the two §15 cases (two thirds of P1's non-Basic ones with uses and levels when the main matches, otherwise one per family from the baby's kit); nature and form 2:1; generation max + 1; the 1,000G fee; shards, the Amber Charm and the Lineage Seal consumed. The parents become Ancestors on the Memorial; the baby takes the ranch when it is empty, else the Freezer. The Monster Card shows a Lineage card (generation, parents and grandparents by name, the Heirloom, the variant).
+- **Heartstones**: created at the farewell from the donor's trained gains (stat − breed base) and most-used technique family; up to 10 (15 with the Lantern Garden); given to one monster under 48 weeks that has none: +15 % of the gains per stat capped at +60, plus the Heirloom (+3 hit on that family in the engine).
+- **The Elder Grove** (Gentle): Elders fuse like frozen monsters, can be made active, and mentor once a month: a Journey at the site of the Elder's best stat gets +10 % technique chance (Wren says who came along).
+- **The Shrine** (`core/creation.ts`, `screens/town/Shrine.tsx`): two fields, Randomize from a 50-word list (drawn from the game's RNG), the preview hum, Sing (free; to the ranch or the Freezer), a sleeping breed's teaser and the Sleeping Stones page (wakes for free once the breed unlocks), the Encyclopedia (breeds and variants owned; every Shrine birth can be sung back for 500G), Edit before you start.
+- **Secret phrases** (`data/secrets.ts`, `core/variants.ts`, `art/monster/variants.ts`): the 21 CONTENT §12 phrases stored as salted cyrb53 hashes; a hit makes a pure monster of the variant's breed with its own palette (a render override), the stat or lifespan bonus, and the perk: likes every food, loves Honey Bread, birthday calm (−10 stress each birthday), Far +5 hit, Wither +5, prizes +25 % (stacks with the Gilded trait). Eight of them are sleeping until M7's unlocks and become Sleeping Stones like any other.
+- **The Market** in Town: the four starters at 1,500G and the season's breed at 2,500G, to the ranch or the Freezer.
+- **Tests** (347 total, 43 new): the Freezer rules, Heartstone gains and caps, the farewell on both modes, Elder mentoring, odds normalization and the Seal, locked and rare outcomes, compatibility and K, baby stats with catalysts, both inheritance cases, `fuse` with its refusals, the Shrine in play (births, the Freezer, Sleeping Stones, re-creation), the Market, each secret phrase, the variant hooks (food, birthday, hit, wither, prizes), the render override, schema v5 and tidying, and an integration test that lives out a monster, says goodbye, gives the Heartstone, sings twice and fuses, then validates the save round-trip. The 1,000-phrase Shrine snapshot pins the whole contract with one hash.
+
+**Decisions worth knowing**
+- Two of the five phrases pinned by the M2 Shrine snapshot ("wildsong", "hello world") are secret phrases; their rolls changed on purpose and the snapshot was updated. Everything else rolls exactly as before.
+- Secret phrases are checked on the "Song or phrase" field after normalization; the artist field still shapes the offsets.
+- A secret variant is a pure monster (so it keeps the +10 % lifespan and Signature access). Its name suggestion is still the first word of the phrase.
+- Fusion percentages are whole numbers that always add up to 100 on the board, so the roll uses those shown numbers.
+- The empty ranch does not advance the calendar; weeks only pass with a monster at home.
+- "Move to the Lab Library" is how a Freezer slot is freed; nothing on the ranch is ever deleted.
+
+**Next (M7):** Expeditions, the eight unlock chains (the Sleeping Stones and locked secret variants wake with them), weather events, ranch upgrades (the Lantern Garden's extra Heartstone slots are already honoured), rumors, the Journal pages and the Lantern Vigil mail.
+
+**Known issues**
+- The Lantern Vigil invitation after a natural death waits for M7's unlock chain, so the farewell does not yet send Sister Mara's mail.
+- The family tree shows names only for relatives this ranch still knows (the Memorial, the Freezer, the Grove, the ranch); an imported monster's parents show as "Unknown".
+- The farewell's Back button returns to the title; the ranch is reachable again through Continue.
+- The Heartstone card lists "+0 stat points" for a donor that never trained; the Heirloom still applies.
+
 ## M5: Tournaments, ranks and Journeys (2026-10-23) · v0.7.0
 
 **Live:** battles have stakes. The 48-week cup calendar, Officials and promotion, breeder ranks, the Crowns, the Legend Cup and the Hall of Fame, rival breeders with readable habits, and Journeys with the Mentor's Ledger, the Trial, mentor bonds and sale months. Pure breeds learn their Signature at Prime.

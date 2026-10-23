@@ -1,3 +1,5 @@
+import { STARTING_UNLOCKED } from '../data/breeds.ts'
+
 /**
  * Save migrations. Every schema change bumps SAVE_VERSION and adds one step here, with a test.
  * A migration takes the previous version's raw object and returns the next version's raw object.
@@ -11,8 +13,10 @@
  *   the active monster's edit history, the onboarding tips seen and a few counters.
  * - v4 (M5): tournaments, the Journey Trial, the Guild (Officials won, Crowns, invitations), the Hall of Fame,
  *   mail, sale months, Journeys per site and titles.
+ * - v5 (M6): the Freezer, the Elder Grove, the Memorial, Heartstones, the Encyclopedia, Sleeping Stones, the
+ *   unlocked breeds and the Elder mentor month; a Journey remembers its Elder mentor; monsters gain `heirloom`.
  */
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 type RawSave = Record<string, unknown>
 
@@ -54,6 +58,23 @@ const MIGRATIONS: Record<number, Migration> = {
         saleMonths: [],
         journeysBySite: { 'iron-quarry': 0, 'windrun-steppe': 0, 'starfall-observatory': 0, 'archers-glade': 0, 'glacier-bastion': 0 },
         titles: [],
+        ...raw.game,
+      }
+    }
+    return next
+  },
+  4: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 5 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      next.game = {
+        freezer: [],
+        elderGrove: [],
+        memorial: [],
+        heartstones: [],
+        encyclopedia: { breeds: [], variants: [], phrases: [] },
+        sleepingStones: [],
+        unlocked: [...STARTING_UNLOCKED],
+        elderMentorMonth: null,
         ...raw.game,
       }
     }

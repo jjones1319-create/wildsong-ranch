@@ -1,18 +1,20 @@
 import { computed, signal } from '@preact/signals'
 import type { Expression } from '../../art/monster/expressions.ts'
 import { finishEdit, pushHistory, techniquesOutsideKit, type EditHistoryEntry } from '../../core/lab.ts'
+import { findStored } from '../../core/legacy.ts'
 import { totalStats, type Monster } from '../../core/monster.ts'
 import { allPresets, type PresetTier } from '../../core/presets.ts'
+import type { MemorialCause } from '../../core/state.ts'
 import { BREED_IDS, type BreedId } from '../../data/types.ts'
 import type { LibraryEntry } from '../../save/schema.ts'
 import { now } from '../lib/clock.ts'
 import { newId } from '../lib/ids.ts'
 import { findEntry, library, upsertEntry } from './appStore.ts'
-import { replaceMonster } from './gameStore.ts'
+import { game, replaceMonster, replaceStored } from './gameStore.ts'
 
 /** Monster Lab screen state (§19): the Library view, what is selected, and the editor's draft. */
 
-export type LabSource = 'library' | 'presets'
+export type LabSource = 'library' | 'freezer' | 'memorial' | 'presets'
 export type LabSort = 'date' | 'total' | 'age' | 'name'
 
 export const labTab = signal<LabSource>('library')
@@ -29,6 +31,9 @@ export interface Listed {
   createdAt: number
   updatedAt: number
   tier?: PresetTier
+  /** M6: where a ranch monster lives (the Freezer, the Elder Grove) or how it ended (the Memorial). */
+  badge?: 'frozen' | 'elder' | 'memorial'
+  cause?: MemorialCause
 }
 
 let presetCache: Listed[] | null = null
@@ -40,6 +45,23 @@ export function listPresets(): Listed[] {
 
 function fromEntry(e: LibraryEntry): Listed {
   return { id: e.monster.id, monster: e.monster, source: 'library', history: e.history, createdAt: e.createdAt, updatedAt: e.updatedAt }
+}
+
+/** The Freezer and the Elder Grove of the current ranch (§16, §19). */
+export function listFreezer(): Listed[] {
+  const g = game.value
+  if (!g) return []
+  return [
+    ...g.freezer.map((m) => ({ id: m.id, monster: m, source: 'freezer' as const, history: [], createdAt: 0, updatedAt: 0, badge: 'frozen' as const })),
+    ...g.elderGrove.map((m) => ({ id: m.id, monster: m, source: 'freezer' as const, history: [], createdAt: 0, updatedAt: 0, badge: 'elder' as const })),
+  ]
+}
+
+/** The Memorial wall, read-only (§16). */
+export function listMemorial(): Listed[] {
+  const g = game.value
+  if (!g) return []
+  return g.memorial.map((e) => ({ id: e.monster.id, monster: e.monster, source: 'memorial' as const, history: [], createdAt: 0, updatedAt: e.week, badge: 'memorial' as const, cause: e.cause }))
 }
 
 function sortBy(list: Listed[], sort: LabSort): Listed[] {
@@ -56,19 +78,45 @@ function sortBy(list: Listed[], sort: LabSort): Listed[] {
   }
 }
 
+function listOf(source: LabSource): Listed[] {
+  switch (source) {
+    case 'library':
+      return library.value.entries.map(fromEntry)
+    case 'freezer':
+      return listFreezer()
+    case 'memorial':
+      return listMemorial()
+    case 'presets':
+      return listPresets()
+  }
+}
+
 /** What the Library screen shows right now. */
 export const visible = computed<Listed[]>(() => {
-  const base = labTab.value === 'library' ? library.value.entries.map(fromEntry) : listPresets()
+  const base = listOf(labTab.value)
   const filter = labBreedFilter.value
   const filtered = filter === 'all' ? base : base.filter((l) => l.monster.mainBreed === filter || l.monster.subBreed === filter)
-  return labTab.value === 'presets' && labSort.value === 'date' ? filtered : sortBy(filtered, labSort.value)
+  const keepOrder = labSort.value === 'date' && labTab.value !== 'library'
+  return keepOrder ? filtered : sortBy(filtered, labSort.value)
 })
 
 export function findListed(sel: { source: LabSource; id: string } | null): Listed | null {
   if (!sel) return null
-  if (sel.source === 'presets') return listPresets().find((l) => l.id === sel.id) ?? null
-  const e = findEntry(sel.id)
-  return e ? fromEntry(e) : null
+  switch (sel.source) {
+    case 'presets':
+      return listPresets().find((l) => l.id === sel.id) ?? null
+    case 'freezer': {
+      const g = game.value
+      const found = g ? findStored(g, sel.id) : null
+      return found ? { id: found.monster.id, monster: found.monster, source: 'freezer', history: [], createdAt: 0, updatedAt: 0, badge: found.where === 'elders' ? 'elder' : 'frozen' } : null
+    }
+    case 'memorial':
+      return listMemorial().find((l) => l.id === sel.id) ?? null
+    case 'library': {
+      const e = findEntry(sel.id)
+      return e ? fromEntry(e) : null
+    }
+  }
 }
 
 export function selectedListed(): Listed | null {
@@ -78,8 +126,8 @@ export function selectedListed(): Listed | null {
 /* ---------- the editor draft ---------- */
 
 export interface EditorDraft {
-  /** Where Save goes back to. A preset or a brand-new monster is saved as a new Library entry; `active` is the ranch's monster. */
-  origin: 'library' | 'preset' | 'new' | 'active'
+  /** Where Save goes back to. A preset, a Memorial copy or a brand-new monster is saved as a new Library entry; `active` is the ranch's monster; `freezer` a stored one. */
+  origin: 'library' | 'preset' | 'new' | 'active' | 'freezer'
   original: Monster
   monster: Monster
   history: EditHistoryEntry[]
@@ -94,7 +142,7 @@ export const draft = signal<EditorDraft | null>(null)
 
 export function startEdit(listed: Listed): void {
   draft.value = {
-    origin: listed.source === 'library' ? 'library' : 'preset',
+    origin: listed.source === 'library' ? 'library' : listed.source === 'freezer' ? 'freezer' : 'preset',
     original: structuredClone(listed.monster),
     monster: structuredClone(listed.monster),
     history: listed.history,
@@ -161,7 +209,7 @@ export function draftDirty(d: EditorDraft): boolean {
   return JSON.stringify(d.monster) !== JSON.stringify(d.original)
 }
 
-/** Saves the draft to the Library (§19 Save / Save as copy). Returns the saved monster. */
+/** Saves the draft to the Library (§19 Save / Save as copy), the ranch, or the Freezer. Returns the saved monster. */
 export async function saveDraft(asCopy: boolean): Promise<Monster | null> {
   const d = draft.value
   if (!d) return null
@@ -171,6 +219,11 @@ export async function saveDraft(asCopy: boolean): Promise<Monster | null> {
   cleaned.techniques = cleaned.techniques.filter((t) => !removals.includes(t.id))
   if (d.origin === 'active' && !asCopy) {
     replaceMonster(cleaned)
+    draft.value = null
+    return cleaned
+  }
+  if (d.origin === 'freezer' && !asCopy) {
+    replaceStored(cleaned)
     draft.value = null
     return cleaned
   }

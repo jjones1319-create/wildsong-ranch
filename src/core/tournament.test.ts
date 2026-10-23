@@ -68,7 +68,7 @@ describe('entry rules (§13)', () => {
     inj.monster!.status.injuredWeeks = 2
     expect(eventsForWeek(inj)[0]!.reason).toBe('injured')
     const trav = gameAt(at(1, 1, 2))
-    trav.journey = { site: 'iron-quarry', weekNo: 2, successes: 1, learned: null, pendingTechnique: null, gains: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } }
+    trav.journey = { site: 'iron-quarry', weekNo: 2, successes: 1, learned: null, pendingTechnique: null, elderMentor: false, gains: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } }
     expect(eventsForWeek(trav)[0]!.reason).toBe('journey')
     const old = gameAt(at(2, 6, 2))
     old.monster!.ageWeeks = 100

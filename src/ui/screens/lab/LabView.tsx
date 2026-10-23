@@ -18,16 +18,18 @@ export function LabViewScreen() {
       <TopBar title={t.title} />
       <MonsterSheet m={listed.monster} mode="lens" editCount={listed.history.length} />
       <div class="actionbar">
-        <button
-          type="button"
-          class="btn btn--primary btn--half"
-          onClick={() => {
-            startEdit(listed)
-            navigate('labEdit')
-          }}
-        >
-          ✏️ {UI_TEXT.lab.actions.edit}
-        </button>
+        {listed.source !== 'memorial' && (
+          <button
+            type="button"
+            class="btn btn--primary btn--half"
+            onClick={() => {
+              startEdit(listed)
+              navigate('labEdit')
+            }}
+          >
+            ✏️ {UI_TEXT.lab.actions.edit}
+          </button>
+        )}
         <button type="button" class="btn btn--half" onClick={() => navigate('labExport')}>
           {UI_TEXT.lab.actions.export}
         </button>

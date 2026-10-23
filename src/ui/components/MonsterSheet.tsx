@@ -1,6 +1,8 @@
 import type { ComponentChildren } from 'preact'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../core/aging.ts'
-import { isPure, loyaltyOf, mixBreeds, stageOf, strainOf, styleBandOf, styleOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
+import { findRelative } from '../../core/fusion.ts'
+import { isPure, loyaltyOf, stageOf, strainOf, styleBandOf, styleOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
+import { secretOf, variantNameOf } from '../../core/variants.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { DRILL_BY_ID } from '../../data/drills.ts'
 import { FOOD_BY_ID } from '../../data/foods.ts'
@@ -9,11 +11,12 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
 import { FAMILY_LABELS, GROWTH_WORDS, RANGE_LABELS, STAGE_NAMES, STAT_NAMES, STYLE_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
-import { RANGES } from '../../data/tuning.ts'
+import { HEARTSTONE, RANGES } from '../../data/tuning.ts'
 import { STAT_KEYS, type TransparencyMode } from '../../data/types.ts'
 import { TRAIT_BY_ID } from '../../data/traits.ts'
 import { LifeBar } from '../screens/lab/LabEditor.tsx'
 import { settings } from '../store/appStore.ts'
+import { game } from '../store/gameStore.ts'
 import { Badge } from './Controls.tsx'
 import { MonsterPortrait } from './MonsterPortrait.tsx'
 
@@ -36,8 +39,9 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
         <MonsterPortrait monster={m} size={140} />
         <div class="preview__info">
           <span class="preview__name">{m.name}</span>
-          <span class="muted small">{mixBreeds(m.mainBreed, m.subBreed).variantName}</span>
+          <span class="muted small">{variantNameOf(m)}</span>
           <span class="row row--wrap small">
+            {secretOf(m) && <Badge tone="preset">★ {UI_TEXT.lineage.variant}</Badge>}
             {isPure(m) && <Badge tone="pure">✦ {UI_TEXT.lab.badges.pure}</Badge>}
             {settings.value.showEditedBadge && m.flags.edited && <Badge tone="edited">🔧 {UI_TEXT.lab.badges.edited}</Badge>}
             <Badge>
@@ -189,6 +193,8 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
         </dl>
       </section>
 
+      {(m.parents.length === 2 || m.generation > 1 || m.heirloom || secretOf(m)) && <LineageCard m={m} />}
+
       <section class="card">
         <p class="field__label">{t.records}</p>
         <dl class="kv">
@@ -206,5 +212,52 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
         </p>
       </section>
     </>
+  )
+}
+
+/** §15 the family tree (parents and grandparents by name, when this ranch still knows them), the Heirloom and the variant. */
+function LineageCard({ m }: { m: Monster }) {
+  const t = UI_TEXT.lineage
+  const g = game.value
+  const secret = secretOf(m)
+  const nameOf = (id: string) => (g ? findRelative(g, id) : null)
+  const parents = m.parents.length === 2 ? m.parents.map((id) => nameOf(id)) : []
+  const stone = g?.heartstones.find((h) => h.family === m.heirloom)
+  return (
+    <section class="card">
+      <p class="field__label">{t.title}</p>
+      <dl class="kv">
+        <dt>{fill(t.generation, { n: m.generation })}</dt>
+        <dd>{secret ? `${t.variant}: ${variantNameOf(m)} (${secret.look})` : ''}</dd>
+        {parents.length === 2 && (
+          <>
+            <dt>{t.parents}</dt>
+            <dd>
+              {parents.map((p, i) => (
+                <span key={i}>
+                  {i > 0 ? ' × ' : ''}
+                  {p ? `${p.name} (${variantNameOf(p)})` : t.unknown}
+                </span>
+              ))}
+              {parents.some((p) => p && p.parents.length === 2) && (
+                <span class="muted small">
+                  <br />
+                  {parents
+                    .filter((p) => p && p.parents.length === 2)
+                    .map((p) => p!.parents.map((id) => nameOf(id)?.name ?? t.unknown).join(' × '))
+                    .join(' · ')}
+                </span>
+              )}
+            </dd>
+          </>
+        )}
+        {m.heirloom && (
+          <>
+            <dt>{UI_TEXT.pellLab.tabs.heartstones}</dt>
+            <dd>{fill(t.heirloom, { hit: HEARTSTONE.heirloomHit, family: FAMILY_LABELS[m.heirloom], donor: stone?.donorName ?? t.unknown })}</dd>
+          </>
+        )}
+      </dl>
+    </section>
   )
 }

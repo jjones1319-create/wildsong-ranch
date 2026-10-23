@@ -575,3 +575,84 @@ export const DISTRACTION_POINTS: readonly (readonly [number, number])[] = [
   [80, 2],
   [85, 1],
 ]
+
+/* ---------- M6: legacy (GAME_DESIGN §14.1, §15, §16, §7) ---------- */
+
+/** §16 the Freezer. */
+export const FREEZER = { slots: 20 } as const
+
+/** §15 Fusion at Dr. Pell's Lab. */
+export const FUSION = {
+  fee: 1000,
+  /** Candidate mains come from P1.main, P2.main, P1.sub, P2.sub (duplicates add up). */
+  mainWeights: { p1Main: 4, p2Main: 3, p1Sub: 2, p2Sub: 1 },
+  /** Candidate subs. */
+  subWeights: { p2Main: 3, p1Sub: 2, p2Sub: 2, p1Main: 1 },
+  /** weight = mainW · subW · lineageStrength / strengthDivisor. */
+  strengthDivisor: 5,
+  /** Outcomes under this percentage are dropped; at most `maxOutcomes` are shown. */
+  minPct: 1,
+  maxOutcomes: 6,
+  /** The Lineage Seal multiplies P1.main's main weight. */
+  sealMultiplier: 2,
+  /** offset = (2·P1gain + P2gain) / 3. */
+  offset: { p1: 2, p2: 1, div: 3 },
+  /** P = 20 % + 9 % per matching stat rank (M). */
+  pBasePct: 20,
+  pPerMatchPct: 9,
+  /** K by the rarity of the chosen outcome: [up to this %, K %]. The last row catches everything else. */
+  rarityK: [
+    [2, 100],
+    [7, 85],
+    [15, 70],
+    [30, 60],
+    [50, 50],
+    [100, 40],
+  ] as readonly (readonly [number, number])[],
+  /** Same main as P1: inherit this fraction of P1's learned non-Basic techniques (rounded down). */
+  inherit: { num: 2, den: 3 },
+  /** Nature and form: (2·P1 + P2) / 3. */
+  blend: { p1: 2, p2: 1, div: 3 },
+  /** Dr. Pell's comment thresholds on M (0–6). */
+  comment: { decent: 2, wonderful: 4, perfect: 6 },
+  /** A stat shard catalyst adds this much to one stat (CONTENT §6). */
+  shardStat: 40,
+} as const
+
+/** §16 Heartstones and the Heirloom. */
+export const HEARTSTONE = {
+  max: 10,
+  maxWithLanternGarden: 15,
+  /** Percent of the donor's trained gains (stat − breed base) granted per stat. */
+  gainPct: 15,
+  capPerStat: 60,
+  /** Only a monster younger than this (weeks) that has not received one can take a Heartstone. */
+  maxAgeWeeks: 48,
+  /** +hit for techniques of the donor's most-used family. */
+  heirloomHit: 3,
+} as const
+
+/** §14.1 the Shrine of Echoes. */
+export const SHRINE = {
+  /** Re-creating a monster from the Encyclopedia. */
+  encyclopediaPrice: 500,
+  /** Randomize draws this many words. */
+  randomWords: { min: 1, max: 3 },
+  /** A salt for the secret-phrase hashes, so they differ from the Shrine's own seeds. */
+  secretSalt: 53,
+} as const
+
+/** CONTENT §12 variant perks that are rules rather than birth stats. */
+export const VARIANTS = {
+  /** Party Bloatoad: stress relief on every birthday. */
+  birthdayStressRelief: 10,
+  /** Beacon Wishlume: +hit on Far techniques. */
+  farHit: 5,
+  /** Lantern-bearer Ashwraith: +wither on Wither techniques. */
+  witherPlus: 5,
+  /** Gilded Lootlid: prize money bonus in percent (stacks with the Gilded trait). */
+  prizeBonusPct: 25,
+} as const
+
+/** §7 Gentle mode: an Elder mentors once a month (the bonus itself is JOURNEY.technique.elderMentorPct). */
+export const ELDER = { mentorPerMonth: 1 } as const

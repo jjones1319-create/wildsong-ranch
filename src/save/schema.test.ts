@@ -93,3 +93,45 @@ describe('save validation (§20)', () => {
     }
   })
 })
+
+describe('schema version 5 (M6)', () => {
+  it('migrates a version-4 save by adding the legacy lists, and keeps the starters unlocked', () => {
+    const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
+    for (const k of ['freezer', 'elderGrove', 'memorial', 'heartstones', 'encyclopedia', 'sleepingStones', 'unlocked', 'elderMentorMonth']) delete game[k]
+    delete (game.monster as Record<string, unknown>).heirloom
+    const v4 = { schemaVersion: 4, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.7.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v4))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game).toMatchObject({ freezer: [], elderGrove: [], memorial: [], heartstones: [], sleepingStones: [], elderMentorMonth: null })
+    const r = validateSave(JSON.parse(JSON.stringify(v4)))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.unlocked.length).toBe(22)
+    expect(r.save.game.monster!.heirloom).toBeNull()
+    expect(r.save.game.encyclopedia).toEqual({ breeds: [], variants: [], phrases: [] })
+  })
+
+  it('tidies the legacy lists: duplicates and broken entries go, caps hold, bad variants are dropped', () => {
+    const game = createGameState({ monster: makeMonster({ id: 'a' }) })
+    game.freezer = Array.from({ length: 25 }, (_, i) => makeMonster({ id: `f${i % 23}` }))
+    game.unlocked = ['puddlepup']
+    game.encyclopedia.variants = ['songheart-puddlepup', 'not-a-variant']
+    const raw = JSON.parse(JSON.stringify(makeSave(game, 1)))
+    raw.game.memorial = [null, { monster: raw.game.monster, cause: 'exploded', epitaph: 'x'.repeat(200), week: 3 }, 'junk']
+    raw.game.heartstones = [{ id: 'h1', donorId: 'a', donorName: 'A', donorBreed: 'puddlepup', gains: { POW: 50 }, family: 'Hit', week: 1 }, { id: 'h1' }, null]
+    raw.game.monster.heirloom = 'Nonsense'
+    const r = validateSave(raw)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.freezer).toHaveLength(20)
+    expect(new Set(r.save.game.freezer.map((m) => m.id)).size).toBe(20)
+    expect(r.save.game.memorial).toHaveLength(1)
+    expect(r.save.game.memorial[0]!.cause).toBe('passed')
+    expect(r.save.game.memorial[0]!.epitaph).toHaveLength(80)
+    expect(r.save.game.heartstones).toHaveLength(1)
+    expect(r.save.game.heartstones[0]!.gains).toEqual({ LIF: 0, POW: 50, INT: 0, SKI: 0, SPD: 0, DEF: 0 })
+    expect(r.save.game.unlocked).toHaveLength(22)
+    expect(r.save.game.encyclopedia.variants).toEqual(['songheart-puddlepup'])
+    expect(r.save.game.monster!.heirloom).toBeNull()
+  })
+})

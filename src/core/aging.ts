@@ -4,6 +4,8 @@ import { STAT_KEYS, type Difficulty } from '../data/types.ts'
 import { clamp } from './mathx.ts'
 import { addCondition, isPrimeStage, loyaltyOf, stageOf, strainOf, weeksLeft, type Monster } from './monster.ts'
 import type { Rng } from './rng.ts'
+import { WEEKS_PER_YEAR } from './calendar.ts'
+import { variantBirthdayRelief } from './variants.ts'
 
 /** GAME_DESIGN §6.6 and §7: strain, illness, breakdowns, the weekly aging tick, warnings and labels. */
 
@@ -15,6 +17,8 @@ export type AgingEvent =
   | { kind: 'prime' }
   | { kind: 'pastPrime' }
   | { kind: 'endOfLife'; how: 'passed' | 'retired' }
+  /** CONTENT §12 Party Bloatoad: stress relief on a birthday. */
+  | { kind: 'birthday'; relief: number }
 
 /** §6.6 ladder: 0 below 80 strain; 80–124 → 1, 125–169 → 2, 170+ → 3 (Gentle caps at 1; Classic adds a step, cap 4). */
 export function extraLifespanLoss(strain: number, difficulty: Difficulty = 'Standard'): number {
@@ -62,6 +66,11 @@ export function endOfWeekTick(input: Monster, difficulty: Difficulty, rng: Rng):
   const d = DIFFICULTY[difficulty]
 
   m.ageWeeks += 1
+  const relief = variantBirthdayRelief(m)
+  if (relief > 0 && m.ageWeeks % WEEKS_PER_YEAR === 0) {
+    m.stress = addCondition(m.stress, -relief)
+    events.push({ kind: 'birthday', relief })
+  }
   let strainLoss: number
   if (STRAIN.mode === 'debt') {
     const step = strainDebtStep(m.status.strainDebt, strainOf(m), difficulty)

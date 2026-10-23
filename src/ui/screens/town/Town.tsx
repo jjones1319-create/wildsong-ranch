@@ -23,9 +23,9 @@ export function TownScreen() {
     { icon: '📜', name: t.library, hint: t.libraryHint, go: () => navigate('library') },
     { icon: '✉', name: unread ? `${t.mail} · ${fill(UI_TEXT.mail.unread, { n: unread })}` : t.mail, hint: t.mailHint, go: () => navigate('mail') },
     { icon: '🔬', name: t.lab, hint: t.labHint, go: () => navigateFrom('town', 'lab') },
-    { icon: '🐾', name: t.market, hint: t.later },
-    { icon: '🪨', name: t.shrine, hint: t.later },
-    { icon: '🧊', name: t.pell, hint: t.later },
+    { icon: '🐾', name: t.market, hint: t.marketHint, go: () => navigate('market') },
+    { icon: '🪨', name: t.shrine, hint: t.shrineHint, go: () => navigate('shrine') },
+    { icon: '🧊', name: t.pell, hint: t.pellHint, go: () => navigate('pell') },
     { icon: '🥕', name: t.jobs, hint: t.later },
   ]
   return (

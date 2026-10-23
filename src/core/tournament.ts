@@ -8,6 +8,7 @@ import { STAT_KEYS, TOURNAMENT_GRADES, type Personality, type Stats, type Tourna
 import { runBattle, timerTicksFor } from './battle/engine.ts'
 import type { BattleResult } from './battle/types.ts'
 import { WEEKS_PER_YEAR, dateOf } from './calendar.ts'
+import { variantPrizePct } from './variants.ts'
 import { cyrb53 } from './hash.ts'
 import { addItems } from './items.ts'
 import { clamp, divRound } from './mathx.ts'
@@ -402,9 +403,10 @@ export interface TournamentOutcome {
   relayTeamWin: boolean | null
 }
 
-function prizeMultiplier(state: GameState, m: Monster): number {
+export function prizeMultiplier(state: GameState, m: Monster): number {
   let pct = DIFFICULTY[state.difficulty].prizeMulPct
   if (traitOf(m) === 'gilded') pct = divRound(pct * TOURNAMENT.gildedPrizePct, 100)
+  pct = divRound(pct * variantPrizePct(m), 100)
   return pct
 }
 
