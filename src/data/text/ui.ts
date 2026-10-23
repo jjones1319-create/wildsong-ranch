@@ -1,4 +1,6 @@
 /** Player-facing strings for the app shell, the ranch, Town, the Monster Lab and Settings. Wren's voice is warm and simple; Basil gossips; Ines is formal; Dr. Pell is brisk and kind. */
+import { EXPEDITION_TEXT } from './expedition.ts'
+import { JOURNAL_TEXT } from './journal.ts'
 import { LEGACY_TEXT } from './legacy.ts'
 
 export const UI_TEXT = {
@@ -85,9 +87,14 @@ export const UI_TEXT = {
       journey: '{name} is away on a Journey.',
       tournament: 'A cup is under way. Finish it first.',
       trial: "The mentor's Trial is waiting.",
+      expedition: '{name} is away with Tomas.',
+      expeditionMap: 'The expedition is under way. Finish the map first.',
+      event: 'Answer the spark first.',
     },
     journeyWeek: 'Journey week {week} of 4 · {site}',
     continueJourney: 'Continue the Journey',
+    expeditionWeek: 'Expedition week {week} of 4 · {site}',
+    expeditionOpen: 'Tomas is waiting: {site} is open this month.',
     eventsToday: 'This week: {events}',
     noEvents: 'No cups this week',
     bars: { fatigue: 'Fatigue', stress: 'Stress', loyalty: 'Loyalty', life: 'Life' },
@@ -231,6 +238,10 @@ export const UI_TEXT = {
     mailHint: 'Sale notices, invitations and Guild news.',
     guildHint: "This month's cups, your rank, titles and the Hall of Fame.",
     jobs: 'Odd Jobs',
+    jobsHint: 'Turnip Sort: thirty seconds for up to 150G, once a week.',
+    jobsPlayed: 'Turnip Sort: played this week.',
+    journal: 'Journal',
+    journalHint: 'Encyclopedia, Sleeping Stones, rumors, records, titles and the Hall of Fame.',
     later: 'Opens with a later update.',
     purse: 'Purse',
   },
@@ -666,6 +677,8 @@ export const UI_TEXT = {
     library: 'Guild Library',
     invite: 'Invitations: {list}',
     none: 'none',
+    journal: 'Journal',
+    upgrades: 'Ranch upgrades',
   },
   mail: {
     title: 'Mailbox',
@@ -678,6 +691,13 @@ export const UI_TEXT = {
       promotion: 'Promotion',
       rank: 'Breeder rank',
       info: 'A note',
+      expedition: 'An expedition with Tomas',
+      rumor: 'A rumor',
+      vigil: 'The Lantern Vigil',
+      upgrades: 'Ranch upgrades on offer',
+      masquerade: 'A masked invitation',
+      reefclaw: 'Something in the Tide Pool',
+      wyrm: 'A gift from the Guild',
     },
     bodies: {
       sale: 'The mentors are running a sale: every Journey costs 1,000G during {month}.',
@@ -686,7 +706,15 @@ export const UI_TEXT = {
       promotion: 'Your monster has been promoted to grade {g}. New cups open; the Officials get tougher.',
       rank: 'You are now a rank {n} breeder.',
       info: '',
+      expedition: 'Tomas: "{site} is open to us this month! {blurb} Bring a monster of grade {g} or higher with fame {n} or more. Four weeks; I pack the snacks."',
+      rumor: '{rumor}',
+      vigil: 'Sister Mara: "The Shrine keeps a Lantern Vigil for the friend you lost. Come when you are ready; the stone will wait. There is no charge."',
+      upgrades: 'Ines: "The Guild’s builders are taking orders for ranch upgrades: a Cozy Barn, a Training Yard, a Tide Pool and a Lantern Garden. See the offers whenever you like."',
+      masquerade: 'A card with no name: "The Masquerade Cup. October, week 1. Grade B or better. Come unmasked."',
+      reefclaw: 'Wren: "Something moved into the Tide Pool overnight. A Reefclaw! It says it lives here now."',
+      wyrm: 'Ines: "Four Crowns. The Guild has not presented a Wyrm Scale in living memory. Offer it at the Shrine; the legend says a golden wyrm answers only to champions."',
     },
+    openOffers: 'See the offers',
   },
   /** The Mentor's Ledger and the Journey (§11). */
   journey: {
@@ -733,6 +761,8 @@ export const UI_TEXT = {
   },
   /** Farewell placeholder (the full scene arrives with the Memorial). */
   ...LEGACY_TEXT,
+  ...JOURNAL_TEXT,
+  expedition: EXPEDITION_TEXT,
   settings: {
     title: 'Settings',
     sections: { play: 'Play', display: 'Display', audio: 'Sound', ranch: 'This ranch', backup: 'Backup', storage: 'Storage', sandbox: 'Sandbox tools' },

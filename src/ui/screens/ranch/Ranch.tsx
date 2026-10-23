@@ -1,5 +1,9 @@
-import { useEffect } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { dateOf, seasonOf } from '../../../core/calendar.ts'
+import { sitesOpenAt } from '../../../core/expedition.ts'
+import { EXPEDITION_SITE_BY_ID } from '../../../data/expeditions.ts'
+import { EventCard } from './EventCard.tsx'
+import { ExpeditionSheet } from './ExpeditionSheet.tsx'
 import { needsFoodChoice } from '../../../core/game.ts'
 import { stageOf } from '../../../core/monster.ts'
 import { tipText } from '../../../core/onboarding.ts'
@@ -40,6 +44,7 @@ export function RanchScreen() {
   useEffect(() => {
     settle()
   }, [g?.week, g?.weekPhase, f.kind])
+  const [expOpen, setExpOpen] = useState(false)
 
   if (!g || g.ended) return null
   if (!g.monster) return <EmptyRanch g={g} />
@@ -54,12 +59,17 @@ export function RanchScreen() {
   const repeatWhat = mn.repeat ? (mn.repeat.kind === 'drill' ? DRILL_BY_ID[mn.repeat.drill].name : t.actions.rest) : null
   const cups = eventsForWeek(g)
   const trialPending = f.kind === 'idle' && !showFood && !showRequest && (g.trial !== null || g.journey?.pendingTechnique !== null || trialOutcome.value !== null)
+  const openSites = sitesOpenAt(g.week)
+  const showEvent = g.pendingEvent !== null && f.kind === 'idle' && !showFood && !showRequest && !trialPending
+  const mapInProgress = g.expedition !== null && !g.expedition.ended
 
   return (
     <main class="screen">
       <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} />
       <p class="eventline">{cups.length ? fill(t.eventsToday, { events: cups.map((c) => c.event.name).join(' · ') }) : t.noEvents}</p>
       {g.journey && <p class="eventline">{fill(t.journeyWeek, { week: g.journey.weekNo, site: JOURNEY_SITE_BY_ID[g.journey.site].name })}</p>}
+      {g.expedition && <p class="eventline">{fill(t.expeditionWeek, { week: g.expedition.weekNo, site: EXPEDITION_SITE_BY_ID[g.expedition.site].name })}</p>}
+      {!g.expedition && openSites.length > 0 && <p class="eventline">{fill(t.expeditionOpen, { site: openSites.map((s) => s.name).join(' · ') })}</p>}
 
       <button type="button" class={`stage stage--${season}`} onClick={() => navigate('ranchCard')} aria-label={fill(t.tapHint, { name: m.name })}>
         <div class="stage__art">
@@ -86,6 +96,10 @@ export function RanchScreen() {
           {g.tournament ? (
             <button type="button" class="btn btn--primary" onClick={() => navigate('tournamentPlay')}>
               {t.actions.battle}
+            </button>
+          ) : mapInProgress ? (
+            <button type="button" class="btn btn--primary" onClick={() => navigate('expedition')}>
+              {UI_TEXT.expedition.continueTrip}
             </button>
           ) : mn.wait ? (
             <button type="button" class="btn btn--primary" onClick={() => takeAction({ kind: 'none' })}>
@@ -131,11 +145,20 @@ export function RanchScreen() {
             </button>
           )}
         </div>
+        {!g.expedition && openSites.length > 0 && (
+          <div class="actions__row">
+            <button type="button" class="btn" disabled={!mn.train} onClick={() => setExpOpen(true)}>
+              🧭 {UI_TEXT.expedition.ranchButton} · {openSites.map((s) => s.name).join(' · ')}
+            </button>
+          </div>
+        )}
         {reason && <p class="actionbar__reason">{reason}</p>}
       </div>
 
       <FoodPrompt open={showFood} />
       <RequestCard open={showRequest} />
+      <EventCard open={showEvent} />
+      <ExpeditionSheet open={expOpen} onClose={() => setExpOpen(false)} />
       {trialPending && <TrialCard />}
       <TrainSheet open={f.kind === 'train'} />
       {f.kind === 'result' && <DrillResult f={f} />}

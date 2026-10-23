@@ -285,11 +285,17 @@
 
 ## M7: Exploration and unlocks
 
-- [ ] Expeditions: invitations, node maps for the 4 sites, stamina, obstacles, search, fog, retreat, rewards (including Stat Sweets and Songsheets), guaranteed key routes.
-- [ ] All 8 unlock chains (CONTENT §11), weather events, ranch upgrades (May offers), rumors (shop, mail, rivals).
-- [ ] Journal: Encyclopedia, Sleeping Stones, Rumors, Records, Titles, Hall of Fame.
-- [ ] Odd Jobs (Turnip Sort).
-- [ ] Tests: every unlock chain triggers from a scripted state; nothing becomes impossible after failure (re-trigger tests).
+- [x] Expeditions: invitations, node maps for the 4 sites, stamina, obstacles, search, fog, retreat, rewards (including Stat Sweets and Songsheets), guaranteed key routes.
+- [x] All 8 unlock chains (CONTENT §11), weather events, ranch upgrades (May offers), rumors (shop, mail, rivals).
+- [x] Journal: Encyclopedia, Sleeping Stones, Rumors, Records, Titles, Hall of Fame.
+- [x] Odd Jobs (Turnip Sort).
+- [x] Tests: every unlock chain triggers from a scripted state; nothing becomes impossible after failure (re-trigger tests).
+
+**Detailed plan (written 2026-10-23, after the owner confirmed M6):** version `0.9.0`, schema v6, no new dependencies. An expedition is the week's action: the map is played at once on its own screen and saved after every tap (it resumes like a cup); the loot and the after-effects (fatigue +40, stress −10) apply when the trip ends, and weeks 2–4 pass as "away" weeks like a Journey's. The map is a forward-only layered node graph (12–16 nodes, start → camp) with a guaranteed "spine" route to the site's event node: only the stated obstacle thresholds, no fog, step costs that fit the base stamina. Weekly triggers (invitations, rumors, the Vigil letter, the May upgrades letter, storms, the cocoon, the Reefclaw) run from `beginWeek`; key items are offered at the Shrine (or handed to Dr. Pell) to wake a breed. Where the docs are silent: the storm chase is a yes/no card, the cocoon just happens, "50 variants" counts main/sub combinations, and a Lootlid with no room still unlocks the breed.
+- [x] 1. Data and save: `EXPEDITION`, `UNLOCKS`, `UPGRADES`, `ODD_JOBS`, `TITLES` numbers in `tuning.ts`; `data/expeditions.ts` (the 4 sites, obstacles, loot tables, event nodes); `data/upgrades.ts`; new types (site ids, node kinds, mail kinds, week actions); the text (`text/expedition.ts`, `text/journal.ts`, additions to `ui.ts` and `wren.ts`); schema v6 (`expedition`, `pendingEvent`, `unlocks`, `records`, `oddJobWeek`, `memorialVisitMonth`, `encyclopedia.combos`) with a migration and tests.
+- [x] 2. Core: `core/expedition.ts` (map builder with the spine, stamina, moves, obstacles and detours, hidden spots, fog, search and treasure, the Strange Chest with its pity timer, the hidden archive, retreat, exhaustion, the end of the trip); `core/unlocks.ts` (offerings, the Blueprint, the Vigil, the cocoon and metamorphosis, the storm chase, the Reefclaw, chain stages); `core/events.ts` (the weekly triggers and mail); `core/upgrades.ts`; `core/oddJobs.ts`; `core/titles.ts`; `core/journal.ts` (records, Encyclopedia rows); selling loot in `economy.ts`; Gearhoot and Reefclaw at the Market; the Masquerade Cup, the Shard Mask and the Wyrm Scale in `tournament.ts`; the Vigil hook in `legacy.ts`; the new actions and free actions in `week.ts` and `game.ts`. Tests: map guarantees over 200 seeds per site, every formula, all 8 chains from scripted states, re-trigger after every failure, titles, records, odd-job pay, upgrades, selling, the migration, and an integration run (invitation → expedition → sell → offer → a Sleeping Stone wakes).
+- [x] 3. UI: the Expedition screen (SVG node map, stamina, Tomas, Retreat / Detour, the summary), the ranch's Expedition button and storm card, the Journal (Encyclopedia, Sleeping Stones, Rumors, Records, Titles, Hall of Fame), Odd Jobs (Turnip Sort), Ranch upgrades, Shrine offerings and the Vigil, the Blueprint and the Lantern Garden visit at Dr. Pell's, Basil's Sell tab and rumor line, the new letters, Market offers, Town and Guild links, `expedition.css`.
+- [x] 4. `npm run verify`, a headless Chrome run (an expedition to the camp, selling loot, an offering, the Journal, a Turnip Sort round, an upgrade), PROGRESS.md, commit `M7: exploration and unlocks`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:** go on an expedition; trigger at least one unlock; open the Journal.
 

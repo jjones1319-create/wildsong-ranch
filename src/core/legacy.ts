@@ -6,6 +6,7 @@ import { finishEdit } from './lab.ts'
 import { clamp, divRound } from './mathx.ts'
 import { mixBreeds, zeroStats, type Monster } from './monster.ts'
 import type { GameState, Heartstone, MemorialCause } from './state.ts'
+import { variantNameOf } from './variants.ts'
 
 /**
  * GAME_DESIGN §16 (the Freezer, the Memorial, Heartstones) and §7 (the farewell, the Elder Grove).
@@ -28,9 +29,9 @@ export function freezerFull(state: GameState): boolean {
   return state.freezer.length >= FREEZER.slots
 }
 
-/** A cup, a Journey or a waiting Trial keeps the active monster where it is. */
+/** A cup, a Journey, a waiting Trial or an expedition keeps the active monster where it is. */
 export function ranchBusy(state: GameState): boolean {
-  return state.tournament !== null || state.journey !== null || state.trial !== null
+  return state.tournament !== null || state.journey !== null || state.trial !== null || state.expedition !== null
 }
 
 /** Finds a monster in the Freezer or the Elder Grove. */
@@ -70,6 +71,8 @@ export function placeOnRanch(state: GameState, m: Monster): void {
 export function recordInEncyclopedia(state: GameState, m: Monster): void {
   if (!state.encyclopedia.breeds.includes(m.mainBreed)) state.encyclopedia.breeds.push(m.mainBreed)
   if (m.variantId && !state.encyclopedia.variants.includes(m.variantId)) state.encyclopedia.variants.push(m.variantId)
+  const look = variantNameOf(m)
+  if (!state.encyclopedia.combos.includes(look)) state.encyclopedia.combos.push(look)
 }
 
 export type FreezeRefusal = 'noMonster' | 'busy' | 'full' | 'ended'
@@ -249,6 +252,12 @@ export function concludeLife(input: GameState, epitaph: string): ConcludeResult 
     heartstone = heartstoneFrom(m, state.week)
     state.heartstones.unshift(heartstone)
   } else heartstoneLost = true
+  // CONTENT §11: Sister Mara's Lantern Vigil follows any natural death or retirement, with the next week 1.
+  state.unlocks.vigilPending = true
+  if (m.ageWeeks > state.records.oldestWeeks) {
+    state.records.oldestWeeks = m.ageWeeks
+    state.records.oldestName = m.name
+  }
   clearRanch(state)
   return { state, cause, heartstone, heartstoneLost }
 }

@@ -108,7 +108,7 @@ describe('schema version 5 (M6)', () => {
     if (!r.ok) return
     expect(r.save.game.unlocked.length).toBe(22)
     expect(r.save.game.monster!.heirloom).toBeNull()
-    expect(r.save.game.encyclopedia).toEqual({ breeds: [], variants: [], phrases: [] })
+    expect(r.save.game.encyclopedia).toEqual({ breeds: [], variants: [], phrases: [], combos: [] })
   })
 
   it('tidies the legacy lists: duplicates and broken entries go, caps hold, bad variants are dropped', () => {
@@ -133,5 +133,83 @@ describe('schema version 5 (M6)', () => {
     expect(r.save.game.unlocked).toHaveLength(22)
     expect(r.save.game.encyclopedia.variants).toEqual(['songheart-puddlepup'])
     expect(r.save.game.monster!.heirloom).toBeNull()
+  })
+})
+
+describe('schema version 6 (M7)', () => {
+  it('migrates a version-5 save by adding the expedition, unlock progress, records and the Journal fields', () => {
+    const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
+    for (const k of ['expedition', 'pendingEvent', 'unlocks', 'records', 'oddJobWeek', 'memorialVisitMonth']) delete game[k]
+    delete (game.encyclopedia as Record<string, unknown>).combos
+    const v5 = { schemaVersion: 5, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.8.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v5))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game).toMatchObject({ expedition: null, pendingEvent: null, oddJobWeek: null, memorialVisitMonth: null })
+    const r = validateSave(JSON.parse(JSON.stringify(v5)))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.unlocks).toEqual({
+      rumorsHeard: [],
+      masqueradeInvited: false,
+      vigilPending: false,
+      vigilOpen: false,
+      cocoonInto: null,
+      expeditionsBySite: { 'thornwood-ruins': 0, 'sunken-library': 0, 'hollowmoon-caverns': 0, 'skyreef-isles': 0 },
+      reefclawArrived: false,
+      wyrmScaleGiven: false,
+    })
+    expect(r.save.game.records.highestGeneration).toBe(1)
+    expect(r.save.game.encyclopedia.combos).toEqual([])
+    // A fresh game now lists its first monster's look; a migrated v5 save catches that up at its next week's end.
+    const expected = createGameState({ monster: r.save.game.monster })
+    expected.encyclopedia.combos = []
+    expect(r.save.game).toEqual(expected)
+  })
+
+  it('keeps a good expedition, drops a broken one, and never keeps a trip without a monster', () => {
+    const game = createGameState({ monster: makeMonster() })
+    game.expedition = {
+      site: 'thornwood-ruins',
+      seed: 12345,
+      startWeek: 8,
+      weekNo: 1,
+      stamina: 40,
+      staminaMax: 50,
+      at: 0,
+      visited: [0, 0, 99, -1],
+      searched: [],
+      passed: [],
+      blockedAt: 99,
+      visit: 1,
+      loot: [{ id: 'old-coin', qty: 2 }],
+      sheets: [],
+      keyFound: null,
+      lootlidPlaced: null,
+      ended: null,
+      log: Array.from({ length: 60 }, (_, i) => `step${i}`),
+    }
+    const raw = JSON.parse(JSON.stringify(makeSave(game, 1)))
+    raw.game.expedition.loot.push(null, 'junk')
+    raw.game.unlocks.rumorsHeard = ['cocoon', 'cocoon', 'bogus']
+    const r = validateSave(raw)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const e = r.save.game.expedition!
+    expect(e.visited).toEqual([0])
+    expect(e.blockedAt).toBeNull()
+    expect(e.loot).toEqual([{ id: 'old-coin', qty: 2 }])
+    expect(e.log).toHaveLength(30)
+    expect(r.save.game.unlocks.rumorsHeard).toEqual(['cocoon'])
+
+    const broken = JSON.parse(JSON.stringify(makeSave(game, 1)))
+    broken.game.expedition.at = 500
+    const r2 = validateSave(broken)
+    expect(r2.ok && r2.save.game.expedition).toBeNull()
+
+    const nobody = JSON.parse(JSON.stringify(makeSave(game, 1)))
+    nobody.game.monster = null
+    const r3 = validateSave(nobody)
+    expect(r3.ok && r3.save.game.expedition).toBeNull()
+    expect(r3.ok && r3.save.game.pendingEvent).toBeNull()
   })
 })

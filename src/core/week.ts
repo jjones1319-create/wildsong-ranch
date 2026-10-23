@@ -1,10 +1,13 @@
 import { DRILL_BY_ID } from '../data/drills.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
 import { UPGRADES } from '../data/tuning.ts'
-import type { FoodId, FoodEffect, JourneySiteId, StatKey, Weather } from '../data/types.ts'
+import type { BreedId, ExpeditionSiteId, FoodId, FoodEffect, JourneySiteId, StatKey, UnlockChain, Weather } from '../data/types.ts'
 import { availability, endOfWeekTick, type AgingEvent } from './aging.ts'
 import { dateOf, isMonthStart, isUpgradeOfferWeek, rollWeather, seasonOf } from './calendar.ts'
+import type { Placed } from './creation.ts'
+import { canStartExpedition, startExpedition, tickExpeditionWeek } from './expedition.ts'
 import { applyMonthlyFood, type FoodRelation } from './food.ts'
+import { acceptStormChase } from './unlocks.ts'
 import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
 import { bondCharmId, canEnterSite, isJourneyDone, isSiteOpen, journeyCost, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
 import { elderMentorFor, monthIndexOf } from './legacy.ts'
@@ -54,6 +57,21 @@ export type WeekEvent =
   | { kind: 'sale'; month: number }
   /** §7 Gentle: an Elder from the Grove mentors this Journey. */
   | { kind: 'elderMentor'; elder: string }
+  /* M7: expeditions (§17), the unlock chains and their mail (CONTENT §11), titles (CONTENT §14). */
+  | { kind: 'invitation'; site: ExpeditionSiteId }
+  | { kind: 'rumor'; chain: UnlockChain }
+  | { kind: 'vigilMail' }
+  | { kind: 'upgradesMail' }
+  | { kind: 'masqueradeMail' }
+  | { kind: 'stormSpark' }
+  | { kind: 'stormChase' }
+  | { kind: 'cocoonSpun' }
+  | { kind: 'emerged'; breed: BreedId }
+  | { kind: 'reefclaw'; placed: Placed | null }
+  | { kind: 'expeditionStart'; site: ExpeditionSiteId }
+  | { kind: 'expeditionWeek'; weekNo: number }
+  | { kind: 'expeditionHome'; site: ExpeditionSiteId }
+  | { kind: 'titles'; titles: string[] }
 
 export interface StartWeekResult {
   state: GameState
@@ -150,6 +168,18 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
   const m = state.monster
   if (!m || state.ended) return none
 
+  // §17: an expedition's map must be finished first; then weeks 2–4 pass as away weeks and the party comes home.
+  if (state.expedition) {
+    if (!state.expedition.ended) {
+      events.push({ kind: 'invalidAction', reason: 'expeditionInProgress' })
+      return none
+    }
+    const site = state.expedition.site
+    const ticked = tickExpeditionWeek(state)
+    events.push(ticked.home ? { kind: 'expeditionHome', site } : { kind: 'expeditionWeek', weekNo: ticked.weekNo })
+    return { state: ticked.state, events, drill: null, journey: null }
+  }
+
   const avail = availability(m)
   if (avail.locked) {
     events.push({ kind: 'locked', reason: avail.reason ?? 'locked' })
@@ -218,6 +248,25 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
       state.journey = isJourneyDone(r.progress) ? null : r.progress
       events.push({ kind: 'journeyWeek', result: r.result })
       return { state, events, drill: null, journey: r.result }
+    }
+    case 'expedition': {
+      const can = canStartExpedition(state, chosen.site)
+      if (!can.ok) {
+        events.push({ kind: 'invalidAction', reason: `expedition:${can.reason}` })
+        return none
+      }
+      const started = startExpedition(state, chosen.site, rng)
+      events.push({ kind: 'expeditionStart', site: chosen.site })
+      return { state: started, events, drill: null, journey: null }
+    }
+    case 'event': {
+      if (state.pendingEvent?.kind !== 'stormChase') {
+        events.push({ kind: 'invalidAction', reason: 'noEvent' })
+        return none
+      }
+      const chased = acceptStormChase(state)
+      events.push({ kind: 'stormChase' })
+      return { state: chased, events, drill: null, journey: null }
     }
     case 'none':
       return none

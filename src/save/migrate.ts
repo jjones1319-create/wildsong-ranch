@@ -15,8 +15,10 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   mail, sale months, Journeys per site and titles.
  * - v5 (M6): the Freezer, the Elder Grove, the Memorial, Heartstones, the Encyclopedia, Sleeping Stones, the
  *   unlocked breeds and the Elder mentor month; a Journey remembers its Elder mentor; monsters gain `heirloom`.
+ * - v6 (M7): the expedition in progress, the pending event, unlock-chain progress, the Journal's records, the
+ *   Odd Job week, the Lantern Garden visit month, and the Encyclopedia's collected looks.
  */
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
 
 type RawSave = Record<string, unknown>
 
@@ -76,6 +78,33 @@ const MIGRATIONS: Record<number, Migration> = {
         unlocked: [...STARTING_UNLOCKED],
         elderMentorMonth: null,
         ...raw.game,
+      }
+    }
+    return next
+  },
+  5: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 6 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      const game = raw.game
+      const encyclopedia = isRawSave(game.encyclopedia) ? { combos: [], ...game.encyclopedia } : { breeds: [], variants: [], phrases: [], combos: [] }
+      next.game = {
+        expedition: null,
+        pendingEvent: null,
+        unlocks: {
+          rumorsHeard: [],
+          masqueradeInvited: false,
+          vigilPending: false,
+          vigilOpen: false,
+          cocoonInto: null,
+          expeditionsBySite: { 'thornwood-ruins': 0, 'sunken-library': 0, 'hollowmoon-caverns': 0, 'skyreef-isles': 0 },
+          reefclawArrived: false,
+          wyrmScaleGiven: false,
+        },
+        records: { bestTotal: 0, bestTotalName: '', oldestWeeks: 0, oldestName: '', cupsWon: 0, expeditionsDone: 0, stonesWoken: 0, highestGeneration: 1 },
+        oddJobWeek: null,
+        memorialVisitMonth: null,
+        ...game,
+        encyclopedia,
       }
     }
     return next

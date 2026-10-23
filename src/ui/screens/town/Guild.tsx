@@ -69,10 +69,18 @@ export function GuildScreen() {
         ))}
       </section>
       <div class="spacer" />
-      <div class="actionbar">
+      <div class="actionbar actionbar--stack">
         <button type="button" class="btn" onClick={() => navigate('library')}>
           {t.library}
         </button>
+        <div class="actions__row">
+          <button type="button" class="btn btn--half" onClick={() => navigate('journal')}>
+            {t.journal}
+          </button>
+          <button type="button" class="btn btn--half" onClick={() => navigate('upgrades')}>
+            {t.upgrades}
+          </button>
+        </div>
       </div>
     </main>
   )

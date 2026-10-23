@@ -84,8 +84,8 @@ export function eventsForWeek(state: GameState): WeekEventView[] {
     if (state.journey) return { ...view, reason: 'journey' }
     if (m.status.injuredWeeks > 0) return { ...view, reason: 'injured' }
     if (m.status.sickWeeks > 0) return { ...view, reason: 'sick' }
-    if (m.status.missingWeeks > 0 || m.status.clinicWeeks > 0 || m.status.cocoonWeeks > 0) return { ...view, reason: 'away' }
-    if (event.kind === 'masquerade') return { ...view, reason: 'invitation' }
+    if (m.status.missingWeeks > 0 || m.status.clinicWeeks > 0 || m.status.cocoonWeeks > 0 || state.expedition) return { ...view, reason: 'away' }
+    if (event.kind === 'masquerade' && !state.unlocks.masqueradeInvited) return { ...view, reason: 'invitation' }
     if (event.kind === 'crown' && !(grade === 'S' && state.guild.crownInvite)) return { ...view, reason: 'invitation' }
     if (event.kind === 'legend' && !state.guild.legendInvite) return { ...view, reason: 'invitation' }
     if (event.minGrade && gradeIndex(grade) < gradeIndex(event.minGrade)) return { ...view, reason: 'minGrade' }
@@ -156,6 +156,8 @@ export function makeOpponents(state: GameState, event: TournamentEvent, rng: Rng
   const out: Participant[] = []
   if (event.kind === 'rival' || event.kind === 'official' || event.kind === 'crown') out.push(corinFor(player, event, grade, rng))
   if (event.kind === 'legend') out.push(wildParticipant('Legend', rng, true))
+  // CONTENT §10, §11: the Masquerade Cup is a single match against the Masked Breeder's Mirrorkin at your grade.
+  if (event.kind === 'masquerade') out.push(rivalParticipant('masked-breeder', grade, rng))
   if (event.kind === 'cup' && event.grade !== 'any') {
     const eligible = RIVALS.filter((r) => r.special === null && r.grades.includes(event.grade as TournamentGrade))
     for (const r of eligible) {
@@ -440,6 +442,9 @@ function itemPrizes(state: GameState, event: TournamentEvent, grade: TournamentG
       addItem('tempo-bell')
       addItem('wondercake', 3)
       break
+    case 'masquerade':
+      addItem('shard-mask')
+      break
     default: {
       const gi = gradeIndex(grade)
       if (gi <= 2) for (let i = 0; i < TOURNAMENT.itemPrizes.lowSweets; i++) addItem(rng.pick(regular).id)
@@ -628,8 +633,16 @@ export function finishTournament(input: GameState, rng: Rng): { state: GameState
           outcome.legendInvite = true
           newMail('legend', 'invite')
         }
+        // CONTENT §11: the Guild presents the Wyrm Scale once; offered at the Shrine it wakes Aurelwyrm.
+        if (!state.unlocks.wyrmScaleGiven) {
+          state.unlocks.wyrmScaleGiven = true
+          state.inventory = addItems(state.inventory, 'wyrm-scale', 1)
+          outcome.items.push({ id: 'wyrm-scale', qty: 1 })
+          newMail('wyrm', 'scale')
+        }
       }
     }
+    state.records.cupsWon += 1
     if (event.kind === 'legend') {
       addTitle('Legend of the Vale')
       state.guild.legendWon = true

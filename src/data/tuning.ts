@@ -4,7 +4,7 @@
  * Every value starts from docs/GAME_DESIGN.md (section numbers in the comments); balance changes happen here.
  * Fractions are stored as integers over a stated denominator so the core can stay in integer math.
  */
-import type { Difficulty, Grade, GrowthType, Season, Weather } from './types.ts'
+import type { Difficulty, Grade, GrowthType, Season, TournamentGrade, Weather } from './types.ts'
 
 /** App-shell timings (milliseconds). */
 export const UI = {
@@ -440,7 +440,7 @@ export const WEATHER_WEIGHTS: Record<Season, Partial<Record<Weather, number>>> =
 export const ECONOMY = { startMoney: 3000, loanCap: 5000, loanFeePct: 10, loanRepayPct: 50 } as const
 
 /** CONTENT §11 ranch upgrades that touch the weekly loop. */
-export const UPGRADES = { cozyBarnStress: 2, tidePoolSummerStress: 1, trainingYardGreatBonus: 5_000 } as const
+export const UPGRADES = { cozyBarnStress: 2, tidePoolSummerStress: 1, trainingYardGreatBonus: 5_000, lanternGardenVisitStress: 5 } as const
 
 /** §6.6 assistant labels: upper bounds of each band, lowest first. */
 export const LABEL_BANDS = {
@@ -656,3 +656,67 @@ export const VARIANTS = {
 
 /** §7 Gentle mode: an Elder mentors once a month (the bonus itself is JOURNEY.technique.elderMentorPct). */
 export const ELDER = { mentorPerMonth: 1 } as const
+
+/* ---------- M7: exploration and unlocks (GAME_DESIGN §17, §18; CONTENT §8, §11, §13, §14) ---------- */
+
+/** §17 expeditions. */
+export const EXPEDITION = {
+  weeks: 4,
+  /** Stamina = base + LIF / lifDivisor. */
+  stamina: { base: 50, lifDivisor: 8 },
+  stepCost: { min: 5, max: 12 },
+  detourCost: 10,
+  /** Lost chance = max(floorPct, basePct − INT / intDivisor) percent; being lost costs `lostCost` stamina. */
+  fog: { basePct: 30, intDivisor: 30, floorPct: 5, lostCost: 10 },
+  after: { fatigue: 40, stress: -10 },
+  map: {
+    layers: { min: 4, max: 5 },
+    perLayer: { min: 2, max: 3 },
+    /** Nodes on the whole map, the start and the camp included. */
+    nodes: { min: 12, max: 16 },
+    /** The guaranteed route to the event node costs at most this much stamina (the base stamina). */
+    spineBudget: 50,
+    /** A node links to a second node of the next layer this often (percent). */
+    extraEdgePct: 50,
+  },
+  /** Node-kind weights for ordinary nodes, and for the guaranteed route (no fog, no hidden spots). */
+  nodeWeights: { path: 18, obstacle: 26, search: 22, hidden: 10, fog: 14, treasure: 10 },
+  spineWeights: { path: 30, obstacle: 40, search: 20, treasure: 10 },
+  /** The Strange Chest holds a Lootlid this often, and always on this visit to Thornwood. */
+  chest: { lootlidPct: 35, pityVisit: 3 },
+  /** Tomas's log keeps this many lines. */
+  logLimit: 30,
+} as const
+
+/** CONTENT §11 unlock chains. */
+export const UNLOCKS = {
+  cocoon: { month: 6, week: 4, ageMin: 144, ageMax: 240, loyaltyMin: 70, fatigueMax: 20, stressMax: 15, puddings: 12, weeks: 4, keepGainsPct: 80, lifespanBonus: 60 },
+  storm: { spdMin: 300, stressMax: 25, fatigueMax: 30, fatigueCost: 10 },
+  /** Basil's cocoon rumor: a Nibblegrub this old (weeks) on the ranch. */
+  grubRumorAge: 48,
+  /** Basil whispers about the masked breeder in this month once a monster reached this grade. */
+  masquerade: { rumorMonth: 9, grade: 'B' as TournamentGrade },
+  /** The Reefclaw moves in on this week after the Tide Pool; its likes come from a fixed seed, like the Market's. */
+  reefclaw: { month: 6, week: 1, seed: 7_421_100 },
+  /** The Lootlid that comes home from the chest rolls its likes from this seed. */
+  lootlidSeed: 7_421_200,
+} as const
+
+/** CONTENT §13 Odd Jobs: Turnip Sort. */
+export const ODD_JOBS = {
+  seconds: 30,
+  payPerCorrect: 5,
+  payPerWrong: 5,
+  cap: 150,
+  /** How long an item stays in reach at the start and at the end of the round (milliseconds): the ramp. */
+  slideMs: { start: 1900, end: 850 },
+  /** The pause between items, start → end. */
+  gapMs: { start: 450, end: 180 },
+  /** Chance an item is a turnip (percent); rocks are the rest. */
+  turnipPct: 60,
+  /** Items prepared per round (more than a round can show). */
+  items: 80,
+} as const
+
+/** CONTENT §14 title thresholds that are not tournament placings. */
+export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30 } as const

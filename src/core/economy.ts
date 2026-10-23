@@ -103,5 +103,29 @@ export function shopStock(state: GameState): ShopEntry[] {
   return out
 }
 
+export type SellRefusal = 'unknownItem' | 'notSellable' | 'notOwned' | 'quantity'
+
+/** Expedition treasures (CONTENT §6 sellables) sold to Basil at their listed value. Pure. */
+export function sellItem(input: GameState, itemId: string, qty: number): { state: GameState; gold: number; refused: SellRefusal | null } {
+  const item = ITEM_BY_ID[itemId]
+  if (!item) return { state: input, gold: 0, refused: 'unknownItem' }
+  if (item.sell === null) return { state: input, gold: 0, refused: 'notSellable' }
+  const owned = input.inventory[itemId] ?? 0
+  if (owned <= 0) return { state: input, gold: 0, refused: 'notOwned' }
+  if (!Number.isInteger(qty) || qty < 1) return { state: input, gold: 0, refused: 'quantity' }
+  const n = Math.min(qty, owned)
+  const state = structuredClone(input)
+  const gold = item.sell * n
+  state.money += gold
+  if (owned - n > 0) state.inventory[itemId] = owned - n
+  else delete state.inventory[itemId]
+  return { state, gold, refused: null }
+}
+
+/** What the Bag holds that Basil buys. */
+export function sellableStock(state: GameState): { item: Item; owned: number }[] {
+  return ITEMS.filter((i) => i.sell !== null && (state.inventory[i.id] ?? 0) > 0).map((item) => ({ item, owned: state.inventory[item.id]! }))
+}
+
 /** The categories the Shop sells, in counter order (Basil's bakery counter is the Stat Sweets). */
 export const SHOP_CATEGORIES: readonly ItemCategory[] = ['sweet', 'recovery', 'mood', 'form', 'toy', 'charm', 'tonic', 'potential', 'catalyst']

@@ -211,6 +211,64 @@ export const UNLOCK_CHAINS = [
 ] as const
 export type UnlockChain = (typeof UNLOCK_CHAINS)[number]
 
+/* ---------- M7: expeditions, upgrades, mail (GAME_DESIGN §17, §18; CONTENT §8, §11) ---------- */
+
+export const EXPEDITION_SITE_IDS = ['thornwood-ruins', 'sunken-library', 'hollowmoon-caverns', 'skyreef-isles'] as const
+export type ExpeditionSiteId = (typeof EXPEDITION_SITE_IDS)[number]
+
+/** What a node on the expedition map is (§17 table). `hidden` is a search spot that only INT reveals. */
+export const NODE_KINDS = ['start', 'path', 'obstacle', 'search', 'hidden', 'fog', 'treasure', 'event', 'camp'] as const
+export type NodeKind = (typeof NODE_KINDS)[number]
+
+/** Each site's one special node (CONTENT §8 highlights). */
+export const EVENT_NODE_KINDS = ['strange-chest', 'archive', 'crystal-heart', 'sky-puzzle'] as const
+export type EventNodeKind = (typeof EVENT_NODE_KINDS)[number]
+
+export interface ExpeditionObstacle {
+  id: string
+  name: string
+  stat: StatKey
+  threshold: number
+}
+
+/** One row of a loot table: an item, or a universal Songsheet of one of the listed families. */
+export type LootEntry = { kind: 'item'; id: string; qty: number; weight: number } | { kind: 'sheet'; families: readonly Family[]; weight: number }
+
+export interface ExpeditionSite {
+  id: ExpeditionSiteId
+  name: string
+  /** Months (1–12) whose week 1 brings the invitation. */
+  months: readonly number[]
+  gradeMin: TournamentGrade
+  fameMin: number
+  obstacles: readonly ExpeditionObstacle[]
+  /** INT needed to see hidden search spots. */
+  hiddenInt: number
+  event: EventNodeKind
+  /** The stat check some events need (the hidden archive, the sky puzzle), or null. */
+  eventCheck: { stat: StatKey; value: number } | null
+  search: readonly LootEntry[]
+  treasure: readonly LootEntry[]
+  /** What the event node gives when it holds no key item. */
+  eventLoot: readonly LootEntry[]
+  /** A one-line brief for the invitation and the Journal. */
+  blurb: string
+}
+
+export const UPGRADE_IDS = ['cozyBarn', 'trainingYard', 'tidePool', 'lanternGarden'] as const
+export type UpgradeId = (typeof UPGRADE_IDS)[number]
+
+export interface RanchUpgrade {
+  id: UpgradeId
+  name: string
+  price: number
+  requires: { kind: 'rank'; rank: number } | { kind: 'memorial' }
+}
+
+/** Every kind of letter the Mailbox can hold. */
+export const MAIL_KINDS = ['sale', 'crown', 'legend', 'promotion', 'rank', 'info', 'expedition', 'rumor', 'vigil', 'upgrades', 'masquerade', 'reefclaw', 'wyrm'] as const
+export type MailKind = (typeof MAIL_KINDS)[number]
+
 export interface BreedArt {
   plan: BodyPlan
   brief: string

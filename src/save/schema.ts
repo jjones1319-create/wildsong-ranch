@@ -6,10 +6,12 @@ import { FREEZER, HEARTSTONE, LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
+import { BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type Speed, type TransparencyMode, type UnlockChain } from '../data/types.ts'
+import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
+import { buildMap } from '../core/expedition.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
-import type { GameState } from '../core/state.ts'
+import type { ExpeditionLoot, GameState } from '../core/state.ts'
 import { isRawSave, migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
@@ -198,6 +200,8 @@ const WeekActionSchema = v.fallback(
       v.object({ kind: v.literal('rest') }),
       v.object({ kind: v.literal('play') }),
       v.object({ kind: v.literal('journey'), site: v.picklist(JOURNEY_SITE_IDS) }),
+      v.object({ kind: v.literal('expedition'), site: v.picklist(EXPEDITION_SITE_IDS) }),
+      v.object({ kind: v.literal('event') }),
       v.object({ kind: v.literal('none') }),
     ]),
   ),
@@ -263,7 +267,7 @@ const GuildSchema = v.fallback(
 const MailSchema = v.object({
   id: v.string(),
   week: int(0, 1_000_000, 0),
-  kind: oneOf(['sale', 'crown', 'legend', 'promotion', 'rank', 'info'] as const, 'info'),
+  kind: oneOf(MAIL_KINDS, 'info'),
   ref: text('', 64),
   read: bool(false),
 })
@@ -308,8 +312,68 @@ const EncyclopediaSchema = v.fallback(
     breeds: v.fallback(v.array(v.picklist(BREED_IDS)), []),
     variants: v.fallback(v.array(v.string()), []),
     phrases: listOf(EncyclopediaPhraseSchema),
+    combos: v.fallback(v.array(text('', 64)), []),
   }),
-  { breeds: [], variants: [], phrases: [] },
+  { breeds: [], variants: [], phrases: [], combos: [] },
+)
+
+/* ---------- M7: expeditions, unlock chains, the Journal ---------- */
+
+const nodeList = () => v.fallback(v.array(int(0, 63, 0)), [])
+
+/** A trip in progress. Strict on the site; the node ids are checked against the rebuilt map in tidyGame. */
+const ExpeditionSchema = v.object({
+  site: v.picklist(EXPEDITION_SITE_IDS),
+  seed: int(0, 4_294_967_295, 0),
+  startWeek: int(0, 1_000_000, 0),
+  weekNo: int(1, EXPEDITION.weeks + 1, 1),
+  stamina: int(0, 1000, 0),
+  staminaMax: int(1, 1000, 1),
+  at: int(0, 63, 0),
+  visited: nodeList(),
+  searched: nodeList(),
+  passed: nodeList(),
+  blockedAt: v.fallback(v.nullable(int(0, 63, 0)), null),
+  visit: int(1, 100_000, 1),
+  loot: listOf(v.object({ id: v.string(), qty: int(1, 1000, 1) })),
+  sheets: v.fallback(v.array(v.string()), []),
+  keyFound: v.fallback(v.nullable(v.string()), null),
+  lootlidPlaced: v.fallback(v.nullable(v.picklist(['ranch', 'freezer', 'none'] as const)), null),
+  ended: v.fallback(v.nullable(v.picklist(['camp', 'retreat', 'exhausted'] as const)), null),
+  log: v.fallback(v.array(text('', 400)), []),
+})
+
+const ExpeditionsBySiteSchema = v.fallback(
+  v.object({ 'thornwood-ruins': int(0, 100_000, 0), 'sunken-library': int(0, 100_000, 0), 'hollowmoon-caverns': int(0, 100_000, 0), 'skyreef-isles': int(0, 100_000, 0) }),
+  { 'thornwood-ruins': 0, 'sunken-library': 0, 'hollowmoon-caverns': 0, 'skyreef-isles': 0 },
+)
+
+const UnlocksSchema = v.fallback(
+  v.object({
+    rumorsHeard: listOf(v.picklist(UNLOCK_CHAINS)),
+    masqueradeInvited: bool(false),
+    vigilPending: bool(false),
+    vigilOpen: bool(false),
+    cocoonInto: v.fallback(v.nullable(v.picklist(BREED_IDS)), null),
+    expeditionsBySite: ExpeditionsBySiteSchema,
+    reefclawArrived: bool(false),
+    wyrmScaleGiven: bool(false),
+  }),
+  { rumorsHeard: [], masqueradeInvited: false, vigilPending: false, vigilOpen: false, cocoonInto: null, expeditionsBySite: { 'thornwood-ruins': 0, 'sunken-library': 0, 'hollowmoon-caverns': 0, 'skyreef-isles': 0 }, reefclawArrived: false, wyrmScaleGiven: false },
+)
+
+const JournalRecordsSchema = v.fallback(
+  v.object({
+    bestTotal: int(0, 6000, 0),
+    bestTotalName: text('', RANGES.nameLength.max),
+    oldestWeeks: int(0, RANGES.lifespan.max, 0),
+    oldestName: text('', RANGES.nameLength.max),
+    cupsWon: int(0, 1_000_000, 0),
+    expeditionsDone: int(0, 1_000_000, 0),
+    stonesWoken: int(0, 1_000_000, 0),
+    highestGeneration: int(1, 1_000_000, 1),
+  }),
+  { bestTotal: 0, bestTotalName: '', oldestWeeks: 0, oldestName: '', cupsWon: 0, expeditionsDone: 0, stonesWoken: 0, highestGeneration: 1 },
 )
 
 const SleepingStoneSchema = v.object({ phrase: text('', 200), artist: text('', 200), breed: v.picklist(BREED_IDS), week: int(0, 1_000_000, 0) })
@@ -362,6 +426,12 @@ export const GameStateSchema = v.object({
   sleepingStones: listOf(SleepingStoneSchema),
   unlocked: v.fallback(v.array(v.picklist(BREED_IDS)), [...STARTING_UNLOCKED]),
   elderMentorMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  expedition: v.fallback(v.nullable(ExpeditionSchema), null),
+  pendingEvent: v.fallback(v.nullable(v.object({ kind: v.literal('stormChase') })), null),
+  unlocks: UnlocksSchema,
+  records: JournalRecordsSchema,
+  oddJobWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  memorialVisitMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -559,9 +629,28 @@ function tidyGame(game: GameState): GameState {
   game.encyclopedia.phrases = (game.encyclopedia.phrases as (GameState['encyclopedia']['phrases'][number] | null)[]).filter((p): p is GameState['encyclopedia']['phrases'][number] => p !== null)
   game.sleepingStones = (game.sleepingStones as (GameState['sleepingStones'][number] | null)[]).filter((p): p is GameState['sleepingStones'][number] => p !== null)
   game.unlocked = [...new Set([...STARTING_UNLOCKED, ...game.unlocked])]
+  game.encyclopedia.combos = [...new Set(game.encyclopedia.combos)]
+  // M7: the expedition's node ids must fit the map its seed rebuilds; otherwise the trip is dropped (nothing else is lost).
+  if (game.expedition) {
+    const e = game.expedition
+    const nodes = buildMap(e.site, e.seed).nodes.length
+    const inMap = (i: number) => i >= 0 && i < nodes
+    if (!inMap(e.at) || e.stamina > e.staminaMax) game.expedition = null
+    else {
+      e.visited = [...new Set(e.visited.filter(inMap))]
+      e.searched = [...new Set(e.searched.filter(inMap))]
+      e.passed = [...new Set(e.passed.filter(inMap))]
+      if (e.blockedAt !== null && !inMap(e.blockedAt)) e.blockedAt = null
+      e.loot = (e.loot as (ExpeditionLoot | null)[]).filter((l): l is ExpeditionLoot => l !== null)
+      e.log = e.log.slice(-EXPEDITION.logLimit)
+    }
+  }
+  game.unlocks.rumorsHeard = [...new Set((game.unlocks.rumorsHeard as (UnlockChain | null)[]).filter((c): c is UnlockChain => c !== null))]
   if (!game.monster || game.ended) {
     game.tournament = null
     game.trial = null
+    game.expedition = null
+    game.pendingEvent = null
   }
   // A request or a phase only makes sense with a living monster.
   if (!game.monster || game.ended) {

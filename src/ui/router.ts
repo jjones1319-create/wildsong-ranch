@@ -39,6 +39,10 @@ export const SCREENS = [
   'journey',
   'creditsRoll',
   'settings',
+  'expedition',
+  'journal',
+  'oddJobs',
+  'upgrades',
 ] as const
 export type Screen = (typeof SCREENS)[number]
 
@@ -74,6 +78,10 @@ const SLUGS: Record<Screen, string> = {
   journey: 'ranch/journey',
   creditsRoll: 'credits-roll',
   settings: 'settings',
+  expedition: 'ranch/expedition',
+  journal: 'town/journal',
+  oddJobs: 'town/jobs',
+  upgrades: 'town/upgrades',
 }
 
 /** Where Back goes. */
@@ -109,6 +117,10 @@ const PARENT: Record<Screen, Screen | null> = {
   journey: 'ranch',
   creditsRoll: 'ranch',
   settings: 'title',
+  expedition: 'ranch',
+  journal: 'town',
+  oddJobs: 'town',
+  upgrades: 'town',
 }
 
 /** The current screen. UI reads this; `navigate()` changes it. */
@@ -149,7 +161,23 @@ export function parentOf(target: Screen): Screen | null {
 }
 
 export function isRanchScreen(s: Screen): boolean {
-  return s === 'ranch' || s === 'ranchCard' || s === 'bag' || s === 'songbook' || s === 'town' || s === 'shop' || s === 'library' || s === 'pell' || s === 'shrine' || s === 'market' || s === 'farewell'
+  return (
+    s === 'ranch' ||
+    s === 'ranchCard' ||
+    s === 'bag' ||
+    s === 'songbook' ||
+    s === 'town' ||
+    s === 'shop' ||
+    s === 'library' ||
+    s === 'pell' ||
+    s === 'shrine' ||
+    s === 'market' ||
+    s === 'farewell' ||
+    s === 'expedition' ||
+    s === 'journal' ||
+    s === 'oddJobs' ||
+    s === 'upgrades'
+  )
 }
 
 /** A minimal window-like host, so the router can be installed on a fake in tests. */

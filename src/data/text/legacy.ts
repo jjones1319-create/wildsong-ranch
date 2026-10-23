@@ -138,6 +138,7 @@ export const LEGACY_TEXT = {
     toRanch: 'To the ranch',
     editFirst: 'Edit before you start',
     stones: 'Sleeping Stones',
+    stonesShort: 'Stones',
     stonesEmpty: 'No sleeping songs yet.',
     stoneRow: '“{phrase}”{artist}',
     wake: 'Wake (free)',

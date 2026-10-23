@@ -1,8 +1,10 @@
 import { signal } from '@preact/signals'
 import { useState } from 'preact/hooks'
 import { catalystEffect, compatTier, compatibility, fusionOutcomes, type FusionResult } from '../../../core/fusion.ts'
+import { countOf } from '../../../core/items.ts'
 import { duplicateMonster } from '../../../core/lab.ts'
 import { canReceiveHeartstone, elderMentorUsedThisMonth, elderSite, freezerFull, fusionCandidates, heartstoneCap, heartstoneGrant, ranchBusy, findStored } from '../../../core/legacy.ts'
+import { canVisitGarden } from '../../../core/upgrades.ts'
 import { totalStats, type Monster } from '../../../core/monster.ts'
 import { say } from '../../../core/report.ts'
 import type { GameState, Heartstone, MemorialEntry } from '../../../core/state.ts'
@@ -14,7 +16,7 @@ import { fill } from '../../../data/text/format.ts'
 import { FAMILY_LABELS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { WREN } from '../../../data/text/wren.ts'
-import { FREEZER, FUSION, HEARTSTONE, JOURNEY, RANGES } from '../../../data/tuning.ts'
+import { FREEZER, FUSION, HEARTSTONE, JOURNEY, RANGES, UPGRADES } from '../../../data/tuning.ts'
 import { STAT_KEYS } from '../../../data/types.ts'
 import { Badge, Chips, Confirm, Field, Select, Sheet, TopBar } from '../../components/Controls.tsx'
 import { MonsterCard } from '../../components/MonsterCard.tsx'
@@ -24,7 +26,7 @@ import { now } from '../../lib/clock.ts'
 import { newId } from '../../lib/ids.ts'
 import { navigateFrom } from '../../router.ts'
 import { showToast, upsertEntry } from '../../store/appStore.ts'
-import { editMemorial, freezeActive, fuse, game, giveHeartstone, makeActive, releaseStored } from '../../store/gameStore.ts'
+import { editMemorial, freezeActive, fuse, game, giveBlueprint, giveHeartstone, makeActive, releaseStored, visitGarden } from '../../store/gameStore.ts'
 import { listFreezer, selected, startEdit, startEditActive, type Listed } from '../../store/labStore.ts'
 
 type Tab = 'freezer' | 'fusion' | 'memorial' | 'heartstones' | 'elders'
@@ -130,7 +132,14 @@ function StoredSheet({ listed, onClose }: { listed: Listed | null; onClose: () =
 function FreezerTab({ g }: { g: GameState }) {
   const [sheetFor, setSheetFor] = useState<Listed | null>(null)
   const [confirmFreeze, setConfirmFreeze] = useState(false)
+  const [askBlueprint, setAskBlueprint] = useState(false)
   const rows = listFreezer().filter((l) => l.badge !== 'elder')
+  const hasBlueprint = countOf(g.inventory, 'brass-blueprint') > 0 && !g.unlocked.includes('gearhoot')
+  const handBlueprint = () => {
+    setAskBlueprint(false)
+    const refused = giveBlueprint()
+    if (!refused) showToast(UI_TEXT.offerings.blueprintDone)
+  }
   const busy = ranchBusy(g)
   const full = freezerFull(g)
   const freeze = () => {
@@ -147,6 +156,11 @@ function FreezerTab({ g }: { g: GameState }) {
         <p>{t.welcome}</p>
         <p class="muted small">{fill(t.slots, { n: g.freezer.length, max: FREEZER.slots })}</p>
       </SpeakerCard>
+      {hasBlueprint && (
+        <button type="button" class="btn btn--primary" onClick={() => setAskBlueprint(true)}>
+          📐 {UI_TEXT.offerings.blueprint}
+        </button>
+      )}
       {g.monster && !g.ended && (
         <button type="button" class="btn" disabled={busy || full} onClick={() => setConfirmFreeze(true)}>
           ❄️ {fill(t.freezeActive, { name: g.monster.name })}
@@ -161,6 +175,7 @@ function FreezerTab({ g }: { g: GameState }) {
       </div>
       <StoredSheet listed={sheetFor} onClose={() => setSheetFor(null)} />
       <Confirm open={confirmFreeze} text={g.monster ? say('freezeAsk', t.freezeAsk, g.monster).text : ''} confirmLabel={`❄️ ${t.tabs.freezer}`} onConfirm={freeze} onCancel={() => setConfirmFreeze(false)} />
+      <Confirm open={askBlueprint} text={UI_TEXT.offerings.blueprintAsk} confirmLabel={UI_TEXT.offerings.blueprint} onConfirm={handBlueprint} onCancel={() => setAskBlueprint(false)} />
     </>
   )
 }
@@ -372,8 +387,27 @@ function MemorialTab({ g }: { g: GameState }) {
     setOpen(null)
     navigateFrom('pell', 'labView')
   }
+  const garden = canVisitGarden(g)
   return (
     <>
+      {g.upgrades.lanternGarden && (
+        <section class="card card--muted">
+          <p class="field__label">🏮 {UI_TEXT.upgrades.visit}</p>
+          <p class="muted small">{UI_TEXT.upgrades.effects.lanternGarden}</p>
+          <button
+            type="button"
+            class="btn btn--primary btn--small"
+            disabled={!garden.ok}
+            onClick={() => {
+              const name = g.monster?.name ?? ''
+              const refused = visitGarden()
+              if (!refused) showToast(fill(UI_TEXT.upgrades.visitDone, { name, n: UPGRADES.lanternGardenVisitStress }))
+            }}
+          >
+            {garden.ok ? UI_TEXT.upgrades.visit : garden.reason === 'visited' ? UI_TEXT.upgrades.visited : t.cantGive.none}
+          </button>
+        </section>
+      )}
       {g.memorial.length === 0 && <p class="empty">{t.memorialEmpty}</p>}
       <div class="list">
         {g.memorial.map((e) => (

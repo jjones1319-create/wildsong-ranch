@@ -1,0 +1,200 @@
+/* M7: the expedition map, the Journal, Turnip Sort and ranch upgrades. */
+
+/* The node map scrolls sideways on a phone; stops are real buttons laid over the SVG lines. */
+.expmap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #1a2a24 0%, #1c262c 100%);
+  -webkit-overflow-scrolling: touch;
+}
+
+.expmap__inner {
+  position: relative;
+}
+
+.expmap__lines {
+  position: absolute;
+  inset: 0;
+}
+
+.expmap__edge {
+  stroke: var(--line);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.expmap__edge--lit {
+  stroke: var(--accent);
+  stroke-dasharray: 6 6;
+}
+
+.expmap__cost {
+  fill: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.expnode {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  opacity: 0.55;
+}
+
+.expnode__glyph {
+  font-size: 1.4em;
+  line-height: 1;
+}
+
+.expnode__label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  width: 88px;
+  text-align: center;
+  font-size: 0.68em;
+  line-height: 1.1;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.expnode--done {
+  opacity: 0.75;
+  border-style: dashed;
+}
+
+.expnode--lit {
+  opacity: 1;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(242, 181, 68, 0.25);
+  cursor: pointer;
+}
+
+.expnode--lit:active {
+  transform: scale(0.96);
+}
+
+.expnode--here {
+  opacity: 1;
+  border-color: var(--moss);
+  background: var(--surface-2);
+}
+
+.expnode--here .expnode__label,
+.expnode--lit .expnode__label {
+  color: var(--text);
+}
+
+.bar--stamina .bar__fill {
+  background: var(--moss);
+}
+
+/* The Journal */
+.journal-tabs .chips {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.jrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.jrow__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.jrow__name {
+  font-weight: 700;
+}
+
+.jrow--off {
+  opacity: 0.6;
+}
+
+.jrow__portrait--asleep {
+  filter: grayscale(1) brightness(0.4);
+}
+
+/* Turnip Sort */
+.chute {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.chute__item {
+  font-size: 3.2em;
+  line-height: 1;
+  min-height: 1.2em;
+}
+
+.chute__name {
+  font-weight: 700;
+}
+
+.chute__timer {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.chute__timer-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+.chute__buttons {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.chute__btn {
+  flex: 1;
+  min-height: 76px;
+  font-size: 1.15em;
+  font-weight: 800;
+}
+
+.chute__score {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 0.95em;
+}

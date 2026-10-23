@@ -33,6 +33,10 @@ import { TownScreen } from './screens/town/Town.tsx'
 import { PellLabScreen } from './screens/town/PellLab.tsx'
 import { ShrineScreen } from './screens/town/Shrine.tsx'
 import { MarketScreen } from './screens/town/Market.tsx'
+import { ExpeditionScreen } from './screens/ranch/Expedition.tsx'
+import { JournalScreen } from './screens/town/Journal.tsx'
+import { OddJobsScreen } from './screens/town/OddJobs.tsx'
+import { UpgradesScreen } from './screens/town/Upgrades.tsx'
 import { ready } from './store/appStore.ts'
 import { flow } from './store/gameStore.ts'
 
@@ -108,6 +112,14 @@ function Current({ current }: { current: Screen }) {
       return <CreditsRollScreen />
     case 'lab':
       return <LabLibraryScreen />
+    case 'expedition':
+      return <ExpeditionScreen />
+    case 'journal':
+      return <JournalScreen />
+    case 'oddJobs':
+      return <OddJobsScreen />
+    case 'upgrades':
+      return <UpgradesScreen />
   }
 }
 

@@ -86,6 +86,7 @@ export function wakeStone(input: GameState, index: number, id: string): { state:
   if (!placed.placed) return { state: input, monster: null, placed: null, refused: placed.refused }
   const state = placed.state
   state.sleepingStones.splice(index, 1)
+  state.records.stonesWoken += 1
   if (!state.encyclopedia.phrases.some((p) => p.phrase === stone.phrase && p.artist === stone.artist)) {
     state.encyclopedia.phrases.push({ phrase: stone.phrase, artist: stone.artist, name: monster.name, mainBreed: monster.mainBreed, subBreed: monster.subBreed, variantId: monster.variantId })
   }
@@ -96,7 +97,7 @@ export type BuyRefusal = 'notStocked' | 'money' | PlaceRefusal
 
 /** The Market after the first monster: 1,500G, or 2,500G for the season's breed (§14.2). */
 export function buyFromMarket(input: GameState, breed: BreedId, id: string): { state: GameState; monster: Monster | null; placed: Placed | null; price: number; refused: BuyRefusal | null } {
-  const offer = marketStock(dateOf(input.week).month).find((o) => o.breed === breed)
+  const offer = marketStock(dateOf(input.week).month, input.unlocked).find((o) => o.breed === breed)
   if (!offer) return { state: input, monster: null, placed: null, price: 0, refused: 'notStocked' }
   if (input.money < offer.price) return { state: input, monster: null, placed: null, price: offer.price, refused: 'money' }
   const monster = marketMonster(breed, id)

@@ -14,6 +14,7 @@ export function EmptyRanch({ g }: { g: GameState }) {
     { icon: '🐾', name: t.market, hint: UI_TEXT.town.marketHint, go: () => navigate('market') },
     { icon: '🪨', name: t.shrine, hint: UI_TEXT.town.shrineHint, go: () => navigate('shrine') },
     { icon: '🔬', name: t.lab, hint: UI_TEXT.town.labHint, go: () => navigateFrom('ranch', 'lab') },
+    { icon: '📔', name: UI_TEXT.town.journal, hint: UI_TEXT.town.journalHint, go: () => navigate('journal') },
   ]
   return (
     <main class="screen">

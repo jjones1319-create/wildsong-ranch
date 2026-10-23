@@ -36,6 +36,13 @@ import {
   type ThawRefusal,
 } from '../../core/legacy.ts'
 import { randomPhrase as randomPhraseCore } from '../../core/shrine.ts'
+import { answerEvent as answerEventCore } from '../../core/game.ts'
+import { sellItem as sellItemCore, type SellRefusal } from '../../core/economy.ts'
+import { detour as detourCore, moveTo as moveToCore, retreat as retreatCore, turnBack as turnBackCore, type MoveRefusal } from '../../core/expedition.ts'
+import { applyOddJob as applyOddJobCore } from '../../core/oddJobs.ts'
+import { attendVigil as attendVigilCore, giveBlueprint as giveBlueprintCore, offerAtShrine as offerAtShrineCore, type BlueprintRefusal, type OfferRefusal } from '../../core/unlocks.ts'
+import { buyUpgrade as buyUpgradeCore, visitGarden as visitGardenCore, type GardenRefusal, type UpgradeRefusal } from '../../core/upgrades.ts'
+import type { ExpeditionSiteId, UpgradeId } from '../../data/types.ts'
 import { SHRINE_WORDS } from '../../data/text/shrine.ts'
 import type { BreedId } from '../../data/types.ts'
 import { newId } from '../lib/ids.ts'
@@ -512,4 +519,117 @@ export function randomPhrase(): string {
   const phrase = randomPhraseCore(rng, SHRINE_WORDS)
   void persist()
   return phrase
+}
+
+/* ---------- M7: expeditions, events, offerings, upgrades, Odd Jobs, selling ---------- */
+
+/** Yes to the storm spark is the week's action; no just clears the card. */
+export function answerEvent(accept: boolean): void {
+  const g = game.value
+  if (!g?.pendingEvent) return
+  if (accept) takeAction({ kind: 'event' })
+  else commit(answerEventCore(g, false, rng).state)
+}
+
+/** Sets off: the week's action, then the map screen. The week ends from the map's summary (`endWeekNow`). */
+export function startExpeditionTrip(site: ExpeditionSiteId): boolean {
+  const g = game.value
+  if (!g?.monster) return false
+  const r = chooseAction(g, { kind: 'expedition', site }, rng)
+  if (!r.state.expedition) return false
+  weekNews.value = [...weekNews.value, ...eventLines(r.events, r.state.monster ?? g.monster)]
+  commit(r.state)
+  return true
+}
+
+export function expeditionMove(nodeId: number): MoveRefusal | null {
+  const g = game.value
+  if (!g) return 'noTrip'
+  const r = moveToCore(g, nodeId, rng)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function expeditionDetour(): void {
+  const g = game.value
+  if (!g) return
+  const r = detourCore(g)
+  if (!r.refused) commit(r.state)
+}
+
+export function expeditionTurnBack(): void {
+  const g = game.value
+  if (!g) return
+  const r = turnBackCore(g)
+  if (!r.refused) commit(r.state)
+}
+
+export function expeditionRetreat(): void {
+  const g = game.value
+  if (!g) return
+  const r = retreatCore(g)
+  if (!r.refused) commit(r.state)
+}
+
+export function offerAtShrine(itemId: string): { refused: OfferRefusal | null; breed: string | null } {
+  const g = game.value
+  if (!g) return { refused: 'notOwned', breed: null }
+  const r = offerAtShrineCore(g, itemId)
+  if (!r.refused) commit(r.state)
+  return { refused: r.refused, breed: r.breed }
+}
+
+export function giveBlueprint(): BlueprintRefusal | null {
+  const g = game.value
+  if (!g) return 'notOwned'
+  const r = giveBlueprintCore(g)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function attendVigil(): boolean {
+  const g = game.value
+  if (!g) return false
+  const r = attendVigilCore(g)
+  if (!r.refused) commit(r.state)
+  return r.refused === null
+}
+
+export function buyUpgrade(id: UpgradeId): UpgradeRefusal | null {
+  const g = game.value
+  if (!g) return 'unknown'
+  const r = buyUpgradeCore(g, id)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function visitGarden(): GardenRefusal | null {
+  const g = game.value
+  if (!g) return 'noMonster'
+  const r = visitGardenCore(g)
+  if (!r.refused) commit(r.state)
+  return r.refused
+}
+
+export function sell(itemId: string, qty: number): { gold: number; refused: SellRefusal | null } {
+  const g = game.value
+  if (!g) return { gold: 0, refused: 'unknownItem' }
+  const r = sellItemCore(g, itemId, qty)
+  if (!r.refused) commit(r.state)
+  return { gold: r.gold, refused: r.refused }
+}
+
+/** The Turnip Sort round's seed comes from the game's RNG, so the chute is part of the save's story. */
+export function oddJobSeed(): number {
+  const seed = rng.nextU32()
+  void persist()
+  return seed
+}
+
+export function finishOddJob(correct: number, wrong: number): number {
+  const g = game.value
+  if (!g) return 0
+  const r = applyOddJobCore(g, correct, wrong)
+  if (!r.refused) commit(r.state)
+  return r.pay
 }

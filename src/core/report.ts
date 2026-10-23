@@ -1,4 +1,5 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
+import { EXPEDITION_SITE_BY_ID } from '../data/expeditions.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
 import { JOURNEY_SITE_BY_ID } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
@@ -37,7 +38,8 @@ export function weeklyReport(state: GameState): WrenLine[] {
   const away = availability(m)
   if (away.reason === 'missing') lines.push(say('missingWeek', WREN.missingWeek, m))
   else if (away.reason === 'clinic') lines.push(say('clinicWeek', WREN.clinicWeek, m))
-  else if (away.reason === 'cocoon') lines.push(say('clinicWeek', WREN.clinicWeek, m))
+  else if (away.reason === 'cocoon') lines.push(say('cocoonWeek', WREN.cocoonWeek, m))
+  else if (state.expedition?.ended) lines.push(say('expeditionWeek', WREN.expeditionWeek, m, { week: state.expedition.weekNo }))
   else if (away.reason === 'sick') lines.push(say('sickWeek', WREN.sickWeek, m))
   else if (away.reason === 'injured') lines.push(say('injuredWeek', WREN.injuredWeek, m))
   else if (m.fatigue >= REPORT.exhaustedFatigue) lines.push(say('weeklyExhausted', WREN.weeklyExhausted, m))
@@ -152,6 +154,49 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
         break
       case 'elderMentor':
         lines.push(say('elderMentor', WREN.elderMentor, m, { elder: e.elder }))
+        break
+      /* M7 */
+      case 'invitation':
+        lines.push(say('invitation', WREN.invitation, m, { site: EXPEDITION_SITE_BY_ID[e.site].name }))
+        break
+      case 'rumor':
+        lines.push(say('rumor', WREN.rumor, m))
+        break
+      case 'vigilMail':
+        lines.push(say('vigilMail', WREN.vigilMail, m))
+        break
+      case 'upgradesMail':
+        lines.push(say('upgradesMail', WREN.upgradesMail, m))
+        break
+      case 'masqueradeMail':
+        lines.push(say('masqueradeMail', WREN.masqueradeMail, m))
+        break
+      case 'stormSpark':
+        lines.push(say('stormSpark', WREN.stormSpark, m))
+        break
+      case 'stormChase':
+        lines.push(say('stormChase', WREN.stormChase, m))
+        break
+      case 'cocoonSpun':
+        lines.push(say('cocoonSpun', WREN.cocoonSpun, m))
+        break
+      case 'emerged':
+        lines.push(say('emerged', WREN.emerged, m, { breed: BREED_BY_ID[e.breed].name }))
+        break
+      case 'reefclaw':
+        lines.push(e.placed ? say('reefclaw', WREN.reefclaw, m) : say('reefclawNoRoom', WREN.reefclawNoRoom, m))
+        break
+      case 'expeditionStart':
+        lines.push(say('expeditionStart', WREN.expeditionStart, m, { site: EXPEDITION_SITE_BY_ID[e.site].name }))
+        break
+      case 'expeditionWeek':
+        lines.push(say('expeditionWeek', WREN.expeditionWeek, m, { week: e.weekNo }))
+        break
+      case 'expeditionHome':
+        lines.push(say('expeditionHome', WREN.expeditionHome, m, { site: EXPEDITION_SITE_BY_ID[e.site].name }))
+        break
+      case 'titles':
+        for (const title of e.titles) lines.push({ key: `title-${title}`, text: fill(WREN.newTitle, wrenVars(m, { title })) })
         break
       default:
         break

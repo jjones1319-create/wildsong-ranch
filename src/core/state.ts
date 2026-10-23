@@ -1,11 +1,12 @@
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { DIFFICULTY, ECONOMY } from '../data/tuning.ts'
-import type { BreedId, Difficulty, DrillId, Family, FoodId, Habit, JourneySiteId, Personality, Stats, TournamentGrade, Weather } from '../data/types.ts'
+import type { BreedId, Difficulty, DrillId, ExpeditionSiteId, Family, FoodId, Habit, JourneySiteId, MailKind, Personality, Stats, TournamentGrade, UnlockChain, Weather } from '../data/types.ts'
 import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
 import type { Monster } from './monster.ts'
 import type { MonsterRequest } from './training.ts'
+import { variantNameOf } from './variants.ts'
 
 /** The whole raising game in one plain object (what a save slot stores, minus the RNG state). */
 
@@ -29,7 +30,16 @@ export interface Breeder {
 }
 
 /** The one action of a week (§3 step 3). Lives here so the save can remember "last week" for Repeat. */
-export type WeekAction = { kind: 'drill'; drill: DrillId } | { kind: 'rest' } | { kind: 'play' } | { kind: 'journey'; site: JourneySiteId } | { kind: 'none' }
+export type WeekAction =
+  | { kind: 'drill'; drill: DrillId }
+  | { kind: 'rest' }
+  | { kind: 'play' }
+  | { kind: 'journey'; site: JourneySiteId }
+  /** §17: the trip starts; the map is played at once and weeks 2–4 pass as away weeks. */
+  | { kind: 'expedition'; site: ExpeditionSiteId }
+  /** CONTENT §11: the pending event (the storm chase) is accepted and uses the week. */
+  | { kind: 'event' }
+  | { kind: 'none' }
 
 /**
  * Where the current week stands (M3). `start`: the week has not begun (food, charms and the request roll
@@ -110,7 +120,7 @@ export interface HallEntry {
   week: number
 }
 
-export type MailKind = 'sale' | 'crown' | 'legend' | 'promotion' | 'rank' | 'info'
+export type { MailKind } from '../data/types.ts'
 
 export interface MailItem {
   id: string
@@ -163,6 +173,79 @@ export interface Encyclopedia {
   /** Secret variants owned. */
   variants: string[]
   phrases: EncyclopediaPhrase[]
+  /** Distinct looks owned ("Cinder Puddlepup", secret variants included): CONTENT §14 Collector. */
+  combos: string[]
+}
+
+/* ---------- M7: expeditions, unlock chains, the Journal (§17, §18) ---------- */
+
+export interface ExpeditionLoot {
+  id: string
+  qty: number
+}
+
+export type ExpeditionEnd = 'camp' | 'retreat' | 'exhausted'
+
+/** A trip in progress or just finished. The map itself is rebuilt from `site` and `seed`. */
+export interface ExpeditionState {
+  site: ExpeditionSiteId
+  seed: number
+  /** The absolute week the trip began. */
+  startWeek: number
+  /** 1 while the map is played; 2–4 are the weeks away; after week 4 the trip is cleared. */
+  weekNo: number
+  stamina: number
+  staminaMax: number
+  /** The node the party stands on. */
+  at: number
+  visited: number[]
+  /** Nodes already searched, opened or triggered. */
+  searched: number[]
+  /** Obstacles passed or detoured. */
+  passed: number[]
+  /** An obstacle the party stands before and has not passed yet (Detour or Turn back). */
+  blockedAt: number | null
+  /** Which visit to this site this is (1-based): the Strange Chest's pity timer. */
+  visit: number
+  loot: ExpeditionLoot[]
+  sheets: string[]
+  /** 'lootlid' or 'brass-blueprint' once found. */
+  keyFound: string | null
+  /** Where the Lootlid went when the trip ended. */
+  lootlidPlaced: 'ranch' | 'freezer' | 'none' | null
+  ended: ExpeditionEnd | null
+  /** Tomas's narration keys with their fill-ins, newest last (bounded). */
+  log: string[]
+}
+
+export type PendingEvent = { kind: 'stormChase' }
+
+/** Where each CONTENT §11 chain stands. The breed itself is in `unlocked`; this is the rest. */
+export interface UnlockProgress {
+  rumorsHeard: UnlockChain[]
+  /** Basil's September whisper arrived: the Masquerade Cup is open every October from then on. */
+  masqueradeInvited: boolean
+  /** A farewell happened; Sister Mara's letter comes with the next week 1. */
+  vigilPending: boolean
+  /** The Vigil can be attended at the Shrine. */
+  vigilOpen: boolean
+  /** The active monster is in a cocoon and emerges as this breed. */
+  cocoonInto: BreedId | null
+  expeditionsBySite: Record<ExpeditionSiteId, number>
+  reefclawArrived: boolean
+  wyrmScaleGiven: boolean
+}
+
+/** The Journal's Records page. */
+export interface JournalRecords {
+  bestTotal: number
+  bestTotalName: string
+  oldestWeeks: number
+  oldestName: string
+  cupsWon: number
+  expeditionsDone: number
+  stonesWoken: number
+  highestGeneration: number
 }
 
 /** A phrase whose main breed was still asleep (§14.1). It wakes for free once the breed unlocks. */
@@ -229,6 +312,16 @@ export interface GameState {
   unlocked: BreedId[]
   /** The absolute month (week ÷ 4) an Elder last mentored, or null. One mentoring per month. */
   elderMentorMonth: number | null
+  /** §17 the expedition in progress (the map in week 1, then the weeks away). */
+  expedition: ExpeditionState | null
+  /** CONTENT §11 an event waiting for a yes or no (the storm chase). */
+  pendingEvent: PendingEvent | null
+  unlocks: UnlockProgress
+  records: JournalRecords
+  /** The week index of the last Odd Job played (one per in-game week). */
+  oddJobWeek: number | null
+  /** The absolute month the Lantern Garden was last visited (once a month). */
+  memorialVisitMonth: number | null
 }
 
 export interface NewGameOptions {
@@ -254,6 +347,14 @@ export function zeroJourneys(): Record<JourneySiteId, number> {
 
 export function createGameState(opts: NewGameOptions = {}): GameState {
   const difficulty = opts.difficulty ?? 'Standard'
+  // The first monster counts in the Encyclopedia from day one (§18).
+  const first = opts.monster ?? null
+  const encyclopedia = emptyEncyclopedia()
+  if (first) {
+    encyclopedia.breeds.push(first.mainBreed)
+    if (first.variantId) encyclopedia.variants.push(first.variantId)
+    encyclopedia.combos.push(variantNameOf(first))
+  }
   return {
     week: 0,
     money: ECONOMY.startMoney,
@@ -288,13 +389,31 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     elderGrove: [],
     memorial: [],
     heartstones: [],
-    encyclopedia: emptyEncyclopedia(),
+    encyclopedia,
     sleepingStones: [],
     unlocked: [...STARTING_UNLOCKED],
     elderMentorMonth: null,
+    expedition: null,
+    pendingEvent: null,
+    unlocks: emptyUnlocks(),
+    records: zeroRecords(),
+    oddJobWeek: null,
+    memorialVisitMonth: null,
   }
 }
 
 export function emptyEncyclopedia(): Encyclopedia {
-  return { breeds: [], variants: [], phrases: [] }
+  return { breeds: [], variants: [], phrases: [], combos: [] }
+}
+
+export function zeroExpeditions(): Record<ExpeditionSiteId, number> {
+  return { 'thornwood-ruins': 0, 'sunken-library': 0, 'hollowmoon-caverns': 0, 'skyreef-isles': 0 }
+}
+
+export function emptyUnlocks(): UnlockProgress {
+  return { rumorsHeard: [], masqueradeInvited: false, vigilPending: false, vigilOpen: false, cocoonInto: null, expeditionsBySite: zeroExpeditions(), reefclawArrived: false, wyrmScaleGiven: false }
+}
+
+export function zeroRecords(): JournalRecords {
+  return { bestTotal: 0, bestTotalName: '', oldestWeeks: 0, oldestName: '', cupsWon: 0, expeditionsDone: 0, stonesWoken: 0, highestGeneration: 1 }
 }

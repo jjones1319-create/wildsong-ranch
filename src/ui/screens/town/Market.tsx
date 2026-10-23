@@ -18,7 +18,7 @@ export function MarketScreen() {
   const g = game.value
   const [asking, setAsking] = useState<MarketOffer | null>(null)
   if (!g) return null
-  const offers = marketStock(dateOf(g.week).month)
+  const offers = marketStock(dateOf(g.week).month, g.unlocked)
   const toRanch = g.monster === null && !g.ended
   const where = toRanch ? t.toRanch : t.toFreezer
 

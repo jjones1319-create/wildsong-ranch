@@ -15,13 +15,19 @@ export interface MarketOffer {
   breed: BreedId
   seasonal: boolean
   price: number
+  /** True for the breeds an unlock chain added to the stall (CONTENT §11: Gearhoot, the summer Reefclaw). */
+  unlocked: boolean
 }
 
-export function marketStock(month: number): MarketOffer[] {
+/** The stall this month. CONTENT §11: Gearhoot once the Blueprint is handed in; the Reefclaw as the summer pick once it moved in. */
+export function marketStock(month: number, unlocked: readonly BreedId[] = []): MarketOffer[] {
   const season = seasonOf(month)
-  const always = BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === null).map((b) => ({ breed: b.id, seasonal: false, price: MARKET.price }))
-  const seasonal = BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === season).map((b) => ({ breed: b.id, seasonal: true, price: MARKET.seasonalPrice }))
-  return [...always, ...seasonal]
+  const always = BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === null).map((b) => ({ breed: b.id, seasonal: false, price: MARKET.price, unlocked: false }))
+  const seasonal = BREEDS.filter((b) => b.availability === 'market' && b.marketSeason === season).map((b) => ({ breed: b.id, seasonal: true, price: MARKET.seasonalPrice, unlocked: false }))
+  const extra: MarketOffer[] = []
+  if (unlocked.includes('gearhoot')) extra.push({ breed: 'gearhoot', seasonal: false, price: MARKET.seasonalPrice, unlocked: true })
+  if (unlocked.includes('reefclaw') && season === 'Summer') extra.push({ breed: 'reefclaw', seasonal: true, price: MARKET.seasonalPrice, unlocked: true })
+  return [...always, ...seasonal, ...extra]
 }
 
 /** The Market's monster of a breed: pure, zero offsets, personality from the breed's fixed seed. */

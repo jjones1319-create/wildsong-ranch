@@ -2,22 +2,25 @@ import { useMemo, useState } from 'preact/hooks'
 import type { AwakenResult } from '../../../core/creation.ts'
 import { findStored } from '../../../core/legacy.ts'
 import { monsterFromRoll, rollShrine } from '../../../core/shrine.ts'
+import { offeringsInBag } from '../../../core/unlocks.ts'
 import { variantNameOf } from '../../../core/variants.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
+import { ITEM_BY_ID } from '../../../data/items.ts'
 import { fill } from '../../../data/text/format.ts'
 import { SHRINE_TEASERS } from '../../../data/text/shrine.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
+import { WREN } from '../../../data/text/wren.ts'
 import { SHRINE } from '../../../data/tuning.ts'
 import { BREED_IDS } from '../../../data/types.ts'
-import { Field, Segmented, TopBar } from '../../components/Controls.tsx'
+import { Confirm, Field, Segmented, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { showToast } from '../../store/appStore.ts'
-import { awaken, game, randomPhrase, recreate, wakeStone } from '../../store/gameStore.ts'
+import { attendVigil, awaken, game, offerAtShrine, randomPhrase, recreate, wakeStone } from '../../store/gameStore.ts'
 import { startEdit, startEditActive } from '../../store/labStore.ts'
 
-type Section = 'sing' | 'stones' | 'encyclopedia'
+type Section = 'sing' | 'stones' | 'encyclopedia' | 'offerings'
 
 /** §14.1 the Shrine of Echoes in play: two fields, Randomize, the stone's hum or teaser, Sleeping Stones and the Encyclopedia. */
 export function ShrineScreen() {
@@ -27,9 +30,13 @@ export function ShrineScreen() {
   const [phrase, setPhrase] = useState('')
   const [artist, setArtist] = useState('')
   const [result, setResult] = useState<AwakenResult | null>(null)
+  const [offering, setOffering] = useState<string | null>(null)
   const unlocked = g?.unlocked ?? []
   const roll = useMemo(() => (phrase.trim() ? rollShrine(phrase, artist, unlocked) : null), [phrase, artist, unlocked.length])
   if (!g) return null
+  const offerings = offeringsInBag(g)
+  const o = UI_TEXT.offerings
+  const offeringsLabel = g.unlocks.vigilOpen || offerings.some((x) => !x.awake) ? `${o.title}•` : o.title
 
   const sing = () => {
     const r = awaken(phrase, artist)
@@ -61,8 +68,9 @@ export function ShrineScreen() {
       <Segmented
         options={[
           { value: 'sing', label: t.tabSing },
-          { value: 'stones', label: `${t.stones} (${g.sleepingStones.length})` },
+          { value: 'stones', label: `${t.stonesShort} (${g.sleepingStones.length})` },
           { value: 'encyclopedia', label: t.encyclopedia },
+          { value: 'offerings', label: offeringsLabel },
         ]}
         value={section}
         onChange={setSection}
@@ -241,6 +249,58 @@ export function ShrineScreen() {
               </div>
             ))}
           </div>
+        </>
+      )}
+
+      {section === 'offerings' && (
+        <>
+          <SpeakerCard speaker={t.mara} tone="muted">
+            <p>{o.intro}</p>
+          </SpeakerCard>
+          {g.unlocks.vigilOpen && (
+            <section class="card">
+              <p class="field__label">{UI_TEXT.mail.kinds.vigil}</p>
+              <p class="muted small">{o.vigilHint}</p>
+              <button
+                type="button"
+                class="btn btn--primary"
+                style={{ marginTop: 8 }}
+                onClick={() => {
+                  if (attendVigil()) showToast(o.vigilDone)
+                }}
+              >
+                🏮 {o.vigil}
+              </button>
+            </section>
+          )}
+          {offerings.length === 0 && !g.unlocks.vigilOpen && <p class="empty">{o.none}</p>}
+          <div class="list">
+            {offerings.map((x) => (
+              <div key={x.itemId} class="stone">
+                <span class="stone__body">
+                  <span class="stone__phrase">{ITEM_BY_ID[x.itemId]?.name ?? x.itemId}</span>
+                  <span class="muted small">{x.awake ? fill(o.already, { breed: BREED_BY_ID[x.breed].name }) : SHRINE_TEASERS[x.breed] ?? SHRINE_TEASERS.default}</span>
+                </span>
+                <button type="button" class="btn btn--small btn--primary" disabled={x.awake} onClick={() => setOffering(x.itemId)}>
+                  {fill(o.offer, { item: ITEM_BY_ID[x.itemId]?.name ?? x.itemId })}
+                </button>
+              </div>
+            ))}
+          </div>
+          <Confirm
+            open={offering !== null}
+            text={offering ? fill(o.ask, { item: ITEM_BY_ID[offering]?.name ?? offering, breed: BREED_BY_ID[offerings.find((x) => x.itemId === offering)?.breed ?? 'puddlepup'].name }) : ''}
+            confirmLabel={offering ? fill(o.offer, { item: ITEM_BY_ID[offering]?.name ?? offering }) : ''}
+            onConfirm={() => {
+              const item = offering
+              setOffering(null)
+              if (!item) return
+              const r = offerAtShrine(item)
+              if (r.refused || !r.breed) showToast(r.refused === 'awake' ? fill(o.already, { breed: BREED_BY_ID[(r.breed ?? 'puddlepup') as keyof typeof BREED_BY_ID].name }) : o.none)
+              else showToast(fill(WREN.offered, { item: ITEM_BY_ID[item]?.name ?? item, breed: BREED_BY_ID[r.breed as keyof typeof BREED_BY_ID].name }))
+            }}
+            onCancel={() => setOffering(null)}
+          />
         </>
       )}
     </main>

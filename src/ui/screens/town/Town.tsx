@@ -1,3 +1,4 @@
+import { canPlayOddJob } from '../../../core/oddJobs.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { TopBar } from '../../components/Controls.tsx'
@@ -19,6 +20,7 @@ export function TownScreen() {
   const unread = g?.mail.filter((m) => !m.read).length ?? 0
   const rows: Row[] = [
     { icon: '🏛', name: t.guild, hint: t.guildHint, go: () => navigate('guild') },
+    { icon: '📔', name: t.journal, hint: t.journalHint, go: () => navigate('journal') },
     { icon: '🧺', name: t.shop, hint: t.shopHint, go: () => navigate('shop') },
     { icon: '📜', name: t.library, hint: t.libraryHint, go: () => navigate('library') },
     { icon: '✉', name: unread ? `${t.mail} · ${fill(UI_TEXT.mail.unread, { n: unread })}` : t.mail, hint: t.mailHint, go: () => navigate('mail') },
@@ -26,7 +28,7 @@ export function TownScreen() {
     { icon: '🐾', name: t.market, hint: t.marketHint, go: () => navigate('market') },
     { icon: '🪨', name: t.shrine, hint: t.shrineHint, go: () => navigate('shrine') },
     { icon: '🧊', name: t.pell, hint: t.pellHint, go: () => navigate('pell') },
-    { icon: '🥕', name: t.jobs, hint: t.later },
+    { icon: '🥕', name: t.jobs, hint: g && canPlayOddJob(g).ok ? t.jobsHint : t.jobsPlayed, go: g ? () => navigate('oddJobs') : undefined },
   ]
   return (
     <main class="screen">

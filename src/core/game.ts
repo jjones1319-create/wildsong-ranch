@@ -5,7 +5,11 @@ import type { FoodId, StatKey } from '../data/types.ts'
 import { availability } from './aging.ts'
 import type { BattleResult } from './battle/types.ts'
 import { WEEKS_PER_YEAR, dateOf, isMonthStart } from './calendar.ts'
+import { weeklyEvents } from './events.ts'
 import { addItems, type UseItemResult } from './items.ts'
+import { updateRecordsMut } from './journal.ts'
+import { awardTitles } from './titles.ts'
+import { declineEvent, emerge } from './unlocks.ts'
 import { bondCharmId, rollSaleMonths, signatureAtPrime, trialOpponent, trialReward, type JourneyWeekResult } from './journey.ts'
 import { finishEdit, pushHistory } from './lab.ts'
 import { clamp } from './mathx.ts'
@@ -56,7 +60,9 @@ export function beginWeek(input: GameState, rng: Rng, food?: FoodId): StepResult
     r.state.mail.unshift({ id: `${r.state.week}-sale`, week: r.state.week, kind: 'sale', ref: String(d.month), read: false })
     r.events.push({ kind: 'sale', month: d.month })
   }
-  return { state: r.state, events: r.events }
+  // M7: invitations, rumors, the Vigil and upgrade letters, the storm spark, the cocoon and the Reefclaw (§18, CONTENT §11).
+  const ev = weeklyEvents(r.state)
+  return { state: ev.state, events: [...r.events, ...ev.events] }
 }
 
 export interface AnswerResult extends StepResult {
@@ -216,10 +222,34 @@ export function finishWeek(input: GameState, rng: Rng): StepResult {
       r.events.push({ kind: 'signature', tech: sig.id })
     }
   }
+  // CONTENT §11: the cocoon opened this week; the monster emerges as its new breed.
+  if (r.state.unlocks.cocoonInto && r.events.some((e) => e.kind === 'aging' && e.event.kind === 'returned' && e.event.from === 'cocoon')) {
+    const em = emerge(r.state)
+    if (em) {
+      r.state = em.state
+      r.events.push({ kind: 'emerged', breed: em.breed })
+    }
+  }
+  // An unanswered storm spark lapses with the week; storms come back.
+  r.state.pendingEvent = null
+  // §18 the Journal's records and CONTENT §14 titles, checked every week so nothing is missed.
+  updateRecordsMut(r.state)
+  const awarded = awardTitles(r.state)
+  if (awarded.titles.length > 0) {
+    r.state = awarded.state
+    r.events.push({ kind: 'titles', titles: awarded.titles })
+  }
   return { state: r.state, events: r.events }
 }
 
-export type MenuReason = 'ended' | 'noMonster' | 'request' | 'journey' | 'tournament' | 'trial' | 'missing' | 'clinic' | 'cocoon' | 'sick' | 'injured' | null
+/** Yes or no to the pending event (the storm spark). Yes is the week's action. */
+export function answerEvent(input: GameState, accept: boolean, rng: Rng): ActionResult {
+  if (!input.pendingEvent || input.weekPhase !== 'action') return { state: input, events: [], drill: null, journey: null }
+  if (!accept) return { state: declineEvent(input), events: [], drill: null, journey: null }
+  return chooseAction(input, { kind: 'event' }, rng)
+}
+
+export type MenuReason = 'ended' | 'noMonster' | 'request' | 'event' | 'journey' | 'tournament' | 'trial' | 'expedition' | 'expeditionMap' | 'missing' | 'clinic' | 'cocoon' | 'sick' | 'injured' | null
 
 export interface ActionMenu {
   train: boolean
@@ -239,7 +269,9 @@ export function actionMenu(state: GameState): ActionMenu {
   if (state.weekPhase !== 'action') return none
   if (state.tournament) return { ...none, reason: 'tournament' }
   if (state.trial) return { ...none, reason: 'trial' }
+  if (state.expedition) return state.expedition.ended ? { ...none, wait: true, reason: 'expedition' } : { ...none, reason: 'expeditionMap' }
   if (state.pendingRequest) return { ...none, reason: 'request' }
+  if (state.pendingEvent) return { ...none, reason: 'event' }
   if (state.journey) return { ...none, wait: true, reason: 'journey' }
   const a = availability(state.monster)
   if (a.locked) return { ...none, wait: true, reason: a.reason }
