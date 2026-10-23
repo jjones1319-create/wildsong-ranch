@@ -2,6 +2,7 @@ import { canPlayOddJob } from '../../../core/oddJobs.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { TopBar } from '../../components/Controls.tsx'
+import { SceneBanner } from '../../components/SceneBanner.tsx'
 import { gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { game } from '../../store/gameStore.ts'
@@ -33,6 +34,7 @@ export function TownScreen() {
   return (
     <main class="screen">
       <TopBar title={t.title} right={g ? <span class="calstrip__money">{gold(g.money)}</span> : undefined} />
+      <SceneBanner scene="town" />
       <div class="list">
         {rows.map((r) => (
           <button key={r.name} type="button" class={`townrow ${r.go ? '' : 'townrow--off'}`} disabled={!r.go} onClick={r.go}>

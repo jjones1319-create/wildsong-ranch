@@ -1,3 +1,4 @@
+import { playSfx } from '../../../audio/player.ts'
 import { useEffect, useState } from 'preact/hooks'
 import { forgotLine, learnedLine } from '../../../core/report.ts'
 import { canLearn, goodFit, isFull, learnableFromSongbook } from '../../../core/songbook.ts'
@@ -38,7 +39,10 @@ export function SongbookScreen() {
   const doLearn = (tech: Technique, forgetId?: string) => {
     const status = learn(tech.id, forgetId)
     setMakingRoomFor(null)
-    if (status === 'learned') showToast(learnedLine(m, tech.id).text)
+    if (status === 'learned') {
+      showToast(learnedLine(m, tech.id).text)
+      playSfx('levelUp')
+    }
     else if (status === 'full') setMakingRoomFor(tech)
   }
 

@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { sceneBackground } from '../../../art/backgrounds.ts'
 import type { Side } from '../../../core/battle/types.ts'
+import { dateOf, seasonOf } from '../../../core/calendar.ts'
 import { fill } from '../../../data/text/format.ts'
 import { BAND_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
@@ -9,7 +11,9 @@ import { Confirm, Sheet, Toggle } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { navigate } from '../../router.ts'
 import { settings, updateSettings } from '../../store/appStore.ts'
-import { assistText, dash, effects, finishAndLeave, forfeit, leaveBattle, move, pushOpponent, rematch, resultLine, setPaused, setSpeed, setup, shake, skipToEnd, speed, tapTechnique, toggleAuto, view, type FighterView } from '../../store/battleStore.ts'
+import { assistText, dash, effects, finishAndLeave, forfeit, fx, leaveBattle, move, pushOpponent, rematch, resultLine, setPaused, setSpeed, setup, shake, skipToEnd, speed, tapTechnique, toggleAuto, view, type FighterView } from '../../store/battleStore.ts'
+import { game } from '../../store/gameStore.ts'
+import { lite } from '../../store/perf.ts'
 
 const t = UI_TEXT.battle
 const ARENA_SPAN = BATTLE.arena.halfWidth * 2
@@ -48,7 +52,14 @@ export function BattleScreen() {
   const [confirmForfeit, setConfirmForfeit] = useState(false)
   const [shaking, setShaking] = useState(false)
   const lastTap = useRef(0)
+  const arenaRef = useRef<HTMLElement>(null)
   const mode = settings.value.transparency
+  const leftHanded = settings.value.leftHanded
+  const g = game.value
+  const season = g ? seasonOf(dateOf(g.week).month) : 'Spring'
+  const weather = g?.weather ?? 'Sunny'
+  const liteMode = lite.value
+  const backdrop = useMemo(() => sceneBackground({ scene: 'arena', season, weather, lite: liteMode, seed: 3 }), [season, weather, liteMode])
 
   useEffect(() => {
     if (!s) navigate('lab')
@@ -65,8 +76,11 @@ export function BattleScreen() {
   if (!v || !s) return null
   const [a, b] = v.fighters
   const playerSide = s.aControl === 'player' && !a.auto
-  const fx = effects.value
+  const floats = effects.value
+  const effectsNow = fx.value
+  const arenaPx = arenaRef.current?.clientWidth ?? 360
   const bandAt = (gap: number) => Math.min(100, (Math.max(0, gap) / BATTLE.bandEnds[3]!) * 100)
+  const has = (side: number, kind: string) => effectsNow.some((e) => e.side === side && e.kind === kind)
 
   const onPadDown = (dir: -1 | 1) => (e: PointerEvent) => {
     ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
@@ -89,7 +103,7 @@ export function BattleScreen() {
     : ''
 
   return (
-    <main class="screen battle">
+    <main class={`screen battle ${leftHanded ? 'battle--left' : ''}`}>
       <header class="bhead">
         <Bars f={a} side={0} mode={mode} />
         <span class="bhead__timer" aria-label={fill(t.seconds, { s: v.secondsLeft })}>
@@ -98,14 +112,34 @@ export function BattleScreen() {
         <Bars f={b} side={1} mode={mode} />
       </header>
 
-      <section class={`arena ${shaking ? 'arena--shake' : ''}`} aria-label={t.title}>
+      <section ref={arenaRef} class={`arena ${shaking ? 'arena--shake' : ''}`} aria-label={t.title}>
+        <div class="arena__bg" dangerouslySetInnerHTML={{ __html: backdrop }} />
         <div class="arena__floor" />
+        {effectsNow
+          .filter((e) => e.kind === 'shot' && e.fromX !== undefined && e.toX !== undefined)
+          .map((e) => (
+            <span key={e.id} class={`shot ${e.side === 1 ? 'shot--b' : ''}`} style={{ left: `${pctX(e.fromX!)}%`, '--dx': `${(((e.toX! - e.fromX!) / ARENA_SPAN) * arenaPx).toFixed(0)}px` }} />
+          ))}
         {v.fighters.map((f, i) => (
-          <div key={i} class={`fighter ${i === 1 ? 'fighter--b' : ''} ${f.busyTech ? 'fighter--busy' : ''} ${f.dawdling ? 'fighter--dawdle' : ''} ${f.stunned ? 'fighter--stun' : ''}`} style={{ left: `${pctX(f.x)}%` }}>
+          <div
+            key={i}
+            class={`fighter ${i === 1 ? 'fighter--b' : ''} ${f.busyTech ? 'fighter--busy' : ''} ${f.dawdling ? 'fighter--dawdle' : ''} ${f.stunned ? 'fighter--stun' : ''} ${has(i, 'lunge') ? 'fighter--lunge' : ''} ${has(i, 'hit') ? 'fighter--hit' : ''} ${f.hp === 0 ? 'fighter--ko' : ''} ${v.outcome && v.outcome.winner === i ? 'fighter--win' : ''}`}
+            style={{ left: `${pctX(f.x)}%` }}
+          >
             <div class="fighter__art">
-              <MonsterPortrait monster={i === 0 ? s.a : s.b} size={118} mirror={i === 1} expression={f.hp === 0 ? 'sleepy' : f.hp * 4 < f.maxHp ? 'tired' : undefined} />
+              <MonsterPortrait monster={i === 0 ? s.a : s.b} size={118} mirror={i === 1} expression={f.hp === 0 ? 'sleepy' : v.outcome && v.outcome.winner === i ? 'happy' : f.hp * 4 < f.maxHp ? 'tired' : undefined} />
+              {has(i, 'hit') && <span class="fighter__flash" aria-hidden="true" />}
+              {has(i, 'crit') && (
+                <span class="fighter__sparkle" aria-hidden="true">
+                  <i>✦</i>
+                  <i>✦</i>
+                  <i>✦</i>
+                  <i>✦</i>
+                  <i>✦</i>
+                </span>
+              )}
             </div>
-            {fx
+            {floats
               .filter((e) => e.side === i)
               .map((e, k) => (
                 <span key={e.id} class={`fighter__float float--${e.tone}`} style={{ marginBottom: `${k * 18}px` }}>

@@ -2,6 +2,7 @@ import { dateOf } from '../../core/calendar.ts'
 import { fill } from '../../data/text/format.ts'
 import { MONTH_NAMES } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
+import { InstallCard } from '../components/InstallHelp.tsx'
 import { navigate } from '../router.ts'
 import { ready } from '../store/appStore.ts'
 import { game } from '../store/gameStore.ts'
@@ -43,6 +44,7 @@ export function TitleScreen() {
           {t.menu.settings}
         </button>
       </nav>
+      {booted && <InstallCard />}
       <footer class="title__footer">
         <button type="button" class="link" onClick={() => navigate('credits')}>
           {t.menu.credits}

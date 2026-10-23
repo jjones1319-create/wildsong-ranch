@@ -234,3 +234,17 @@ body {
     transition: none !important;
   }
 }
+
+/* §24 the manual Reduce motion toggle (set on <html> by the app) does the same as the OS setting. */
+:root[data-reduce-motion='true'] *,
+:root[data-reduce-motion='true'] *::before,
+:root[data-reduce-motion='true'] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Keyboard focus is visible everywhere. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}

@@ -13,7 +13,8 @@ All monsters, characters, names, art, music, sound and text in this project are 
 - Vite, TypeScript, Preact and @preact/signals (MIT)
 - vite-plugin-pwa and Workbox (MIT)
 - idb-keyval, valibot, qrcode (MIT)
-- ZzFX sound engine (MIT)
+- ZzFX sound engine (MIT); every sound effect is a parameter set written for this game
+- The music is composed in code for this game (a small step sequencer in `src/audio/music.ts`); no samples or recordings are used
 - Vitest (MIT)
 - Hosted on GitHub Pages
 

@@ -213,3 +213,29 @@ describe('schema version 6 (M7)', () => {
     expect(r3.ok && r3.save.game.pendingEvent).toBeNull()
   })
 })
+
+describe('schema version 7 (M8)', () => {
+  it('migrates a version-6 save by adding an empty planner, and caps a long queue', () => {
+    const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
+    delete game.planner
+    const v6 = { schemaVersion: 6, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.9.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v6))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game.planner).toEqual({ queue: [], log: [], lastStop: null })
+    const r = validateSave(JSON.parse(JSON.stringify(v6)))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game).toEqual(createGameState({ monster: r.save.game.monster }))
+
+    const full = createGameState({ monster: makeMonster() })
+    full.planner.queue = Array.from({ length: 12 }, () => ({ kind: 'rest' as const }))
+    const raw = JSON.parse(JSON.stringify(makeSave(full, 1)))
+    raw.game.planner.queue.push(null, { kind: 'drill', drill: 'not-a-drill' })
+    raw.game.planner.lastStop = 'bogus'
+    const r2 = validateSave(raw)
+    expect(r2.ok).toBe(true)
+    if (!r2.ok) return
+    expect(r2.save.game.planner.queue).toHaveLength(8)
+    expect(r2.save.game.planner.lastStop).toBeNull()
+  })
+})

@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useMemo, useState } from 'preact/hooks'
+import { ranchBackground } from '../../../art/backgrounds.ts'
 import { dateOf, seasonOf } from '../../../core/calendar.ts'
+import { emoteFor } from '../../../core/emotes.ts'
+import { PLANNER_MAX } from '../../../core/planner.ts'
 import { sitesOpenAt } from '../../../core/expedition.ts'
 import { EXPEDITION_SITE_BY_ID } from '../../../data/expeditions.ts'
 import { EventCard } from './EventCard.tsx'
@@ -12,15 +15,19 @@ import { DRILL_BY_ID } from '../../../data/drills.ts'
 import { fill } from '../../../data/text/format.ts'
 import { STAGE_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
+import { BackupCard } from '../../components/BackupCard.tsx'
+import { Emote } from '../../components/Emote.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { CalendarStrip, ConditionBars, TipCard } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
-import { dismissTip, flow, game, menu, openTrain, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
+import { dismissTip, flow, game, menu, openTrain, plannerRunning, plannerStop, plannerView, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
+import { lite } from '../../store/perf.ts'
+import { PlannerSheet, PlannerSummary } from './Planner.tsx'
 import { eventsForWeek } from '../../../core/tournament.ts'
 import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
 import { trialOutcome } from '../../store/tournamentStore.ts'
-import { versusSideA } from '../lab/LabVersus.tsx'
+import { versusSideA } from '../../store/versusStore.ts'
 import { DrillResult } from './DrillResult.tsx'
 import { EmptyRanch } from './EmptyRanch.tsx'
 import { TrialCard } from './TrialCard.tsx'
@@ -45,22 +52,33 @@ export function RanchScreen() {
     settle()
   }, [g?.week, g?.weekPhase, f.kind])
   const [expOpen, setExpOpen] = useState(false)
+  const [planOpen, setPlanOpen] = useState(false)
+  const running = plannerRunning.value
+  const summaryOpen = plannerView.value === 'summary'
+  const liteMode = lite.value
+  const seasonName = g ? seasonOf(dateOf(g.week).month) : 'Spring'
+  const weather = g?.weather ?? 'Sunny'
+  const bgSeed = g ? g.week + 1 : 1
+  const bg = useMemo(() => ranchBackground({ season: seasonName, weather, lite: liteMode, seed: bgSeed }), [seasonName, weather, liteMode, bgSeed])
 
   if (!g || g.ended) return null
   if (!g.monster) return <EmptyRanch g={g} />
   const m = g.monster
   const mn = menu.value!
-  const ranchTip = tipFor({ screen: 'ranch' })
-  const showFood = needsFoodChoice(g) && !ranchTip && f.kind === 'idle'
-  const showRequest = g.pendingRequest !== null && f.kind === 'idle' && !showFood
+  const quiet = f.kind === 'idle' && !running && !summaryOpen
+  const ranchTip = quiet ? tipFor({ screen: 'ranch' }) : null
+  const showFood = needsFoodChoice(g) && !ranchTip && quiet
+  const showRequest = g.pendingRequest !== null && quiet && !showFood
   const report = [...weeklyReport(g), ...weekNews.value]
-  const season = seasonOf(dateOf(g.week).month).toLowerCase()
+  const season = seasonName.toLowerCase()
+  const emote = emoteFor(g)
   const reason = mn.reason && mn.reason !== 'ended' && mn.reason !== 'noMonster' ? fill(t.reasons[mn.reason], { name: m.name }) : null
   const repeatWhat = mn.repeat ? (mn.repeat.kind === 'drill' ? DRILL_BY_ID[mn.repeat.drill].name : t.actions.rest) : null
   const cups = eventsForWeek(g)
-  const trialPending = f.kind === 'idle' && !showFood && !showRequest && (g.trial !== null || g.journey?.pendingTechnique !== null || trialOutcome.value !== null)
+  const trialPending = quiet && !showFood && !showRequest && (g.trial !== null || g.journey?.pendingTechnique !== null || trialOutcome.value !== null)
   const openSites = sitesOpenAt(g.week)
-  const showEvent = g.pendingEvent !== null && f.kind === 'idle' && !showFood && !showRequest && !trialPending
+  const showEvent = g.pendingEvent !== null && quiet && !showFood && !showRequest && !trialPending
+  const canPlan = mn.train && !running && f.kind === 'idle'
   const mapInProgress = g.expedition !== null && !g.expedition.ended
 
   return (
@@ -71,9 +89,11 @@ export function RanchScreen() {
       {g.expedition && <p class="eventline">{fill(t.expeditionWeek, { week: g.expedition.weekNo, site: EXPEDITION_SITE_BY_ID[g.expedition.site].name })}</p>}
       {!g.expedition && openSites.length > 0 && <p class="eventline">{fill(t.expeditionOpen, { site: openSites.map((s) => s.name).join(' · ') })}</p>}
 
-      <button type="button" class={`stage stage--${season}`} onClick={() => navigate('ranchCard')} aria-label={fill(t.tapHint, { name: m.name })}>
+      <button type="button" class={`stage stage--${season} stage--${weather.toLowerCase()}`} onClick={() => navigate('ranchCard')} aria-label={fill(t.tapHint, { name: m.name })}>
+        <div class="stage__bg" dangerouslySetInnerHTML={{ __html: bg }} />
         <div class="stage__art">
           <MonsterPortrait monster={m} size={200} />
+          <Emote key={emote ?? 'none'} kind={emote} name={m.name} />
         </div>
         <p class="stage__caption">{fill(t.stage, { stage: STAGE_NAMES[stageOf(m) - 1], name: m.name })}</p>
         <p class="stage__hint">{fill(t.tapHint, { name: m.name })}</p>
@@ -87,6 +107,17 @@ export function RanchScreen() {
       </section>
 
       {ranchTip && <TipCard text={tipText(g, ranchTip)} onDismiss={() => dismissTip(ranchTip)} />}
+      {quiet && !ranchTip && <BackupCard />}
+      {running && (
+        <section class="card planrun" role="status">
+          <span class="planrun__text">
+            {fill(UI_TEXT.planner.running, { n: g.planner.log.length + 1, total: g.planner.log.length + g.planner.queue.length })}
+          </span>
+          <button type="button" class="btn btn--small" onClick={plannerStop}>
+            {UI_TEXT.planner.stop}
+          </button>
+        </section>
+      )}
 
       <ConditionBars m={m} mode={mode} />
 
@@ -140,10 +171,16 @@ export function RanchScreen() {
             {t.actions.bag}
           </button>
           {mn.repeat && repeatWhat && (
-            <button type="button" class="btn btn--half" onClick={() => takeAction(mn.repeat!)} title={fill(t.repeatHint, { what: repeatWhat })}>
+            <button type="button" class="btn btn--half" disabled={running} onClick={() => takeAction(mn.repeat!)} title={fill(t.repeatHint, { what: repeatWhat })}>
               {t.actions.repeat} · {repeatWhat}
             </button>
           )}
+        </div>
+        <div class="actions__row">
+          <button type="button" class="btn btn--half" disabled={!canPlan} onClick={() => setPlanOpen(true)}>
+            {UI_TEXT.planner.button}
+            {g.planner.queue.length > 0 ? ` · ${g.planner.queue.length}/${PLANNER_MAX}` : ''}
+          </button>
         </div>
         {!g.expedition && openSites.length > 0 && (
           <div class="actions__row">
@@ -160,6 +197,8 @@ export function RanchScreen() {
       <EventCard open={showEvent} />
       <ExpeditionSheet open={expOpen} onClose={() => setExpOpen(false)} />
       {trialPending && <TrialCard />}
+      <PlannerSheet open={planOpen && canPlan} onClose={() => setPlanOpen(false)} />
+      {summaryOpen && <PlannerSummary />}
       <TrainSheet open={f.kind === 'train'} />
       {f.kind === 'result' && <DrillResult f={f} />}
       {f.kind === 'summary' && <WeekSummary f={f} />}

@@ -1,3 +1,5 @@
+import { useEffect } from 'preact/hooks'
+import { playSfx } from '../../../audio/player.ts'
 import { tipText } from '../../../core/onboarding.ts'
 import { fill } from '../../../data/text/format.ts'
 import { WEATHER_LABELS } from '../../../data/text/labels.ts'
@@ -17,6 +19,10 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
   const m = g.monster
   const breakdown = f.aging.some((e) => e.kind === 'breakdown')
   const tip = tipFor({ screen: 'summary', events: f.aging })
+  useEffect(() => {
+    if (f.grewUp) playSfx('growUp')
+    else if (f.aging.some((e) => e.kind === 'prime')) playSfx('levelUp')
+  }, [])
   const title = f.ended ? t.farewell : breakdown ? t.breakdown : f.grewUp ? t.grewUp : t.title
   return (
     <div class="overlay" role="dialog" aria-label={title}>

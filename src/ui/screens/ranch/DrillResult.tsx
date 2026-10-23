@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import type { Expression } from '../../../art/monster/expressions.ts'
 import { propSvg } from '../../../art/props.ts'
+import { playSfx } from '../../../audio/player.ts'
+import type { SfxId } from '../../../audio/sfx.ts'
+import { emoteForReaction } from '../../../core/emotes.ts'
+import type { DrillOutcome } from '../../../core/training.ts'
+import { Emote } from '../../components/Emote.tsx'
 import { fatigueLabel, stressLabel } from '../../../core/aging.ts'
 import { tipText } from '../../../core/onboarding.ts'
 import { DRILL_BY_ID } from '../../../data/drills.ts'
@@ -28,6 +33,8 @@ function expressionFor(f: ResultFlow): { expression: Expression; mischief: boole
   }
 }
 
+const STINGER: Record<DrillOutcome, SfxId> = { Great: 'drillGreat', Success: 'drillSuccess', Cheat: 'drillCheat', Fail: 'drillFail', Slacked: 'drillSlacked' }
+
 /** §21 drill result: a short, skippable vignette, the banner, stat deltas, then praise (swipe or tap), scold or skip. */
 export function DrillResult({ f }: { f: ResultFlow }) {
   const t = UI_TEXT.result
@@ -42,6 +49,11 @@ export function DrillResult({ f }: { f: ResultFlow }) {
     if (phase !== 'vignette') return
     const timer = setTimeout(() => setPhase('result'), UI.vignetteMs * factor)
     return () => clearTimeout(timer)
+  }, [phase])
+
+  // §23 the result stinger plays once, when the banner shows.
+  useEffect(() => {
+    if (phase === 'result') playSfx(STINGER[f.drill.outcome])
   }, [phase])
 
   const face = expressionFor(f)
@@ -62,7 +74,7 @@ export function DrillResult({ f }: { f: ResultFlow }) {
       <div class="overlay" role="dialog" aria-label={drill.name}>
         <div class="overlay__inner vignette" onClick={() => setPhase('result')}>
           <h2 class="heading">{drill.name}</h2>
-          <div class="vignette__scene">
+          <div class="vignette__scene" data-vignette={drill.id}>
             <div class="vignette__mon">
               <MonsterPortrait monster={f.before} size={170} expression="neutral" />
             </div>
@@ -96,6 +108,7 @@ export function DrillResult({ f }: { f: ResultFlow }) {
           }}
         >
           <MonsterPortrait monster={m} size={180} expression={face.expression} mischief={face.mischief} />
+          {f.reaction && <Emote key={f.reaction} kind={emoteForReaction(f.reaction)} name={m.name} />}
           {!f.reaction && <p class="pet__hint">{fill(t.petHint, { name: m.name })}</p>}
         </div>
         <section class="card card--muted">

@@ -14,8 +14,10 @@ import { SHRINE } from '../../../data/tuning.ts'
 import { BREED_IDS } from '../../../data/types.ts'
 import { Confirm, Field, Segmented, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
+import { SceneBanner } from '../../components/SceneBanner.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
+import { playSfx } from '../../../audio/player.ts'
 import { showToast } from '../../store/appStore.ts'
 import { attendVigil, awaken, game, offerAtShrine, randomPhrase, recreate, wakeStone } from '../../store/gameStore.ts'
 import { startEdit, startEditActive } from '../../store/labStore.ts'
@@ -40,7 +42,10 @@ export function ShrineScreen() {
 
   const sing = () => {
     const r = awaken(phrase, artist)
-    if (r) setResult(r)
+    if (r) {
+      setResult(r)
+      playSfx('stoneHum')
+    }
   }
 
   const editNewborn = (id: string) => {
@@ -65,6 +70,7 @@ export function ShrineScreen() {
   return (
     <main class="screen">
       <TopBar title={t.title} right={<span class="calstrip__money">{gold(g.money)}</span>} />
+      <SceneBanner scene="shrine" />
       <Segmented
         options={[
           { value: 'sing', label: t.tabSing },

@@ -2,24 +2,12 @@ import { UI_TEXT } from '../data/text/ui.ts'
 import { AppToast } from './components/Toast.tsx'
 import { UpdateToast } from './components/UpdateToast.tsx'
 import { screen, type Screen } from './router.ts'
-import { CreditsScreen } from './screens/Credits.tsx'
-import { FarewellScreen } from './screens/Farewell.tsx'
-import { LabCreateScreen } from './screens/lab/LabCreate.tsx'
+import { lazyScreen } from './lib/lazy.tsx'
 import { LabEditorScreen } from './screens/lab/LabEditor.tsx'
-import { BattleScreen } from './screens/battle/BattleScreen.tsx'
-import { CreditsRollScreen } from './screens/CreditsRoll.tsx'
+import { CreditsScreen } from './screens/Credits.tsx'
 import { JourneyLedgerScreen } from './screens/ranch/JourneyLedger.tsx'
-import { TournamentEntryScreen } from './screens/tournament/TournamentEntry.tsx'
-import { TournamentPlayScreen } from './screens/tournament/TournamentPlay.tsx'
-import { TournamentResultsScreen } from './screens/tournament/TournamentResults.tsx'
 import { GuildScreen } from './screens/town/Guild.tsx'
 import { MailboxScreen } from './screens/town/Mailbox.tsx'
-import { LabBattleLabScreen } from './screens/lab/LabBattleLab.tsx'
-import { LabExportScreen } from './screens/lab/LabExport.tsx'
-import { LabVersusScreen } from './screens/lab/LabVersus.tsx'
-import { LabImportScreen } from './screens/lab/LabImport.tsx'
-import { LabLibraryScreen } from './screens/lab/LabLibrary.tsx'
-import { LabViewScreen } from './screens/lab/LabView.tsx'
 import { NewGameScreen } from './screens/NewGame.tsx'
 import { BagScreen } from './screens/ranch/Bag.tsx'
 import { MonsterCardScreen } from './screens/ranch/MonsterCardScreen.tsx'
@@ -33,12 +21,27 @@ import { TownScreen } from './screens/town/Town.tsx'
 import { PellLabScreen } from './screens/town/PellLab.tsx'
 import { ShrineScreen } from './screens/town/Shrine.tsx'
 import { MarketScreen } from './screens/town/Market.tsx'
-import { ExpeditionScreen } from './screens/ranch/Expedition.tsx'
-import { JournalScreen } from './screens/town/Journal.tsx'
-import { OddJobsScreen } from './screens/town/OddJobs.tsx'
 import { UpgradesScreen } from './screens/town/Upgrades.tsx'
 import { ready } from './store/appStore.ts'
 import { flow } from './store/gameStore.ts'
+
+/* §22 performance: the heavy screens load on first use (see lib/lazy.tsx). */
+const FarewellScreen = lazyScreen(() => import('./screens/Farewell.tsx'), 'FarewellScreen')
+const CreditsRollScreen = lazyScreen(() => import('./screens/CreditsRoll.tsx'), 'CreditsRollScreen')
+const BattleScreen = lazyScreen(() => import('./screens/battle/BattleScreen.tsx'), 'BattleScreen')
+const TournamentEntryScreen = lazyScreen(() => import('./screens/tournament/TournamentEntry.tsx'), 'TournamentEntryScreen')
+const TournamentPlayScreen = lazyScreen(() => import('./screens/tournament/TournamentPlay.tsx'), 'TournamentPlayScreen')
+const TournamentResultsScreen = lazyScreen(() => import('./screens/tournament/TournamentResults.tsx'), 'TournamentResultsScreen')
+const LabCreateScreen = lazyScreen(() => import('./screens/lab/LabCreate.tsx'), 'LabCreateScreen')
+const LabBattleLabScreen = lazyScreen(() => import('./screens/lab/LabBattleLab.tsx'), 'LabBattleLabScreen')
+const LabExportScreen = lazyScreen(() => import('./screens/lab/LabExport.tsx'), 'LabExportScreen')
+const LabVersusScreen = lazyScreen(() => import('./screens/lab/LabVersus.tsx'), 'LabVersusScreen')
+const LabImportScreen = lazyScreen(() => import('./screens/lab/LabImport.tsx'), 'LabImportScreen')
+const LabLibraryScreen = lazyScreen(() => import('./screens/lab/LabLibrary.tsx'), 'LabLibraryScreen')
+const LabViewScreen = lazyScreen(() => import('./screens/lab/LabView.tsx'), 'LabViewScreen')
+const ExpeditionScreen = lazyScreen(() => import('./screens/ranch/Expedition.tsx'), 'ExpeditionScreen')
+const JournalScreen = lazyScreen(() => import('./screens/town/Journal.tsx'), 'JournalScreen')
+const OddJobsScreen = lazyScreen(() => import('./screens/town/OddJobs.tsx'), 'OddJobsScreen')
 
 function Loading() {
   return (

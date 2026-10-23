@@ -720,3 +720,45 @@ export const ODD_JOBS = {
 
 /** CONTENT §14 title thresholds that are not tournament placings. */
 export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30 } as const
+
+/** §23 audio. Volumes are percentages. */
+export const AUDIO = {
+  defaultVolume: { master: 80, music: 55, sfx: 100 },
+  /** Music fades in and out over this long (milliseconds). */
+  fadeMs: 700,
+  /** Under a burst of effects the music ducks to this percent of its volume and recovers after duckMs. */
+  duckPct: 60,
+  duckMs: 320,
+  /** The sequencer renders at this sample rate: plenty for chiptune, and the buffers stay small. */
+  sampleRate: 22050,
+  /** How long the victory stinger holds the stage before the previous track returns. */
+  stingerMs: 3200,
+} as const
+
+/** §3 the planner queue. */
+export const PLANNER = {
+  maxWeeks: 8,
+  /** The run stops after a week that leaves fatigue or stress at or above these. */
+  stopFatigue: 60,
+  stopStress: 50,
+  /** Pause between queued weeks on screen at normal speed (the speed setting multiplies it). */
+  stepDelayMs: 700,
+} as const
+
+/** §22 battle effect timings (milliseconds). */
+export const BATTLE_FX = { lungeMs: 260, projectileMs: 300, hitFlashMs: 160, knockbackMs: 240, sparkleMs: 650, koMs: 800, hopMs: 900 } as const
+
+/** §22 backgrounds and weather overlays. */
+export const BACKGROUND = {
+  /** Lightning: one flash per cycle (seconds), far under §24's 3 Hz limit. */
+  lightningCycleS: 7,
+  drops: { full: 26, lite: 9 },
+  flakes: { full: 20, lite: 7 },
+  clouds: 4,
+} as const
+
+/** The install-help card hides for this many real days after "Later". */
+export const INSTALL = { dismissDays: 14 } as const
+
+/** §22 emotes: how long a bubble stays up (milliseconds). */
+export const EMOTE = { holdMs: 2400 } as const

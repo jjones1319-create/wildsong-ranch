@@ -17,8 +17,9 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   unlocked breeds and the Elder mentor month; a Journey remembers its Elder mentor; monsters gain `heirloom`.
  * - v6 (M7): the expedition in progress, the pending event, unlock-chain progress, the Journal's records, the
  *   Odd Job week, the Lantern Garden visit month, and the Encyclopedia's collected looks.
+ * - v7 (M8): the planner queue (`planner`: queue, log, last stop).
  */
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 type RawSave = Record<string, unknown>
 
@@ -106,6 +107,13 @@ const MIGRATIONS: Record<number, Migration> = {
         ...game,
         encyclopedia,
       }
+    }
+    return next
+  },
+  6: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 7 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      next.game = { planner: { queue: [], log: [], lastStop: null }, ...raw.game }
     }
     return next
   },

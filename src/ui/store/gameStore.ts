@@ -40,6 +40,11 @@ import { answerEvent as answerEventCore } from '../../core/game.ts'
 import { sellItem as sellItemCore, type SellRefusal } from '../../core/economy.ts'
 import { detour as detourCore, moveTo as moveToCore, retreat as retreatCore, turnBack as turnBackCore, type MoveRefusal } from '../../core/expedition.ts'
 import { applyOddJob as applyOddJobCore } from '../../core/oddJobs.ts'
+import { clearQueue, queueStep, removeStep, runPlannedWeek, startRun } from '../../core/planner.ts'
+import type { PlannerStep } from '../../core/state.ts'
+import { PLANNER } from '../../data/tuning.ts'
+import { playSfx } from '../../audio/player.ts'
+import { speedFactor } from './appStore.ts'
 import { attendVigil as attendVigilCore, giveBlueprint as giveBlueprintCore, offerAtShrine as offerAtShrineCore, type BlueprintRefusal, type OfferRefusal } from '../../core/unlocks.ts'
 import { buyUpgrade as buyUpgradeCore, visitGarden as visitGardenCore, type GardenRefusal, type UpgradeRefusal } from '../../core/upgrades.ts'
 import type { ExpeditionSiteId, UpgradeId } from '../../data/types.ts'
@@ -179,9 +184,10 @@ export const hasGame = computed(() => game.value !== null)
 /** Begins the week when it is waiting to begin and no food choice is pending. Call when the ranch shows. */
 export function settle(): void {
   const g = game.value
-  if (!g || g.ended || g.weekPhase !== 'start' || needsFoodChoice(g)) return
+  if (!g || g.ended || g.weekPhase !== 'start' || needsFoodChoice(g) || plannerRunning.value) return
   const r = beginWeek(g, rng)
   weekNews.value = r.state.monster ? eventLines(r.events, r.state.monster) : []
+  mailChime(g, r.state)
   commit(r.state)
 }
 
@@ -190,7 +196,14 @@ export function pickFood(food: FoodId): void {
   if (!g || !needsFoodChoice(g)) return
   const r = beginWeek(g, rng, food)
   weekNews.value = r.state.monster ? eventLines(r.events, r.state.monster) : []
+  mailChime(g, r.state)
   commit(r.state)
+}
+
+/** §23: a letter arrived with the week. */
+function mailChime(before: GameState, after: GameState): void {
+  const unread = (s: GameState) => s.mail.filter((m) => !m.read).length
+  if (unread(after) > unread(before)) playSfx('mail')
 }
 
 export function answer(accept: boolean): void {
@@ -281,6 +294,78 @@ export function closeTrain(): void {
 
 export const menu = computed(() => (game.value ? actionMenu(game.value) : null))
 
+/* ---------- §3 the planner (M8) ---------- */
+
+export const plannerRunning = signal(false)
+/** The sheet is the ranch's own state; the summary shows after a run. */
+export const plannerView = signal<'summary' | null>(null)
+let plannerTimer: ReturnType<typeof setTimeout> | null = null
+
+export function plannerAdd(step: PlannerStep): void {
+  const g = game.value
+  if (!g) return
+  const next = queueStep(g, step)
+  if (next !== g) commit(next)
+}
+
+export function plannerRemove(index: number): void {
+  const g = game.value
+  if (!g) return
+  const next = removeStep(g, index)
+  if (next !== g) commit(next)
+}
+
+export function plannerClear(): void {
+  const g = game.value
+  if (!g) return
+  const next = clearQueue(g)
+  if (next !== g) commit(next)
+}
+
+/** Runs the queue one week at a time with a short pause between weeks; stops on the first reason, or when told to. */
+export function plannerRun(): void {
+  const g = game.value
+  if (!g || plannerRunning.value || flow.value.kind !== 'idle') return
+  plannerRunning.value = true
+  plannerView.value = null
+  commit(startRun(g))
+  plannerStepOnce()
+}
+
+function plannerStepOnce(): void {
+  const g = game.value
+  if (!g || !plannerRunning.value) return
+  const r = runPlannedWeek(g, rng)
+  const m = r.state.monster
+  if (m && r.acted) weekNews.value = eventLines(r.events, m)
+  commit(r.state)
+  if (r.stop) {
+    plannerFinish()
+    return
+  }
+  plannerTimer = setTimeout(plannerStepOnce, Math.max(60, PLANNER.stepDelayMs * speedFactor()))
+}
+
+function plannerFinish(): void {
+  if (plannerTimer) clearTimeout(plannerTimer)
+  plannerTimer = null
+  plannerRunning.value = false
+  weekNews.value = []
+  plannerView.value = 'summary'
+  playSfx('plannerStop')
+}
+
+/** The Stop button while a run is on: the current week is already saved; nothing is half done. */
+export function plannerStop(): void {
+  if (!plannerRunning.value) return
+  plannerFinish()
+}
+
+export function plannerDismissSummary(): void {
+  plannerView.value = null
+  settle()
+}
+
 /* ---------- free actions ---------- */
 
 export function useItems(itemId: string, qty: number, stat?: StatKey): { used: number; result: UseItemResult | null } {
@@ -369,6 +454,8 @@ export function resetGameStoreForTests(): void {
   game.value = null
   flow.value = { kind: 'idle' }
   weekNews.value = []
+  plannerRunning.value = false
+  plannerView.value = null
   rng = createRng(0)
 }
 

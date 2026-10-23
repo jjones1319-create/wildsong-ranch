@@ -8,6 +8,7 @@ import type { BreedId } from '../../../data/types.ts'
 import { Chips, Segmented, TopBar } from '../../components/Controls.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { navigate } from '../../router.ts'
+import { playSfx } from '../../../audio/player.ts'
 import { showToast } from '../../store/appStore.ts'
 import { buySongsheet, game } from '../../store/gameStore.ts'
 
@@ -31,7 +32,10 @@ export function GuildLibraryScreen() {
     if (r.refused === 'money') showToast(UI_TEXT.shop.gates.money)
     else if (r.refused === 'rank') showToast(fill(UI_TEXT.shop.gates.rank, { n: o.rankMin }))
     else if (r.refused === 'debt') showToast(UI_TEXT.shop.gates.debt)
-    else if (!r.refused) showToast(fill(t.bought, { technique: o.tech.name }))
+    else if (!r.refused) {
+      showToast(fill(t.bought, { technique: o.tech.name }))
+      playSfx('coin')
+    }
   }
 
   return (

@@ -1,31 +1,60 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
+import { audioReady, playSfx, unlockAudio } from '../../audio/player.ts'
 import { canSwitchDifficulty } from '../../core/game.ts'
 import { fill } from '../../data/text/format.ts'
 import { DIFFICULTY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { TEXT_SIZES, UI } from '../../data/tuning.ts'
 import { SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
-import { fileNameForSave, readImport, saveJsonText, saveShareText } from '../../save/exportImport.ts'
-import type { AnyValidation } from '../../save/schema.ts'
+import { readImport } from '../../save/exportImport.ts'
+import type { AnyValidation, AppSettings } from '../../save/schema.ts'
 import { Confirm, Segmented, Sheet, Toggle, TopBar } from '../components/Controls.tsx'
-import { canShare, downloadText, readFileText, shareText } from '../lib/files.ts'
+import { InstallSheet } from '../components/InstallHelp.tsx'
+import { downloadBackup, shareBackup } from '../lib/backup.ts'
+import { formatWhen } from '../lib/clock.ts'
+import { canShare, readFileText } from '../lib/files.ts'
+import { isStandalone } from '../lib/platform.ts'
 import { goBack } from '../router.ts'
 import { librarySource, persisted, settings, showToast, updateSettings } from '../store/appStore.ts'
-import { currentSave, game, loadSaveFile, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek } from '../store/gameStore.ts'
+import { game, loadSaveFile, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek } from '../store/gameStore.ts'
+import { applyUpdate, checkForUpdate, lastCheck, needRefresh } from '../store/updateStore.ts'
 
 const SANDBOX_MONEY = 10_000
 
-/** §21 Settings: play, display and sound preferences, this ranch's difficulty and item rule, backup and import, storage, Sandbox. */
+function Volume({ label, field }: { label: string; field: 'masterVolume' | 'musicVolume' | 'sfxVolume' }) {
+  const value = settings.value[field]
+  return (
+    <label class="volume">
+      <span class="volume__label">
+        {label} <span class="muted small">{value}%</span>
+      </span>
+      <input
+        class="range"
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={value}
+        aria-label={label}
+        onInput={(e) => void updateSettings({ [field]: Number((e.currentTarget as HTMLInputElement).value) } as Partial<AppSettings>)}
+      />
+    </label>
+  )
+}
+
+/** §21 Settings: play, display and sound preferences, this ranch's difficulty and item rule, backup and import, storage, updates, Sandbox. */
 export function SettingsScreen() {
   const t = UI_TEXT.settings
   const s = settings.value
   const p = persisted.value
   const g = game.value
   const [importOpen, setImportOpen] = useState(false)
+  const [installOpen, setInstallOpen] = useState(false)
   const [text, setText] = useState('')
   const [result, setResult] = useState<AnyValidation | null>(null)
   const [confirmMoney, setConfirmMoney] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const check = lastCheck.value
 
   useEffect(() => {
     if (!importOpen) return
@@ -40,21 +69,6 @@ export function SettingsScreen() {
       clearTimeout(timer)
     }
   }, [text, importOpen])
-
-  const exportJson = () => {
-    const save = currentSave()
-    if (!save) return showToast(t.noRanch)
-    const name = fileNameForSave(save, 'json')
-    showToast(downloadText(name, saveJsonText(save)) ? fill(UI_TEXT.lab.export_.downloaded, { file: name }) : UI_TEXT.lab.export_.downloadFailed)
-  }
-
-  const share = async () => {
-    const save = currentSave()
-    if (!save) return showToast(t.noRanch)
-    const r = await shareText(fileNameForSave(save, 'txt'), saveShareText(save), UI_TEXT.title)
-    if (r === 'shared') showToast(UI_TEXT.lab.export_.shared)
-    else if (r !== 'cancelled') showToast(UI_TEXT.lab.export_.shareFailed)
-  }
 
   const pickFile = async (file: File | undefined) => {
     if (!file) return
@@ -72,7 +86,13 @@ export function SettingsScreen() {
     goBack()
   }
 
+  const testSound = async () => {
+    await unlockAudio()
+    playSfx('drillGreat')
+  }
+
   const difficultyOptions = (['Gentle', 'Standard'] as Difficulty[]).map((d) => ({ value: d, label: DIFFICULTY_LABELS[d].name }))
+  const checkText = check === 'checking' ? t.checking : check === 'upToDate' ? t.upToDate : check === 'updateFound' ? t.updateFound : check === 'failed' ? t.updateFailed : null
 
   return (
     <main class="screen">
@@ -86,6 +106,7 @@ export function SettingsScreen() {
         <p class="field__label small">{t.speed}</p>
         <Segmented options={SPEEDS.map((v) => ({ value: v, label: SPEED_LABELS[v] }))} value={s.speed} onChange={(v) => void updateSettings({ speed: v })} label={t.speed} />
         <Toggle label={t.assist} hint={t.assistHint} checked={s.assist} onChange={(v) => void updateSettings({ assist: v })} />
+        <Toggle label={t.leftHanded} hint={t.leftHandedHint} checked={s.leftHanded} onChange={(v) => void updateSettings({ leftHanded: v })} />
       </section>
 
       <section class="card">
@@ -101,7 +122,13 @@ export function SettingsScreen() {
         <Toggle label={t.sound} checked={s.sound} onChange={(v) => void updateSettings({ sound: v })} />
         <Toggle label={t.music} checked={s.music} onChange={(v) => void updateSettings({ music: v })} />
         <Toggle label={t.haptics} checked={s.haptics} onChange={(v) => void updateSettings({ haptics: v })} />
-        <p class="field__hint">{t.audioHint}</p>
+        <Volume label={t.masterVolume} field="masterVolume" />
+        <Volume label={t.musicVolume} field="musicVolume" />
+        <Volume label={t.sfxVolume} field="sfxVolume" />
+        <button type="button" class="btn btn--small" data-silent onClick={() => void testSound()}>
+          🔔 {t.testSound}
+        </button>
+        <p class="field__hint">{audioReady() ? t.audioHint : t.audioLocked}</p>
       </section>
 
       <section class="card">
@@ -124,12 +151,13 @@ export function SettingsScreen() {
 
       <section class="card">
         <p class="field__label">{t.sections.backup}</p>
+        <p class="muted small">{s.lastBackupAt ? fill(UI_TEXT.backup.lastBackup, { when: formatWhen(s.lastBackupAt) }) : UI_TEXT.backup.never}</p>
         <div class="btn-grid">
-          <button type="button" class="btn" disabled={!g} onClick={exportJson}>
+          <button type="button" class="btn" disabled={!g} onClick={downloadBackup}>
             {t.exportJson}
           </button>
           {canShare() && (
-            <button type="button" class="btn" disabled={!g} onClick={() => void share()}>
+            <button type="button" class="btn" disabled={!g} onClick={() => void shareBackup()}>
               {t.shareTxt}
             </button>
           )}
@@ -147,6 +175,26 @@ export function SettingsScreen() {
       </section>
 
       <section class="card">
+        <p class="field__label">{t.sections.updates}</p>
+        <div class="btn-grid">
+          {needRefresh.value ? (
+            <button type="button" class="btn btn--primary" onClick={() => void applyUpdate()}>
+              {t.restart}
+            </button>
+          ) : (
+            <button type="button" class="btn" disabled={check === 'checking'} onClick={() => void checkForUpdate()}>
+              {t.checkUpdates}
+            </button>
+          )}
+          <button type="button" class="btn" onClick={() => setInstallOpen(true)}>
+            {t.installHelp}
+          </button>
+        </div>
+        {checkText && <p class={check === 'failed' ? 'notice' : 'muted small'}>{checkText}</p>}
+        {isStandalone() && <p class="muted small">{t.alreadyInstalled}</p>}
+      </section>
+
+      <section class="card">
         <p class="field__label">{t.sections.sandbox}</p>
         <p class="muted small">{t.sandboxHint}</p>
         {g?.sandbox && <p class="muted small">{t.sandboxOn}</p>}
@@ -160,6 +208,8 @@ export function SettingsScreen() {
         {UI_TEXT.versionPrefix}
         {__APP_VERSION__}
       </p>
+
+      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
 
       <Sheet open={importOpen} title={t.importTitle} onClose={() => setImportOpen(false)}>
         <p class="muted small">{t.importHint}</p>

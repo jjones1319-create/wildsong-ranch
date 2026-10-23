@@ -91,8 +91,8 @@ Shrine / Market ─► NEW MONSTER
 **Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, and one Odd Job per week (§9).
 
 **Planner** (SHOULD):
-- Queue up to 8 weeks of actions.
-- Execution auto-stops on any request, warning, event, invitation, illness, or fatigue ≥ 60 or stress ≥ 50.
+- Queue up to 8 weeks of actions (drills and rests). Queued drills get no praise or scold, and a month start keeps last month's food.
+- Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
 - A "Repeat last week" button sits on the ranch screen.
 
 ---
@@ -1118,7 +1118,7 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 | Shrine | Two inputs · Awaken button · stone animation · result card (with **Edit before you start**) · Randomize · Encyclopedia · Sleeping Stones |
 | Fusion | Two Freezer pickers · catalyst · outcome odds · compatibility comment · confirm |
 | Journal | Encyclopedia, Sleeping Stones, Rumors, Records, Titles, Hall of Fame |
-| Settings | Sound, music, haptics · text size · reduced motion · transparency mode · difficulty (Gentle ↔ Standard) · speed · Assist · left-handed battle layout · backup/export/import · storage persistence status · install help · item rule (Unlimited / One per week) · edited badge on/off · Sandbox tools · credits and disclaimer |
+| Settings | Sound, music, haptics · master, music and effects volume · text size · reduced motion · transparency mode · difficulty (Gentle ↔ Standard) · speed · Assist · left-handed battle layout · backup/export/import (with the last backup time) · storage persistence status · check for updates · install help · item rule (Unlimited / One per week) · edited badge on/off · Sandbox tools · credits and disclaimer |
 | Install help | iPhone and Android steps (`PHONE_AND_GITHUB_SETUP.md` part C), shown when not running standalone |
 
 **Onboarding:**

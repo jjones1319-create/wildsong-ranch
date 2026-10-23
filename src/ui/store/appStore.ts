@@ -59,6 +59,8 @@ export async function refreshPersisted(): Promise<void> {
 export async function bootApp(): Promise<void> {
   settings.value = await readSettings(kv())
   applyTextSize(settings.value.textSize)
+  applyReduceMotion(settings.value.reduceMotion)
+  if (!settings.value.backupBaselineAt) await updateSettings({ backupBaselineAt: Date.now() })
   const loaded = await loadLibrary(kv(), ls())
   library.value = loaded.library
   librarySource.value = loaded.source
@@ -71,6 +73,16 @@ export async function bootApp(): Promise<void> {
 export function applyTextSize(pct: number): void {
   try {
     document.documentElement.style.setProperty('--text-scale', String(pct / 100))
+  } catch {
+    /* no DOM (tests) */
+  }
+}
+
+/** §24 the manual Reduce motion toggle: an attribute on <html>, so CSS can stop every animation like the OS setting does. */
+export function applyReduceMotion(on: boolean): void {
+  try {
+    if (on) document.documentElement.setAttribute('data-reduce-motion', 'true')
+    else document.documentElement.removeAttribute('data-reduce-motion')
   } catch {
     /* no DOM (tests) */
   }
@@ -101,6 +113,7 @@ export async function commitLibrary(next: Library): Promise<boolean> {
 export async function updateSettings(patch: Partial<AppSettings>): Promise<void> {
   settings.value = { ...settings.value, ...patch }
   if (patch.textSize !== undefined) applyTextSize(patch.textSize)
+  if (patch.reduceMotion !== undefined) applyReduceMotion(patch.reduceMotion)
   await writeSettings(kv(), settings.value)
 }
 

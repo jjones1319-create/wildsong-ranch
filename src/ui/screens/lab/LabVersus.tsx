@@ -1,4 +1,3 @@
-import { signal } from '@preact/signals'
 import { useState } from 'preact/hooks'
 import { fill } from '../../../data/text/format.ts'
 import { PERSONALITY_LABELS } from '../../../data/text/labels.ts'
@@ -10,11 +9,7 @@ import { PickSlot, type Picked } from '../../components/MonsterPicker.tsx'
 import { SpeakerCard } from '../../components/RanchBits.tsx'
 import { navigate, screen } from '../../router.ts'
 import { startBattle } from '../../store/battleStore.ts'
-
-/** Preselected side A (the ranch's Battle button sets this to the active monster). */
-export const versusSideA = signal<Picked | null>(null)
-/** The picks survive a trip to the battle screen and back, so Rematch and Done land on the same setup. */
-export const versusSideB = signal<Picked | null>(null)
+import { versusSideA, versusSideB } from '../../store/versusStore.ts'
 
 const PERSONALITY_OPTIONS = PERSONALITIES.map((p) => ({ value: p, label: PERSONALITY_LABELS[p].name }))
 

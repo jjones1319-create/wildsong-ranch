@@ -12,7 +12,7 @@ import { gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { game } from '../../store/gameStore.ts'
 import { enter } from '../../store/tournamentStore.ts'
-import { versusSideA } from '../lab/LabVersus.tsx'
+import { versusSideA } from '../../store/versusStore.ts'
 
 /** §21 Tournament entry: this week's events, eligible first, with rules, purse, opponents and Auto / Manual. */
 export function TournamentEntryScreen() {

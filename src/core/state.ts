@@ -5,7 +5,7 @@ import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
 import type { Monster } from './monster.ts'
-import type { MonsterRequest } from './training.ts'
+import type { DrillOutcome, MonsterRequest } from './training.ts'
 import { variantNameOf } from './variants.ts'
 
 /** The whole raising game in one plain object (what a save slot stores, minus the RNG state). */
@@ -40,6 +40,49 @@ export type WeekAction =
   /** CONTENT §11: the pending event (the storm chase) is accepted and uses the week. */
   | { kind: 'event' }
   | { kind: 'none' }
+
+/** §3 planner: a queued week is a drill or a rest; nothing that needs a decision. */
+export type PlannerStep = { kind: 'drill'; drill: DrillId } | { kind: 'rest' }
+
+/** Why a planner run stopped (Wren explains each in WREN.planner). */
+export type PlannerStop =
+  | 'empty'
+  | 'noMonster'
+  | 'ended'
+  | 'request'
+  | 'event'
+  | 'trial'
+  | 'tournament'
+  | 'expedition'
+  | 'journey'
+  | 'locked'
+  | 'mail'
+  | 'illness'
+  | 'breakdown'
+  | 'warning'
+  | 'forcedRest'
+  | 'signature'
+  | 'grewUp'
+  | 'prime'
+  | 'fatigue'
+  | 'stress'
+  | 'invalid'
+
+export interface PlannerLogEntry {
+  week: number
+  step: PlannerStep
+  outcome: DrillOutcome | null
+  gains: Partial<Stats>
+  pay: number
+}
+
+export interface PlannerState {
+  /** Up to PLANNER.maxWeeks steps, next first. */
+  queue: PlannerStep[]
+  /** What the current (or last) run did, oldest first. */
+  log: PlannerLogEntry[]
+  lastStop: PlannerStop | null
+}
 
 /**
  * Where the current week stands (M3). `start`: the week has not begun (food, charms and the request roll
@@ -322,6 +365,8 @@ export interface GameState {
   oddJobWeek: number | null
   /** The absolute month the Lantern Garden was last visited (once a month). */
   memorialVisitMonth: number | null
+  /** §3 the planner queue (M8). */
+  planner: PlannerState
 }
 
 export interface NewGameOptions {
@@ -399,7 +444,12 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     records: zeroRecords(),
     oddJobWeek: null,
     memorialVisitMonth: null,
+    planner: emptyPlanner(),
   }
+}
+
+export function emptyPlanner(): PlannerState {
+  return { queue: [], log: [], lastStop: null }
 }
 
 export function emptyEncyclopedia(): Encyclopedia {

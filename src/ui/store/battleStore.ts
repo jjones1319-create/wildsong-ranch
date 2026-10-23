@@ -1,4 +1,5 @@
 import { signal } from '@preact/signals'
+import { playSfx, playStinger } from '../../audio/player.ts'
 import { canFire, createBattle, currentBand, gapUnits, previewHitTenths, step, timerTicksFor, type Battle } from '../../core/battle/engine.ts'
 import type { BattleEvent, BattleInput, BattleOutcome, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
 import type { Monster } from '../../core/monster.ts'
@@ -6,7 +7,7 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
-import { BATTLE } from '../../data/tuning.ts'
+import { BATTLE, BATTLE_FX } from '../../data/tuning.ts'
 import type { Habit, Personality } from '../../data/types.ts'
 import type { Screen } from '../router.ts'
 import { settings } from './appStore.ts'
@@ -78,6 +79,18 @@ export interface FloatEffect {
   text: string
   tone: 'damage' | 'crit' | 'miss' | 'heal' | 'note' | 'special'
 }
+
+/** §22 battle effects: a lunge or a shot when a technique fires, a flash and knockback on a hit, a sparkle on a crit. */
+export interface BattleFx {
+  id: number
+  side: Side
+  kind: 'lunge' | 'shot' | 'hit' | 'crit'
+  /** For a shot: where it flies to, in arena units. */
+  toX?: number
+  fromX?: number
+}
+
+export const fx = signal<BattleFx[]>([])
 
 export const setup = signal<BattleSetup | null>(null)
 export const view = signal<BattleView | null>(null)
@@ -154,6 +167,14 @@ function snapshot(): BattleView | null {
   }
 }
 
+function pushFx(f: Omit<BattleFx, 'id'>, ms: number): void {
+  const e = { ...f, id: ++effectId }
+  fx.value = [...fx.value.slice(-7), e]
+  setTimeout(() => {
+    fx.value = fx.value.filter((x) => x.id !== e.id)
+  }, ms)
+}
+
 function pushEffect(side: Side, text: string, tone: FloatEffect['tone']): void {
   const e = { id: ++effectId, side, text, tone }
   effects.value = [...effects.value.slice(-11), e]
@@ -184,15 +205,30 @@ function vibrate(ms: number): void {
 
 function describe(events: readonly BattleEvent[]): void {
   const t = UI_TEXT.battle
+  const s = battle?.state
   for (const e of events) {
     switch (e.kind) {
+      case 'fire': {
+        const tech = TECHNIQUE_BY_ID[e.tech]
+        if (tech && tech.range <= 2) pushFx({ side: e.side, kind: 'lunge' }, BATTLE_FX.lungeMs)
+        else if (s) pushFx({ side: e.side, kind: 'shot', fromX: Math.round(s.fighters[e.side].x / 100), toX: Math.round(s.fighters[1 - e.side]!.x / 100) }, BATTLE_FX.projectileMs)
+        playSfx('fire')
+        break
+      }
       case 'hit':
         pushEffect(e.target, e.crit ? `${t.floats.crit} −${e.damage}` : `−${e.damage}`, e.crit ? 'crit' : 'damage')
+        pushFx({ side: e.target, kind: 'hit' }, BATTLE_FX.knockbackMs)
+        if (e.crit) pushFx({ side: e.target, kind: 'crit' }, BATTLE_FX.sparkleMs)
         shake.value = Date.now()
         vibrate(e.crit ? 25 : 12)
+        playSfx(e.crit ? 'crit' : 'hit')
         break
       case 'miss':
         pushEffect(e.target, t.floats.miss, 'miss')
+        playSfx('miss')
+        break
+      case 'ko':
+        playSfx('ko')
         break
       case 'heal':
         pushEffect(e.side, fill(t.floats.heal, { n: e.amount }), 'heal')
@@ -202,6 +238,7 @@ function describe(events: readonly BattleEvent[]): void {
         break
       case 'special':
         pushEffect(e.side, t.specials[e.special], 'special')
+        playSfx('special')
         break
       case 'reflect':
         pushEffect(e.target, `${t.floats.reflect} −${e.amount}`, 'damage')
@@ -239,6 +276,9 @@ function finish(): void {
   const w = v.outcome.winner
   const name = w === null ? '' : v.fighters[w].name
   resultLine.value = w === null ? UI_TEXT.battle.result.draw : fill(UI_TEXT.battle.result.win, { name })
+  // §23: the fanfare for the player's monster, a low note for a loss.
+  if (w === 0) playStinger('victory')
+  else if (w === 1) playSfx('lose')
 }
 
 function runTicks(n: number): void {
@@ -284,6 +324,7 @@ export function startBattle(s: BattleSetup, seed = freshSeed()): void {
   pending = []
   inputs.length = 0
   effects.value = []
+  fx.value = []
   paused.value = false
   resultLine.value = ''
   view.value = snapshot()
@@ -300,6 +341,7 @@ export function leaveBattle(): void {
   battle = null
   view.value = null
   effects.value = []
+  fx.value = []
 }
 
 /** The finished battle's result for a cup or Trial (null while it is still running). */

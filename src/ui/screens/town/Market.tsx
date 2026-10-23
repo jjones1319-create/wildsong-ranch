@@ -9,6 +9,7 @@ import { Confirm, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { navigate } from '../../router.ts'
+import { playSfx } from '../../../audio/player.ts'
 import { showToast } from '../../store/appStore.ts'
 import { buyFromMarket, game } from '../../store/gameStore.ts'
 
@@ -31,6 +32,7 @@ export function MarketScreen() {
       showToast(r?.refused === 'money' ? t.noMoney : r?.refused === 'freezerFull' ? t.freezerFull : UI_TEXT.pellLab.freezeBusy)
       return
     }
+    playSfx('coin')
     showToast(fill(t.bought, { name: r.monster!.name }))
     if (r.placed === 'ranch') navigate('ranch')
   }

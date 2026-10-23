@@ -10,6 +10,7 @@ import { Chips, TopBar } from '../../components/Controls.tsx'
 import { QuantitySheet, SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { itemEffectText } from '../../lib/itemText.ts'
 import { navigate } from '../../router.ts'
+import { playSfx } from '../../../audio/player.ts'
 import { showToast } from '../../store/appStore.ts'
 import { buy, game, sell } from '../../store/gameStore.ts'
 
@@ -42,7 +43,10 @@ export function ShopScreen() {
     const r = sell(selling.item.id, n)
     setSelling(null)
     if (r.refused) showToast(UI_TEXT.sell.nothing)
-    else showToast(fill(UI_TEXT.sell.sold, { n, item: selling.item.name, gold: gold(r.gold) }))
+    else {
+      showToast(fill(UI_TEXT.sell.sold, { n, item: selling.item.name, gold: gold(r.gold) }))
+      playSfx('coin')
+    }
   }
 
   const gateText = (e: ShopEntry) => {
@@ -59,7 +63,10 @@ export function ShopScreen() {
     const r = buy(buying.item.id, n)
     setBuying(null)
     if (r.refused) showToast(r.refused === 'money' ? t.gates.money : r.refused === 'debt' ? t.gates.debt : t.gates.notSold)
-    else showToast(fill(t.bought, { n, item: buying.item.name }))
+    else {
+      showToast(fill(t.bought, { n, item: buying.item.name }))
+      playSfx('coin')
+    }
   }
 
   return (

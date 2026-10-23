@@ -200,11 +200,11 @@
   font-weight: 800;
   font-size: 1.1em;
   text-shadow: 0 2px 4px rgb(0 0 0 / 0.6);
-  animation: ws-float 1s ease-out both;
+  animation: ws-bfloat 1s ease-out both;
   pointer-events: none;
 }
 
-@keyframes ws-float {
+@keyframes ws-bfloat {
   0% {
     opacity: 0;
     transform: translate(-50%, 10px);

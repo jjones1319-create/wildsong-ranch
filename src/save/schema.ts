@@ -2,7 +2,7 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { FREEZER, HEARTSTONE, LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { AUDIO, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
@@ -206,6 +206,51 @@ const WeekActionSchema = v.fallback(
     ]),
   ),
   null,
+)
+
+/* ---------- M8: the planner ---------- */
+
+const PlannerStepSchema = v.variant('kind', [v.object({ kind: v.literal('drill'), drill: v.picklist(DRILL_IDS) }), v.object({ kind: v.literal('rest') })])
+
+const PLANNER_STOPS = [
+  'empty',
+  'noMonster',
+  'ended',
+  'request',
+  'event',
+  'trial',
+  'tournament',
+  'expedition',
+  'journey',
+  'locked',
+  'mail',
+  'illness',
+  'breakdown',
+  'warning',
+  'forcedRest',
+  'signature',
+  'grewUp',
+  'prime',
+  'fatigue',
+  'stress',
+  'invalid',
+] as const
+
+const PlannerLogSchema = v.object({
+  week: int(0, 1_000_000, 0),
+  step: PlannerStepSchema,
+  outcome: v.fallback(v.nullable(v.picklist(['Great', 'Success', 'Cheat', 'Fail', 'Slacked'] as const)), null),
+  gains: v.fallback(v.record(v.picklist(STAT_KEYS), int(-100_000, 100_000, 0)), {}),
+  pay: int(0, 1_000_000_000, 0),
+})
+
+const PlannerSchema = v.fallback(
+  v.object({
+    queue: listOf(PlannerStepSchema),
+    log: listOf(PlannerLogSchema),
+    lastStop: v.fallback(v.nullable(v.picklist(PLANNER_STOPS)), null),
+  }),
+  { queue: [], log: [], lastStop: null },
 )
 
 /* ---------- M5: tournaments, Guild, mail ---------- */
@@ -432,6 +477,7 @@ export const GameStateSchema = v.object({
   records: JournalRecordsSchema,
   oddJobWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   memorialVisitMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  planner: PlannerSchema,
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -480,6 +526,15 @@ const SETTINGS_DEFAULTS = {
   music: true,
   haptics: true,
   assist: true,
+  masterVolume: AUDIO.defaultVolume.master as number,
+  musicVolume: AUDIO.defaultVolume.music as number,
+  sfxVolume: AUDIO.defaultVolume.sfx as number,
+  leftHanded: false,
+  installHelpDismissedAt: 0,
+  lastBackupAt: 0,
+  lastBackupWeek: null as number | null,
+  backupSnoozedAt: 0,
+  backupBaselineAt: 0,
 }
 
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
@@ -494,6 +549,15 @@ export const SettingsSchema = v.fallback(
     music: bool(true),
     haptics: bool(true),
     assist: bool(true),
+    masterVolume: int(0, 100, AUDIO.defaultVolume.master),
+    musicVolume: int(0, 100, AUDIO.defaultVolume.music),
+    sfxVolume: int(0, 100, AUDIO.defaultVolume.sfx),
+    leftHanded: bool(false),
+    installHelpDismissedAt: stamp(),
+    lastBackupAt: stamp(),
+    lastBackupWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+    backupSnoozedAt: stamp(),
+    backupBaselineAt: stamp(),
   }),
   SETTINGS_DEFAULTS,
 )
@@ -547,12 +611,26 @@ export interface AppSettings {
   textSize: number
   /** §21: the global animation speed. */
   speed: Speed
-  /** Placeholders until M8 brings audio; stored now so the toggles keep their state. */
+  /** §23 mutes. */
   sound: boolean
   music: boolean
   haptics: boolean
   /** §12.11 Assist: tapping a card in another column walks there and fires. */
   assist: boolean
+  /** §23 volumes, 0–100. */
+  masterVolume: number
+  musicVolume: number
+  sfxVolume: number
+  /** §24 the left-handed battle layout. */
+  leftHanded: boolean
+  /** When "Later" was tapped on the install-help card (0 = never). */
+  installHelpDismissedAt: number
+  /** §20 backup reminders: the last export (real time and in-game week) and the last snooze. */
+  lastBackupAt: number
+  lastBackupWeek: number | null
+  backupSnoozedAt: number
+  /** When the app first ran on this phone: the day rule counts from here until the first backup. */
+  backupBaselineAt: number
 }
 
 type Fail = { ok: false; error: string }
@@ -646,6 +724,9 @@ function tidyGame(game: GameState): GameState {
     }
   }
   game.unlocks.rumorsHeard = [...new Set((game.unlocks.rumorsHeard as (UnlockChain | null)[]).filter((c): c is UnlockChain => c !== null))]
+  // M8: broken planner entries are already dropped; the queue keeps its cap.
+  game.planner.queue = game.planner.queue.slice(0, PLANNER.maxWeeks)
+  game.planner.log = game.planner.log.slice(-PLANNER.maxWeeks)
   if (!game.monster || game.ended) {
     game.tournament = null
     game.trial = null

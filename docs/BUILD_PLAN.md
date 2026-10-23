@@ -301,11 +301,20 @@
 
 ## M8: Sound, juice and polish
 
-- [ ] ZzFX sound effects and original looping music (ranch by season, town, battle, victory, farewell, shrine); volume and mute; iOS audio unlock and ambient session.
-- [ ] Drill vignettes for all 11 drills, emotes, seasonal backgrounds and weather overlays, battle effects polish.
-- [ ] Install-help card (iOS and Android), backup reminders, the "Update ready" flow, the left-handed layout, text sizes.
-- [ ] Accessibility pass (GAME_DESIGN §24) and a performance pass (bundle size, lazy-load heavy screens).
-- [ ] Planner queue (up to 8 weeks) with auto-stop rules.
+- [x] ZzFX sound effects and original looping music (ranch by season, town, battle, victory, farewell, shrine); volume and mute; iOS audio unlock and ambient session.
+- [x] Drill vignettes for all 11 drills, emotes, seasonal backgrounds and weather overlays, battle effects polish.
+- [x] Install-help card (iOS and Android), backup reminders, the "Update ready" flow, the left-handed layout, text sizes.
+- [x] Accessibility pass (GAME_DESIGN §24) and a performance pass (bundle size, lazy-load heavy screens).
+- [x] Planner queue (up to 8 weeks) with auto-stop rules.
+
+**Detailed plan (written 2026-10-23, after the owner confirmed M7):** version `0.10.0`, schema v7 (the planner queue), no new dependencies. Audio is ZzFX loaded lazily on the first tap plus a tiny step sequencer rendered in pure TypeScript (nine original loops); music follows the screen and the season. The planner runs through the same `beginWeek → chooseAction → finishWeek` controller one week at a time, keeps last month's food, says nothing after drills (so it never changes balance), and stops before a week on a request, a pending event, a trial, an eligible cup or new mail, and after a week on illness, a breakdown, a lifespan warning, a forced rest, the Signature, a grow-up, or fatigue ≥ 60 / stress ≥ 50. The left-handed layout mirrors the battle pads (forward under the left thumb) and the control cluster. Heavy screens load lazily so the first paint is lighter.
+- [x] 1. Data and save: `AUDIO`, `PLANNER`, `BATTLE_FX`, `BACKGROUND`, `INSTALL` in `tuning.ts`; settings gain volumes, left-handed, install-help and backup stamps (fallbacks, no version); `GameState.planner` with schema v7, a migration and tests; `zzfx` types; the text (`install`, `backup`, `planner`, settings additions, emote labels, Wren's planner lines).
+- [x] 2. Audio: `audio/sfx.ts` (the ZzFX table), `audio/music.ts` (tracks and the pure renderer, tested), `audio/player.ts` (unlock on `pointerup`, ambient session, volumes, ducking, pause when hidden), the screen → track hook, and the hooks for taps, drill stingers, battle events, coins, mail, the stone hum and learning; volume sliders and a test button in Settings.
+- [x] 3. Juice: eleven drill vignettes (`vignette.css`, prop class hooks), emotes (`core/emotes.ts`, `Emote.tsx`), `art/backgrounds.ts` (ranch by season × weather with rain, snow, storm and cloud overlays; lighter scenes for Town, the Shrine and the arena), and battle effects (the keyframe clash fix, lunge, projectiles, hit flash, knockback, crit sparkle, KO flop, victory hop).
+- [x] 4. Shell: the install-help card (iPhone and Android, the native prompt when offered), backup reminders (`save/backup.ts`, the ranch card, stamps on export), the update store with "Check for updates" in Settings, the left-handed layout, and a text-size audit at 130 % on 360 px.
+- [x] 5. Accessibility and performance: the Reduce motion setting on `<html>` so CSS honours it, labels on icon-only buttons and bars, focus outlines, no flashing above 3 Hz; `lazyScreen()` for the Battle, Lab, Tournament, Expedition, Journal, Odd Jobs, Farewell and Credits screens and the audio module; the main chunk well under 500 kB.
+- [x] 6. Planner: `core/planner.ts` (queue of up to 8, blockers, `runPlannedWeek`, the log), tests for the cap, every stop reason, the food default and a clean run; the Planner sheet, the running strip and the summary card.
+- [x] 7. `npm run verify`, a headless Chrome run (install card, seasons and weather, a vignette, the planner, a battle with effects and the left-handed pads, Settings at 130 %, the backup card), PROGRESS.md, commit `M8: sound, juice and polish`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:** play with sound on; install-help card; text size; reduced motion; queue 8 weeks.
 
