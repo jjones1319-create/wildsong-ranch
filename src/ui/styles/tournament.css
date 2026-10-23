@@ -1,0 +1,17 @@
+/* Cups, the Guild, mail and the Mentor's Ledger (M5). */
+
+.row--me td {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.eventline {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.cupcard {
+  border-color: rgb(242 181 68 / 0.5);
+}

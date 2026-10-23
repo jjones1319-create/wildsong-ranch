@@ -7,6 +7,13 @@ import { FarewellScreen } from './screens/Farewell.tsx'
 import { LabCreateScreen } from './screens/lab/LabCreate.tsx'
 import { LabEditorScreen } from './screens/lab/LabEditor.tsx'
 import { BattleScreen } from './screens/battle/BattleScreen.tsx'
+import { CreditsRollScreen } from './screens/CreditsRoll.tsx'
+import { JourneyLedgerScreen } from './screens/ranch/JourneyLedger.tsx'
+import { TournamentEntryScreen } from './screens/tournament/TournamentEntry.tsx'
+import { TournamentPlayScreen } from './screens/tournament/TournamentPlay.tsx'
+import { TournamentResultsScreen } from './screens/tournament/TournamentResults.tsx'
+import { GuildScreen } from './screens/town/Guild.tsx'
+import { MailboxScreen } from './screens/town/Mailbox.tsx'
 import { LabBattleLabScreen } from './screens/lab/LabBattleLab.tsx'
 import { LabExportScreen } from './screens/lab/LabExport.tsx'
 import { LabVersusScreen } from './screens/lab/LabVersus.tsx'
@@ -76,6 +83,20 @@ function Current({ current }: { current: Screen }) {
       return <LabBattleLabScreen />
     case 'battle':
       return <BattleScreen />
+    case 'tournament':
+      return <TournamentEntryScreen />
+    case 'tournamentPlay':
+      return <TournamentPlayScreen />
+    case 'tournamentResults':
+      return <TournamentResultsScreen />
+    case 'guild':
+      return <GuildScreen />
+    case 'mail':
+      return <MailboxScreen />
+    case 'journey':
+      return <JourneyLedgerScreen />
+    case 'creditsRoll':
+      return <CreditsRollScreen />
     case 'lab':
       return <LabLibraryScreen />
   }

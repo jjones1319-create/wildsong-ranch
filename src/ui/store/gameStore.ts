@@ -229,6 +229,18 @@ export function nextWeek(): void {
   settle()
 }
 
+/** Ends the current week with no action of its own (a cup or Trial already was the action). */
+export function endWeekNow(): void {
+  const g = game.value
+  if (!g || g.weekPhase !== 'action') return
+  finish(g, [])
+}
+
+/** Runs something that needs the game's RNG (a Trial opponent, a cup's finish) and commits the result. */
+export function withRng<T>(fn: (rng: Rng) => T): T {
+  return fn(rng)
+}
+
 export function openTrain(): void {
   if (flow.value.kind === 'idle') flow.value = { kind: 'train' }
 }

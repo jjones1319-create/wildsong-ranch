@@ -1,7 +1,7 @@
 {
   "name": "wildsong-ranch",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
   "type": "module",
   "license": "MIT",

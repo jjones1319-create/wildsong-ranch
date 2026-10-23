@@ -11,10 +11,14 @@ import { UI_TEXT } from '../../../data/text/ui.ts'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { CalendarStrip, ConditionBars, TipCard } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
-import { settings, showToast } from '../../store/appStore.ts'
+import { settings } from '../../store/appStore.ts'
 import { dismissTip, flow, game, menu, openTrain, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
+import { eventsForWeek } from '../../../core/tournament.ts'
+import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
+import { trialOutcome } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../lab/LabVersus.tsx'
 import { DrillResult } from './DrillResult.tsx'
+import { TrialCard } from './TrialCard.tsx'
 import { FoodPrompt } from './FoodPrompt.tsx'
 import { RequestCard } from './RequestCard.tsx'
 import { TrainSheet } from './TrainSheet.tsx'
@@ -46,10 +50,14 @@ export function RanchScreen() {
   const season = seasonOf(dateOf(g.week).month).toLowerCase()
   const reason = mn.reason && mn.reason !== 'ended' && mn.reason !== 'noMonster' ? fill(t.reasons[mn.reason], { name: m.name }) : null
   const repeatWhat = mn.repeat ? (mn.repeat.kind === 'drill' ? DRILL_BY_ID[mn.repeat.drill].name : t.actions.rest) : null
+  const cups = eventsForWeek(g)
+  const trialPending = f.kind === 'idle' && !showFood && !showRequest && (g.trial !== null || g.journey?.pendingTechnique !== null || trialOutcome.value !== null)
 
   return (
     <main class="screen">
       <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} />
+      <p class="eventline">{cups.length ? fill(t.eventsToday, { events: cups.map((c) => c.event.name).join(' · ') }) : t.noEvents}</p>
+      {g.journey && <p class="eventline">{fill(t.journeyWeek, { week: g.journey.weekNo, site: JOURNEY_SITE_BY_ID[g.journey.site].name })}</p>}
 
       <button type="button" class={`stage stage--${season}`} onClick={() => navigate('ranchCard')} aria-label={fill(t.tapHint, { name: m.name })}>
         <div class="stage__art">
@@ -73,9 +81,13 @@ export function RanchScreen() {
       <div class="spacer" />
       <div class="actionbar actionbar--stack">
         <div class="actions">
-          {mn.wait ? (
+          {g.tournament ? (
+            <button type="button" class="btn btn--primary" onClick={() => navigate('tournamentPlay')}>
+              {t.actions.battle}
+            </button>
+          ) : mn.wait ? (
             <button type="button" class="btn btn--primary" onClick={() => takeAction({ kind: 'none' })}>
-              {t.actions.wait}
+              {g.journey ? t.continueJourney : t.actions.wait}
             </button>
           ) : (
             <button type="button" class="btn btn--primary" disabled={!mn.train} onClick={openTrain}>
@@ -85,15 +97,20 @@ export function RanchScreen() {
           <button type="button" class="btn" disabled={!mn.rest} onClick={() => takeAction({ kind: 'rest' })}>
             {t.actions.rest}
           </button>
-          <button type="button" class="btn btn--soon" onClick={() => showToast(t.soonJourney)}>
+          <button type="button" class="btn" disabled={!mn.train} onClick={() => navigate('journey')}>
             {t.actions.journey}
           </button>
           <button
             type="button"
             class="btn"
+            disabled={!mn.train && !g.tournament}
             onClick={() => {
-              versusSideA.value = { monster: structuredClone(m), source: 'active' }
-              navigateFrom('ranch', 'labVersus')
+              if (g.tournament) navigate('tournamentPlay')
+              else if (cups.length > 0) navigate('tournament')
+              else {
+                versusSideA.value = { monster: structuredClone(m), source: 'active' }
+                navigateFrom('ranch', 'labVersus')
+              }
             }}
           >
             {t.actions.battle}
@@ -117,6 +134,7 @@ export function RanchScreen() {
 
       <FoodPrompt open={showFood} />
       <RequestCard open={showRequest} />
+      {trialPending && <TrialCard />}
       <TrainSheet open={f.kind === 'train'} />
       {f.kind === 'result' && <DrillResult f={f} />}
       {f.kind === 'summary' && <WeekSummary f={f} />}

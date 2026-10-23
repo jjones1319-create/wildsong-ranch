@@ -69,16 +69,26 @@ function cheapestBand(f: FighterState): number {
   return best ? best.range : 2
 }
 
+const HABIT_BIAS = 300
+const HABIT_BANK_GUTS = 70
+const HABIT_WAIT_GUTS = 99
+const HABIT_DASH_PCT = 20
+
 /** Sets the fighter's requests for this tick (fire, dash, push, move direction). */
 export function decideAi(state: BattleState, f: FighterState, opp: FighterState, rng: Rng): void {
   const p = AI.personalities[f.personality]
   const gap = gapUnits(state)
   const band = currentBand(state)
+  const habit = f.habit
+  const opensFar = habit === 'opensFar' && !f.habitDone && f.techniques.some((t) => TECHNIQUE_BY_ID[t.id]?.range === 4)
 
   // 1–2. Attack decision.
   const rookieHold = f.gradeIndex <= 1 && f.guts < AI.rookieReserve
-  if (f.aiCooldown === 0 && !rookieHold && band <= 4) {
-    const inRange = options(state, f, opp, f.guts, band)
+  const habitHold = habit === 'waits99' && f.guts < HABIT_WAIT_GUTS
+  if (f.aiCooldown === 0 && !rookieHold && !habitHold && band <= 4) {
+    let inRange = options(state, f, opp, f.guts, band)
+    if (opensFar) inRange = inRange.filter((o) => o.tech.range === 4)
+    if (habit === 'banksForHeavy' && f.guts < HABIT_BANK_GUTS) inRange = inRange.filter((o) => o.tech.family !== 'Heavy')
     if (inRange.length > 0) {
       const rate = f.guts < AI.gutsSplit ? p.useLow : p.useHigh
       if (rng.chance(rate / 30)) {
@@ -86,9 +96,12 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
           let w = Math.max(1, o.ev * Math.max(1, isqrt(o.ev)))
           if (o.cost >= AI.bigCost && f.guts >= AI.bigGuts) w = divRound(w * p.bigBias, 100)
           if (o.tech.family === 'Wither') w = divRound(w * p.witherBias, 100)
+          if (habit === 'spamsWither' && o.tech.family === 'Wither') w = divRound(w * HABIT_BIAS, 100)
+          if (habit === 'stealsGuts' && (o.tech.effect?.kind === 'gutsSteal' || o.tech.family === 'Wither')) w = divRound(w * HABIT_BIAS, 100)
           return w
         })
         f.wantFire = pick.tech.id
+        f.habitDone = true
         f.aiCooldown = rng.nextInt(AI.cooldown.min, AI.cooldown.max)
       }
     }
@@ -118,13 +131,21 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
       if (reachable > 0) f.aiTargetBand = reachable
     }
   }
+  // Habits that fix the target band.
+  if (habit === 'walksClose') f.aiTargetBand = 1
+  if (opensFar) f.aiTargetBand = 4
   const centre = bandCentre(f.aiTargetBand)
   const dead = 20
   f.moveDir = gap > centre + dead ? 1 : gap < centre - dead ? -1 : 0
+  if (habit === 'backsAway' && opp.moveDir === 1 && band <= 3) f.moveDir = -1
+  // A pusher steps in to touch before shoving.
+  if (habit === 'pushesWhenTouching' && band === 1 && gap > 40 && f.pushCooldown === 0) f.moveDir = 1
 
   // 4. Push when touching and wanting distance.
   if (gap <= 40 && f.aiTargetBand >= AI.pushFromBand && f.pushCooldown === 0) f.wantPush = true
+  if (habit === 'pushesWhenTouching' && gap <= 40 && f.pushCooldown === 0) f.wantPush = true
 
   // 5. Dash in when the target is two or more bands closer.
   if (f.aiTargetBand <= band - AI.dash.bandsCloser && f.guts >= AI.dash.gutsMin && f.dashCooldown === 0 && rng.chance(AI.dash.pctPerTick)) f.wantDash = true
+  if (habit === 'dashesBelowHalf' && f.hp * 2 < f.maxHp && band >= 2 && f.dashCooldown === 0 && rng.chance(HABIT_DASH_PCT)) f.wantDash = true
 }

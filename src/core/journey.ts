@@ -1,9 +1,10 @@
 import { JOURNEY_SITE_BY_ID } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID, techniquesOfBreed } from '../data/techniques.ts'
-import { JOURNEY, TRAIT_EFFECTS } from '../data/tuning.ts'
+import { JOURNEY, SIGNATURE, TRAIT_EFFECTS } from '../data/tuning.ts'
 import { TOURNAMENT_GRADES, type JourneySiteId, type Stats, type Technique } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, addStat, gradeFactor100, gradeIndex, loyaltyOf, stageFactor100, stageOf, traitOf, type Monster } from './monster.ts'
+import { addCondition, addStat, gradeFactor100, gradeIndex, isPure, loyaltyOf, stageFactor100, stageOf, traitOf, type Monster } from './monster.ts'
+import { npcMonster } from './npc.ts'
 import type { Rng } from './rng.ts'
 import { isFull } from './songbook.ts'
 
@@ -72,14 +73,22 @@ export function journeyForecast(m: Monster, site: JourneySiteId): number[] {
   return out
 }
 
-/** Site-family techniques of the main breed the monster has not learned, in table order; Chains only once their base is Lv3. */
+/**
+ * Site-family techniques of the main breed the monster has not learned, in table order; Chains only once their
+ * base is Lv3. At Glacier Bastion a pure breed that missed its Signature at Prime can learn it (§10.4).
+ */
 export function techniqueCandidates(m: Monster, site: JourneySiteId): Technique[] {
   const family = JOURNEY_SITE_BY_ID[site].family
   const known = new Set(m.techniques.map((t) => t.id))
   const out: Technique[] = []
   for (const t of techniquesOfBreed(m.mainBreed)) {
     const learn = t.learn
-    if (learn.kind !== 'journey' || learn.site !== site || known.has(t.id)) continue
+    if (known.has(t.id)) continue
+    if (learn.kind === 'signature') {
+      if (site === 'glacier-bastion' && isPure(m)) out.push(t)
+      continue
+    }
+    if (learn.kind !== 'journey' || learn.site !== site) continue
     if (t.family !== family && t.family !== 'Chain') continue
     if (learn.chainOf) {
       const chainOf = learn.chainOf
@@ -91,21 +100,24 @@ export function techniqueCandidates(m: Monster, site: JourneySiteId): Technique[
   return out
 }
 
-/** reqScore = the listed stats + loyalty (§11). */
+/** reqScore = the listed stats + loyalty (§11); the Signature at Glacier Bastion needs DEF + its type stat (§10.4). */
 export function requirementScore(m: Monster, tech: Technique): number {
+  if (tech.learn.kind === 'signature') return m.stats.DEF + m.stats[tech.type]
   if (tech.learn.kind !== 'journey') return 0
   let total = loyaltyOf(m)
   for (const k of tech.learn.stats) total += m.stats[k]
   return total
 }
 
-export function requirementValue(tech: Technique): number {
-  return tech.learn.kind === 'journey' ? tech.learn.value : 0
+/** The requirement, lowered by the mentor bond (§11: each Mentor's Charm of that site takes 50 off). */
+export function requirementValue(tech: Technique, bondCharms = 0): number {
+  const base = tech.learn.kind === 'signature' ? SIGNATURE.glacierRequirement : tech.learn.kind === 'journey' ? tech.learn.value : 0
+  return Math.max(0, base - bondCharms * JOURNEY.bond.requirementDrop)
 }
 
 /** 0% below the requirement; 30% at it; +10% per 50 over; cap 90; +10 Quick Study; +10 Elder mentor. */
-export function techniqueChancePct(m: Monster, tech: Technique, elderMentor = false): number {
-  const over = requirementScore(m, tech) - requirementValue(tech)
+export function techniqueChancePct(m: Monster, tech: Technique, elderMentor = false, bondCharms = 0): number {
+  const over = requirementScore(m, tech) - requirementValue(tech, bondCharms)
   if (over < 0) return 0
   const t = JOURNEY.technique
   let pct = Math.min(t.capPct, t.basePct + Math.floor(over / t.perPointsOver) * t.pctPerStep)
@@ -137,7 +149,7 @@ export interface JourneyWeekResult {
  * One Journey week. RNG order: the score roll, then (on success) the site-stat noise, then (if a candidate's
  * requirement is met and nothing was learned yet) the technique chance. Fatigue and stress are applied after the check.
  */
-export function journeyWeek(input: Monster, progress: JourneyProgress, rng: Rng, elderMentor = false): { monster: Monster; progress: JourneyProgress; result: JourneyWeekResult } {
+export function journeyWeek(input: Monster, progress: JourneyProgress, rng: Rng, elderMentor = false, bondCharms = 0): { monster: Monster; progress: JourneyProgress; result: JourneyWeekResult } {
   const m = structuredClone(input)
   const p = structuredClone(progress)
   const site = JOURNEY_SITE_BY_ID[p.site]
@@ -165,8 +177,8 @@ export function journeyWeek(input: Monster, progress: JourneyProgress, rng: Rng,
     applyGain('LIF', lifGain)
 
     if (!p.learned) {
-      const candidate = techniqueCandidates(m, p.site).find((t) => requirementScore(m, t) >= requirementValue(t))
-      if (candidate && rng.chance(techniqueChancePct(m, candidate, elderMentor))) {
+      const candidate = techniqueCandidates(m, p.site).find((t) => requirementScore(m, t) >= requirementValue(t, bondCharms))
+      if (candidate && rng.chance(techniqueChancePct(m, candidate, elderMentor, bondCharms))) {
         p.learned = candidate.id
         technique = candidate.id
         if (isFull(m)) {
@@ -187,4 +199,42 @@ export function journeyWeek(input: Monster, progress: JourneyProgress, rng: Rng,
 
 export function techniqueName(id: string): string {
   return TECHNIQUE_BY_ID[id]?.name ?? id
+}
+
+/** The Mentor's Charm item of a site (§11 mentor bond). */
+export function bondCharmId(site: JourneySiteId): string {
+  return `mentor-charm-${site}`
+}
+
+/** Journey cost this month: half price in sale months (§11). */
+export function journeyCost(saleMonths: readonly number[], month: number): number {
+  return saleMonths.includes(month) ? JOURNEY.saleCost : JOURNEY.cost
+}
+
+/** Two distinct sale months for a year, rolled from the game's RNG in January. */
+export function rollSaleMonths(rng: Rng): number[] {
+  const months = rng.shuffle(Array.from({ length: 12 }, (_, i) => i + 1))
+  return months.slice(0, JOURNEY.saleMonthsPerYear).sort((a, b) => a - b)
+}
+
+/** §10.4: a pure breed entering Prime with loyalty ≥ 60 learns its Signature (null when it can't right now). */
+export function signatureAtPrime(m: Monster): Technique | null {
+  if (!isPure(m) || loyaltyOf(m) < SIGNATURE.loyaltyMin) return null
+  const sig = techniquesOfBreed(m.mainBreed).find((t) => t.family === 'Signature')
+  if (!sig || m.techniques.some((t) => t.id === sig.id) || isFull(m)) return null
+  return sig
+}
+
+/** The Trial opponent (§11): a wild monster of the site's breed at your grade, or one up half the time. */
+export function trialOpponent(m: Monster, site: JourneySiteId, rng: Rng): Monster {
+  const breed = JOURNEY_SITE_BY_ID[site].trialBreeds[0]
+  const gi = TOURNAMENT_GRADES.indexOf(m.grade)
+  const up = rng.chance(JOURNEY.trial.gradeUpPct) ? 1 : 0
+  const grade = TOURNAMENT_GRADES[Math.min(TOURNAMENT_GRADES.length - 1, gi + up)]!
+  return npcMonster({ breed, grade, seed: rng.nextU32(), name: `Wild ${JOURNEY_SITE_BY_ID[site].trialBreeds[0]}` })
+}
+
+/** The Trial's purse for a win: 600 × gradeIndex. */
+export function trialReward(m: Monster): number {
+  return JOURNEY.trial.rewardPerGrade * (TOURNAMENT_GRADES.indexOf(m.grade) + 1)
 }

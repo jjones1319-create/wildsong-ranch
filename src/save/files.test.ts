@@ -26,7 +26,7 @@ describe('schema version 2 (M2)', () => {
     for (const k of ['weekPhase', 'pendingRequest', 'lastAction', 'monsterHistory', 'tipsSeen', 'counters', 'sandbox']) delete game[k]
     const v2 = { schemaVersion: 2, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.4.0' } }
     const up = migrate(clone(v2)) as { schemaVersion: number; game: Record<string, unknown> }
-    expect(up.schemaVersion).toBe(3)
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
     expect(up.game).toMatchObject({ weekPhase: 'start', pendingRequest: null, lastAction: null, monsterHistory: [], tipsSeen: [], sandbox: false })
     const r = validateAny(clone(v2))
     expect(r.ok && r.kind === 'save').toBe(true)
@@ -39,6 +39,35 @@ describe('schema version 2 (M2)', () => {
     const v2Monster = { schemaVersion: 2, kind: 'monster', monster: makeMonster(), history: [] }
     expect((migrate(clone(v2Monster)) as Record<string, unknown>).game).toBeUndefined()
     expect(validateAny(clone(v2Monster)).ok).toBe(true)
+  })
+
+  it('migrates a version-3 save by adding the M5 Guild, tournament and mail fields (schema version 4)', () => {
+    const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
+    for (const k of ['tournament', 'trial', 'guild', 'hallOfFame', 'mail', 'saleMonths', 'journeysBySite', 'titles']) delete game[k]
+    const v3 = { schemaVersion: 3, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '0.6.0' } }
+    const up = migrate(clone(v3)) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(4)
+    expect(up.game).toMatchObject({ tournament: null, trial: null, hallOfFame: [], mail: [], saleMonths: [], titles: [] })
+    const r = validateAny(clone(v3))
+    expect(r.ok && r.kind === 'save').toBe(true)
+    if (r.ok && r.kind === 'save') {
+      expect(r.save.game.guild).toEqual({ officialsWon: [], crownsWon: [], legendWon: false, crownInvite: false, legendInvite: false, creditsRolled: false })
+      expect(r.save.game.journeysBySite['iron-quarry']).toBe(0)
+    }
+    // Broken M5 fields fall back; a tournament for an unknown event is dropped.
+    const broken = clone(makeSave(createGameState({ monster: makeMonster() }), 1)) as unknown as { game: Record<string, unknown> }
+    broken.game.guild = { officialsWon: ['Z', 'E'], crownsWon: 'x' }
+    broken.game.mail = [null, { id: 'm1', week: 3, kind: 'sale', ref: '4', read: false }, 'junk']
+    broken.game.tournament = { eventId: 'not-a-cup', week: 1, seed: 1, mode: 'auto', participants: [], matches: [] }
+    broken.game.saleMonths = [3, 3, 14]
+    const r2 = validateAny(broken)
+    expect(r2.ok && r2.kind === 'save').toBe(true)
+    if (r2.ok && r2.kind === 'save') {
+      expect(r2.save.game.guild.officialsWon).toEqual([])
+      expect(r2.save.game.mail).toHaveLength(1)
+      expect(r2.save.game.tournament).toBeNull()
+      expect(r2.save.game.saleMonths).toEqual([3, 12])
+    }
   })
 
   it('keeps and validates the M3 week fields on a round trip', () => {

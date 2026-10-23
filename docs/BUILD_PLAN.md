@@ -246,15 +246,23 @@
 
 ## M5: Tournaments, ranks and Journeys
 
-- [ ] Calendar of cups (CONTENT §9), entry rules, formats, points and tiebreaks, prizes (purses **and item prizes**, GAME_DESIGN §13), KO withdrawal, after-effects, fame.
-- [ ] NPC generator (GAME_DESIGN §13), rival breeders and habits (CONTENT §10); Corin Hale scales with your monster.
-- [ ] Promotion, breeder ranks 1–10, Crowns, Legend Cup, credits at rank 10, Hall of Fame.
-- [ ] Tournament entry screen, Results screen, Guild screen.
-- [ ] **Journeys:**
+- [x] Calendar of cups (CONTENT §9), entry rules, formats, points and tiebreaks, prizes (purses **and item prizes**, GAME_DESIGN §13), KO withdrawal, after-effects, fame.
+- [x] NPC generator (GAME_DESIGN §13), rival breeders and habits (CONTENT §10); Corin Hale scales with your monster.
+- [x] Promotion, breeder ranks 1–10, Crowns, Legend Cup, credits at rank 10, Hall of Fame.
+- [x] Tournament entry screen, Results screen, Guild screen.
+- [x] **Journeys:**
   - Mentor's Ledger with requirements and chance tiers.
   - Weekly checks, gains, the one-technique roll, mastery levels, Chains, mentor bond, Trial battle, sale months.
-- [ ] Signature-technique scene for pure breeds at Prime.
-- [ ] Tests: tournament scheduling over 10 years, points and tiebreaks, Journey reference table, NPC stat bands per grade.
+- [x] Signature-technique scene for pure breeds at Prime.
+- [x] Tests: tournament scheduling over 10 years, points and tiebreaks, Journey reference table, NPC stat bands per grade.
+
+**Detailed plan (written 2026-10-23, after the owner confirmed M4):** version `0.7.0`. No new dependencies. A tournament lives in the save (`GameState.tournament`), so a cup resumes at its next match after the app closes; NPC-only matches run through the engine instantly, the player's matches use the battle screen (manual, or Auto with Skip). Rank reading: the first Official win at each grade E–A raises rank 1 → 6, the S Official win invites to the Crowns, the first win of each Crown raises rank 7 → 10. The Masquerade Cup waits for its rumor (M7).
+- [x] 1. Data: `data/calendar.ts` (CONTENT §9, 48 weeks, double weeks, year rules), `data/rivals.ts` (CONTENT §10), Mentor's Charms in `data/items.ts`, `TOURNAMENT`, `RIVALS`, `JOURNEY` and `SIGNATURE` numbers in `tuning.ts`, the new text; schema v4 (`tournament`, `trial`, `guild`, `hallOfFame`, `mail`, `saleMonths`, `journeysBySite`, `titles`) with a migration and tests.
+- [x] 2. `core/tournament.ts`: this week's events with eligibility reasons; a cup with its participants (NPCs by seed, rivals by grade, Corin scaled to your total), schedules for RR4 / RR6 / Elim4 / Elim8 / 1v1 / Relay, points and tiebreaks, KO withdrawal, simulated NPC matches, and the finish: placing, purse and per-win gold, item prizes, fame, stat growth, after-effects, KO injury (and the Classic risk), promotion, rank, Crown and Legend invitations, Hall of Fame, titles, mastery. Tests for each rule and a 10-year schedule.
+- [x] 3. Rival habits in `core/battle/ai.ts` (opens Far, banks guts for a Heavy, walks straight into Close, backs away, spams Wither, waits at 99 guts, pushes whenever touching, dashes in below half HP, steals guts). Tests.
+- [x] 4. Journeys in play: the Trial (auto, skippable; 600 × gradeIndex, a 10 % Moonfruit, injury rules on a KO), the mentor bond (a Mentor's Charm every 8 Journeys at a site, −50 on that site's requirements), sale months (two a year, mail in week 1, 1,000G), the Signature at Prime (pure, loyalty ≥ 60) or at Glacier Bastion (DEF + type stat ≥ 700). `core/game.ts`: enter a tournament, the trial state, mail, sale months each January. Tests, plus a 3-year scripted raise with cups and Journeys.
+- [x] 5. UI: Tournament entry (events, eligibility, rules, purse, opponent cards, Auto / Manual), play (standings or bracket, next match, Watch / Fight), Results (placing, purse, items, fame, gains, condition, lifespan in the Lens, promotion, rank, titles, invitations); the battle store's finish hook and technique filter; Guild (month's events, rank, titles, Hall of Fame) and Mailbox in Town; the Mentor's Ledger, Journey beats and the Trial card on the ranch; the Signature moment in the week summary; the credits roll at rank 10; the calendar strip shows the week's events; Battle opens the entry screen on cup weeks.
+- [x] 6. `npm run verify`, a headless Chrome run (a cup on Auto to the Results, a Journey with its Trial, the Guild), PROGRESS.md, commit `M5: tournaments, ranks and Journeys`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:** take a monster from grade E to C or higher; do two Journeys and learn a technique; watch a rival's habit.
 

@@ -9,8 +9,10 @@
  * - v2 (M2): saves gain `meta: { savedAt, appVersion }`; monster files and libraries appear.
  * - v3 (M3): the game state gains the week phase, the pending request, the last action (Repeat last week),
  *   the active monster's edit history, the onboarding tips seen and a few counters.
+ * - v4 (M5): tournaments, the Journey Trial, the Guild (Officials won, Crowns, invitations), the Hall of Fame,
+ *   mail, sale months, Journeys per site and titles.
  */
-export const SAVE_VERSION = 3
+export const SAVE_VERSION = 4
 
 type RawSave = Record<string, unknown>
 
@@ -35,6 +37,23 @@ const MIGRATIONS: Record<number, Migration> = {
         tipsSeen: [],
         counters: { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 },
         sandbox: false,
+        ...raw.game,
+      }
+    }
+    return next
+  },
+  3: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 4 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      next.game = {
+        tournament: null,
+        trial: null,
+        guild: { officialsWon: [], crownsWon: [], legendWon: false, crownInvite: false, legendInvite: false, creditsRolled: false },
+        hallOfFame: [],
+        mail: [],
+        saleMonths: [],
+        journeysBySite: { 'iron-quarry': 0, 'windrun-steppe': 0, 'starfall-observatory': 0, 'archers-glade': 0, 'glacier-bastion': 0 },
+        titles: [],
         ...raw.game,
       }
     }

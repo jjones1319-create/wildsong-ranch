@@ -44,6 +44,42 @@ export type Speed = (typeof SPEEDS)[number]
 export const PERSONALITIES = ['Steady', 'Aggressive', 'Cautious', 'Trickster', 'Sniper', 'Brawler'] as const
 export type Personality = (typeof PERSONALITIES)[number]
 
+/** CONTENT §10 readable habits of the rival breeders (§12.10). */
+export const HABITS = ['none', 'opensFar', 'banksForHeavy', 'walksClose', 'backsAway', 'spamsWither', 'waits99', 'pushesWhenTouching', 'dashesBelowHalf', 'stealsGuts'] as const
+export type Habit = (typeof HABITS)[number]
+
+/** GAME_DESIGN §13 tournament formats (CONTENT §9). */
+export const FORMATS = ['RR4', 'RR6', 'Elim4', 'Elim8', '1v1', 'Relay'] as const
+export type Format = (typeof FORMATS)[number]
+
+export type EventGrade = TournamentGrade | 'own' | 'any'
+
+export const EVENT_KINDS = ['cup', 'official', 'crown', 'legend', 'open', 'summitQualifier', 'summit', 'rival', 'masquerade'] as const
+export type EventKind = (typeof EVENT_KINDS)[number]
+
+export type EventRule = 'powOnly' | 'intOnly' | 'sprout' | 'elders' | 'hero' | 'rogue'
+export type EventYears = 'even' | 'odd' | 'summit' | 'nonSummit'
+
+export interface TournamentEvent {
+  id: string
+  name: string
+  /** Week index inside the year, 0–47. */
+  week: number
+  grade: EventGrade
+  format: Format
+  /** For 1st place. Officials and the Summit Qualifier scale by grade in the rules. */
+  purse: number
+  kind: EventKind
+  years?: EventYears
+  rule?: EventRule
+  /** Lowest grade that may enter (the Rival Showdown needs C, the Masquerade B). */
+  minGrade?: TournamentGrade
+  crownId?: string
+}
+
+export const CROWN_IDS = ['dawn', 'tides', 'embers', 'frost'] as const
+export type CrownId = (typeof CROWN_IDS)[number]
+
 export const BODY_PLANS = [
   'blob',
   'quadruped',

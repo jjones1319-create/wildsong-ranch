@@ -7,7 +7,7 @@ import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { BATTLE } from '../../data/tuning.ts'
-import type { Personality } from '../../data/types.ts'
+import type { Habit, Personality } from '../../data/types.ts'
 import type { Screen } from '../router.ts'
 import { settings } from './appStore.ts'
 
@@ -17,6 +17,14 @@ import { settings } from './appStore.ts'
  * numbers, flashes and a result card. Versus is exhibition only: nothing is written back to any monster.
  */
 
+export interface BattleFinish {
+  winner: 0 | 1 | null
+  how: 'ko' | 'time' | 'forfeit'
+  hpPct: [number, number]
+  /** Side A's technique uses, for mastery. */
+  techUses: Record<string, number>
+}
+
 export interface BattleSetup {
   a: Monster
   b: Monster
@@ -24,9 +32,14 @@ export interface BattleSetup {
   aControl: 'player' | 'ai'
   personalityA: Personality
   personalityB: Personality
+  habitB?: Habit
   timerSec: number
   /** Where Done goes. */
   origin: Screen
+  /** Side B's display name when it isn't the monster's own (a rival breeder). */
+  nameB?: string
+  /** A cup or Trial match: the result goes here and the card's button reads "Continue". Rematch is hidden. */
+  onFinished?: (r: BattleFinish) => void
 }
 
 export interface FighterView {
@@ -266,7 +279,8 @@ function stopLoop(): void {
 export function startBattle(s: BattleSetup, seed = freshSeed()): void {
   stopLoop()
   setup.value = s
-  battle = createBattle({ monster: s.a, control: s.aControl, personality: s.personalityA }, { monster: s.b, control: 'ai', personality: s.personalityB }, { seed, timerTicks: timerTicksFor(s.timerSec) })
+  battle = createBattle({ monster: s.a, control: s.aControl, personality: s.personalityA }, { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none' }, { seed, timerTicks: timerTicksFor(s.timerSec) })
+  if (s.nameB) battle.state.fighters[1].name = s.nameB
   pending = []
   inputs.length = 0
   effects.value = []
@@ -286,6 +300,25 @@ export function leaveBattle(): void {
   battle = null
   view.value = null
   effects.value = []
+}
+
+/** The finished battle's result for a cup or Trial (null while it is still running). */
+export function finishedResult(): BattleFinish | null {
+  if (!battle?.state.outcome) return null
+  const o = battle.state.outcome
+  return { winner: o.winner, how: o.how, hpPct: o.hpPct, techUses: { ...battle.state.fighters[0].techUses } }
+}
+
+/** Done on the result card: hand the result to whoever asked for the fight, or go back where we came from. */
+export function finishAndLeave(navigateTo: (s: Screen) => void): void {
+  const s = setup.value
+  const r = finishedResult()
+  leaveBattle()
+  if (s?.onFinished && r) {
+    s.onFinished(r)
+    return
+  }
+  if (s) navigateTo(s.origin)
 }
 
 function act(action: PlayerAction, side: Side = 0): void {

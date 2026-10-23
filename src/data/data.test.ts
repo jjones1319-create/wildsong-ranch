@@ -82,7 +82,7 @@ describe('traits, drills, foods, items, journeys', () => {
     expect(byCategory('toy')).toHaveLength(6)
     expect(byCategory('charm')).toHaveLength(6)
     expect(byCategory('fruit')).toHaveLength(2)
-    expect(byCategory('key')).toHaveLength(5)
+    expect(byCategory('key')).toHaveLength(10) // 5 unlock items + 5 Mentor's Charms
     expect(byCategory('sellable')).toHaveLength(4)
     expect(byCategory('catalyst')).toHaveLength(8)
   })

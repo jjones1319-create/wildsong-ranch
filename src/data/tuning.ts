@@ -358,11 +358,65 @@ export const SAVES = {
   backupReminderWeeks: 8,
 } as const
 
+/** §13 tournaments and ranks. */
+export const TOURNAMENT = {
+  points: { koWin: 4, win: 3, draw: 2, loss: 0 },
+  /** 1st, 2nd and 3rd place shares of the purse (percent). */
+  purseSplitPct: [100, 40, 20] as readonly number[],
+  perWinGoldPerGrade: 50,
+  /** Officials pay little: this × gradeIndex (E = 1). */
+  officialPursePerGrade: 500,
+  summit: { qualifierPerGrade: 1000, teamWin: 3000, perOwnWin: 1000, slots: ['D', 'C', 'B', 'A', 'S'] as readonly string[] },
+  gildedPrizePct: 115,
+  /** Entering a cup below your grade ("too easy"). */
+  tooEasy: { fame: -2, spoil: -2, fear: -2 },
+  /** After the whole event, by placing (§13). */
+  after: {
+    first: { fatigue: 25, stress: -35 },
+    podium: { fatigue: 30, stress: -28 },
+    rest: { fatigue: 38, stress: -18 },
+    lifespan: 1,
+    koFatigue: 10,
+    koLifespan: 2,
+  },
+  injury: { basePct: 5, fatigueDiv: 2, weeks: { min: 2, max: 4 }, lifespan: 2 },
+  /** Classic: a KO at this fatigue or more risks DIFFICULTY.koDeathPct. */
+  koDeathFatigueMin: 80,
+  fame: {
+    cupWin: { E: 2, D: 3, C: 4, B: 5, A: 5, S: 6 } as Record<string, number>,
+    officialWin: { E: 5, D: 6, C: 7, B: 8, A: 9, S: 10 } as Record<string, number>,
+    crownWin: 10,
+    legendWin: 15,
+    noPodium: -1,
+    regalBonus: 5,
+  },
+  /** Top-3 finishers: `stats` random stats, each by a random amount in the grade's range; ±1 by battle like. */
+  growth: { stats: 3, range: { E: [1, 5], D: [2, 6], C: [2, 8], B: [3, 9], A: [4, 11], S: [5, 13] } as Record<string, readonly [number, number]>, battleLike: 1 },
+  itemPrizes: { lowSweets: 3, highGrandSweets: 2, highSheetPct: 30 },
+  /** Rank 1 → 6 from the first Official win at each of these grades; the Crowns raise 7 → 10. */
+  rank: { officialGrades: ['E', 'D', 'C', 'B', 'A'] as readonly string[], crownBase: 6, max: 10 },
+  /** Rivals: each eligible one joins a cup with this chance, at most this many per cup. */
+  rivals: { chancePct: 50, maxPerCup: 2 },
+  /** New Year Open and the open-grade cups generate opponents at your grade ±1. */
+  openSpread: 1,
+} as const
+
+/** CONTENT §10 Corin Hale scales with you. */
+export const RIVALS = { corinScalePct: 105, corinAggressiveFrom: 'A' as const } as const
+
+/** §10.4 the Signature technique. */
+export const SIGNATURE = { loyaltyMin: 60, glacierRequirement: 700 } as const
+
 /** §11 Journeys. */
 export const JOURNEY = {
   weeks: 4,
   cost: 2000,
   saleCost: 1000,
+  saleMonthsPerYear: 2,
+  /** The Trial at the end: a wild monster of your grade (+1 half the time); win = rewardPerGrade × gradeIndex. */
+  trial: { rewardPerGrade: 600, gradeUpPct: 50, rareDropPct: 10, rareDrop: 'moonfruit' },
+  /** Mentor bond: every `every` Journeys at a site, a Mentor's Charm lowers that site's requirements by `requirementDrop`. */
+  bond: { every: 8, requirementDrop: 50 },
   fatiguePerWeek: 18,
   stressPerWeek: 7,
   thresholds: [10, 20, 30, 40] as readonly number[],

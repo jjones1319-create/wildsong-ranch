@@ -1,5 +1,7 @@
-import type { Personality, Stats, TraitId } from '../../data/types.ts'
+import type { Habit, Personality, Stats, TraitId } from '../../data/types.ts'
 import type { Monster } from '../monster.ts'
+
+export type { Habit }
 
 /**
  * GAME_DESIGN §12: the battle's data model. Everything is integer fixed-point so a battle replays the same
@@ -9,8 +11,6 @@ import type { Monster } from '../monster.ts'
 
 export type Side = 0 | 1
 export type Control = 'ai' | 'player'
-/** Readable habits arrive with the rivals (M5); `none` for now. */
-export type Habit = 'none'
 
 export interface FighterSetup {
   monster: Monster
@@ -104,6 +104,8 @@ export interface FighterState {
   ramArmed: boolean
   dragonheartUsed: boolean
   blessedAcc: number
+  /** Habits: "opens Far" is satisfied after the first technique. */
+  habitDone: boolean
   /* AI */
   aiCooldown: number
   aiTargetBand: number

@@ -83,6 +83,11 @@ export const PERSONALITY_LABELS = {
 
 export const BAND_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far', 5: 'Out of range' } as const
 
+/** §13 formats (CONTENT §9). */
+export const FORMAT_LABELS = { RR4: 'Round robin of 4', RR6: 'Round robin of 6', Elim4: 'Elimination of 4', Elim8: 'Elimination of 8', '1v1': 'Single match', Relay: 'Team relay' } as const
+
+export const EVENT_KIND_LABELS = { cup: 'Cup', official: 'Official', crown: 'Crown', legend: 'Legend Cup', open: 'Open', summitQualifier: 'Qualifier', summit: 'Summit', rival: 'Rival match', masquerade: 'Invitational' } as const
+
 export const FAMILY_LABELS = { Basic: 'Basic', Hit: 'Hit', Heavy: 'Heavy', Wither: 'Wither', Sharp: 'Sharp', Special: 'Special', Chain: 'Chain', Signature: 'Signature' } as const
 
 export const RANGE_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far' } as const

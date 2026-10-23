@@ -9,7 +9,7 @@ import { Confirm, Sheet, Toggle } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { navigate } from '../../router.ts'
 import { settings, updateSettings } from '../../store/appStore.ts'
-import { assistText, dash, effects, forfeit, leaveBattle, move, pushOpponent, rematch, resultLine, setPaused, setSpeed, setup, shake, skipToEnd, speed, tapTechnique, toggleAuto, view, type FighterView } from '../../store/battleStore.ts'
+import { assistText, dash, effects, finishAndLeave, forfeit, leaveBattle, move, pushOpponent, rematch, resultLine, setPaused, setSpeed, setup, shake, skipToEnd, speed, tapTechnique, toggleAuto, view, type FighterView } from '../../store/battleStore.ts'
 
 const t = UI_TEXT.battle
 const ARENA_SPAN = BATTLE.arena.halfWidth * 2
@@ -292,20 +292,15 @@ export function BattleScreen() {
                 </tr>
               </tbody>
             </table>
-            <p class="muted small center">{t.result.exhibition}</p>
+            {!s.onFinished && <p class="muted small center">{t.result.exhibition}</p>}
             <div class="row">
-              <button type="button" class="btn btn--half" onClick={rematch}>
-                {t.result.rematch}
-              </button>
-              <button
-                type="button"
-                class="btn btn--primary btn--half"
-                onClick={() => {
-                  leaveBattle()
-                  navigate(s.origin)
-                }}
-              >
-                {t.result.done}
+              {!s.onFinished && (
+                <button type="button" class="btn btn--half" onClick={rematch}>
+                  {t.result.rematch}
+                </button>
+              )}
+              <button type="button" class="btn btn--primary btn--half" onClick={() => finishAndLeave(navigate)}>
+                {s.onFinished ? t.result.continue : t.result.done}
               </button>
             </div>
           </div>

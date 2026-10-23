@@ -28,6 +28,13 @@ export const SCREENS = [
   'labVersus',
   'labBattleLab',
   'battle',
+  'tournament',
+  'tournamentPlay',
+  'tournamentResults',
+  'guild',
+  'mail',
+  'journey',
+  'creditsRoll',
   'settings',
 ] as const
 export type Screen = (typeof SCREENS)[number]
@@ -53,6 +60,13 @@ const SLUGS: Record<Screen, string> = {
   labVersus: 'lab/versus',
   labBattleLab: 'lab/battle-lab',
   battle: 'battle',
+  tournament: 'ranch/cups',
+  tournamentPlay: 'ranch/cup',
+  tournamentResults: 'ranch/cup/results',
+  guild: 'town/guild',
+  mail: 'town/mail',
+  journey: 'ranch/journey',
+  creditsRoll: 'credits-roll',
   settings: 'settings',
 }
 
@@ -78,6 +92,13 @@ const PARENT: Record<Screen, Screen | null> = {
   labVersus: 'lab',
   labBattleLab: 'lab',
   battle: 'labVersus',
+  tournament: 'ranch',
+  tournamentPlay: 'ranch',
+  tournamentResults: 'ranch',
+  guild: 'town',
+  mail: 'town',
+  journey: 'ranch',
+  creditsRoll: 'ranch',
   settings: 'title',
 }
 

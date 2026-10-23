@@ -106,6 +106,7 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     ramArmed: false,
     dragonheartUsed: false,
     blessedAcc: 0,
+    habitDone: false,
     aiCooldown: 0,
     aiTargetBand: 2,
     aiNextThink: 0,

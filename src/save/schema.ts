@@ -3,7 +3,8 @@ import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
 import { LAB, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
-import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, JOURNEY_SITE_IDS, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
+import { EVENT_BY_ID } from '../data/calendar.ts'
+import { BREED_IDS, DIFFICULTIES, DRILL_IDS, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, WEATHERS, type Speed, type TransparencyMode } from '../data/types.ts'
 import { clamp } from '../core/mathx.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
 import type { GameState } from '../core/state.ts'
@@ -199,6 +200,75 @@ const WeekActionSchema = v.fallback(
   null,
 )
 
+/* ---------- M5: tournaments, Guild, mail ---------- */
+
+const ParticipantSchema = v.object({
+  name: text('', 32),
+  monster: MonsterSchema,
+  personality: oneOf(PERSONALITIES, 'Steady'),
+  habit: oneOf(HABITS, 'none'),
+  rivalId: v.fallback(v.nullable(v.string()), null),
+  player: bool(false),
+})
+
+const MatchResultSchema = v.object({
+  winner: v.fallback(v.nullable(v.picklist([0, 1] as const)), null),
+  how: oneOf(['ko', 'time', 'forfeit', 'walkover'] as const, 'time'),
+  hpPct: v.fallback(v.tuple([int(0, 1000, 0), int(0, 1000, 0)]), [0, 0]),
+})
+
+const MatchSchema = v.object({
+  round: int(1, 10, 1),
+  a: int(0, 15, 0),
+  b: int(0, 15, 0),
+  result: v.fallback(v.nullable(MatchResultSchema), null),
+})
+
+const indexList = () => v.fallback(v.array(int(0, 15, 0)), [])
+
+/** A cup in progress. Strict on identity (event id, participants); anything else falls back. */
+const TournamentSchema = v.pipe(
+  v.object({
+    eventId: v.string(),
+    week: int(0, 1_000_000, 0),
+    seed: int(0, 4_294_967_295, 0),
+    mode: oneOf(['auto', 'manual'] as const, 'auto'),
+    participants: v.array(ParticipantSchema),
+    matches: v.fallback(v.array(MatchSchema), []),
+    koOut: indexList(),
+    eliminated: indexList(),
+    relayWins: int(0, 10, 0),
+    done: bool(false),
+    playerTechUses: v.optional(v.fallback(v.record(v.string(), int(0, 100_000, 0)), {})),
+  }),
+  v.check((t) => EVENT_BY_ID[t.eventId] !== undefined && t.participants.length >= 2, 'unknown tournament'),
+)
+
+const GuildSchema = v.fallback(
+  v.object({
+    officialsWon: v.fallback(v.array(v.picklist(TOURNAMENT_GRADES)), []),
+    crownsWon: v.fallback(v.array(v.string()), []),
+    legendWon: bool(false),
+    crownInvite: bool(false),
+    legendInvite: bool(false),
+    creditsRolled: bool(false),
+  }),
+  { officialsWon: [], crownsWon: [], legendWon: false, crownInvite: false, legendInvite: false, creditsRolled: false },
+)
+
+const MailSchema = v.object({
+  id: v.string(),
+  week: int(0, 1_000_000, 0),
+  kind: oneOf(['sale', 'crown', 'legend', 'promotion', 'rank', 'info'] as const, 'info'),
+  ref: text('', 64),
+  read: bool(false),
+})
+
+const JourneysBySiteSchema = v.fallback(
+  v.object({ 'iron-quarry': int(0, 100_000, 0), 'windrun-steppe': int(0, 100_000, 0), 'starfall-observatory': int(0, 100_000, 0), 'archers-glade': int(0, 100_000, 0), 'glacier-bastion': int(0, 100_000, 0) }),
+  { 'iron-quarry': 0, 'windrun-steppe': 0, 'starfall-observatory': 0, 'archers-glade': 0, 'glacier-bastion': 0 },
+)
+
 const CountersSchema = v.fallback(
   v.object({ sweetsEaten: int(0, 1_000_000_000, 0), sheetsLearned: int(0, 1_000_000_000, 0), drillsDone: int(0, 1_000_000_000, 0), restsTaken: int(0, 1_000_000_000, 0) }),
   { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 },
@@ -231,6 +301,14 @@ export const GameStateSchema = v.object({
   tipsSeen: v.fallback(v.array(v.string()), []),
   counters: CountersSchema,
   sandbox: bool(false),
+  tournament: v.fallback(v.nullable(TournamentSchema), null),
+  trial: v.fallback(v.nullable(v.object({ site: v.picklist(JOURNEY_SITE_IDS), pendingTechnique: v.fallback(v.nullable(v.string()), null) })), null),
+  guild: GuildSchema,
+  hallOfFame: v.fallback(v.array(v.fallback(v.nullable(v.object({ monster: MonsterSchema, week: int(0, 1_000_000, 0) })), null)), []),
+  mail: v.fallback(v.array(v.fallback(v.nullable(MailSchema), null)), []),
+  saleMonths: v.fallback(v.array(int(1, 12, 1)), []),
+  journeysBySite: JourneysBySiteSchema,
+  titles: v.fallback(v.array(v.string()), []),
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -403,6 +481,18 @@ function tidyGame(game: GameState): GameState {
   for (const id of Object.keys(game.inventory)) if (game.inventory[id]! <= 0) delete game.inventory[id]
   game.monsterHistory = tidyHistory(game.monsterHistory as (HistoryEntry | null)[])
   game.tipsSeen = [...new Set(game.tipsSeen)]
+  game.titles = [...new Set(game.titles)]
+  game.hallOfFame = (game.hallOfFame as (GameState['hallOfFame'][number] | null)[]).filter((h): h is GameState['hallOfFame'][number] => h !== null).map((h) => ({ monster: tidyMonster(h.monster), week: h.week }))
+  game.mail = (game.mail as (GameState['mail'][number] | null)[]).filter((m): m is GameState['mail'][number] => m !== null)
+  game.saleMonths = [...new Set(game.saleMonths)]
+  if (game.tournament) {
+    game.tournament.participants = game.tournament.participants.map((p) => ({ ...p, monster: tidyMonster(p.monster) }))
+    if (!game.tournament.participants[0]?.player) game.tournament = null
+  }
+  if (!game.monster || game.ended) {
+    game.tournament = null
+    game.trial = null
+  }
   // A request or a phase only makes sense with a living monster.
   if (!game.monster || game.ended) {
     game.pendingRequest = null

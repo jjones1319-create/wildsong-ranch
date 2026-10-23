@@ -1,5 +1,5 @@
 import { DIFFICULTY, ECONOMY } from '../data/tuning.ts'
-import type { Difficulty, DrillId, FoodId, JourneySiteId, Weather } from '../data/types.ts'
+import type { Difficulty, DrillId, FoodId, Habit, JourneySiteId, Personality, TournamentGrade, Weather } from '../data/types.ts'
 import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
@@ -44,6 +44,82 @@ export interface GameCounters {
   restsTaken: number
 }
 
+/* ---------- tournaments (§13) ---------- */
+
+export interface Participant {
+  name: string
+  monster: Monster
+  personality: Personality
+  habit: Habit
+  rivalId: string | null
+  player: boolean
+}
+
+export interface MatchResult {
+  /** 0 = participant `a`, 1 = participant `b`, null = draw. */
+  winner: 0 | 1 | null
+  how: 'ko' | 'time' | 'forfeit' | 'walkover'
+  hpPct: [number, number]
+}
+
+export interface MatchRecord {
+  round: number
+  a: number
+  b: number
+  result: MatchResult | null
+}
+
+export interface TournamentState {
+  eventId: string
+  /** The absolute week index the cup is held in. */
+  week: number
+  seed: number
+  mode: 'auto' | 'manual'
+  /** Participant 0 is the player. */
+  participants: Participant[]
+  matches: MatchRecord[]
+  /** Participants who were knocked out (they withdraw from their remaining matches). */
+  koOut: number[]
+  /** For elimination brackets: who is out. */
+  eliminated: number[]
+  /** For the Summit relay: the NPC teammates' results (wins for the Vale side). */
+  relayWins: number
+  done: boolean
+  /** Technique uses in the player's matches, for mastery at the end. */
+  playerTechUses?: Record<string, number>
+}
+
+export interface TrialState {
+  site: JourneySiteId
+  /** A technique earned in the last Journey week while the monster already knew 12 (the UI asks what to forget). */
+  pendingTechnique: string | null
+}
+
+export interface GuildState {
+  officialsWon: TournamentGrade[]
+  crownsWon: string[]
+  legendWon: boolean
+  crownInvite: boolean
+  legendInvite: boolean
+  creditsRolled: boolean
+}
+
+export interface HallEntry {
+  monster: Monster
+  week: number
+}
+
+export type MailKind = 'sale' | 'crown' | 'legend' | 'promotion' | 'rank' | 'info'
+
+export interface MailItem {
+  id: string
+  week: number
+  kind: MailKind
+  /** What it is about: a month number for sales, a grade for promotions, a rank number, an event id. */
+  ref: string
+  read: boolean
+}
+
 export interface GameState {
   /** Week index: 0 = Year 1, January, week 1. */
   week: number
@@ -75,6 +151,18 @@ export interface GameState {
   counters: GameCounters
   /** §19: set once any Sandbox tool was used on this ranch (shown as a badge; never limits anything). */
   sandbox: boolean
+  /** The cup being played this week (M5). */
+  tournament: TournamentState | null
+  /** A Journey's Trial waiting to be fought (M5). */
+  trial: TrialState | null
+  guild: GuildState
+  hallOfFame: HallEntry[]
+  mail: MailItem[]
+  /** Months (1–12) with half-price Journeys this year. */
+  saleMonths: number[]
+  journeysBySite: Record<JourneySiteId, number>
+  /** CONTENT §14 titles earned on this ranch. */
+  titles: string[]
 }
 
 export interface NewGameOptions {
@@ -88,6 +176,14 @@ export interface NewGameOptions {
 
 export function zeroCounters(): GameCounters {
   return { sweetsEaten: 0, sheetsLearned: 0, drillsDone: 0, restsTaken: 0 }
+}
+
+export function emptyGuild(): GuildState {
+  return { officialsWon: [], crownsWon: [], legendWon: false, crownInvite: false, legendInvite: false, creditsRolled: false }
+}
+
+export function zeroJourneys(): Record<JourneySiteId, number> {
+  return { 'iron-quarry': 0, 'windrun-steppe': 0, 'starfall-observatory': 0, 'archers-glade': 0, 'glacier-bastion': 0 }
 }
 
 export function createGameState(opts: NewGameOptions = {}): GameState {
@@ -114,5 +210,13 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     tipsSeen: [],
     counters: zeroCounters(),
     sandbox: false,
+    tournament: null,
+    trial: null,
+    guild: emptyGuild(),
+    hallOfFame: [],
+    mail: [],
+    saleMonths: [],
+    journeysBySite: zeroJourneys(),
+    titles: [],
   }
 }

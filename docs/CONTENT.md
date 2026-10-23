@@ -778,6 +778,7 @@ There's **no limit** on how many items you use or buy (GAME_DESIGN §8). Life fr
 | Amber Charm | Catalyst | found | Fusion: baby lifespan +20 weeks |
 | Lineage Seal | Catalyst | 5,000G (rank 5+) | Fusion: doubles the first parent's main-breed weight |
 | Vigil Lantern · Stormglass · Shard Mask · Brass Blueprint · Wyrm Scale | Key item | event | Unlocks (§11) |
+| Oduya's Charm · Lark's Charm · Ilsabet's Charm · Teo's Charm · Brask's Charm | Key item | mentor bond (every 8 Journeys at that site) | Lowers that mentor's technique requirements by 50, for good (GAME_DESIGN §11) |
 | Old Coin · Silver Locket · Ruby Chip · Starstone | Sellable | sell 300 / 800 / 2,000 / 6,000G | Expedition loot |
 
 ---

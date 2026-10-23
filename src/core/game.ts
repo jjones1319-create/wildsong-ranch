@@ -1,16 +1,22 @@
+import { EVENT_BY_ID } from '../data/calendar.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
+import { DIFFICULTY, JOURNEY, TOURNAMENT } from '../data/tuning.ts'
 import type { FoodId, StatKey } from '../data/types.ts'
 import { availability } from './aging.ts'
-import { isMonthStart } from './calendar.ts'
+import type { BattleResult } from './battle/types.ts'
+import { WEEKS_PER_YEAR, dateOf, isMonthStart } from './calendar.ts'
+import { addItems, type UseItemResult } from './items.ts'
+import { bondCharmId, rollSaleMonths, signatureAtPrime, trialOpponent, trialReward, type JourneyWeekResult } from './journey.ts'
 import { finishEdit, pushHistory } from './lab.ts'
-import type { Monster } from './monster.ts'
+import { clamp } from './mathx.ts'
+import { addCondition, type Monster } from './monster.ts'
 import type { Rng } from './rng.ts'
-import type { UseItemResult } from './items.ts'
-import type { JourneyWeekResult } from './journey.ts'
 import { forgetTechnique, learnReplacing, learnTechnique, type LearnStatus } from './songbook.ts'
 import type { GameState, WeekAction } from './state.ts'
+import { applyTooEasy, createTournament, eventsForWeek, finishTournament, simulateRelay, type TournamentOutcome } from './tournament.ts'
 import type { DrillOutcome, DrillResult, Reaction } from './training.ts'
 import { endWeek, reactToDrill, resolveAction, respondToRequest, startWeek, useItemInGame, type WeekEvent } from './week.ts'
+import { RANGES } from '../data/tuning.ts'
 
 /**
  * The turn controller (M3): the thin, pure layer between the UI and the week loop in week.ts. It keeps the
@@ -35,9 +41,21 @@ export function needsFoodChoice(state: GameState): boolean {
 /** Runs the start-of-week phase once (food, charms, the request roll) and records the request in the save. */
 export function beginWeek(input: GameState, rng: Rng, food?: FoodId): StepResult {
   if (input.weekPhase !== 'start' || !input.monster || input.ended) return { state: input, events: [] }
-  const r = startWeek(input, rng, isMonthStart(input.week) ? food : undefined)
+  let pre = input
+  // January week 1: this year's two Journey sale months (§11), rolled before the week's own randomness.
+  if (input.week % WEEKS_PER_YEAR === 0) {
+    pre = structuredClone(input)
+    pre.saleMonths = rollSaleMonths(rng)
+  }
+  const r = startWeek(pre, rng, isMonthStart(pre.week) ? food : undefined)
   r.state.weekPhase = 'action'
   r.state.pendingRequest = r.request
+  // Sale mail arrives in week 1 of a sale month.
+  const d = dateOf(r.state.week)
+  if (isMonthStart(r.state.week) && r.state.saleMonths.includes(d.month)) {
+    r.state.mail.unshift({ id: `${r.state.week}-sale`, week: r.state.week, kind: 'sale', ref: String(d.month), read: false })
+    r.events.push({ kind: 'sale', month: d.month })
+  }
   return { state: r.state, events: r.events }
 }
 
@@ -81,7 +99,102 @@ export function chooseAction(input: GameState, action: WeekAction, rng: Rng): Ac
     state.counters.restsTaken += 1
     state.lastAction = { kind: 'rest' }
   }
+  // §11 mentor bond: count the Journey at its start; every 8th one at a site earns a Mentor's Charm.
+  const started = r.events.find((e) => e.kind === 'journeyStart')
+  if (started && started.kind === 'journeyStart') {
+    state.journeysBySite[started.site] += 1
+    if (state.journeysBySite[started.site] % JOURNEY.bond.every === 0) {
+      state.inventory = addItems(state.inventory, bondCharmId(started.site), 1)
+      events.push({ kind: 'bond', site: started.site })
+    }
+  }
+  // The Journey's end sets up the Trial (§11); a technique earned with a full list waits with it.
+  const finished = r.events.find((e) => e.kind === 'journeyDone')
+  if (finished && finished.kind === 'journeyDone') {
+    state.trial = { site: finished.progress.site, pendingTechnique: finished.progress.pendingTechnique }
+  }
   return { state, events, drill: r.drill, journey: r.journey }
+}
+
+/** A technique earned on a Journey while the monster knew 12: forget one and learn it, or let it go. */
+export function resolvePendingTechnique(input: GameState, forgetId: string | null): GameState {
+  const state = structuredClone(input)
+  const pending = state.journey?.pendingTechnique ?? state.trial?.pendingTechnique ?? null
+  if (!pending || !state.monster) return input
+  if (forgetId) {
+    const r = learnReplacing(state.monster, pending, forgetId)
+    if (r.status === 'learned') state.monster = r.monster
+  }
+  if (state.journey) state.journey.pendingTechnique = null
+  if (state.trial) state.trial.pendingTechnique = null
+  return state
+}
+
+/* ---------- the Trial (§11) ---------- */
+
+export function makeTrialOpponent(state: GameState, rng: Rng): Monster | null {
+  if (!state.trial || !state.monster) return null
+  return trialOpponent(state.monster, state.trial.site, rng)
+}
+
+export interface TrialOutcome {
+  won: boolean
+  reward: number
+  drop: string | null
+  koed: boolean
+  injuredWeeks: number
+}
+
+/** Applies the Trial's result: the purse, a rare drop, and injury rules on a KO. Clears the trial. */
+export function resolveTrial(input: GameState, result: { winner: 0 | 1 | null; how: string }, rng: Rng): { state: GameState; outcome: TrialOutcome } {
+  const state = structuredClone(input)
+  const m = state.monster!
+  const won = result.winner === 0
+  const koed = result.winner === 1 && result.how === 'ko'
+  const outcome: TrialOutcome = { won, reward: 0, drop: null, koed, injuredWeeks: 0 }
+  if (won) {
+    outcome.reward = Math.round((trialReward(m) * DIFFICULTY[state.difficulty].prizeMulPct) / 100)
+    state.money += outcome.reward
+    if (rng.chance(JOURNEY.trial.rareDropPct)) {
+      outcome.drop = JOURNEY.trial.rareDrop
+      state.inventory = addItems(state.inventory, JOURNEY.trial.rareDrop, 1)
+    }
+  }
+  if (koed && DIFFICULTY[state.difficulty].koInjury && rng.chance(TOURNAMENT.injury.basePct + Math.floor(m.fatigue / TOURNAMENT.injury.fatigueDiv))) {
+    outcome.injuredWeeks = rng.nextInt(TOURNAMENT.injury.weeks.min, TOURNAMENT.injury.weeks.max)
+    m.status.injuredWeeks = Math.max(m.status.injuredWeeks, outcome.injuredWeeks)
+    m.lifespanTotal = clamp(m.lifespanTotal - TOURNAMENT.injury.lifespan, RANGES.lifespan.min, RANGES.lifespan.max)
+  }
+  if (koed) m.fatigue = addCondition(m.fatigue, TOURNAMENT.after.koFatigue)
+  state.trial = null
+  return { state, outcome }
+}
+
+/* ---------- tournaments (§13) ---------- */
+
+/** Enters this week's cup: the week's action. Pays the "too easy" cost when entering below your grade. */
+export function enterTournament(input: GameState, eventId: string, mode: 'auto' | 'manual'): GameState {
+  if (input.weekPhase !== 'action' || !input.monster || input.ended || input.tournament) return input
+  const view = eventsForWeek(input).find((v) => v.event.id === eventId)
+  if (!view || !view.eligible) return input
+  let state = structuredClone(input)
+  if (state.pendingRequest) state = answerRequest(state, false).state
+  if (view.tooEasy) state = applyTooEasy(state)
+  state.tournament = createTournament(state, eventId, mode)
+  if (EVENT_BY_ID[eventId]!.kind === 'summit') state.tournament.relayWins = simulateRelay(state.tournament, state.monster!.grade)
+  return state
+}
+
+/** Applies the finished cup and returns its recap. */
+export function concludeTournament(input: GameState, rng: Rng): { state: GameState; outcome: TournamentOutcome } | null {
+  if (!input.tournament) return null
+  return finishTournament(input, rng)
+}
+
+/** The player's monster as it fights (technique filter) with its side's result mapped from the engine. */
+export function matchWinnerFor(r: BattleResult, playerIsSide0: boolean): 0 | 1 | null {
+  if (r.outcome.winner === null) return null
+  return (playerIsSide0 ? r.outcome.winner : 1 - r.outcome.winner) as 0 | 1
 }
 
 /** The praise / scold / skip prompt after a drill. */
@@ -95,10 +208,18 @@ export function finishWeek(input: GameState, rng: Rng): StepResult {
   const r = endWeek(input, rng)
   r.state.weekPhase = 'start'
   r.state.pendingRequest = null
+  // §10.4: a pure breed entering Prime with loyalty ≥ 60 learns its Signature.
+  if (r.events.some((e) => e.kind === 'aging' && e.event.kind === 'prime') && r.state.monster) {
+    const sig = signatureAtPrime(r.state.monster)
+    if (sig) {
+      r.state.monster = learnTechnique(r.state.monster, sig.id).monster
+      r.events.push({ kind: 'signature', tech: sig.id })
+    }
+  }
   return { state: r.state, events: r.events }
 }
 
-export type MenuReason = 'ended' | 'noMonster' | 'request' | 'journey' | 'missing' | 'clinic' | 'cocoon' | 'sick' | 'injured' | null
+export type MenuReason = 'ended' | 'noMonster' | 'request' | 'journey' | 'tournament' | 'trial' | 'missing' | 'clinic' | 'cocoon' | 'sick' | 'injured' | null
 
 export interface ActionMenu {
   train: boolean
@@ -116,6 +237,8 @@ export function actionMenu(state: GameState): ActionMenu {
   if (state.ended) return { ...none, reason: 'ended' }
   if (!state.monster) return { ...none, reason: 'noMonster' }
   if (state.weekPhase !== 'action') return none
+  if (state.tournament) return { ...none, reason: 'tournament' }
+  if (state.trial) return { ...none, reason: 'trial' }
   if (state.pendingRequest) return { ...none, reason: 'request' }
   if (state.journey) return { ...none, wait: true, reason: 'journey' }
   const a = availability(state.monster)
@@ -130,6 +253,15 @@ export interface UseResult {
   state: GameState
   used: number
   result: UseItemResult | null
+}
+
+/** Marks mail as read. */
+export function readMail(input: GameState, id: string): GameState {
+  const state = structuredClone(input)
+  const item = state.mail.find((m) => m.id === id)
+  if (!item || item.read) return input
+  item.read = true
+  return state
 }
 
 /** Uses items from the Bag (any number, any time the week is in play). */

@@ -1,12 +1,12 @@
 import { DRILL_BY_ID } from '../data/drills.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
-import { JOURNEY, UPGRADES } from '../data/tuning.ts'
+import { UPGRADES } from '../data/tuning.ts'
 import type { FoodId, FoodEffect, JourneySiteId, StatKey, Weather } from '../data/types.ts'
 import { availability, endOfWeekTick, type AgingEvent } from './aging.ts'
 import { dateOf, isMonthStart, isUpgradeOfferWeek, rollWeather, seasonOf } from './calendar.ts'
 import { applyMonthlyFood, type FoodRelation } from './food.ts'
 import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
-import { canEnterSite, isJourneyDone, isSiteOpen, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
+import { bondCharmId, canEnterSite, isJourneyDone, isSiteOpen, journeyCost, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
 import { addCondition } from './monster.ts'
 import type { Rng } from './rng.ts'
 import type { GameState, WeekAction } from './state.ts'
@@ -46,6 +46,11 @@ export type WeekEvent =
   | { kind: 'fees'; amount: number }
   | { kind: 'weather'; weather: Weather }
   | { kind: 'autosave' }
+  /** §10.4: the Signature learned at Prime (added by the controller). */
+  | { kind: 'signature'; tech: string }
+  /** §11 mentor bond: a Mentor's Charm was earned (added by the controller). */
+  | { kind: 'bond'; site: JourneySiteId }
+  | { kind: 'sale'; month: number }
 
 export interface StartWeekResult {
   state: GameState
@@ -149,7 +154,7 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
   }
 
   if (state.journey) {
-    const r = journeyWeek(m, state.journey, rng)
+    const r = journeyWeek(m, state.journey, rng, false, countOf(state.inventory, bondCharmId(state.journey.site)))
     state.monster = r.monster
     state.journey = r.progress
     events.push({ kind: 'journeyWeek', result: r.result })
@@ -197,9 +202,10 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
         events.push({ kind: 'invalidAction', reason: 'siteClosed' })
         return none
       }
-      state.money -= JOURNEY.cost
-      events.push({ kind: 'journeyStart', site: chosen.site, cost: JOURNEY.cost })
-      const r = journeyWeek(m, startJourney(chosen.site), rng)
+      const cost = journeyCost(state.saleMonths, month)
+      state.money -= cost
+      events.push({ kind: 'journeyStart', site: chosen.site, cost })
+      const r = journeyWeek(m, startJourney(chosen.site), rng, false, countOf(state.inventory, bondCharmId(chosen.site)))
       state.monster = r.monster
       state.journey = isJourneyDone(r.progress) ? null : r.progress
       events.push({ kind: 'journeyWeek', result: r.result })

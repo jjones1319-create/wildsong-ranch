@@ -1,5 +1,6 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
+import { JOURNEY_SITE_BY_ID } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { WREN } from '../data/text/wren.ts'
@@ -127,6 +128,25 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
         break
       case 'aging':
         lines.push(...agingLine(m, e.event))
+        break
+      case 'signature':
+        lines.push(say('signature', WREN.signature, m, { technique: TECHNIQUE_BY_ID[e.tech]?.name ?? e.tech }))
+        break
+      case 'bond':
+        lines.push(say('bond', WREN.mentorBond, m, { mentor: JOURNEY_SITE_BY_ID[e.site].mentor }))
+        break
+      case 'sale':
+        lines.push(say('sale', WREN.saleMonth, m))
+        break
+      case 'journeyStart':
+        lines.push(say('journeyStart', WREN.journeyStart, m, { site: JOURNEY_SITE_BY_ID[e.site].name, mentor: JOURNEY_SITE_BY_ID[e.site].mentor }))
+        break
+      case 'journeyWeek':
+        lines.push(say(e.result.success ? 'journeyGood' : 'journeyBad', e.result.success ? WREN.journeyGood : WREN.journeyBad, m, { week: e.result.week }))
+        if (e.result.technique) lines.push(say('journeyLearned', WREN.journeyLearned, m, { technique: TECHNIQUE_BY_ID[e.result.technique]?.name ?? e.result.technique }))
+        break
+      case 'journeyDone':
+        lines.push(say('journeyDone', WREN.journeyDone, m))
         break
       default:
         break
