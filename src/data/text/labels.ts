@@ -71,6 +71,18 @@ export const ITEM_CATEGORY_LABELS = {
   sellable: 'Treasures',
 } as const
 
+/** §12.10 CPU personalities, in plain words. */
+export const PERSONALITY_LABELS = {
+  Steady: { name: 'Steady', blurb: 'Attacks at an even pace and saves up for big moves.' },
+  Aggressive: { name: 'Aggressive', blurb: 'Attacks often, even when low on guts.' },
+  Cautious: { name: 'Cautious', blurb: 'Waits for a full tank, then hits hard.' },
+  Trickster: { name: 'Trickster', blurb: 'Loves Wither techniques that drain your guts.' },
+  Sniper: { name: 'Sniper', blurb: 'Keeps its distance and fights from Far.' },
+  Brawler: { name: 'Brawler', blurb: 'Walks straight in and fights up Close.' },
+} as const
+
+export const BAND_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far', 5: 'Out of range' } as const
+
 export const FAMILY_LABELS = { Basic: 'Basic', Hit: 'Hit', Heavy: 'Heavy', Wither: 'Wither', Sharp: 'Sharp', Special: 'Special', Chain: 'Chain', Signature: 'Signature' } as const
 
 export const RANGE_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far' } as const

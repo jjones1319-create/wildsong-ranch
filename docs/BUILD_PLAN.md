@@ -212,22 +212,32 @@
 
 **Goal:** fun, fair, readable fights, played manually or automatically.
 
-- [ ] `core/battle/`:
+- [x] `core/battle/`:
   - Engine (30 Hz fixed step, pure and deterministic), formulas (GAME_DESIGN §12.5), ranges, movement, dash, push, guts.
   - Distraction, specials, traits, effects, end conditions.
-- [ ] `core/battle/ai.ts`: personalities, the use-rate model, band targeting, push and dash, rookie guts reserve.
-- [ ] Battle traits for breeds 21–30 (`docs/NEW_MONSTERS.md` §2): Dragonheart (once per battle, +20 guts when HP first drops below 50 %), Unshakable (no push-back or stun; damage taken −10 %), Underdog (+8 hit and +10 % damage against a higher stat total), Blessed (regenerates 1 % max HP every 5 s), Moonlit (crit +6 %), Green Thumb (heal and drain +50 %), Eight Arms (multi-hit techniques get one extra hit), Statue Pose (after 2 s still, −30 % damage taken until it moves), Battering Ram (dashing costs no guts; the first technique after a dash +15 %), Chill (hits slow walking 25 % for 3 s).
-- [ ] Battle screen (SVG/DOM):
+- [x] `core/battle/ai.ts`: personalities, the use-rate model, band targeting, push and dash, rookie guts reserve.
+- [x] Battle traits for breeds 21–30 (`docs/NEW_MONSTERS.md` §2): Dragonheart (once per battle, +20 guts when HP first drops below 50 %), Unshakable (no push-back or stun; damage taken −10 %), Underdog (+8 hit and +10 % damage against a higher stat total), Blessed (regenerates 1 % max HP every 5 s), Moonlit (crit +6 %), Green Thumb (heal and drain +50 %), Eight Arms (multi-hit techniques get one extra hit), Statue Pose (after 2 s still, −30 % damage taken until it moves), Battering Ram (dashing costs no guts; the first technique after a dash +15 %), Chill (hits slow walking 25 % for 3 s).
+- [x] Battle screen (SVG/DOM):
   - Arena with the range ruler, HP and guts bars, technique columns, thumb pads, Assist.
   - Auto toggle, speed ×1/×2/×4, pause and forfeit, haptics, reduced motion.
   - Animations: lunge, projectiles, hit flash, crit, KO, victory.
-- [ ] **Versus** mode and **Battle Lab** (Web Worker) inside the Monster Lab.
-- [ ] Tests:
+- [x] **Versus** mode and **Battle Lab** (Web Worker) inside the Monster Lab.
+- [x] Tests:
   - Formula reference tables.
   - Determinism and replay (same seed and inputs → same log).
   - 1,000-seed fuzz test (no NaN, no negative HP, no stuck states).
   - **Balance tests** (GAME_DESIGN §26). Tune `tuning.ts`, technique values or traits until they pass.
-- [ ] Performance: steady 60 fps on a mid-range phone. No layout thrash; animate transforms only.
+- [x] Performance: steady 60 fps on a mid-range phone. No layout thrash; animate transforms only.
+
+**Detailed plan (written 2026-10-22, after the owner confirmed M3):** version `0.6.0`. No new dependencies. The engine is integer fixed-point (positions in centi-units, percentages in tenths, multipliers in thousandths, an integer square root for the damage ratio), so the same seed gives the same battle on every phone. Hits resolve on the tick a technique is fired; the attacker is then busy for the technique's animation. Tournaments, rivals, habits and after-battle effects stay in M5; Versus is exhibition only. The ranch's Battle button opens Versus with the active monster as side A (a spar).
+- [x] 1. `tuning.ts`: `BATTLE` (§12.1–12.6 numbers), `SPECIALS` (§12.7), `AI` (§12.10 and the personality table), `BATTLE_TRAITS` (CONTENT §2.1 and NEW_MONSTERS §2), `NPC` (§13 bands). `core/battle/types.ts`.
+- [x] 2. `core/battle/formulas.ts`: form, walk speed, bands, hit % with advantage and disadvantage, damage, crit, guts multipliers. Tests reproduce every §12.5 reference row and hit example.
+- [x] 3. `core/battle/traits.ts` (all 30) and `core/battle/specials.ts` (six specials, once per battle, one active at a time except Last Stand). Tests.
+- [x] 4. `core/battle/engine.ts`: create, step, run; inputs by tick; distraction; dash, push, stun, slow; technique effects (multi, heal, stun, drain, recoil, gutsSteal, push, lunge, jackpot); mastery bonuses; KO, time-up and forfeit. `core/battle/ai.ts`: cooldown, use rates, EV^1.5 choice, movement bands, push, dash, personalities, rookie reserve. `core/battle/stats.ts`: Battle Lab numbers and CSV. `core/npc.ts`: §13 stats and technique sets by grade or total. Tests: determinism, 1,000-seed fuzz, outcomes, AI attack counts, NPC bands, stats.
+- [x] 5. `core/battle/balance.test.ts`: §26 battle targets (mirror, +10 %, +30 %, breed pairs at equal totals, KO rates, attacks per match) at 200 seeds per cell; tune AI or trait numbers in `tuning.ts` if a target misses.
+- [x] 6. `ui/store/battleStore.ts` (setup, the frame loop at ×1/×2/×4 with interpolation, Skip, inputs, Auto, Assist, effects, result) and `ui/screens/battle/BattleScreen.tsx` (§12.11 layout: bars and timer, arena with mirrored monsters and the range ruler, floating numbers, four technique columns with live hit %, thumb pads, dash, Push, Auto, speed, pause and forfeit, the result card). `battle.css`. Haptics on Android; shake ≤ 4 px and none with reduced motion.
+- [x] 7. Monster Lab: `LabVersus.tsx` (pick A and B from the ranch, the Library or the Presets; You vs CPU or CPU vs CPU; CPU personality; 60 / 90 / 180 s) and `LabBattleLab.tsx` (A, B, 100 / 500 / 1,000 battles, seed, progress bar, results table, CSV download) with `workers/battleLab.worker.ts`. Router, app wiring, Lab buttons, the ranch's Battle button, an Assist setting, text.
+- [x] 8. `npm run verify`, a headless Chrome run of Versus and the Battle Lab, PROGRESS.md, commit `M4: battles`, push, confirm the deploy, phone checklist, stop.
 
 **Phone check:**
 1. Fight a CPU monster manually and on Auto.

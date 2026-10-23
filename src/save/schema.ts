@@ -278,6 +278,7 @@ const SETTINGS_DEFAULTS = {
   sound: true,
   music: true,
   haptics: true,
+  assist: true,
 }
 
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
@@ -291,6 +292,7 @@ export const SettingsSchema = v.fallback(
     sound: bool(true),
     music: bool(true),
     haptics: bool(true),
+    assist: bool(true),
   }),
   SETTINGS_DEFAULTS,
 )
@@ -348,6 +350,8 @@ export interface AppSettings {
   sound: boolean
   music: boolean
   haptics: boolean
+  /** §12.11 Assist: tapping a card in another column walks there and fires. */
+  assist: boolean
 }
 
 type Fail = { ok: false; error: string }

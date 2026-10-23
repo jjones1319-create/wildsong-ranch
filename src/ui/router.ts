@@ -25,6 +25,9 @@ export const SCREENS = [
   'labEdit',
   'labImport',
   'labExport',
+  'labVersus',
+  'labBattleLab',
+  'battle',
   'settings',
 ] as const
 export type Screen = (typeof SCREENS)[number]
@@ -47,6 +50,9 @@ const SLUGS: Record<Screen, string> = {
   labEdit: 'lab/edit',
   labImport: 'lab/import',
   labExport: 'lab/export',
+  labVersus: 'lab/versus',
+  labBattleLab: 'lab/battle-lab',
+  battle: 'battle',
   settings: 'settings',
 }
 
@@ -69,6 +75,9 @@ const PARENT: Record<Screen, Screen | null> = {
   labEdit: 'lab',
   labImport: 'lab',
   labExport: 'lab',
+  labVersus: 'lab',
+  labBattleLab: 'lab',
+  battle: 'labVersus',
   settings: 'title',
 }
 

@@ -69,6 +69,14 @@ export function LabLibraryScreen() {
           <p>{t.welcome}</p>
         </section>
       )}
+      <div class="row">
+        <button type="button" class="btn btn--half" onClick={() => navigate('labVersus')}>
+          ⚔ {t.versus}
+        </button>
+        <button type="button" class="btn btn--half" onClick={() => navigate('labBattleLab')}>
+          🧪 {t.battleLab}
+        </button>
+      </div>
       <Segmented options={TAB_OPTIONS} value={labTab.value} onChange={(v) => (labTab.value = v)} label={t.title} />
       <Chips options={BREED_OPTIONS} value={labBreedFilter.value} onChange={(v) => (labBreedFilter.value = v)} label={t.filterAll} />
       <Chips options={SORT_OPTIONS} value={labSort.value} onChange={(v) => (labSort.value = v)} />

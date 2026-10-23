@@ -40,6 +40,10 @@ export type TransparencyMode = (typeof TRANSPARENCY_MODES)[number]
 export const SPEEDS = ['normal', 'fast', 'instant'] as const
 export type Speed = (typeof SPEEDS)[number]
 
+/** GAME_DESIGN §12.10 CPU personalities. */
+export const PERSONALITIES = ['Steady', 'Aggressive', 'Cautious', 'Trickster', 'Sniper', 'Brawler'] as const
+export type Personality = (typeof PERSONALITIES)[number]
+
 export const BODY_PLANS = [
   'blob',
   'quadruped',

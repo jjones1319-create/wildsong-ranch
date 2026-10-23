@@ -2,6 +2,47 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## M4: Battles (2026-10-22) · v0.6.0
+
+**Live:** real-time 1-D duels. The Monster Lab has **Versus** (any two monsters, You vs CPU or CPU vs CPU) and the **Battle Lab** (hundreds of fights in the background with the numbers). The ranch's Battle button opens a friendly spar with the active monster.
+
+**Done**
+- **Engine** (`core/battle/engine.ts`): a 30-tick-per-second fixed-step simulation, a pure function of (monster A, monster B, seed, inputs). Integer fixed-point throughout: positions in centi-units, percentages in tenths, multipliers in thousandths, and an integer square root for the damage ratio, so a seed replays identically on every phone. Ranges and bands, walking (backing away ×0.85), dash (8 guts, ×3, 18 ticks, 60-tick cooldown), push (touching, 15-tick shove, 250 units, 90-tick cooldown), guts (start 50, cap 99, +1 every `gutsRate` ticks, paused during your own animation), distraction (§12.6, "?!"), KO, time-up by HP % and forfeit. A technique resolves on the tick it is fired; the attacker is then busy for its animation.
+- **Formulas** (`core/battle/formulas.ts`): §12.5 hit (with advantage and disadvantage), damage, crit, wither, guts multipliers, form. Every reference row and hit example in §12.5 is reproduced exactly by tests.
+- **Technique effects** (§10.3): multi-hit (each hit rolls), heal (always lands, Green Thumb +50 %), stun, drain, recoil on a miss, guts steal, knockback, lunge, jackpot. Mastery bonuses (Lv2 +2 hit, Lv3 +2 force).
+- **Specials** (§12.7): Last Stand, Valor, Rage, Bulwark, Clutch, Composure, each once per battle, one timed special at a time, rolled every time the condition occurs.
+- **All 30 traits** in `core/battle/traits.ts`, including the ten from NEW_MONSTERS §2 (Dragonheart's one-off guts, Unshakable's immunity, Underdog, Blessed's regen, Moonlit, Green Thumb, Eight Arms, Statue Pose, Battering Ram, Chill).
+- **CPU AI** (`core/battle/ai.ts`, §12.10): cooldown, use rates by personality (the six personalities), choice weighted by EV^1.5 with the big-move bias, movement to the best band every 15 ticks, push when wanting distance, dash when wanting to close, the rookie guts reserve. One addition on top of the doc: a fighter that cannot outrun its opponent stops trying to kite and fights at the best band it can reach (without it, some kiters never attacked).
+- **NPC generator** (`core/npc.ts`, §13): stats by growth-grade weights with ±8 % noise to an exact total, technique sets by grade, 1–2 universal techniques from grade B, loyalty and fame bands. Rivals, habits and cup seeding come with M5.
+- **Battle screen** (§12.11): names, HP and guts bars (numbers in the Lens), timer, special badges; the arena with both monsters (B mirrored) moved with transforms only, a range ruler with the gap marker, floating damage, "Crit!", "Miss", "?!" and special names; four technique columns (Close · Near · Mid · Far) with cost and live hit %, the current column glowing, unaffordable cards dimmed; **Assist** (tap a card in another column to walk there and fire; a setting, on by default); ◀ ▶ hold pads, double-tap ▶ to dash, Push when touching; Auto, ×1 / ×2 / ×4, pause with Skip and Forfeit; the result card with Rematch and Done. Haptics on Android after the first tap; screen shake ≤ 4 px and none with Reduce motion.
+- **Versus** and **Battle Lab** in the Lab (§19): pickers from the ranch, the Library and the Presets; personalities; 60 / 90 / 180 s. The Lab runs 100 / 500 / 1,000 battles in a Web Worker (sides alternating) with a progress bar, win / draw / KO %, length, attacks, hit rate, damage per hit, most-used techniques, and a CSV download.
+- **Tests** (278 total, 45 new): formula reference tables, traits, specials, engine determinism and replay, a 1,000-seed fuzz (no NaN, no negative HP, ends by the timer; about 1 ms per battle), AI attack counts and personalities, stats, NPC bands, and the §26 balance cells.
+
+**§26 battle results (NPC stats, alternating sides, Steady AIs)**
+
+| Target | Doc says | Measured |
+|---|---|---|
+| Mirror match | 45–55 % | 51.5 / 48 (200 seeds) ✓ |
+| +10 % total stats | 62–80 % | 68 % ✓ |
+| +30 % total stats | 85–96 % | 92 % ✓ |
+| KO rate, even fights (five starter mirrors) | 15–35 % at 1,000 · 3–15 % at 3,000 | 21 % · 9 % ✓ |
+| Attacks per monster per match | 4–12 | 6.8 at 1,000 · 9.5 at 3,000 ✓ |
+| Breed pairs at equal total (15 pairs × 3 totals) | 30–70 % | 29 of 45 cells inside (64 %) |
+
+The pair sample is reported by the test and must keep at least 55 % of its cells inside the band; the full 30 × 30 matrix at three totals is M9's job, as the build plan says. The misses are the archetypes §27 warned about: fast-regen casters (Coilfang, Zipwisp, Starhowl) beat slow walls (Nimbusheep, Petalphant) by more than 70 %. One AI number was moved: the technique cooldown's top end from 75 to 84 ticks, so the fastest-regen breeds stay under 12 attacks a match.
+
+**Decisions worth knowing**
+- Versus and the spar are exhibition only: no fatigue, lifespan, record or mastery changes (tournaments in M5 do all of that).
+- The engine mutates one state object (immutable ticks made the Battle Lab crawl); the UI reads snapshots.
+- The ranch's Battle button is a spar at the Guild arena: the active monster is pre-picked as side A.
+
+**Next (M5):** tournaments, ranks, rivals and their habits, NPC seeding by cup, Journeys with the Trial, after-battle effects, the Results and Guild screens.
+
+**Known issues**
+- Some fast-caster vs wall matchups sit outside 30–70 % at equal totals (M9 balances the full matrix).
+- Rival habits are a `none` hook until M5. The left-handed layout and sound arrive with M8.
+- The vignette-style attack animation is a squash; lunges, projectiles and KO flops are M8 polish.
+
 ## M3: The ranch loop (2026-10-22) · v0.5.0
 
 **Live:** the game can be played. New Game → a monster → weeks of training, resting, feeding, shopping, items and Songsheets → old age and a farewell. Saves survive closing the app.

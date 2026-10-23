@@ -85,6 +85,7 @@ export function SettingsScreen() {
         <p class="field__hint">{TRANSPARENCY_LABELS[s.transparency].blurb}</p>
         <p class="field__label small">{t.speed}</p>
         <Segmented options={SPEEDS.map((v) => ({ value: v, label: SPEED_LABELS[v] }))} value={s.speed} onChange={(v) => void updateSettings({ speed: v })} label={t.speed} />
+        <Toggle label={t.assist} hint={t.assistHint} checked={s.assist} onChange={(v) => void updateSettings({ assist: v })} />
       </section>
 
       <section class="card">

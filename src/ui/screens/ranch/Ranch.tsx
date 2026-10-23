@@ -13,6 +13,7 @@ import { CalendarStrip, ConditionBars, TipCard } from '../../components/RanchBit
 import { navigate, navigateFrom } from '../../router.ts'
 import { settings, showToast } from '../../store/appStore.ts'
 import { dismissTip, flow, game, menu, openTrain, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
+import { versusSideA } from '../lab/LabVersus.tsx'
 import { DrillResult } from './DrillResult.tsx'
 import { FoodPrompt } from './FoodPrompt.tsx'
 import { RequestCard } from './RequestCard.tsx'
@@ -87,7 +88,14 @@ export function RanchScreen() {
           <button type="button" class="btn btn--soon" onClick={() => showToast(t.soonJourney)}>
             {t.actions.journey}
           </button>
-          <button type="button" class="btn btn--soon" onClick={() => showToast(t.soonBattle)}>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => {
+              versusSideA.value = { monster: structuredClone(m), source: 'active' }
+              navigateFrom('ranch', 'labVersus')
+            }}
+          >
             {t.actions.battle}
           </button>
           <button type="button" class="btn" onClick={() => navigate('town')}>

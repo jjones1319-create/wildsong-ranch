@@ -53,6 +53,12 @@ export const WREN = {
   farewell: "Thank you for everything, {name}. We'll take good care of your Heartstone.",
   farewellSoon: 'The Memorial and the Heartstones are still being built. For now, {name} rests here, remembered.',
   retire: '{name} is heading to the Elder Grove. Visit often!',
+  /** Battle (§12). */
+  battleWin: '{name} did it! What a fight!',
+  battleLoss: "Ouch. {name} gave it everything. We'll train and come back.",
+  battleDraw: 'Neither of them would budge. A draw!',
+  battleKo: '{name} is down for the count…',
+  distractedLines: ['{name} is chasing a butterfly?!', '{name} stopped to scratch. Now?!', '{name} is yawning. In a fight!', '{name} got distracted by a shiny pebble.'],
   /** Onboarding tips (§21). */
   tips: {
     welcome: "Welcome to {ranch}, {breeder}! I'm Wren. I'll help you look after {name}. One week at a time, one choice a week.",

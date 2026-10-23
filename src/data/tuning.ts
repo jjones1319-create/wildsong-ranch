@@ -404,6 +404,112 @@ export const REPORT = { tiredFatigue: 55, exhaustedFatigue: 75, stressed: 45, fr
 /** §6.4 style bands (spoil − fear), lower bound of each band from the top. */
 export const STYLE_BANDS = { doting: 80, fond: 50, gentle: 20, even: -19, firm: -49, strict: -79 } as const
 
+/** §12.1–§12.6 battle numbers. Positions are in units (the engine keeps centi-units); percentages here are plain. */
+export const BATTLE = {
+  ticksPerSecond: 30,
+  /** Match lengths offered in Versus (seconds); 60 is the tournament length. */
+  timersSec: [60, 90, 180] as readonly number[],
+  arena: { halfWidth: 600, bodyRadius: 50, startX: 200 },
+  /** Gap at which each band ends: Close 0–159, Near 160–309, Mid 310–479, Far 480–679, out of range from 680. */
+  bandEnds: [160, 310, 480, 680] as readonly number[],
+  bandCentres: [90, 235, 395, 580] as readonly number[],
+  walk: { base: 70, perSpd: 50, backPct: 85 },
+  dash: { cost: 8, speedMul: 3, maxTicks: 18, cooldown: 60, minGap: 160 },
+  push: { maxGap: 40, ticks: 15, distance: 250, cooldown: 90 },
+  guts: { start: 50, cap: 99 },
+  hit: { base: 50, min: 5, max: 95, skillDivisor: 15, gutsDivisor: 5 },
+  damage: { baseFlat: 70, basePerA: 180, ratioOffset: 150, ratioMin: 45, ratioMax: 190, kBase: 15, kPerRate: 3, kRateFrom: 6, gDefHalf: 2, rnd: { min: 95, max: 105 }, critMul: 150 },
+  crit: { fameCapGood: 10, fameDivGood: 10, fameCapBad: 5, fameDivBad: 20, stressCap: 10, stressDiv: 10 },
+  form: { pct: 20 },
+  distraction: { rollCooldown: 90, dawdleTicks: 60 },
+  /** The last ten seconds, for Clutch. */
+  clutchWindowTicks: 300,
+  /** Blessed: 1 % of max HP every 5 s. */
+  blessedEveryTicks: 150,
+  /** Statue Pose: still for 2 s. */
+  statueTicks: 60,
+  /** Chill: 3 s of slower walking. */
+  chillTicks: 90,
+} as const
+
+/** §12.7 specials: trigger numbers and effects. Durations are in ticks (8 s). */
+export const SPECIALS = {
+  durationTicks: 240,
+  lastStand: { cap: 35, gutsDiv: 10, loyaltyDiv: 5, defDiv: 100 },
+  valor: { natureMin: 20, hpPctMax: 30, cap: 50, natureDiv: 2, dealtPct: 150 },
+  rage: { natureMax: -20, cap: 50, witherDiv: 4, natureDiv: 3, witherPct: 150, regenPct: 140 },
+  bulwark: { hitsInRow: 3, div: 3, takenPct: 70, regenPct: 140, dealtPct: 60 },
+  clutch: { div: 2, critMul: 2 },
+  composure: { streak: 4, div: 3, costPct: 70, takenPct: 150 },
+} as const
+
+/** §12.10 CPU AI. Rates are per tick as thousandths of `rate/30`; the table lists the doc's rates ×100. */
+export const AI = {
+  /** The doc says 30–75; the top end was raised a little so the fastest-regen breeds stay under 12 attacks a match (§26). */
+  cooldown: { min: 30, max: 84 },
+  thinkEveryTicks: 15,
+  stayPct: 75,
+  secondBestPct: 20,
+  pushFromBand: 3,
+  dash: { bandsCloser: 2, gutsMin: 30, pctPerTick: 2 },
+  affordSlack: 15,
+  bigCost: 35,
+  bigGuts: 70,
+  gutsSplit: 50,
+  rookieReserve: 45,
+  /** EV = hit · (damage % of max HP + witherWeight · wither) + sharpWeight · sharp (weights ×100). */
+  ev: { witherWeight: 35, sharpWeight: 5 },
+  /** A band preference is a multiplier (×100) on that band's score. */
+  personalities: {
+    Steady: { useLow: 60, useHigh: 140, bigBias: 160, witherBias: 100, farBias: 100, closeBias: 100 },
+    Aggressive: { useLow: 90, useHigh: 170, bigBias: 120, witherBias: 100, farBias: 100, closeBias: 100 },
+    Cautious: { useLow: 20, useHigh: 100, bigBias: 220, witherBias: 100, farBias: 100, closeBias: 100 },
+    Trickster: { useLow: 60, useHigh: 140, bigBias: 160, witherBias: 150, farBias: 100, closeBias: 100 },
+    Sniper: { useLow: 50, useHigh: 130, bigBias: 160, witherBias: 100, farBias: 150, closeBias: 100 },
+    Brawler: { useLow: 80, useHigh: 160, bigBias: 180, witherBias: 100, farBias: 100, closeBias: 150 },
+  },
+} as const
+
+/** CONTENT §2.1 and NEW_MONSTERS §2: the battle traits' numbers (percentages unless noted). */
+export const BATTLE_TRAITS = {
+  nimbleSpd: 50,
+  heavyHitterPct: 115,
+  fortifiedPct: 80,
+  glowHit: 6,
+  enGardeHit: 8,
+  hotBlooded: { hpPctMax: 50, pct: 115 },
+  tailwindPct: 120,
+  mothDustCritPct: 50,
+  etherealWitherPct: 70,
+  liveWire: { gutsBelow: 30, regenPct: 125 },
+  reflective: { chancePct: 15, pct: 30 },
+  hardShellPct: 85,
+  regalCritCapBonus: 5,
+  dragonheart: { hpPctBelow: 50, guts: 20 },
+  unshakablePct: 90,
+  underdog: { hit: 8, pct: 110 },
+  blessedPct: 1,
+  moonlitCrit: 6,
+  greenThumbPct: 150,
+  eightArmsExtraHits: 1,
+  statuePosePct: 70,
+  batteringRamPct: 115,
+  chillPct: 75,
+} as const
+
+/** §13 generated opponents, by tournament grade (Crown and Legend arrive with M5 but the bands are listed). */
+export const NPC = {
+  totals: { E: [520, 800], D: [800, 1150], C: [1150, 1550], B: [1550, 2000], A: [2000, 2450], S: [2450, 2900], Crown: [2900, 3300], Legend: [3500, 3800] } as Record<string, readonly [number, number]>,
+  loyalty: { E: [50, 65], D: [55, 70], C: [60, 75], B: [65, 80], A: [70, 85], S: [80, 95], Crown: [85, 95], Legend: [95, 95] } as Record<string, readonly [number, number]>,
+  fame: { E: [5, 15], D: [10, 25], C: [20, 35], B: [30, 50], A: [45, 65], S: [60, 80], Crown: [75, 90], Legend: [100, 100] } as Record<string, readonly [number, number]>,
+  /** Stat weight = weightBase/100 + gf. */
+  weightBase: 60,
+  noisePct: 8,
+  chainChancePct: 50,
+  universalFrom: 'B' as const,
+  universal: { min: 1, max: 2 },
+} as const
+
 /** §12.6 loyalty → distraction chance (used by battle in M4; listed here so every number is in one place). */
 export const DISTRACTION_POINTS: readonly (readonly [number, number])[] = [
   [0, 45],

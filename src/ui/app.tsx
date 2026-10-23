@@ -6,7 +6,10 @@ import { CreditsScreen } from './screens/Credits.tsx'
 import { FarewellScreen } from './screens/Farewell.tsx'
 import { LabCreateScreen } from './screens/lab/LabCreate.tsx'
 import { LabEditorScreen } from './screens/lab/LabEditor.tsx'
+import { BattleScreen } from './screens/battle/BattleScreen.tsx'
+import { LabBattleLabScreen } from './screens/lab/LabBattleLab.tsx'
 import { LabExportScreen } from './screens/lab/LabExport.tsx'
+import { LabVersusScreen } from './screens/lab/LabVersus.tsx'
 import { LabImportScreen } from './screens/lab/LabImport.tsx'
 import { LabLibraryScreen } from './screens/lab/LabLibrary.tsx'
 import { LabViewScreen } from './screens/lab/LabView.tsx'
@@ -67,6 +70,12 @@ function Current({ current }: { current: Screen }) {
       return <LabImportScreen />
     case 'labExport':
       return <LabExportScreen />
+    case 'labVersus':
+      return <LabVersusScreen />
+    case 'labBattleLab':
+      return <LabBattleLabScreen />
+    case 'battle':
+      return <BattleScreen />
     case 'lab':
       return <LabLibraryScreen />
   }
