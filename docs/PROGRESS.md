@@ -2,6 +2,24 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Odd Jobs: Echo Stones (2026-10-24) · v1.2.0
+
+**Live:** Town → Odd Jobs is now Basil's board. It lists Turnip Sort and the new Echo Stones; each job pays once per in-game week on its own, and a free Practice button replays any job for fun with no pay. Echo Stones is a memory game: four glowing stones (Ember, Leaf, Tide, Star, each with a colour, a shape and a note) hum a tune that grows by one note a round and quickens every four rounds; you tap it back. One slip ends the game, with one second chance a game. Your monster sits beside the stones, hums along, is pleased when you get a round right and jumps when you slip.
+
+**Done**
+- **Schema v8** with a migration and tests: `echoStonesWeek` (the last paid week) and `echoStonesBest` (the best round, practice included). Settings gain `oddJobsRelaxed` (the Relaxed speed option, with a fallback, no version change).
+- **Rules** (`core/echoStones.ts`, numbers in `ECHO_STONES`): a seeded melody (never three of a stone in a row), the tempo (−12 % every 4 rounds down to a floor; Relaxed ×1.5), 15G a round up to 150G, round 8 takes 5 stress off the monster (paid plays), the best round, and the title **Perfect Pitch** at round 15 (awarded at once, practice or paid). Turnip Sort keeps its own weekly stamp.
+- **The board** (`screens/town/OddJobs.tsx`): job cards with status, best round, Play for pay and Practice; Turnip Sort moved to its own component with a practice mode (no pay).
+- **Echo Stones screen** (`screens/town/EchoStones.tsx`): a 2 × 2 grid of big stones drawn in code (an ellipse with a sheen and a circle / square / triangle / diamond), a glow that flashes as the note sounds so it works with the sound off, four new bell notes through the existing ZzFX player (C4 E4 G4 C5), haptic ticks on Android through a shared `lib/haptics.ts`, screen-reader labels per stone and a live status line, the monster portrait with ♪ / ♥ / ?! reactions, the retry card, the result card (rounds, pay, calm, new best, title), and a Relaxed toggle remembered in Settings. Reduce motion stops the glow transitions through the global rule.
+- **Tests** (10 new): seeded melodies, the tempo, pay and its cap, the weekly limit (independent of Turnip Sort), stress relief, practice paying nothing but keeping the best, the title once, the v7 → v8 migration with garbage clamped; the title table grows to 21.
+- **Docs:** CONTENT §13 (the board, Echo Stones, Practice) and §14 (Perfect Pitch), GAME_DESIGN §9.
+
+**Decisions worth knowing**
+- Best scores and the Perfect Pitch title count in practice too (they are skill, not money); pay and the stress relief are weekly rewards.
+- The melody is dealt from the game's RNG like Turnip Sort's chute, so a game is part of the save's story and a test can replay it.
+
+**Next:** the owner's phone pass. Then the LATER list.
+
 ## M10: Smarter battles (2026-10-24) · v1.1.0
 
 **Live:** battles are played by a new brain. Monsters plan a range, move to it with small footsies, back off, dash in with a reason, push when they are stuck together or cornered, use techniques from every range they own, save guts for big moves, punish an opponent that is out of guts, play safe when ahead late and go all in when behind. Your Auto mode is an Expert with a style (Balanced, Aggressive, Defensive), a little icon over each monster can show what it is thinking, and the arena camera keeps both monsters fully on screen, zooming in when they close and out when they spread, with fence posts at the walls. Spec: `docs/BATTLE_AI_V2.md`.

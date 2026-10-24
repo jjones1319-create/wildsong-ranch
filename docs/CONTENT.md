@@ -947,13 +947,23 @@ Store these as hashes of the normalized phrase. A secret variant gets a unique p
 
 ---
 
-## 13. Odd Jobs (weekly mini-game, free action)
+## 13. Odd Jobs (weekly mini-games, free actions)
+
+Town → Odd Jobs is Basil's board. It lists every job with its status. **Each job pays once per in-game week**, independently of the others, and a free **Practice** mode replays any job for fun with no pay (and no stress relief); best scores count either way.
 
 **Turnip Sort:**
 - Produce slides down a chute for 30 seconds. Swipe turnips into the left basket and rocks into the right.
 - Scoring: +5G per correct item, −5G per wrong one, capped at 150G per week.
-- Difficulty ramps up. One play per in-game week.
+- Difficulty ramps up. One paid play per in-game week.
 - **Big buttons, no fail state.**
+
+**Echo Stones** (a memory game):
+- Four glowing echo stones in a 2 × 2 grid, each with its own colour, shape and note: Ember (red, circle, C4), Leaf (green, square, E4), Tide (blue, triangle, G4), Star (gold, diamond, C5). They flash as they play, so it works with the sound off.
+- The stones play a melody and you repeat it by tapping. Each round adds one note (never three of the same stone in a row), and the tempo quickens by 12 % every 4 rounds, down to a floor. A **Relaxed speed** option (remembered in Settings) stretches the tempo by half; pay is the same.
+- One mistake ends the game, but you get **one free retry** of the current round per game.
+- Your monster sits beside the stones and reacts: it hums along while the stones play, is pleased when you get a round right, and jumps when you slip.
+- Rewards (numbers in `tuning.ts` `ECHO_STONES`): 15G per round cleared, up to 150G a week; reaching round 8 also lowers the monster's stress by 5 (paid plays); the best round is saved, and reaching round 15 earns the title **Perfect Pitch**.
+- Phone and accessibility: big stones (≥ 44 px, most of the width), shapes as well as colours, each stone labelled for screen readers, haptic ticks on Android, and Reduce motion stops the glow transitions.
 
 ---
 
@@ -977,6 +987,7 @@ Store these as hashes of the normalized phrase. A secret variant gets a unique p
 | Songbook Scholar | Own all 24 universal Songsheets |
 | Sweet Tooth | Feed 100 Stat Sweets |
 | Storm Chaser · Silk & Moonlight · Unmasked · Tinkerer · Treasure Hunter | Unlock chains (§11) |
+| Perfect Pitch | Reach round 15 of Echo Stones (§13) |
 
 ---
 

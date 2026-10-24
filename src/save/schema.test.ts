@@ -215,6 +215,31 @@ describe('schema version 6 (M7)', () => {
 })
 
 describe('schema version 7 (M8)', () => {
+  it('migrates a version-7 save by adding the Echo Stones week and best round', () => {
+    const game = structuredClone(createGameState({ monster: makeMonster() })) as unknown as Record<string, unknown>
+    delete game.echoStonesWeek
+    delete game.echoStonesBest
+    const v7 = { schemaVersion: 7, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.1.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v7))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game.echoStonesWeek).toBeNull()
+    expect(up.game.echoStonesBest).toBe(0)
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.echoStonesBest).toBe(0)
+    // Garbage is clamped, never fatal (a nonsense week becomes week 0, like oddJobWeek).
+    const bad = JSON.parse(JSON.stringify(up)) as { game: Record<string, unknown> }
+    bad.game.echoStonesBest = -4
+    bad.game.echoStonesWeek = 'tuesday'
+    const r2 = validateSave(bad)
+    expect(r2.ok).toBe(true)
+    if (r2.ok) {
+      expect(r2.save.game.echoStonesBest).toBe(0)
+      expect(r2.save.game.echoStonesWeek).toBe(0)
+    }
+  })
+
   it('migrates a version-6 save by adding an empty planner, and caps a long queue', () => {
     const game = createGameState({ monster: makeMonster() }) as unknown as Record<string, unknown>
     delete game.planner

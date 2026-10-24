@@ -18,8 +18,9 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  * - v6 (M7): the expedition in progress, the pending event, unlock-chain progress, the Journal's records, the
  *   Odd Job week, the Lantern Garden visit month, and the Encyclopedia's collected looks.
  * - v7 (M8): the planner queue (`planner`: queue, log, last stop).
+ * - v8 (Odd Jobs: Echo Stones): the Echo Stones week and best round (`echoStonesWeek`, `echoStonesBest`).
  */
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 type RawSave = Record<string, unknown>
 
@@ -114,6 +115,13 @@ const MIGRATIONS: Record<number, Migration> = {
     const next: RawSave = { ...raw, schemaVersion: 7 }
     if (raw.kind === 'save' && isRawSave(raw.game)) {
       next.game = { planner: { queue: [], log: [], lastStop: null }, ...raw.game }
+    }
+    return next
+  },
+  7: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 8 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      next.game = { echoStonesWeek: null, echoStonesBest: 0, ...raw.game }
     }
     return next
   },

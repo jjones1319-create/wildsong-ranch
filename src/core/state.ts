@@ -361,8 +361,11 @@ export interface GameState {
   pendingEvent: PendingEvent | null
   unlocks: UnlockProgress
   records: JournalRecords
-  /** The week index of the last Odd Job played (one per in-game week). */
+  /** The week index of the last paid Turnip Sort (one per in-game week). */
   oddJobWeek: number | null
+  /** The week index of the last paid Echo Stones game, and the best round reached (practice counts). */
+  echoStonesWeek: number | null
+  echoStonesBest: number
   /** The absolute month the Lantern Garden was last visited (once a month). */
   memorialVisitMonth: number | null
   /** §3 the planner queue (M8). */
@@ -443,6 +446,8 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     unlocks: emptyUnlocks(),
     records: zeroRecords(),
     oddJobWeek: null,
+    echoStonesWeek: null,
+    echoStonesBest: 0,
     memorialVisitMonth: null,
     planner: emptyPlanner(),
   }

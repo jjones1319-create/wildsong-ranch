@@ -11,8 +11,8 @@ function fresh(): GameState {
 }
 
 describe('titles (CONTENT §14)', () => {
-  it('lists the twenty titles of the table', () => {
-    expect(TITLE_IDS).toHaveLength(20)
+  it('lists the twenty-one titles of the table', () => {
+    expect(TITLE_IDS).toHaveLength(21)
     expect(missingTitles(fresh())).toEqual([])
   })
 

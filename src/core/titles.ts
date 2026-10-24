@@ -31,6 +31,7 @@ export const TITLE_IDS = [
   'Unmasked',
   'Tinkerer',
   'Treasure Hunter',
+  'Perfect Pitch',
 ] as const
 export type TitleId = (typeof TITLE_IDS)[number]
 
@@ -67,6 +68,7 @@ export function missingTitles(state: GameState): TitleId[] {
   if (!has('Songbook Scholar') && UNIVERSAL_TECHNIQUES.every((t) => state.songbook.includes(t.id))) out.push('Songbook Scholar')
   if (!has('Sweet Tooth') && state.counters.sweetsEaten >= TITLES.sweetTooth) out.push('Sweet Tooth')
   for (const [title, breed] of UNLOCK_TITLES) if (!has(title) && state.unlocked.includes(breed)) out.push(title)
+  if (!has('Perfect Pitch') && state.echoStonesBest >= TITLES.perfectPitchRound) out.push('Perfect Pitch')
   return out
 }
 

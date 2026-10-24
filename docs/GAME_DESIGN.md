@@ -427,7 +427,7 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 
 - **Start:** 3,000G. The first monster is free: a Guild gift from the Market, or a Shrine creation.
 - **Income:** tournament purses (§13), chore pay (§6.1), Journey trial bonuses, selling expedition loot, and Odd Jobs.
-- **Odd Jobs** (SHOULD): a 30-second mini-game, once per in-game week, as a free action, paying 0–150G by score (CONTENT §13).
+- **Odd Jobs** (SHOULD): Basil's board of short mini-games (Turnip Sort, Echo Stones), each paying once per in-game week as a free action, 0–150G by score; a free Practice mode replays any job without pay (CONTENT §13).
 - **Expenses:** food, items (including Stat Sweets and Songsheets), Journeys (2,000G; 1,000G in sale months), Fusion fee (1,000G), Encyclopedia re-creation (500G), ranch upgrades, breakdown fees.
 - **Money is the only limit on items**, so purses matter. Officials still pay little; regular cups and item prizes are where the rewards are.
 - **No game over for money.** If money would go below 0 the Guild Loan covers it, up to 5,000G with a 10% fee. While in debt, 50% of every prize goes to repayment and only food and Recovery items can be bought.

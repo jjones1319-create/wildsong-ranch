@@ -476,6 +476,8 @@ export const GameStateSchema = v.object({
   unlocks: UnlocksSchema,
   records: JournalRecordsSchema,
   oddJobWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  echoStonesWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  echoStonesBest: int(0, 10_000, 0),
   memorialVisitMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   planner: PlannerSchema,
 })
@@ -537,6 +539,7 @@ const SETTINGS_DEFAULTS = {
   lastBackupWeek: null as number | null,
   backupSnoozedAt: 0,
   backupBaselineAt: 0,
+  oddJobsRelaxed: false,
 }
 
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
@@ -562,6 +565,7 @@ export const SettingsSchema = v.fallback(
     lastBackupWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
     backupSnoozedAt: stamp(),
     backupBaselineAt: stamp(),
+    oddJobsRelaxed: bool(false),
   }),
   SETTINGS_DEFAULTS,
 )
@@ -639,6 +643,8 @@ export interface AppSettings {
   backupSnoozedAt: number
   /** When the app first ran on this phone: the day rule counts from here until the first backup. */
   backupBaselineAt: number
+  /** CONTENT §13 Echo Stones: the Relaxed speed option. */
+  oddJobsRelaxed: boolean
 }
 
 type Fail = { ok: false; error: string }

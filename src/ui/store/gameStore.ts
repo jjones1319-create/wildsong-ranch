@@ -39,6 +39,7 @@ import { randomPhrase as randomPhraseCore } from '../../core/shrine.ts'
 import { answerEvent as answerEventCore } from '../../core/game.ts'
 import { sellItem as sellItemCore, type SellRefusal } from '../../core/economy.ts'
 import { detour as detourCore, moveTo as moveToCore, retreat as retreatCore, turnBack as turnBackCore, type MoveRefusal } from '../../core/expedition.ts'
+import { applyEchoStones as applyEchoStonesCore, type EchoResult } from '../../core/echoStones.ts'
 import { applyOddJob as applyOddJobCore } from '../../core/oddJobs.ts'
 import { clearQueue, queueStep, removeStep, runPlannedWeek, startRun } from '../../core/planner.ts'
 import type { PlannerStep } from '../../core/state.ts'
@@ -719,4 +720,13 @@ export function finishOddJob(correct: number, wrong: number): number {
   const r = applyOddJobCore(g, correct, wrong)
   if (!r.refused) commit(r.state)
   return r.pay
+}
+
+/** Settles an Echo Stones game (CONTENT §13): pay, the week, stress relief, the best round and the title. */
+export function finishEchoStones(roundsCleared: number, practice: boolean): EchoResult | null {
+  const g = game.value
+  if (!g) return null
+  const r = applyEchoStonesCore(g, roundsCleared, practice)
+  if (!r.refused) commit(r.state)
+  return r
 }

@@ -843,8 +843,33 @@ export const ODD_JOBS = {
   items: 80,
 } as const
 
+/** CONTENT §13 Odd Jobs: Echo Stones (the memory game). Times are milliseconds. */
+export const ECHO_STONES = {
+  stones: 4,
+  payPerRound: 15,
+  cap: 150,
+  /** Reaching this round takes this much stress off the monster (paid plays only). */
+  stressRound: 8,
+  stressRelief: 5,
+  /** One free retry of the current round per game. */
+  retries: 1,
+  /** The melody prepared per game; reaching the end wins the game. */
+  maxRounds: 40,
+  /**
+   * How long a stone glows and the pause after it in round 1; every `speedUpEvery` rounds both shrink by
+   * `speedUpPct`, never under the minimums. Relaxed stretches both by `relaxedPct`.
+   */
+  tempo: { noteMs: 520, gapMs: 200, speedUpEvery: 4, speedUpPct: 12, minNoteMs: 240, minGapMs: 90, relaxedPct: 150 },
+  /** The pause before the melody plays, and before the next round starts. */
+  leadMs: 650,
+  /** How long a tapped stone glows. */
+  tapMs: 220,
+  /** The four stones' notes (Hz): C4 E4 G4 C5. */
+  noteHz: [262, 330, 392, 523] as readonly number[],
+} as const
+
 /** CONTENT §14 title thresholds that are not tournament placings. */
-export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30 } as const
+export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30, perfectPitchRound: 15 } as const
 
 /** §23 audio. Volumes are percentages. */
 export const AUDIO = {

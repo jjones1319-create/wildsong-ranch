@@ -44,7 +44,7 @@ describe('the Journal (§18)', () => {
     expect(variants.filter((v) => v.owned).map((v) => v.secret.id)).toEqual(['songheart-puddlepup'])
     g.titles = ['First Ribbon']
     const titles = titleRows(g)
-    expect(titles).toHaveLength(20)
+    expect(titles).toHaveLength(21)
     expect(titles.filter((t) => t.earned).map((t) => t.id)).toEqual(['First Ribbon'])
   })
 })
