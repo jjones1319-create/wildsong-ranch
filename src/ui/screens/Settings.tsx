@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { audioReady, playSfx, unlockAudio } from '../../audio/player.ts'
 import { canSwitchDifficulty } from '../../core/game.ts'
 import { fill } from '../../data/text/format.ts'
-import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
+import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, FX_INTENSITY_LABELS, FX_QUALITY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { TEXT_SIZES, UI } from '../../data/tuning.ts'
-import { AUTO_STYLES, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
+import { AUTO_STYLES, FX_INTENSITIES, FX_QUALITY_SETTINGS, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
 import { readImport } from '../../save/exportImport.ts'
 import type { AnyValidation, AppSettings } from '../../save/schema.ts'
 import { Confirm, Segmented, Sheet, Toggle, TopBar } from '../components/Controls.tsx'
@@ -16,6 +16,7 @@ import { canShare, readFileText } from '../lib/files.ts'
 import { isStandalone } from '../lib/platform.ts'
 import { goBack } from '../router.ts'
 import { librarySource, persisted, settings, showToast, updateSettings } from '../store/appStore.ts'
+import { currentTier, reduceMotionNow, setFxIntensity, setFxQuality } from '../store/fxStore.ts'
 import { game, loadSaveFile, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek } from '../store/gameStore.ts'
 import { applyUpdate, checkForUpdate, lastCheck, needRefresh } from '../store/updateStore.ts'
 
@@ -121,6 +122,19 @@ export function SettingsScreen() {
         <Segmented options={TEXT_SIZES.map((n) => ({ value: String(n), label: fill(t.textSizeOption, { n }) }))} value={String(s.textSize)} onChange={(v) => void updateSettings({ textSize: Number(v) })} label={t.textSize} />
         <Toggle label={t.reduceMotion} hint={t.reduceMotionHint} checked={s.reduceMotion} onChange={(v) => void updateSettings({ reduceMotion: v })} />
         <Toggle label={t.editedBadge} hint={t.editedBadgeHint} checked={s.showEditedBadge} onChange={(v) => void updateSettings({ showEditedBadge: v })} />
+      </section>
+
+      <section class="card">
+        <p class="field__label">{t.sections.graphics}</p>
+        <p class="field__label small">{t.fxQuality}</p>
+        <Segmented options={FX_QUALITY_SETTINGS.map((q) => ({ value: q, label: FX_QUALITY_LABELS[q].name }))} value={s.fxQuality} onChange={setFxQuality} label={t.fxQuality} />
+        <p class="field__hint">
+          {FX_QUALITY_LABELS[s.fxQuality].blurb} {s.fxQuality === 'auto' && s.fxAutoTier ? fill(t.fxQualityAuto, { tier: FX_QUALITY_LABELS[currentTier()].name }) : ''}
+        </p>
+        <p class="field__label small">{t.fxIntensity}</p>
+        <Segmented options={FX_INTENSITIES.map((i) => ({ value: i, label: FX_INTENSITY_LABELS[i].name }))} value={s.fxIntensity} onChange={setFxIntensity} label={t.fxIntensity} />
+        <p class="field__hint">{reduceMotionNow() ? t.fxReducedNote : FX_INTENSITY_LABELS[s.fxIntensity].blurb}</p>
+        <p class="field__hint">{t.fxLabLink}</p>
       </section>
 
       <section class="card">

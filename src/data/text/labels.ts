@@ -82,6 +82,34 @@ export const PERSONALITY_LABELS = {
 } as const
 
 /** §12.11 (M10) the player's Auto styles. */
+/** V1 effects: Settings → Graphics. */
+export const FX_QUALITY_LABELS = {
+  auto: { name: 'Auto', blurb: 'Picks the best your phone can draw smoothly, and remembers it.' },
+  ultra: { name: 'Ultra', blurb: 'Every particle, every shimmer. For the newest phones.' },
+  high: { name: 'High', blurb: 'Plenty of sparks, the glow kept, the heavy shimmer off.' },
+  lite: { name: 'Lite', blurb: 'The essentials only. Easy on older phones and the battery.' },
+} as const
+
+export const FX_INTENSITY_LABELS = {
+  cozy: { name: 'Cozy', blurb: 'Gentle. No shaking, no flashing, soft sparks.' },
+  standard: { name: 'Standard', blurb: 'A little shake and a quick flash on the big hits.' },
+  flashy: { name: 'Flashy', blurb: 'Big hits stop the world for a blink, shake the arena and flash.' },
+} as const
+
+export const ELEMENT_LABELS = {
+  Fire: 'Fire',
+  Water: 'Water',
+  Ice: 'Ice',
+  Lightning: 'Lightning',
+  Wind: 'Wind',
+  Earth: 'Earth',
+  Nature: 'Nature',
+  Light: 'Light',
+  Dark: 'Dark',
+  Sound: 'Sound',
+  Physical: 'Physical',
+} as const
+
 export const AUTO_STYLE_LABELS = {
   balanced: { name: 'Balanced', blurb: 'Plays the odds: steps in when the trade is good, steps back when it is not.' },
   aggressive: { name: 'Aggressive', blurb: 'Closes in and spends guts on big hits.' },

@@ -813,59 +813,6 @@
   }
 }
 
-.fighter__sparkle {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.fighter__sparkle i {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  color: var(--accent);
-  font-style: normal;
-  font-size: 1.2em;
-  text-shadow: 0 0 6px rgb(242 181 68 / 0.9);
-  animation: ws-sparkle 650ms ease-out both;
-}
-
-.fighter__sparkle i:nth-child(1) {
-  --sx: -40px;
-  --sy: -36px;
-}
-
-.fighter__sparkle i:nth-child(2) {
-  --sx: 36px;
-  --sy: -44px;
-}
-
-.fighter__sparkle i:nth-child(3) {
-  --sx: -48px;
-  --sy: 10px;
-}
-
-.fighter__sparkle i:nth-child(4) {
-  --sx: 44px;
-  --sy: 12px;
-}
-
-.fighter__sparkle i:nth-child(5) {
-  --sx: 0;
-  --sy: -56px;
-}
-
-@keyframes ws-sparkle {
-  0% {
-    transform: translate(0, 0) scale(0.4);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--sx), var(--sy)) scale(1.1) rotate(90deg);
-    opacity: 0;
-  }
-}
-
 .fighter--ko .fighter__art {
   animation: ws-ko 800ms ease-in both;
   transform-origin: 50% 100%;
@@ -913,40 +860,6 @@
   }
   60% {
     transform: translateX(-50%) translateY(0) scale(1.05, 0.95);
-  }
-}
-
-/* A shot starts at its monster's world x (--wx), --wy units above the floor, and flies --dx (set from the camera). */
-.shot {
-  position: absolute;
-  left: calc(50% + (var(--wx, 0) - var(--cam-x)) * var(--cam-px) * 1px);
-  bottom: calc(40px + var(--wy, 100) * var(--cam-px) * 1px);
-  width: 18px;
-  height: 18px;
-  margin: 0 0 -9px -9px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, #fff7d6 0%, var(--accent) 45%, rgb(242 181 68 / 0) 75%);
-  box-shadow: 0 0 12px rgb(242 181 68 / 0.8);
-  animation: ws-shot 300ms linear both;
-  pointer-events: none;
-}
-
-.shot--b {
-  background: radial-gradient(circle at 40% 40%, #e6f4ff 0%, #6fb4e8 45%, rgb(111 180 232 / 0) 75%);
-  box-shadow: 0 0 12px rgb(111 180 232 / 0.8);
-}
-
-@keyframes ws-shot {
-  0% {
-    transform: translateX(0) scale(0.6);
-    opacity: 0.2;
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(var(--dx)) scale(1.1);
-    opacity: 0;
   }
 }
 

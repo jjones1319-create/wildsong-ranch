@@ -6,7 +6,7 @@ import { AUDIO, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES 
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -540,6 +540,9 @@ const SETTINGS_DEFAULTS = {
   backupSnoozedAt: 0,
   backupBaselineAt: 0,
   oddJobsRelaxed: false,
+  fxQuality: 'auto' as FxQualitySetting,
+  fxIntensity: 'standard' as FxIntensity,
+  fxAutoTier: null as FxTier | null,
 }
 
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
@@ -566,6 +569,9 @@ export const SettingsSchema = v.fallback(
     backupSnoozedAt: stamp(),
     backupBaselineAt: stamp(),
     oddJobsRelaxed: bool(false),
+    fxQuality: oneOf(FX_QUALITY_SETTINGS, 'auto'),
+    fxIntensity: oneOf(FX_INTENSITIES, 'standard'),
+    fxAutoTier: v.fallback(v.nullable(v.picklist(FX_TIERS)), null),
   }),
   SETTINGS_DEFAULTS,
 )
@@ -635,6 +641,10 @@ export interface AppSettings {
   sfxVolume: number
   /** §24 the left-handed battle layout. */
   leftHanded: boolean
+  /** V1 effects (VISUAL_V1_EFFECTS §6): Quality (auto picks a tier and remembers it in fxAutoTier) and Intensity. */
+  fxQuality: FxQualitySetting
+  fxIntensity: FxIntensity
+  fxAutoTier: FxTier | null
   /** When "Later" was tapped on the install-help card (0 = never). */
   installHelpDismissedAt: number
   /** §20 backup reminders: the last export (real time and in-game week) and the last snooze. */

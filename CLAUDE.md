@@ -43,6 +43,12 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - **Tests:** Vitest. Playwright only in M9, and only if the machine supports it.
 - **Node:** 24 LTS or newer; npm ≥ 11, so the lockfile works on GitHub's Linux runners.
 
+## Tools on the owner's PC
+- **Blender is installed** (Windows). Use it **headless only**: `blender -b --python <script.py>` (find the exe under `C:\Program Files\Blender Foundation\Blender <ver>\blender.exe`; check `blender --version` first and pin scripts to that API). Never ask the owner to click around inside Blender.
+- Good uses: baking fire / smoke / water flipbooks (Mantaflow) to sprite sheets when a shader isn't enough; rendering stylized props, rocks and scene pieces to PNG with alpha; mask passes for recoloring. Keep baked assets small (WebP/AVIF, ≤ 1 MB each, lazy-loaded) and log them in `CREDITS.md` as our own renders.
+- Not for now: 3D monsters (the 3D pilot is skipped per `docs/VISUAL_UPGRADE_PLAN.md` §0). Code-drawn SVG monsters stay the source of truth.
+- Scripts live in `tools/blender/`; outputs go to `public/baked/`. Always render a contact-sheet PNG and look at it before using a bake.
+
 ## Commands
 - `npm run dev`: local dev at http://localhost:5173/wildsong-ranch/. Add `-- --host` to test on a phone over Wi-Fi; service workers and storage persistence won't work over plain LAN http.
 - `npm test` (Vitest) · `npm run typecheck` · `npm run build` · `npm run preview`

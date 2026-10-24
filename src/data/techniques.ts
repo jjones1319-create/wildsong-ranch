@@ -1,3 +1,4 @@
+import { elementOf } from './elements.ts'
 import type { BreedId, Family, JourneySiteId, Songsheet, StatKey, TechEffect, TechLearn, TechRange, TechType, Technique, TournamentGrade } from './types.ts'
 
 /**
@@ -438,8 +439,9 @@ function parseUniversalSheet(text: string): Songsheet {
 
 function buildBreedTechnique(breed: BreedId, row: Row): Technique {
   const [name, family, type, range, cost, force, hit, wither, sharp, anim, effect, learn] = row
+  const id = `${breed}.${slugify(name)}`
   return {
-    id: `${breed}.${slugify(name)}`,
+    id,
     name,
     breed,
     family,
@@ -453,6 +455,7 @@ function buildBreedTechnique(breed: BreedId, row: Row): Technique {
     anim,
     effect: parseEffect(effect),
     learn: parseLearn(learn, breed),
+    element: elementOf({ name, breed, type }, id),
     subQuirk: learn.includes('sub-quirk'),
     sheet: BREED_SHEETS[family] ?? null,
   }
@@ -460,8 +463,9 @@ function buildBreedTechnique(breed: BreedId, row: Row): Technique {
 
 function buildUniversalTechnique(row: Row): Technique {
   const [name, family, type, range, cost, force, hit, wither, sharp, anim, effect, sheetText] = row
+  const id = `universal.${slugify(name)}`
   return {
-    id: `universal.${slugify(name)}`,
+    id,
     name,
     breed: 'universal',
     family,
@@ -475,6 +479,7 @@ function buildUniversalTechnique(row: Row): Technique {
     anim,
     effect: parseEffect(effect),
     learn: { kind: 'library' },
+    element: elementOf({ name, breed: 'universal', type }, id),
     subQuirk: false,
     sheet: parseUniversalSheet(sheetText),
   }

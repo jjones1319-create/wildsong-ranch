@@ -351,6 +351,51 @@ Spec: `docs/BATTLE_AI_V2.md` (owner-requested after v1.0). Version `1.1.0`, no s
 
 **Phone check:** BATTLE_AI_V2 §6.
 
+## Visual upgrade (V1–V5)
+
+Decided Oct 24, 2026 (`docs/VISUAL_UPGRADE_PLAN.md` §0): richer storybook vector, a Cozy / Standard / Flashy intensity setting, 5-second skippable cutaways with four outcome variants, order V1 → V3 → V2 → V4 → V5, no 3D pilot, painted backgrounds from ChatGPT from V4 on. Each milestone has its own spec file and its own phone check.
+
+### V1: Effects engine and arena staging
+
+Spec: `docs/VISUAL_V1_EFFECTS.md`. Version `1.3.0`, no save-schema change (the three Graphics settings have per-field fallbacks). The simulation is untouched.
+
+- [x] 1. Dependencies: `pixi.js` 8.22 and `pixi-filters` 6.1 (the two the spec allows); the WebGL renderer is imported directly so the WebGPU code stays out of the chunk (fx chunk about 134 KB gzipped plus 11 KB for Pixi's browser bits, under the 150 KB budget).
+- [x] 2. `FX` in `tuning.ts`: Quality budgets, the Intensity table, the Auto sample, the flash cap, every primitive's defaults.
+- [x] 3. Elements: `Element` on every `Technique`; `data/elements.ts` with the §5 rules (keyword categories in order, named exceptions, breed-only keywords, plain melee → Physical, breed defaults with INT / POW splits, `ELEMENT_OVERRIDES` for the owner's corrections); `scripts/element-table.ts` prints the table; `scripts/element-column.ts` writes the Element column into CONTENT §3 / §3.1 and NEW_MONSTERS §4; a test checks the docs match the data.
+- [x] 4. `src/fx/`: `FxLayer` (WebGL renderer, world / shapes / screen containers, the fx clock with playback speed, pause, hit-stop, idle sleep, hidden-tab pause, context loss), `camera` (world ↔ screen), `rng` (visual only), `pool`, `sim` (typed-array particles), `emitter` (two ParticleContainers over a Canvas-2D atlas), `textures` (16 procedural frames and a noise map), `elements` (the look per element), `quality` (tiers, Intensity, FlashGate, shake), `bus` (engine events → FxEvents), `recipes` (the default recipe per element per moment), `filters` (haze, shockwave, bloom, RGB split by tier).
+- [x] 5. The 18 primitives in `src/fx/primitives/`, one file each (`screen.ts` holds the four screen-space ones), the water sheet as a custom GLSL mesh shader, lightning from pure midpoint displacement.
+- [x] 6. `ui/battle/Arena.tsx`: the arena extracted from the battle screen (a stage wrapper that shakes, the world, the fx canvas, the floats layer, the impact-frame overlay, the hit-stop class, the camera loop feeding the layer); `battleStore` publishes FxEvents; the CSS shot, sparkle and shake are gone.
+- [x] 7. Settings → Graphics: Quality (Auto / Ultra / High / Lite; Auto measures the first battle and remembers) and Intensity (Cozy / Standard / Flashy); reduced motion forces Cozy; `fxStore`.
+- [x] 8. Monster Lab → Effects (`LabEffects.tsx`, `#lab/effects`): two preset monsters, every primitive × element, Random attack, Combo, Stress test, Clear, fps / particles / tier / intensity, the Quality and Intensity controls, Record 3 s in dev, `window.__fx` for Playwright.
+- [x] 9. Review: `e2e/fx-review.spec.ts` writes one contact sheet per element to `docs/fx-review/` (manual fx clock, two moments per primitive); looked at and tuned before shipping. `e2e/fx-lab.spec.ts` is the optional smoke test.
+- [x] 10. Tests: `fx/*.test.ts` (sim, pool, quality, flash gate, shake, bus, recipes, bolt geometry, camera), `data/elements.test.ts`, the settings schema; `npm run verify`; PROGRESS, GAME_DESIGN §21 / §22 / §24, CONTENT §3, NEW_MONSTERS §4, CREDITS; commit `V1: effects engine`, push, confirm the deploy, phone checklist (spec §11), stop.
+
+**Phone check:** VISUAL_V1_EFFECTS §11.
+
+### V3: Monster animation 2.0
+
+Rigs per body plan with named joints, a pose library (stand, sit, brace, crouch, lunge, cast, bite, slam, hover, hit, dazed, faint, victory hop, sleep, eat, shiver, flex) with squash-and-stretch and secondary motion, richer shading (gradients, rim light, contact shadow, subtle textures), eyes that track taps, a poses strip on the Monster Card, mood through body language on the ranch. Spec to come (`docs/VISUAL_V3_RIGS.md`).
+
+- [ ] Plan in plan mode at the start of the milestone.
+
+### V2: Visible attacks
+
+An attack recipe for every one of the 294 techniques (anticipation, effects, travel, impact, hit reaction, sound) built from the V1 primitives by family × element; bespoke 1–2 s cinematics for Signatures and Specials; hit reactions by body plan; KO flop with stars. Spec to come (`docs/VISUAL_V2_ATTACKS.md`).
+
+- [ ] Plan in plan mode at the start of the milestone.
+
+### V4: Cinematic drill cutaways
+
+Each of the 11 drills as a real 3–5 s skippable scene with the monster inside it and Success / Great / Cheat / Fail variants; Waterfall Stand first as the pilot; painted parallax layers from ChatGPT (prompts written by Claude), everything else in code. Spec to come (`docs/VISUAL_V4_DRILLS.md`).
+
+- [ ] Plan in plan mode at the start of the milestone.
+
+### V5: World polish
+
+Ranch, town, shrine and arena backdrops as painted parallax with weather, time of day and seasons; the Shrine awakening, tournament walk-ons, podium, Farewell and Signature moments as short cinematics. Spec to come (`docs/VISUAL_V5_WORLD.md`).
+
+- [ ] Plan in plan mode at the start of the milestone.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

@@ -34,6 +34,7 @@ const TournamentPlayScreen = lazyScreen(() => import('./screens/tournament/Tourn
 const TournamentResultsScreen = lazyScreen(() => import('./screens/tournament/TournamentResults.tsx'), 'TournamentResultsScreen')
 const LabCreateScreen = lazyScreen(() => import('./screens/lab/LabCreate.tsx'), 'LabCreateScreen')
 const LabBattleLabScreen = lazyScreen(() => import('./screens/lab/LabBattleLab.tsx'), 'LabBattleLabScreen')
+const LabEffectsScreen = lazyScreen(() => import('./screens/lab/LabEffects.tsx'), 'LabEffectsScreen')
 const LabExportScreen = lazyScreen(() => import('./screens/lab/LabExport.tsx'), 'LabExportScreen')
 const LabVersusScreen = lazyScreen(() => import('./screens/lab/LabVersus.tsx'), 'LabVersusScreen')
 const LabImportScreen = lazyScreen(() => import('./screens/lab/LabImport.tsx'), 'LabImportScreen')
@@ -97,6 +98,8 @@ function Current({ current }: { current: Screen }) {
       return <LabVersusScreen />
     case 'labBattleLab':
       return <LabBattleLabScreen />
+    case 'labEffects':
+      return <LabEffectsScreen />
     case 'battle':
       return <BattleScreen />
     case 'tournament':

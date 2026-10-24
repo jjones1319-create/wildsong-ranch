@@ -931,3 +931,63 @@ export const INSTALL = { dismissDays: 14 } as const
 
 /** §22 emotes: how long a bubble stays up (milliseconds). */
 export const EMOTE = { holdMs: 2400 } as const
+
+/**
+ * V1 effects engine (VISUAL_V1_EFFECTS §4, §6): every number the fx layer uses. World units are arena units
+ * (x −600…600; y = 0 on the floor, negative is up, so a monster's chest sits near y = −100); times are ms.
+ */
+export const FX = {
+  quality: {
+    tiers: ['ultra', 'high', 'lite'] as const,
+    budgets: {
+      ultra: { maxParticles: 2500, filters: 'all', resolutionCap: 2, lightningPasses: 3 },
+      high: { maxParticles: 1200, filters: 'some', resolutionCap: 1.5, lightningPasses: 2 },
+      lite: { maxParticles: 400, filters: 'none', resolutionCap: 1, lightningPasses: 1 },
+    },
+    /** Auto: sample this many frames of the first battle; drop one tier above dropOneMs, two above dropTwoMs. */
+    sampleFrames: 90,
+    dropOneMs: 18,
+    dropTwoMs: 28,
+    /** Auto starts at High on phones below these hints. */
+    highBelowMemoryGb: 4,
+    highBelowCores: 6,
+  },
+  intensity: {
+    cozy: { shakePx: 0, hitstopMs: 0, impactFrames: 'off', flashAlpha: 0, bloom: 'off', particles: 0.6 },
+    standard: { shakePx: 4, hitstopMs: 60, impactFrames: 'crits', flashAlpha: 0.2, bloom: 'low', particles: 1 },
+    flashy: { shakePx: 8, hitstopMs: 120, impactFrames: 'heavy', flashAlpha: 0.3, bloom: 'high', particles: 1.4 },
+  },
+  /** §24 photosensitivity: at most this many flashes a second, never brighter than this alpha. */
+  flash: { maxPerSecond: 3, maxAlpha: 0.3, defaultMs: 120 },
+  /** The fx clock never advances more than this per frame (a background tab coming back). */
+  maxFrameMs: 100,
+  /** The manual clock (review screenshots) advances in slices this long, like real frames. */
+  manualSliceMs: 16.7,
+  /** A hit worth at least this share of the target's max HP counts as heavy (impact frames at Flashy, bigger shake). */
+  heavyHitPct: 12,
+  /** The pool is sized to the Ultra cap; it never grows after warm-up. */
+  poolCapacity: 2500,
+  /** Defaults per primitive (element styles scale them). */
+  burst: { count: 26, speed: 340, spread: Math.PI * 2, gravity: 500, lifeMs: 680, size: 15 },
+  cone: { ratePerSec: 220, durationMs: 520, speed: 520, halfAngle: 0.4, lifeMs: 560, size: 24, drag: 0.92 },
+  trail: { ratePerSec: 160, lifeMs: 320, size: 15 },
+  projectile: { speedUnitsPerSec: 1500, arcHeight: 110, size: 42, minMs: 180 },
+  beam: { width: 16, durationMs: 240, jitter: 7, passes: 3 },
+  ring: { radius: 150, thickness: 12, durationMs: 460, groundSquash: 0.32 },
+  impact: { durationMs: 340, spikes: 8, spikeLength: 95, coreRadius: 18 },
+  splash: { drops: 34, speed: 440, gravity: 900, lifeMs: 760, rings: 2, size: 12 },
+  sheet: { width: 180, height: 300, durationMs: 950, scroll: 1.1, foam: 0.18 },
+  lightning: { levels: 5, jitter: 0.24, branchChance: 0.4, branchScale: 0.55, flickerFrames: 3, durationMs: 280, coreWidth: 3, glowWidth: 14 },
+  haze: { strength: 14, durationMs: 650, scroll: 0.35 },
+  glow: { radius: 130, pulseHz: 2.2, durationMs: 750, alpha: 0.55 },
+  debris: { count: 16, speed: 400, gravity: 1500, bounce: 0.45, lifeMs: 1000, size: 17 },
+  mist: { count: 9, lifeMs: 1500, drift: 45, size: 70, alpha: 0.28 },
+  shake: { durationMs: 280, hz: 26 },
+  impactFrame: { frames: 2 },
+  /** Idle: no render while nothing is live; this many ms of grace keep the loop warm between effects. */
+  idleGraceMs: 400,
+  /** The fps counter's smoothing (exponential moving average weight). */
+  fpsSmoothing: 0.08,
+  /** Stress test: how many effects fire at once. */
+  stressCount: 20,
+} as const

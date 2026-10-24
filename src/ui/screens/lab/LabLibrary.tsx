@@ -100,6 +100,9 @@ export function LabLibraryScreen() {
         <button type="button" class="btn btn--half" onClick={() => navigate('labBattleLab')}>
           🧪 {t.battleLab}
         </button>
+        <button type="button" class="btn btn--half" onClick={() => navigate('labEffects')}>
+          ✨ {t.effects}
+        </button>
       </div>
       <Segmented options={tabs} value={tab} onChange={(v) => (labTab.value = v)} label={t.title} />
       <Chips options={BREED_OPTIONS} value={labBreedFilter.value} onChange={(v) => (labBreedFilter.value = v)} label={t.filterAll} />

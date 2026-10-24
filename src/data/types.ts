@@ -23,6 +23,10 @@ export type TechRange = 1 | 2 | 3 | 4
 export const FAMILIES = ['Basic', 'Hit', 'Heavy', 'Wither', 'Sharp', 'Special', 'Chain', 'Signature'] as const
 export type Family = (typeof FAMILIES)[number]
 
+/** V1 (VISUAL_V1_EFFECTS §5): the look of a technique's effects. Presentation only; the rules never read it. */
+export const ELEMENTS = ['Fire', 'Water', 'Ice', 'Lightning', 'Wind', 'Earth', 'Nature', 'Light', 'Dark', 'Sound', 'Physical'] as const
+export type Element = (typeof ELEMENTS)[number]
+
 export const SEASONS = ['Winter', 'Spring', 'Summer', 'Autumn'] as const
 export type Season = (typeof SEASONS)[number]
 
@@ -55,6 +59,14 @@ export type AiTier = (typeof AI_TIERS)[number]
 /** §12.11 the player's Auto styles. */
 export const AUTO_STYLES = ['balanced', 'aggressive', 'defensive'] as const
 export type AutoStyle = (typeof AUTO_STYLES)[number]
+
+/** V1 effects: Settings → Graphics (VISUAL_V1_EFFECTS §6). */
+export const FX_QUALITY_SETTINGS = ['auto', 'ultra', 'high', 'lite'] as const
+export type FxQualitySetting = (typeof FX_QUALITY_SETTINGS)[number]
+export const FX_TIERS = ['ultra', 'high', 'lite'] as const
+export type FxTier = (typeof FX_TIERS)[number]
+export const FX_INTENSITIES = ['cozy', 'standard', 'flashy'] as const
+export type FxIntensity = (typeof FX_INTENSITIES)[number]
 
 /** §12.11 "Show battle thinking": what a monster's plan icon can say. */
 export const PLAN_MODES = ['distance', 'saving', 'pressing', 'pushing', 'punish', 'safe', 'cornered'] as const
@@ -374,6 +386,8 @@ export interface Technique {
   anim: number
   effect: TechEffect | null
   learn: TechLearn
+  /** V1: the element its effects are drawn with (CONTENT §3 Element column). */
+  element: Element
   /** The Basic technique a breed passes on when it is the sub-breed. */
   subQuirk: boolean
   /** The Songsheet that teaches it, or null when none exists (breed Basics). */

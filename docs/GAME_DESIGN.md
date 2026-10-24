@@ -1195,7 +1195,7 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 | Monster Card | Portrait · stats with grade letters and bars (plus "from sweets") · life bar · condition (per transparency) · techniques (by range, mastery) · personality · records · lineage tree · buttons: **Use item** · **Learn technique** (Songbook) · **✏️ Edit** |
 | Bag | Every item with its quantity, by category · Use ×1 / ×5 / ×10 / Max |
 | Songbook | Every Songsheet you own, filtered to what the current monster can learn (★ good fit) · Learn · Forget and relearn |
-| Town | Shop (food, care items, Stat Sweets bakery counter, charms) · Market · Shrine · Lab (Freezer, Fusion, Memorial, Heartstones, Monster Lab) · Guild (this month's events, rank, Hall of Fame, **Guild Library** of Songsheets) · Mailbox · Odd Jobs |
+| Town | Shop (food, care items, Stat Sweets bakery counter, charms) · Market · Shrine · Lab (Freezer, Fusion, Memorial, Heartstones, Monster Lab; the Monster Lab also holds Versus, the Battle Lab and the **Effects Lab** (V1)) · Guild (this month's events, rank, Hall of Fame, **Guild Library** of Songsheets) · Mailbox · Odd Jobs |
 | Tournament entry | This week's events: eligible ones first, ineligible ones with the reason · rules · purse · opponent cards (breed, grade, personality tag) · Auto/Manual choice |
 | Battle | §12.11 |
 | Results | Placings, purse, fame, stat gains, condition changes, lifespan cost (Lens) |
@@ -1204,7 +1204,7 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 | Shrine | Two inputs · Awaken button · stone animation · result card (with **Edit before you start**) · Randomize · Encyclopedia · Sleeping Stones |
 | Fusion | Two Freezer pickers · catalyst · outcome odds · compatibility comment · confirm |
 | Journal | Encyclopedia, Sleeping Stones, Rumors, Records, Titles, Hall of Fame |
-| Settings | Sound, music, haptics · master, music and effects volume · text size · reduced motion · transparency mode · difficulty (Gentle ↔ Standard) · speed · Assist · left-handed battle layout · backup/export/import (with the last backup time) · storage persistence status · check for updates · install help · item rule (Unlimited / One per week) · edited badge on/off · Sandbox tools · credits and disclaimer |
+| Settings | Sound, music, haptics · master, music and effects volume · text size · reduced motion · **Graphics: effects Quality (Auto / Ultra / High / Lite) and Intensity (Cozy / Standard / Flashy)** (V1) · transparency mode · difficulty (Gentle ↔ Standard) · speed · Assist · left-handed battle layout · backup/export/import (with the last backup time) · storage persistence status · check for updates · install help · item rule (Unlimited / One per week) · edited badge on/off · Sandbox tools · credits and disclaimer |
 | Install help | iPhone and Android steps (`PHONE_AND_GITHUB_SETUP.md` part C), shown when not running standalone |
 
 **Onboarding:**
@@ -1229,8 +1229,10 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 - **Animation** (CSS and the Web Animations API; transform and opacity only):
   - Idle: breathe, blink, bob, tail or fin wag.
   - Drill vignettes: a prop plus a motion (log, puzzle stones, target, gourds, acorns, plow, moon, wind, waterfall, quarry).
-  - Battle: approach, lunge or projectile (orb, beam, shockwave, slash arc), hit flash and shake, knockback slide, crit sparkle, KO flop, victory hop.
+  - Battle: the monster itself lunges, flashes white and slides back on a hit, flops on a KO and hops on a win (CSS); everything that flies, bursts, splashes, shakes or flashes is the effects layer below (V1).
   - Emotes: ♥, ?!, 💢, 💤.
+- **Battle effects layer (V1, `docs/VISUAL_V1_EFFECTS.md`):** a transparent WebGL canvas (PixiJS 8, WebGL only; the chunk loads lazily on the battle, Versus and Effects Lab screens) sits over the arena in the same world units as the monsters and follows the arena camera. It draws 18 code-written primitives (burst, cone, trail, projectile, beam, ring, impact, splash, water sheet, lightning, haze, glow, debris, mist, flash, shake, hit-stop, impact frame) from a procedural texture atlas; no asset files. Every technique has an **element** (Fire, Water, Ice, Lightning, Wind, Earth, Nature, Light, Dark, Sound, Physical; CONTENT §3 Element column, assigned by the rules in VISUAL_V1_EFFECTS §5) that gives the primitives their colours, shapes, blend mode and flags. The battle store turns engine events into effect events (presentation only; the simulation never reads them) and V1 draws a default recipe per element for each moment; V2 adds per-technique recipes. Monsters stay DOM SVG; the canvas sits above them and below the floating numbers, so haze and filters only bend what the canvas draws. The layer sleeps when nothing is live and pauses when the app is hidden.
+- **Graphics settings (V1):** **Quality** Ultra (2,500 particles, every filter, up to 2× resolution, 3 lightning passes) / High (1,200, bloom and shockwave only, 1.5×, 2) / Lite (400, no filters, 1×, 1). Auto starts at Ultra (High under 4 GB or 6 cores, Lite under data saver), measures the first battle's first 90 frames, drops one tier above 18 ms and two above 28 ms, and remembers the result. **Intensity** Cozy (no shake, hit-stop, impact frames or flash, bloom off, ×0.6 particles) / Standard (4 px shake, 60 ms hit-stop, impact frames on crits, flash alpha 0.2, low bloom) / Flashy (8 px, 120 ms, impact frames on heavy hits, flash 0.3, high bloom, ×1.4 particles). Reduced motion (the toggle or the OS) forces Cozy.
 - **Backgrounds:** layered SVG (ranch, town, shrine, lab, arena, journey sites, expedition tiles) with seasonal tints and weather overlays.
 - **UI icons:** a small in-house SVG icon set.
 - **External art:** none, unless CC0. Log every asset in `CREDITS.md`.
@@ -1262,7 +1264,8 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 - Text size (100%, 115%, 130%).
 - Respect `prefers-reduced-motion`, with a manual toggle too.
 - Never use color alone: icons and labels on every bar and band.
-- No flashing faster than 3 Hz.
+- No flashing faster than 3 Hz: the effects layer's flash gate allows at most 3 screen flashes in any rolling second, never brighter than alpha 0.3, and Cozy / reduced motion turns them off entirely (V1).
+- Shake, hit-stop and impact frames are Intensity settings and are all off under reduced motion (V1).
 - Haptics toggle.
 - Left-handed battle layout (mirrors the pads).
 - All text readable at 360 px width.

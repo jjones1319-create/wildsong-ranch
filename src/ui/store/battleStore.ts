@@ -8,6 +8,7 @@ import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { BATTLE, BATTLE_FX } from '../../data/tuning.ts'
+import { fxEventsFor, publishFx, type FighterPose } from '../../fx/bus.ts'
 import type { AiTier, AutoStyle, Habit, Personality, PlanMode } from '../../data/types.ts'
 import type { Screen } from '../router.ts'
 import { settings, updateSettings } from './appStore.ts'
@@ -85,14 +86,14 @@ export interface FloatEffect {
   tone: 'damage' | 'crit' | 'miss' | 'heal' | 'note' | 'special'
 }
 
-/** §22 battle effects: a lunge or a shot when a technique fires, a flash and knockback on a hit, a sparkle on a crit. */
+/**
+ * §22 battle effects on the monsters themselves: a lunge when a melee technique fires, a flash and knockback on a
+ * hit. Everything else (projectiles, sparks, splashes, shake, hit-stop) is V1's effects layer, fed through fx/bus.
+ */
 export interface BattleFx {
   id: number
   side: Side
-  kind: 'lunge' | 'shot' | 'hit' | 'crit'
-  /** For a shot: where it flies to, in arena units. */
-  toX?: number
-  fromX?: number
+  kind: 'lunge' | 'hit'
 }
 
 export const fx = signal<BattleFx[]>([])
@@ -102,8 +103,6 @@ export const view = signal<BattleView | null>(null)
 export const speed = signal<1 | 2 | 4>(1)
 export const paused = signal(false)
 export const effects = signal<FloatEffect[]>([])
-/** A short shake request for the arena (the screen clears it). */
-export const shake = signal(0)
 export const resultLine = signal<string>('')
 
 let battle: Battle | null = null
@@ -212,20 +211,25 @@ function vibrate(ms: number): void {
 function describe(events: readonly BattleEvent[]): void {
   const t = UI_TEXT.battle
   const s = battle?.state
+  if (s) {
+    // V1: every engine event becomes effects-layer events (pure mapping; the arena draws the element's recipe).
+    const poses: [FighterPose, FighterPose] = [
+      { x: s.fighters[0].x / 100, maxHp: s.fighters[0].maxHp },
+      { x: s.fighters[1].x / 100, maxHp: s.fighters[1].maxHp },
+    ]
+    for (const e of events) publishFx(fxEventsFor(e, poses))
+  }
   for (const e of events) {
     switch (e.kind) {
       case 'fire': {
         const tech = TECHNIQUE_BY_ID[e.tech]
         if (tech && tech.range <= 2) pushFx({ side: e.side, kind: 'lunge' }, BATTLE_FX.lungeMs)
-        else if (s) pushFx({ side: e.side, kind: 'shot', fromX: Math.round(s.fighters[e.side].x / 100), toX: Math.round(s.fighters[1 - e.side]!.x / 100) }, BATTLE_FX.projectileMs)
         playSfx('fire')
         break
       }
       case 'hit':
         pushEffect(e.target, e.crit ? `${t.floats.crit} −${e.damage}` : `−${e.damage}`, e.crit ? 'crit' : 'damage')
         pushFx({ side: e.target, kind: 'hit' }, BATTLE_FX.knockbackMs)
-        if (e.crit) pushFx({ side: e.target, kind: 'crit' }, BATTLE_FX.sparkleMs)
-        shake.value = Date.now()
         vibrate(e.crit ? 25 : 12)
         playSfx(e.crit ? 'crit' : 'hit')
         break

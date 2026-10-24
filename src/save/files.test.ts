@@ -239,4 +239,12 @@ describe('validateAny never throws', () => {
     const { autoStyle: _a, showThinking: _s, ...old } = defaultSettings()
     expect(validateSettings(old)).toEqual(defaultSettings())
   })
+
+  it('V1 graphics settings: Quality, Intensity and the remembered Auto tier fall back and default to auto / standard / none', () => {
+    expect(defaultSettings()).toMatchObject({ fxQuality: 'auto', fxIntensity: 'standard', fxAutoTier: null })
+    expect(validateSettings({ ...defaultSettings(), fxQuality: 'lite', fxIntensity: 'flashy', fxAutoTier: 'high' })).toMatchObject({ fxQuality: 'lite', fxIntensity: 'flashy', fxAutoTier: 'high' })
+    expect(validateSettings({ ...defaultSettings(), fxQuality: 'max', fxIntensity: 9, fxAutoTier: 'mega' })).toMatchObject({ fxQuality: 'auto', fxIntensity: 'standard', fxAutoTier: null })
+    const { fxQuality: _q, fxIntensity: _i, fxAutoTier: _t, ...old } = defaultSettings()
+    expect(validateSettings(old)).toEqual(defaultSettings())
+  })
 })
