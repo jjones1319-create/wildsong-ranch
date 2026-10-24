@@ -4,8 +4,8 @@ import { ITEMS } from '../data/items.ts'
 import { CORIN, RIVALS, RIVAL_BY_ID, WILD_NAMES } from '../data/rivals.ts'
 import { signatureOf, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { DIFFICULTY, NPC, RANGES, RIVALS as RIVAL_TUNING, TOURNAMENT } from '../data/tuning.ts'
-import { STAT_KEYS, TOURNAMENT_GRADES, type Personality, type Stats, type TournamentEvent, type TournamentGrade } from '../data/types.ts'
-import { runBattle, timerTicksFor } from './battle/engine.ts'
+import { STAT_KEYS, TOURNAMENT_GRADES, type AiTier, type Personality, type Stats, type TournamentEvent, type TournamentGrade } from '../data/types.ts'
+import { runBattle, tierForGrade, timerTicksFor } from './battle/engine.ts'
 import type { BattleResult } from './battle/types.ts'
 import { WEEKS_PER_YEAR, dateOf } from './calendar.ts'
 import { variantPrizePct } from './variants.ts'
@@ -231,6 +231,26 @@ export function createTournament(state: GameState, eventId: string, mode: 'auto'
   return { eventId, week: state.week, seed, mode, participants, matches, koOut: [], eliminated: [], relayWins: 0, done: false }
 }
 
+/**
+ * §12.10 the AI tier of a cup participant: the player's own side (Auto) is always expert, rivals are expert from
+ * grade C, every opponent in a Crown, the Masquerade or the Legend Cup is expert, and wild monsters follow
+ * their grade (E–D rookie, C–B skilled, A–S expert).
+ */
+export function tierFor(p: Participant, event: TournamentEvent): AiTier {
+  if (p.player) return 'expert'
+  if (event.kind === 'crown' || event.kind === 'legend' || event.kind === 'masquerade') return 'expert'
+  if (p.rivalId && gradeIndex(p.monster.grade) >= gradeIndex('C')) return 'expert'
+  return tierOfGrade(p.monster.grade)
+}
+
+/** §12.10 a Journey Trial opponent is expert from grade B. */
+export function trialTier(grade: TournamentGrade): AiTier {
+  return gradeIndex(grade) >= gradeIndex('B') ? 'expert' : tierOfGrade(grade)
+}
+
+/** The engine's default tier for a grade (its index is 0-based; `gradeIndex` here is 1-based). */
+const tierOfGrade = (g: TournamentGrade): AiTier => tierForGrade(TOURNAMENT_GRADES.indexOf(g))
+
 /** The next unplayed match with the player in it, if the player is still in the cup. */
 export function nextPlayerMatch(t: TournamentState): { index: number; match: MatchRecord } | null {
   if (t.koOut.includes(0) || t.eliminated.includes(0)) return null
@@ -309,7 +329,12 @@ export function simulatePending(input: TournamentState, includePlayer = false): 
     const a = t.participants[match.a]!
     const b = t.participants[match.b]!
     const seed = cyrb53(`${t.seed}-${index}`, 2)
-    const r = runBattle({ monster: a.monster, control: 'ai', personality: a.personality, habit: a.habit }, { monster: b.monster, control: 'ai', personality: b.personality, habit: b.habit }, { seed, timerTicks: timerTicksFor(60) })
+    const event = EVENT_BY_ID[t.eventId]!
+    const r = runBattle(
+      { monster: a.monster, control: 'ai', personality: a.personality, habit: a.habit, tier: tierFor(a, event) },
+      { monster: b.monster, control: 'ai', personality: b.personality, habit: b.habit, tier: tierFor(b, event) },
+      { seed, timerTicks: timerTicksFor(60) },
+    )
     const uses = match.a === 0 ? r.fighters[0].techUses : match.b === 0 ? r.fighters[1].techUses : {}
     t = recordMatch(t, index, matchResultFrom(r, true), uses)
   }
@@ -704,7 +729,11 @@ export function simulateRelay(t: TournamentState, playerGrade: TournamentGrade):
     const g = slot as NpcGrade
     const vale = wildParticipant(g, rng)
     const coast = wildParticipant(g, rng)
-    const r = runBattle({ monster: vale.monster, control: 'ai', personality: vale.personality }, { monster: coast.monster, control: 'ai', personality: coast.personality }, { seed: rng.nextU32(), timerTicks: timerTicksFor(60) })
+    const r = runBattle(
+      { monster: vale.monster, control: 'ai', personality: vale.personality, tier: tierOfGrade(vale.monster.grade) },
+      { monster: coast.monster, control: 'ai', personality: coast.personality, tier: tierOfGrade(coast.monster.grade) },
+      { seed: rng.nextU32(), timerTicks: timerTicksFor(60) },
+    )
     if (r.outcome.winner === 0) wins += 1
   }
   return wins

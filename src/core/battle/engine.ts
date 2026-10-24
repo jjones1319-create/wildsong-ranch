@@ -1,14 +1,15 @@
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
-import { BATTLE, BATTLE_TRAITS, HEARTSTONE } from '../../data/tuning.ts'
-import { TOURNAMENT_GRADES, type Technique } from '../../data/types.ts'
+import { AI, BATTLE, BATTLE_TRAITS, HEARTSTONE } from '../../data/tuning.ts'
+import { TOURNAMENT_GRADES, type AiTier, type Technique } from '../../data/types.ts'
 import { clamp, divRound } from '../mathx.ts'
 import { loyaltyOf, totalStats } from '../monster.ts'
 import { createRng, type Rng } from '../rng.ts'
 import { masteryBonuses } from '../songbook.ts'
 import { variantFarHit, variantWitherPlus } from '../variants.ts'
 import { decideAi } from './ai.ts'
-import { bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
+import { decideAiV1 } from './aiV1.ts'
+import { bandCentre, bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
 import { bulwarkPct, clutchPct, composurePct, lastStandPct, ragePct, specialMods, tickSpecial, tryTrigger, valorPct } from './specials.ts'
 import {
   traitBlessed,
@@ -20,6 +21,7 @@ import {
   traitExtraHits,
   traitFameCapBonus,
   traitFreeDash,
+  traitGutsOnHit,
   traitHealMul,
   traitHitBonus,
   traitImmovable,
@@ -51,10 +53,17 @@ export interface Battle {
 
 const CENTI = 100
 const GUTS_ACC = 1000
+const NEVER = -100_000
+
+/** §12.10 the default skill tier by tournament grade: E–D rookie, C–B skilled, A–S expert. */
+export function tierForGrade(gradeIndex: number): AiTier {
+  return gradeIndex <= 1 ? 'rookie' : gradeIndex <= 3 ? 'skilled' : 'expert'
+}
 
 function setupFighter(side: Side, s: FighterSetup): FighterState {
   const m = s.monster
   const form = formAdjusted(m.stats, m.form)
+  const gradeIndex = Math.max(0, TOURNAMENT_GRADES.indexOf(m.grade))
   const techniques = m.techniques
     .filter((t) => TECHNIQUE_BY_ID[t.id] !== undefined)
     .map((t) => {
@@ -84,7 +93,7 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     fame: m.fame,
     nature: m.nature,
     stress: m.stress,
-    gradeIndex: Math.max(0, TOURNAMENT_GRADES.indexOf(m.grade)),
+    gradeIndex,
     x: (side === 0 ? -BATTLE.arena.startX : BATTLE.arena.startX) * CENTI,
     hp: Math.max(1, m.stats.LIF),
     guts: BATTLE.guts.start,
@@ -112,9 +121,39 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     dragonheartUsed: false,
     blessedAcc: 0,
     habitDone: false,
+    tier: s.tier ?? (s.control === 'player' ? 'expert' : tierForGrade(gradeIndex)),
+    style: s.style ?? 'balanced',
+    brain: s.brain ?? 'v2',
     aiCooldown: 0,
     aiTargetBand: 2,
     aiNextThink: 0,
+    aiSweet: bandCentre(2),
+    aiGoal: null,
+    aiMode: null,
+    aiModeUntil: 0,
+    aiFireAt: NEVER,
+    aiFireTech: null,
+    aiFootsie: 0,
+    aiFootsieNext: 0,
+    aiBandUsed: [NEVER, NEVER, NEVER, NEVER, NEVER],
+    aiTechUsed: {},
+    aiKiteUntil: NEVER,
+    aiBackWall: 0,
+    aiMistakeUntil: NEVER,
+    lastApproachTick: NEVER,
+    aiValues: {},
+    aiWeakClose: false,
+    aiLastHp: Math.max(1, m.stats.LIF),
+    aiLastOppAttacks: 0,
+    aiAfford: 0,
+    aiOppAfford: 0,
+    aiLastTouching: false,
+    aiLastCornered: false,
+    aiLastHits: 0,
+    prevMoveDir: 0,
+    prevTargetBand: 2,
+    touchStreak: 0,
+    lastHitTakenTick: NEVER,
     assistTech: null,
     wantFire: null,
     wantDash: false,
@@ -123,6 +162,10 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     hits: 0,
     damageDealt: 0,
     techUses: {},
+    dirChanges: 0,
+    lastDx: 0,
+    touchTicks: 0,
+    pushes: 0,
   }
 }
 
@@ -210,6 +253,7 @@ function applyInput(state: BattleState, input: BattleInput, log: BattleEvent[]):
       return
     case 'auto':
       f.auto = a.on
+      if (a.style) f.style = a.style
       if (a.on) {
         f.assistTech = null
         f.moveDir = 0
@@ -323,6 +367,7 @@ function startPush(state: BattleState, f: FighterState, opp: FighterState, log: 
   if (f.pushCooldown > 0 || gapUnits(state) > BATTLE.push.maxGap) return
   f.pushTicks = BATTLE.push.ticks
   f.pushCooldown = BATTLE.push.cooldown
+  f.pushes += 1
   const blocked = traitImmovable(opp.trait)
   if (!blocked) knockBack(opp, f)
   log.push({ t: state.tick, kind: 'push', side: f.side, target: opp.side, blocked })
@@ -336,6 +381,7 @@ function knockBack(target: FighterState, from: FighterState): void {
 
 function movement(state: BattleState, f: FighterState, opp: FighterState): void {
   const before = f.x
+  const oppBefore = opp.x
   if (f.dashTicks > 0) {
     const bandBefore = currentBand(state)
     const v = divRound(speedPerTick(f, false) * BATTLE.dash.speedMul, 1)
@@ -357,6 +403,13 @@ function movement(state: BattleState, f: FighterState, opp: FighterState): void 
   }
   if (f.x === before && f.dashTicks === 0) f.stillTicks += 1
   else f.stillTicks = 0
+  // M10: count changes of walking direction (relative to the opponent), for the movement tests and the report.
+  const dx = f.x === before ? 0 : (f.x - before) * (oppBefore >= before ? 1 : -1) > 0 ? 1 : -1
+  if (dx !== 0) {
+    if (f.lastDx !== 0 && dx !== f.lastDx) f.dirChanges += 1
+    f.lastDx = dx
+    if (dx === 1) f.lastApproachTick = state.tick
+  }
 }
 
 function slide(f: FighterState, opp: FighterState): void {
@@ -526,6 +579,10 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     f.successRow += 1
     opp.successRow = 0
     opp.hitsTakenRow += 1
+    opp.lastHitTakenTick = state.tick
+    // M10 Gilded: a landed hit pays guts.
+    const gilded = traitGutsOnHit(f.trait)
+    if (gilded > 0) f.guts = Math.min(BATTLE.guts.cap, f.guts + gilded)
     log.push({ t: state.tick, kind: 'hit', side: f.side, target: opp.side, tech: tech.id, damage, crit, wither: withered, hitNo: i, of: hits })
 
     if (jackpot === 'heal') heal(state, f, divRound(f.maxHp * 20, 100), 'jackpot', log)
@@ -593,11 +650,18 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
   tickTimers(a, state, log)
   tickTimers(b, state, log)
 
+  // The AI reads last tick's direction and target of its opponent, so neither side sees the other's decisions early.
+  for (const f of state.fighters) {
+    f.prevMoveDir = f.moveDir
+    f.prevTargetBand = f.aiTargetBand
+  }
   for (const f of state.fighters) {
     const opp = state.fighters[(1 - f.side) as Side]
     if (!canAct(f)) continue
-    if (f.control === 'ai' || f.auto) decideAi(state, f, opp, rng)
-    else assistDecision(state, f)
+    if (f.control === 'ai' || f.auto) {
+      if (f.brain === 'v1') decideAiV1(state, f, opp, rng)
+      else decideAi(state, f, opp, rng, log)
+    } else assistDecision(state, f)
   }
 
   for (const f of state.fighters) {
@@ -628,6 +692,18 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
     }
     regen(a)
     regen(b)
+
+    // M10: time spent touching, and the stall streak (touching with neither side attacking).
+    if (gapUnits(state) <= AI.stall.touchGap) {
+      a.touchTicks += 1
+      b.touchTicks += 1
+      const attacking = a.busyTicks > 0 || b.busyTicks > 0 || log.some((e) => e.kind === 'fire')
+      a.touchStreak = attacking ? 0 : a.touchStreak + 1
+      b.touchStreak = a.touchStreak
+    } else {
+      a.touchStreak = 0
+      b.touchStreak = 0
+    }
 
     if (state.tick === state.timerTicks - BATTLE.clutchWindowTicks) {
       for (const f of state.fighters) {

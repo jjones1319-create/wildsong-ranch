@@ -564,9 +564,9 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 
 ### 12.1 Arena and ranges
 
-- **Arena:** a 1-D arena 1,200 units wide (x from −600 to +600). Each monster's body radius is 50.
-- **Gap:** `gap = |xB − xA| − 100`.
-- **Start:** xA = −200, xB = +200, so the gap is 300 (Near).
+- **Arena:** a 1-D arena 1,200 units wide (x from −600 to +600). Each monster's body radius is 80 (M10: it was 50; the sprite box is drawn 200 units wide so visuals match the physics).
+- **Gap:** `gap = |xB − xA| − 160`.
+- **Start:** xA = −230, xB = +230, so the gap is 300 (Near).
 
 | Band | 1 Close | 2 Near | 3 Mid | 4 Far | Out of range |
 |---|---|---|---|---|---|
@@ -673,7 +673,7 @@ Whenever the monster starts an action (AI decision or player tap), roll a distra
 
 ### 12.8 Breed traits
 
-Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Traits are never inherited from the sub-breed.
+Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Traits are never inherited from the sub-breed. M10 gave Gilded a battle side: it gains 7 guts each time it lands a hit (`BATTLE_TRAITS.gildedGutsOnHit`), besides its prize and chore bonuses.
 
 ### 12.9 Ending a match
 
@@ -681,46 +681,126 @@ Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Trait
 - **Time up:** the higher **HP %** (truncated to 0.1%) wins; equal is a draw.
 - **Forfeit:** from the pause menu, with confirmation. It counts as a loss.
 
-### 12.10 CPU AI (tested; also used by Auto mode and the Battle Lab)
+### 12.10 CPU AI 2.0 (tested; also used by Auto mode and the Battle Lab)
 
-The AI thinks every tick while it isn't animating:
-1. **Cooldown.** After using a technique, wait a random 30–75 ticks before the next one. The monster can still move.
-2. **Attack decision.** If at least one affordable technique is in range and there is no cooldown, fire with probability `rate/30` per tick:
-   - `rate` = `useLow` when guts < 50, or `useHigh` when guts ≥ 50, per the personality table.
-   - Choose among affordable in-range techniques, weighted by `EV^1.5`.
-   - Multiply the weight by `bigBias` for techniques costing ≥ 35 when guts ≥ 70.
-   - `EV = hit%/100 · (expectedDamage / oppMaxHP · 100 + 0.35 · wither) + 0.05 · sharp`
-3. **Movement.** Every 15 ticks, re-pick a target band:
-   - The band with the best EV among techniques costing ≤ guts + 15.
-   - Stay in the current band 75% of the time if it has techniques.
-   - Otherwise 20% of the time pick the second-best band.
-   - Walk toward the band centre: 90, 235, 395 or 580.
-4. **Push.** If touching and the target band is 3 or more → push (when not on cooldown).
-5. **Dash.** If the target band is at least 2 bands closer and guts ≥ 30 → 2% chance per tick.
-6. **Kiting (M9).** A fighter that wants a farther band but cannot outrun a *chasing* opponent (its backward speed ≤ the chaser's forward speed) fights at the best band it can reach instead of never attacking. An opponent that is not pressing forward (it wants distance too, or stands still) is no chaser, so backing off then works.
+M10 replaced the v1.0 brain (a per-tick use-rate roll in its own best band) with a planning brain. It stays
+deterministic (the injected RNG only, integer math) and only changes *decisions*; what a monster can do is
+still §12.1–§12.9. Every number lives in `tuning.ts` under `AI`.
 
-**Personalities** (CONTENT §10 assigns them to rivals):
+**Skill tiers.** A fighter's tier sets its reaction delay (how long a decided technique or push waits), its
+mistake chance (a random acceptable band instead of the best, kept for 2–4 s) and the pause after a technique:
 
-| Personality | useLow | useHigh | bigBias |
-|---|---|---|---|
-| Steady | 0.6 | 1.4 | 1.6 |
-| Aggressive | 0.9 | 1.7 | 1.2 |
-| Cautious | 0.2 | 1.0 | 2.2 |
-| Trickster | 0.6 | 1.4 | 1.6 (prefers Wither, ×1.5 weight) |
-| Sniper | 0.5 | 1.3 | 1.6 (prefers Far band) |
-| Brawler | 0.8 | 1.6 | 1.8 (prefers Close band) |
+| Tier | Who | Reaction | Mistakes | Pause after a technique | Reads |
+|---|---|---|---|---|---|
+| Rookie | NPCs at grades E–D | 18–30 ticks | 20 % | 45–90 ticks | Own offense only (no threat), holds 45 guts before attacking |
+| Skilled | NPCs at grades C–B | 10–20 ticks | 8 % | 36–84 ticks | Everything but the special and trait reads |
+| Expert | NPCs at A–S, every opponent in a Crown, the Masquerade and the Legend Cup, rivals from grade C, Journey Trials from grade B, **the player's Auto mode**, Versus and the Battle Lab | 6–12 ticks | 2 % | 33–78 ticks | Everything |
 
-- **Low-grade opponents (E–D):** hold at least 45 guts before attacking (rookie habit).
-- **Readable habits:** give each rival one exploitable habit (CONTENT §10), e.g. "always opens with its Far technique".
+NPC personalities multiply on top (aggression / caution / Wither, Far and Close biases / the poke horizon / the
+pause): Steady 1.0/1.0, Aggressive 1.3/0.7 (pause ×0.7), Cautious 0.8/1.4 (pause ×1.4), Trickster (Wither ×1.5),
+Sniper (Far ×1.5, Close ×0.8), Brawler 1.2/0.8 (Close ×1.5, Far ×0.8). Rival habits (CONTENT §10) still apply:
+walks Close, opens Far, backs away when approached, pushes whenever touching, waits at 99, banks 70 for a
+Heavy, spams Wither, steals guts, dashes below half HP.
+
+**Think loop.** A fighter re-plans every 8–12 ticks, and at once when it is hit, when the opponent fires, when
+its own or the opponent's affordable techniques change (a cost was crossed), when it becomes cornered or
+touching, and at 20 s and 10 s left. Between plans it executes the plan: walk to the sweet spot, push, dash, fire.
+The opponent's direction and target band are read from the *previous* tick, so neither side sees the other's
+same-tick decisions.
+
+**The range plan.** For each band b = 1…4 that holds one of my techniques:
+
+```
+offense(b) = max over my techniques at b of  EV(t) × min(1, guts regenerated in 10 s ÷ cost(t))   (×1.2 when affordable now; Far/Close biases)
+threat(b)  = the same from the opponent's side (its techniques, its guts, its stats against mine)
+variety(b) = up to 30 % of offense(b) (at most 4,000) for a band unused in the last 10 s, decaying to 0 right after use
+travel(b)  = ticks to reach b's sweet spot at my speed (capped at 5 s); +90 ticks when the opponent wants a closer band
+             and is not slower than my backing speed (I cannot hold b); unreachable when b's near edge needs more room
+             behind me than the wall allows and no push is coming
+score(b)   = offense(b) × aggression − threat(b) × caution × 0.5 + variety(b) − travel(b) × 6
+EV(t)      = hit% × (expected damage as % of the target's max HP + 0.35 × wither) + 0.05 × sharp
+```
+
+The threat term counts half so that a mirror still picks its own best band. The target changes only when a band
+beats the current one by ≥ 15 % (at least 100 points). The **sweet spot** is the edge of the target band farthest
+from the opponent's strongest band, 25 units inside it (the centre when they coincide; never inside touching
+range). Rookies use caution 0.
+
+**Attack choice.** The goal technique is the best-value technique at the target band that is affordable within
+8 s of regen. Value is EV adjusted by: a Heavy whose hit chance is under 40 % counts ×0.6 unless guts ≥ 80;
++30 % in a punish window (the opponent cannot afford any technique, or is mid-animation, dawdling or stunned);
+Wither +40 % against a slow guts rate (≥ 13) or an expensive best technique; a heal is worth the HP it restores
+when HP ≤ 40 % and the threat here is low (×1.5 for Blessed and Green Thumb); +15 % for a technique unused for
+10 s; the personality's Wither bias; the rival habits.
+
+**Save or spend.** When the cooldown is over and something is affordable in range: fire the goal when it is
+here and affordable; otherwise fire the best technique in range when its value is at least 60 % of the goal's,
+or when the goal cannot be afforded within 6 s of regen anyway (the personality's and the Auto style's save
+bias scale that horizon); always fire when sitting on 90 + guts, when the opponent is broke, when hit within the
+last second, or to break a stall; otherwise save. A decided technique fires after the tier's reaction delay and
+is re-checked then (band, cost, cooldown, the reserve rules). The old per-tick use-rate roll is gone; the
+4–12 attacks target (§26) is kept by the pause after a technique.
+
+**Movement.** Walk to the sweet spot ± a footsie wobble of 15–30 units every 1–3 s (Statue Pose never wobbles
+and holds its ground whenever it has something to fire from here). Never walk backwards into the wall for more
+than half a second. Cornered (less than 120 units behind me) and wanting distance → push when touching, otherwise
+fight at the best band I can hold; a band whose near edge needs more room than I have is out of the plan.
+Caught at Close with nothing to fire there, or cornered, a fighter steps in to touch and shoves.
+
+**Push** when touching and the push is off cooldown, if the target band is ≥ 2, or the opponent out-damages me
+at Close, or my back is within 120 units of the wall (Unshakable ignores the corner), never into an Unshakable
+except to break a stall. **Anti-stall:** touching for over 1 s with neither side attacking → push (if allowed),
+else step back, else fire a Close technique; over 2 s → push if available, otherwise back off.
+
+**Dash** when the target band is closer, the gap allows it and the dash still leaves enough guts for a technique
+at the target band, and one of: the opponent is in a punish window; I am behind with ≤ 15 s left; the goal is
+≥ 2 bands closer; the opponent is kiting me (wants a farther band than I do); Battering Ram and the Aggressive
+Auto style dash freely. The old per-tick dash roll is gone.
+
+**Situation modifiers** (Skilled: the clock and HP only; Expert: all):
+
+| Situation | Effect |
+|---|---|
+| Ahead on HP %, ≤ 20 s left | caution ×2 ("playing safe") |
+| Behind, ≤ 15 s left | aggression ×1.5, caution ×0.5 |
+| HP ≤ 30 % (and not behind late) | caution ×1.5 |
+| The opponent can afford its best Heavy | caution ×1.3 at that Heavy's band |
+| The opponent is in a punish window | caution ×0.3 |
+| The opponent has Valor or Clutch active | caution ×1.5 |
+| I have Valor or Clutch active | aggression ×1.3 |
+
+Traits the brain reads: Statue Pose (above), Unshakable (ignores push and corner threats), Chill (farther bands
++800 for 3 s after landing a hit), Blessed and Green Thumb (heals ×1.5 in value), Battering Ram (dashes freely).
+
+**The v1 brain** (`aiV1.ts`, `AI_V1` in tuning) is kept only so a test can compare the two; nothing in the game
+uses it. Head to head they are about even: greedy poking is close to optimal for damage in this guts economy, and
+AI 2.0's gains are positional (kiting kits win with it; brawlers win with it against casters they can shove).
+
+**Acceptance (ai2.test.ts, seeded, ten varied pairs):** never touching for 2.5 s without a push, an attack or a
+step back, touching under 25 % of the time; a push in ≥ 80 % of touching battles where a side's best band is
+≥ 2; kits with ≥ 3 bands use ≥ 2 in ≥ 70 % of battles and 3 in ≥ 40 %; ≥ 4 direction changes per monster per
+match; an Expert beats a Rookie ≥ 70 % at equal stats and is not worse than v1 across the pairs; Expert mirrors
+45–55 %; a broke opponent is punished within 0.6 s in ≥ 75 % of windows; an Expert ahead in the last 20 s stays
+out of the opponent's best band more than earlier; the same seed gives the same log (plan events included);
+decisions cost well under 0.1 ms per monster per tick.
 
 ### 12.11 Touch controls and screen (MUST)
 
 **Portrait, one-handed. Everything interactive sits in the bottom 45% of the screen.**
 - **Top:** names, HP bars, guts bars (with the number in Lens mode), timer, and the active-special badge.
 - **Middle (the arena):**
-  - The two monsters in side view.
-  - A range ruler under them: four tinted bands with a marker showing the current gap.
+  - The two monsters in side view, drawn through the **arena camera** (M10): the camera centres on the two
+    monsters' midpoint and zooms so both sprites, plus a margin, fill the arena width, clamped between "the whole
+    arena fits" and a zoom where one sprite is at most 45 % of the width (and leaves room for the ruler); the view
+    never shows past the walls. A critically damped spring smooths it (a gentle ease with Reduce motion). Sprites
+    scale with the zoom; a sprite's box is 200 units wide against a 160-unit body (`bodyRadius` 80), so touching
+    looks like touching and a monster pinned to a wall stays fully on screen. Fence posts mark the walls.
+  - A range ruler under them: four tinted bands with a marker showing the current gap (not through the camera).
   - Floating damage numbers, "Crit!", "Miss" and "?!" bubbles.
+  - **Thinking icons** (M10): a small icon over each monster shows its current plan when "Show battle thinking"
+    is on (Settings; default on in Breeder's Lens, off otherwise): 🛡 keeping distance · ⏳ saving guts ·
+    ⚡ pressing · ↔ pushing away · ❗ punish! · 🏳 playing safe · 🧱 cornered. A mode is held at least half a
+    second so it reads as a thought.
 - **Bottom (the technique panel):**
   - Four columns: Close, Near, Mid, Far. Each holds that range's technique cards, showing name, guts cost and live hit %; swipe vertically if there are more than 3.
   - The column matching the current range glows. Unaffordable cards are dimmed.
@@ -728,6 +808,10 @@ The AI thinks every tick while it isn't animating:
   - **Assist** (setting, default on): tapping a card in another column walks toward that range and fires on arrival, as long as guts are still enough. Tap again to cancel.
 - **Movement:** hold the ◀ or ▶ thumb pads to walk. Double-tap the forward pad to dash. A Push button appears only when touching.
 - **Other buttons:** Auto toggle (AI takes over), speed (×1, ×2, ×4), pause (forfeit and settings).
+- **Auto styles** (M10): the player's Auto plays as an Expert with a style chosen in Settings or the pause
+  sheet: **Balanced** (default), **Aggressive** (aggression ×1.4, caution ×0.6, Close ×1.4, shorter pauses,
+  dashes freely, pokes sooner) or **Defensive** (aggression ×0.7, caution ×1.5, Far ×1.4, longer pauses, saves
+  longer). The style travels with the Auto input, so replays stay deterministic.
 - **Before each tournament:** choose Auto or Manual for the whole event. Auto battles can be skipped individually.
 - **Feedback:** haptic tick on hits on Android (`navigator.vibrate`; iOS has none). Screen shake ≤ 4 px, and none with reduced motion.
 
@@ -1208,15 +1292,15 @@ These come from the pre-build simulations (§27). Implement them as Vitest "sim 
 
 **Drill outcome rates over a Good-care life:** Great 17–23%, Success 55–65%, Cheat 7–12%, Fail 8–14%.
 
-**Battle** (AI vs AI, with stats from the NPC generator, alternating sides, at least 200 seeds per cell):
+**Battle** (AI 2.0 Expert vs Expert since M10, with stats from the NPC generator, alternating sides, at least 200 seeds per cell):
 
 | Target | Range |
 |---|---|
 | Mirror match | 45–55% |
 | +10% total stats | 62–80% win |
 | +30% total stats | 85–96% win |
-| Any two breeds at equal total (1,000 / 2,000 / 3,000) | 30–70% |
-| KO rate, even fights | 15–35% at total 1,000; 3–15% at 3,000 |
+| Any two breeds at equal total (1,000 / 2,000 / 3,000) | every pair 25–75%, and ≥ 95% of pairs 30–70% (M10); Lootlid's mean win share 40–60% (other breeds' means are reported, not targets) |
+| KO rate, even fights (the five starters' mirrors, averaged) | 15–35% at total 1,000; 3–15% at 3,000 |
 | Attacks per monster per match | 4–12 |
 | Match length when no KO | 60 s, by definition |
 

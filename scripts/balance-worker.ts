@@ -36,11 +36,17 @@ export interface BattleCell {
   koB: number
   attacksA: number
   attacksB: number
+  /** M10 AI health: pushes, direction changes and ticks spent touching (both sides), and total ticks. */
+  pushes: number
+  dirChanges: number
+  touchTicks: number
+  ticks: number
 }
 
 export type TaskResult = { kind: 'raise'; breed: BreedId; policy: PolicyName; lives: RaiseSlim[] } | { kind: 'battle'; cell: BattleCell }
 
-const ai = (monster: Monster): FighterSetup => ({ monster, control: 'ai', personality: 'Steady' })
+/** M10: the matrix is Expert vs Expert (GAME_DESIGN §26). */
+const ai = (monster: Monster): FighterSetup => ({ monster, control: 'ai', personality: 'Steady', tier: 'expert' })
 
 function runRaise(t: RaiseTask): TaskResult {
   const lives = t.seeds.map((seed) => {
@@ -79,6 +85,10 @@ function runBattleCell(t: BattleTask): TaskResult {
   let koB = 0
   let attacksA = 0
   let attacksB = 0
+  let pushes = 0
+  let dirChanges = 0
+  let touchTicks = 0
+  let tickSum = 0
   for (let seed = 0; seed < t.seeds; seed++) {
     const a = as[seed % t.variants]!
     const b = bs[seed % t.variants]!
@@ -95,8 +105,12 @@ function runBattleCell(t: BattleTask): TaskResult {
     }
     attacksA += r.fighters[sideA]!.attacks
     attacksB += r.fighters[1 - sideA]!.attacks
+    pushes += r.fighters[0].pushes + r.fighters[1].pushes
+    dirChanges += r.fighters[0].dirChanges + r.fighters[1].dirChanges
+    touchTicks += r.fighters[0].touchTicks
+    tickSum += r.outcome.ticks
   }
-  return { kind: 'battle', cell: { a: t.a, b: t.b, total: t.total, seeds: t.seeds, winA, winB, draw, koA, koB, attacksA, attacksB } }
+  return { kind: 'battle', cell: { a: t.a, b: t.b, total: t.total, seeds: t.seeds, winA, winB, draw, koA, koB, attacksA, attacksB, pushes, dirChanges, touchTicks, ticks: tickSum } }
 }
 
 export function runTask(t: Task): TaskResult {

@@ -1,8 +1,8 @@
 /**
  * M9 balance matrices (GAME_DESIGN §26), run across worker threads and written to docs/BALANCE_REPORT.md.
- *   npm run sim:balance -- [--seeds 40] [--battles 200] [--only raise|battle] [--out docs/BALANCE_REPORT.md] [--json path]
+ *   npm run sim:balance -- [--seeds 40] [--battles 200] [--only raise|battle] [--totals 1000,2000,3000] [--out docs/BALANCE_REPORT.md] [--json path]
  * Raising: every breed under the four care policies. Battle: every breed pair (mirrors included) at totals
- * 1,000 / 2,000 / 3,000, sides alternating. Runs on Node 24 directly (type stripping), no build step.
+ * 1,000 / 2,000 / 3,000, Expert vs Expert (M10), sides alternating. Runs on Node 24 directly (type stripping), no build step.
  */
 import { availableParallelism } from 'node:os'
 import { writeFileSync } from 'node:fs'
@@ -30,9 +30,18 @@ const POLICIES: PolicyName[] = ['Great', 'Good', 'OK', 'Neglect']
 const LIFE_BAND: Record<PolicyName, [number, number]> = { Great: [82, 92], Good: [76, 88], OK: [62, 78], Neglect: [25, 45] }
 const OUTCOME_BAND = { Great: [17, 23], Success: [55, 65], Cheat: [7, 12], Fail: [8, 14] } as const
 const PAIR_BAND: [number, number] = [30, 70]
+/** M10: no pair may sit outside this, and at least PAIR_INSIDE_PCT of pairs must be inside PAIR_BAND. */
+const PAIR_HARD_BAND: [number, number] = [25, 75]
+const PAIR_INSIDE_PCT = 95
+/** M10: a breed's mean win share against the others is flagged in the table; the spec makes it a target for Lootlid only. */
+const MEAN_BAND: [number, number] = [40, 60]
+const MEAN_TARGETS: BreedId[] = ['lootlid']
 const MIRROR_BAND: [number, number] = [45, 55]
+/** §26 "even fights": the five starters' mirrors, like balance.test.ts (glass cannons KO each other by design). */
 const KO_BAND: Record<number, [number, number]> = { 1000: [15, 35], 3000: [3, 15] }
+const KO_PROBES: BreedId[] = ['puddlepup', 'tumblefox', 'quillion', 'pluckrex', 'cobblemaw']
 const ATTACK_BAND: [number, number] = [4, 12]
+const started = Date.now()
 
 /* ---------- task list ---------- */
 
@@ -150,7 +159,7 @@ for (const [key, lives] of raiseLives) {
 const lines: string[] = []
 const misses: string[] = []
 const today = new Date().toISOString().slice(0, 10)
-lines.push('# Balance report', '', `Generated ${today} by \`npm run sim:balance\` (GAME_DESIGN §26). Raising: ${SEEDS} seeds per breed and policy, no Stat Sweets, Songsheets or edits. Battle: ${BATTLES} battles per cell, AI vs AI (Steady), sides alternating, ${VARIANTS} NPC rolls per side, 60-second matches.`, '')
+lines.push('# Balance report', '', `Generated ${today} by \`npm run sim:balance\` (GAME_DESIGN §26). Raising: ${SEEDS} seeds per breed and policy, no Stat Sweets, Songsheets or edits. Battle: ${BATTLES} battles per cell, AI 2.0 Expert vs Expert (Steady), sides alternating, ${VARIANTS} NPC rolls per side, 60-second matches.`, '')
 
 if (raise.size > 0) {
   lines.push('## Raising: life lived vs. nominal (%)', '', 'Targets: Great 82–92 · Good 76–88 · OK 62–78 · Neglect 25–45 (with several breakdowns). ✗ marks a cell outside its band.', '')
@@ -176,7 +185,7 @@ if (raise.size > 0) {
 }
 
 if (cells.length > 0) {
-  lines.push('## Battle: win share at equal totals (%)', '', `Row breed's share of decided battles against the column breed. Targets: any pair 30–70, mirrors 45–55, attacks per monster per match 4–12, KO rate in mirrors ${KO_BAND[1000]!.join('–')} % at 1,000 and ${KO_BAND[3000]!.join('–')} % at 3,000. Breeds are the first three letters of their names.`, '')
+  lines.push('## Battle: win share at equal totals (%)', '', `Row breed's share of decided battles against the column breed. Targets: every pair 25–75 and at least ${PAIR_INSIDE_PCT} % of pairs 30–70, Lootlid's mean 40–60 (other means are flagged, not targets), mirrors 45–55, attacks per monster per match 4–12, KO rate in the starters' mirrors ${KO_BAND[1000]!.join('–')} % at 1,000 and ${KO_BAND[3000]!.join('–')} % at 3,000. Breeds are the first three letters of their names.`, '')
   for (const total of TOTALS) {
     const at = cells.filter((c) => c.total === total)
     const get = (x: BreedId, y: BreedId) => {
@@ -186,11 +195,12 @@ if (cells.length > 0) {
     // Per-breed summary. The KO band is §26's "even fights" figure: the average over every breed's mirror
     // (glass cannons KO each other far more often than walls do, by design), so it is checked on the average.
     lines.push(`### Total ${total.toLocaleString('en-US')}`, '', '| Breed | Mean vs all | Worst | Best | Mirror | KO % (mirror) | Attacks |', '|---|---|---|---|---|---|---|')
-    const koAvg = BREED_IDS.reduce((s, x) => {
+    const koAvg = KO_PROBES.reduce((s, x) => {
       const m = at.find((k) => k.a === x && k.b === x)!
       return s + pct(m.koA + m.koB, m.seeds)
-    }, 0) / BREED_IDS.length
-    if (KO_BAND[total] && !inBand(koAvg, KO_BAND[total]!)) misses.push(`Battle ${total} average mirror KO rate ${f1(koAvg)} % (band ${KO_BAND[total]!.join('–')})`)
+    }, 0) / KO_PROBES.length
+    if (KO_BAND[total] && !inBand(koAvg, KO_BAND[total]!)) misses.push(`Battle ${total} starters' mirror KO rate ${f1(koAvg)} % (band ${KO_BAND[total]!.join('–')})`)
+    const health = at.reduce((h, k) => ({ pushes: h.pushes + k.pushes, dir: h.dir + k.dirChanges, touch: h.touch + k.touchTicks, ticks: h.ticks + k.ticks, battles: h.battles + k.seeds }), { pushes: 0, dir: 0, touch: 0, ticks: 0, battles: 0 })
     for (const x of BREED_IDS) {
       const others = BREED_IDS.filter((y) => y !== x)
       const shares = others.map((y) => ({ y, s: get(x, y) }))
@@ -204,22 +214,29 @@ if (cells.length > 0) {
       const flags: string[] = []
       if (!inBand(mirrorShare, MIRROR_BAND)) flags.push('mirror')
       if (!inBand(attacks, ATTACK_BAND)) flags.push('attacks')
+      if (!inBand(mean, MEAN_BAND)) {
+        flags.push('mean')
+        if (MEAN_TARGETS.includes(x)) misses.push(`Battle ${total} ${BREED_BY_ID[x].name} mean win share ${f1(mean)} % (band 40–60)`)
+      }
       if (!inBand(attacks, ATTACK_BAND)) misses.push(`Battle ${total} ${BREED_BY_ID[x].name} attacks ${f1(attacks)} per match (band 4–12)`)
       if (!inBand(mirrorShare, [40, 60])) misses.push(`Battle ${total} ${BREED_BY_ID[x].name} mirror ${f1(mirrorShare)} % (band 45–55; ±3.5 is noise at ${BATTLES} seeds)`)
       lines.push(`| ${BREED_BY_ID[x].name} | ${f1(mean)} | ${f0(worst.s)} vs ${abbr(worst.y)} | ${f0(best.s)} vs ${abbr(best.y)} | ${f1(mirrorShare)} | ${f1(ko)} | ${f1(attacks)}${flags.length ? ` ✗ ${flags.join(', ')}` : ''} |`)
     }
-    // Pairs outside the band.
+    // Pairs outside the bands: none may leave 25–75, and at least 95 % must sit inside 30–70.
     const out: string[] = []
     for (let i = 0; i < BREED_IDS.length; i++)
       for (let j = i + 1; j < BREED_IDS.length; j++) {
         const s = get(BREED_IDS[i]!, BREED_IDS[j]!)
         if (!inBand(s, PAIR_BAND)) {
           out.push(`${BREED_BY_ID[BREED_IDS[i]!].name} vs ${BREED_BY_ID[BREED_IDS[j]!].name}: ${f0(s)} %`)
-          misses.push(`Battle ${total} ${BREED_BY_ID[BREED_IDS[i]!].name} vs ${BREED_BY_ID[BREED_IDS[j]!].name}: ${f0(s)} % (band 30–70)`)
+          if (!inBand(s, PAIR_HARD_BAND)) misses.push(`Battle ${total} ${BREED_BY_ID[BREED_IDS[i]!].name} vs ${BREED_BY_ID[BREED_IDS[j]!].name}: ${f0(s)} % (hard band 25–75)`)
         }
       }
     const pairs = (BREED_IDS.length * (BREED_IDS.length - 1)) / 2
-    lines.push('', `${pairs - out.length} of ${pairs} pairs inside 30–70 %.${out.length ? ` Outside: ${out.join('; ')}.` : ''}`, '')
+    const insidePct = ((pairs - out.length) * 100) / pairs
+    if (insidePct < PAIR_INSIDE_PCT) misses.push(`Battle ${total} only ${f1(insidePct)} % of pairs inside 30–70 (want ≥ ${PAIR_INSIDE_PCT} %)`)
+    lines.push('', `${pairs - out.length} of ${pairs} pairs (${f1(insidePct)} %) inside 30–70 %.${out.length ? ` Outside: ${out.join('; ')}.` : ''}`, '')
+    lines.push(`AI health: ${f1(health.pushes / health.battles)} pushes per match, ${f1(health.dir / health.battles / 2)} direction changes per monster, touching ${f1(pct(health.touch, health.ticks))} % of the time.`, '')
     // The full matrix.
     lines.push('<details><summary>Full matrix</summary>', '', `| | ${BREED_IDS.map(abbr).join(' | ')} |`, `|---|${BREED_IDS.map(() => '---').join('|')}|`)
     for (const x of BREED_IDS) lines.push(`| **${abbr(x)}** | ${BREED_IDS.map((y) => f0(get(x, y))).join(' | ')} |`)
@@ -232,7 +249,9 @@ if (misses.length === 0) lines.push('Nothing. Every cell is inside its band.')
 else for (const m of misses) lines.push(`- ${m}`)
 lines.push('')
 
+const seconds = Math.round((Date.now() - started) / 1000)
+lines.push(`Run time: ${Math.floor(seconds / 60)} min ${seconds % 60} s on ${availableParallelism()} cores.`, '')
 writeFileSync(OUT, lines.join('\n'))
 if (JSON_OUT) writeFileSync(JSON_OUT, JSON.stringify({ raise: [...raise.values()], cells }, null, 1))
-console.log(`Wrote ${OUT}: ${raise.size} raising cells, ${cells.length} battle cells, ${misses.length} outside the targets.`)
+console.log(`Wrote ${OUT}: ${raise.size} raising cells, ${cells.length} battle cells, ${misses.length} outside the targets, ${seconds} s.`)
 if (misses.length) console.log(misses.map((m) => `  - ${m}`).join('\n'))

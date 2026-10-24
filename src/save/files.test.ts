@@ -228,4 +228,15 @@ describe('validateAny never throws', () => {
     expect(validateSettings({ ...defaultSettings(), transparency: 'lens', textSize: 130, speed: 'instant' })).toMatchObject({ transparency: 'lens', textSize: 130, speed: 'instant' })
     expect(validateSettings('???')).toEqual(defaultSettings())
   })
+
+  it('M10 battle settings: Auto style and thinking icons fall back and default to balanced / follow the mode', () => {
+    expect(defaultSettings()).toMatchObject({ autoStyle: 'balanced', showThinking: null })
+    expect(validateSettings({ autoStyle: 'berserk', showThinking: 'yes' })).toEqual(defaultSettings())
+    expect(validateSettings({ autoStyle: 7, showThinking: 1 })).toEqual(defaultSettings())
+    expect(validateSettings({ ...defaultSettings(), autoStyle: 'aggressive', showThinking: true })).toMatchObject({ autoStyle: 'aggressive', showThinking: true })
+    expect(validateSettings({ ...defaultSettings(), autoStyle: 'defensive', showThinking: false })).toMatchObject({ autoStyle: 'defensive', showThinking: false })
+    // An older settings file without the fields loads with the defaults.
+    const { autoStyle: _a, showThinking: _s, ...old } = defaultSettings()
+    expect(validateSettings(old)).toEqual(defaultSettings())
+  })
 })

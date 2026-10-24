@@ -337,6 +337,20 @@
 
 **Phone check:** a full playtest session; export a backup.
 
+## M10: Smarter battles (AI 2.0, the arena camera, balance follow-ups)
+
+Spec: `docs/BATTLE_AI_V2.md` (owner-requested after v1.0). Version `1.1.0`, no save-schema change (the two new settings have per-field fallbacks).
+
+- [x] 1. Scaffolding: `AI_V1` keeps the v1 brain's numbers for `core/battle/aiV1.ts` (one comparison test); `AI` holds every AI 2.0 number; `AI_TIERS`, `AUTO_STYLES`, `PLAN_MODES`; `FighterSetup.tier / style / brain`; the `auto` input carries the style; `FighterState` gains the plan, the reaction-delay schedule, variety stamps, counters (direction changes, touching ticks, pushes) and last-tick snapshots of `moveDir` / `aiTargetBand` so neither side reads the other's same-tick decisions; `plan` log events; Gilded gains guts on a landed hit; `bodyRadius` 80 / `startX` 230 (the start gap stays 300).
+- [x] 2. AI 2.0 (`core/battle/ai.ts`): tiers, the think loop with events, the range plan (offense × aggression − threat × caution + variety − travel), sweet spots, the goal technique and the save-or-spend rules, footsies, corner awareness, anti-stall, pushes, dashes with a reason, the situation modifiers, trait reads, rival habits, Auto styles, the plan icon with a hold.
+- [x] 3. Tier plumbing: `tierFor(participant, event)` and `trialTier(grade)` in `core/tournament.ts`; cups, Trials (manual, auto and skip), Versus, the Battle Lab and the balance script pass tiers; the player's Auto is always expert with the chosen style; `setAutoStyle` queues the style as an input mid-battle.
+- [x] 4. Arena camera (`ui/battle/camera.ts`, pure, 11 tests): framing, zoom bounds, wall clamp, a critically damped spring (an ease with Reduce motion); `BattleScreen` draws the world through CSS variables set once per animation frame; fence posts at the walls; floats counter-scale; shots fly through the camera.
+- [x] 5. Thinking icons and settings: `showThinking` (null = follow Breeder's Lens) and `autoStyle` in `SettingsSchema`; the Play card and the battle pause sheet carry both controls; text in `data/text`.
+- [x] 6. Balance: Expert vs Expert in the script and the sampled guard; the four pure casters' Near basic moved to Close (their only answer to an Unshakable brawler); brawler kits nudged up and ranged kits down inside the §10.2 bands (CONTENT §3 and `techniques.ts` together); Statue Pose 50 %, Moth Dust ×0.65, Gilded +7 guts; the script checks every pair 25–75, ≥ 95 % of pairs 30–70, Lootlid's mean 40–60 (other means are flagged in the table), the starters' KO average, and prints AI health and its run time. Veteran toughness was not needed (the 3,000 KO average sits inside 3–15 with AI 2.0).
+- [x] 7. Tests (`ai2.test.ts`, `camera.test.ts`, updated `ai`, `habits`, `engine`, `balance` and `files` tests); `npm run verify`; PROGRESS, GAME_DESIGN §12.1 / §12.8 / §12.10 / §12.11 / §26, CONTENT §2.1 / §3, BALANCE_REPORT; commit `M10: smarter battles`, push, confirm the deploy, phone checklist, stop.
+
+**Phone check:** BATTLE_AI_V2 §6.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

@@ -1,4 +1,4 @@
-import type { Habit, Personality, Stats, TraitId } from '../../data/types.ts'
+import type { AiTier, AutoStyle, Habit, Personality, PlanMode, Stats, TraitId } from '../../data/types.ts'
 import type { Monster } from '../monster.ts'
 
 export type { Habit }
@@ -12,11 +12,19 @@ export type { Habit }
 export type Side = 0 | 1
 export type Control = 'ai' | 'player'
 
+/** Which brain drives an AI side: AI 2.0 (the game) or the v1.0 brain (one comparison test only). */
+export type Brain = 'v2' | 'v1'
+
 export interface FighterSetup {
   monster: Monster
   control: Control
   personality: Personality
   habit?: Habit
+  /** §12.10 skill tier; by default from the monster's grade (E–D rookie, C–B skilled, A–S expert). A player side is always expert. */
+  tier?: AiTier
+  /** §12.11 the Auto style (player side). */
+  style?: AutoStyle
+  brain?: Brain
 }
 
 export type PlayerAction =
@@ -27,7 +35,7 @@ export type PlayerAction =
   | { kind: 'push' }
   /** Assist: walk to the technique's band and fire on arrival; null cancels. */
   | { kind: 'assist'; tech: string | null }
-  | { kind: 'auto'; on: boolean }
+  | { kind: 'auto'; on: boolean; style?: AutoStyle }
   | { kind: 'forfeit' }
 
 export interface BattleInput {
@@ -108,10 +116,50 @@ export interface FighterState {
   blessedAcc: number
   /** Habits: "opens Far" is satisfied after the first technique. */
   habitDone: boolean
-  /* AI */
+  /* AI (§12.10) */
+  tier: AiTier
+  style: AutoStyle
+  brain: Brain
   aiCooldown: number
   aiTargetBand: number
   aiNextThink: number
+  /** The current plan: the gap it wants, the technique it is working toward, and what the icon shows. */
+  aiSweet: number
+  aiGoal: string | null
+  aiMode: PlanMode | null
+  /** The icon's mode is held until this tick. */
+  aiModeUntil: number
+  /** Earliest tick a decided technique fires (the reaction delay), and which one. */
+  aiFireAt: number
+  aiFireTech: string | null
+  aiFootsie: number
+  aiFootsieNext: number
+  /** Tick each band and technique was last used (for variety). */
+  aiBandUsed: number[]
+  aiTechUsed: Record<string, number>
+  aiKiteUntil: number
+  aiBackWall: number
+  /** A tier mistake keeps its band until this tick. */
+  aiMistakeUntil: number
+  /** Last tick this fighter walked toward its opponent (so an AI can tell a chasing player). */
+  lastApproachTick: number
+  /** Cached from the last plan: each technique's value, and whether the opponent out-damages me at Close. */
+  aiValues: Record<string, number>
+  aiWeakClose: boolean
+  /** Event markers that force a re-plan. */
+  aiLastHp: number
+  aiLastOppAttacks: number
+  aiAfford: number
+  aiOppAfford: number
+  aiLastTouching: boolean
+  aiLastCornered: boolean
+  aiLastHits: number
+  /** The opponent reads these (last tick's values) instead of this tick's decisions. */
+  prevMoveDir: -1 | 0 | 1
+  prevTargetBand: number
+  /** Consecutive ticks touching with neither side attacking. */
+  touchStreak: number
+  lastHitTakenTick: number
   assistTech: string | null
   /* requests for this tick (set by inputs or the AI, consumed by the engine) */
   wantFire: string | null
@@ -122,6 +170,11 @@ export interface FighterState {
   hits: number
   damageDealt: number
   techUses: Record<string, number>
+  /** M10 movement counters: sign changes of actual displacement, ticks spent touching, pushes started. */
+  dirChanges: number
+  lastDx: -1 | 0 | 1
+  touchTicks: number
+  pushes: number
 }
 
 export type BattleEvent =
@@ -138,6 +191,8 @@ export type BattleEvent =
   | { t: number; kind: 'distracted'; side: Side }
   | { t: number; kind: 'special'; side: Side; special: SpecialKind }
   | { t: number; kind: 'trait'; side: Side; trait: TraitId }
+  /** AI 2.0: the target band or the plan icon changed. */
+  | { t: number; kind: 'plan'; side: Side; band: number; mode: PlanMode }
   | { t: number; kind: 'ko'; side: Side }
   | { t: number; kind: 'end'; outcome: BattleOutcome }
 

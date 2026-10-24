@@ -120,6 +120,11 @@ export function traitDragonheart(trait: TraitId): boolean {
   return trait === 'dragonheart'
 }
 
+/** Gilded (M10): guts gained on every landed hit. */
+export function traitGutsOnHit(trait: TraitId): number {
+  return trait === 'gilded' ? T.gildedGutsOnHit : 0
+}
+
 /** Nimble: +50 SPD when targeted. */
 export function traitNimble(trait: TraitId): boolean {
   return trait === 'nimble'

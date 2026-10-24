@@ -465,7 +465,8 @@ export const BATTLE = {
   ticksPerSecond: 30,
   /** Match lengths offered in Versus (seconds); 60 is the tournament length. */
   timersSec: [60, 90, 180] as readonly number[],
-  arena: { halfWidth: 600, bodyRadius: 50, startX: 200 },
+  /** M10: the body radius and the sprite box (BATTLE_CAMERA.spriteHalf) are tuned together; the start gap stays 300. */
+  arena: { halfWidth: 600, bodyRadius: 80, startX: 230 },
   /** Gap at which each band ends: Close 0–159, Near 160–309, Mid 310–479, Far 480–679, out of range from 680. */
   bandEnds: [160, 310, 480, 680] as readonly number[],
   bandCentres: [90, 235, 395, 580] as readonly number[],
@@ -499,8 +500,8 @@ export const SPECIALS = {
   composure: { streak: 4, div: 3, costPct: 70, takenPct: 150 },
 } as const
 
-/** §12.10 CPU AI. Rates are per tick as thousandths of `rate/30`; the table lists the doc's rates ×100. */
-export const AI = {
+/** The v1.0 CPU AI's numbers (M4–M9), kept for `aiV1.ts` and its one comparison test. Rates are per tick as thousandths of `rate/30`. */
+export const AI_V1 = {
   /** The doc says 30–75; the top end was raised a little so the fastest-regen breeds stay under 12 attacks a match (§26). */
   cooldown: { min: 30, max: 84 },
   thinkEveryTicks: 15,
@@ -526,6 +527,126 @@ export const AI = {
   },
 } as const
 
+/**
+ * §12.10 AI 2.0 (M10): skill tiers, the range plan, movement and guts rules. Multipliers are ×100 (100 = ×1)
+ * unless noted; times are ticks (30 a second); distances are arena units. Offense and threat scores are
+ * EV per second in thousandths of a percent of max HP, so a basic that lands 10 % of HP every 4 s is ~2,500.
+ */
+export const AI = {
+  /** EV = hit · (damage % of max HP + witherWeight · wither) + sharpWeight · sharp (weights ×100). */
+  ev: { witherWeight: 35, sharpWeight: 5 },
+  /** Reaction delay, mistake chance per plan (and how long a mistaken band is kept), pause after a technique. */
+  tiers: {
+    rookie: { react: { min: 18, max: 30 }, mistakePct: 20, mistakeTicks: { min: 60, max: 120 }, cooldown: { min: 45, max: 90 } },
+    skilled: { react: { min: 10, max: 20 }, mistakePct: 8, mistakeTicks: { min: 60, max: 120 }, cooldown: { min: 36, max: 84 } },
+    expert: { react: { min: 6, max: 12 }, mistakePct: 2, mistakeTicks: { min: 60, max: 120 }, cooldown: { min: 33, max: 78 } },
+  },
+  /** Re-plan every 8–12 ticks, or at once on an event (§12.10). */
+  replan: { min: 8, max: 12 },
+  /** The player's Auto styles (§12.11): aggression / caution, band biases, pacing, free dashes and the poke horizon. */
+  styles: {
+    balanced: { aggression: 100, caution: 100, closeBias: 100, farBias: 100, cooldownPct: 100, saveBias: 100, dashFreely: false },
+    aggressive: { aggression: 140, caution: 60, closeBias: 140, farBias: 70, cooldownPct: 80, saveBias: 70, dashFreely: true },
+    defensive: { aggression: 70, caution: 150, closeBias: 70, farBias: 140, cooldownPct: 115, saveBias: 130, dashFreely: false },
+  },
+  /**
+   * NPC personalities on top of the tier. saveBias shortens (>100) or lengthens the horizon for cheap pokes;
+   * cooldownPct scales the pause between techniques (the pacing lever: Aggressive fires more often).
+   */
+  personalities: {
+    Steady: { aggression: 100, caution: 100, witherBias: 100, farBias: 100, closeBias: 100, saveBias: 100, cooldownPct: 100 },
+    Aggressive: { aggression: 130, caution: 70, witherBias: 100, farBias: 100, closeBias: 100, saveBias: 70, cooldownPct: 70 },
+    Cautious: { aggression: 80, caution: 140, witherBias: 100, farBias: 100, closeBias: 100, saveBias: 140, cooldownPct: 140 },
+    Trickster: { aggression: 100, caution: 100, witherBias: 150, farBias: 100, closeBias: 100, saveBias: 100, cooldownPct: 100 },
+    Sniper: { aggression: 100, caution: 110, witherBias: 100, farBias: 150, closeBias: 80, saveBias: 110, cooldownPct: 110 },
+    Brawler: { aggression: 120, caution: 80, witherBias: 100, farBias: 80, closeBias: 150, saveBias: 90, cooldownPct: 90 },
+  },
+  /** Band scoring (§12.10): offense × aggression − threat × caution + variety − travel × travelWeight. */
+  score: {
+    /** The threat term's base weight (×100): my own offense counts fully, the opponent's half, so a mirror still picks its best band. */
+    threatWeight: 50,
+    /** A technique's offense is its EV × min(1, guts regenerated over this many seconds ÷ its cost). */
+    budgetSec: 10,
+    /** Bonus (×100) on a technique's rate when it is affordable right now. */
+    affordNowPct: 120,
+    /** Variety: up to this much for a band unused for `windowTicks` (same units as offense), and at most this share of the band's offense. */
+    varietyMax: 4000,
+    varietyPct: 30,
+    windowTicks: 300,
+    /** Score lost per tick of travel; travel is capped at `travelCapTicks`. */
+    travelWeight: 6,
+    travelCapTicks: 150,
+    /** Extra travel ticks for a band I cannot hold against a faster chaser (kiting rule). */
+    unholdableTicks: 90,
+    /** A player counts as a chaser for this long after walking in. */
+    approachTicks: 30,
+    /** Switch target bands only when the new best beats the current one by this much (percent of its size, at least `hysteresisMin`). */
+    hysteresisPct: 15,
+    hysteresisMin: 100,
+    /** Chill: bonus for farther bands while kiting after a hit. */
+    chillKiteBonus: 800,
+  },
+  /** The sweet spot sits this far inside the band's edge that is farthest from the opponent's best band. */
+  sweetSpotInset: 25,
+  /** No walking while the gap is within this of the desired gap. */
+  deadZone: 12,
+  /** Footsies: wobble ±15–30 units every 1–3 s. */
+  footsie: { amp: { min: 15, max: 30 }, every: { min: 30, max: 90 } },
+  /** Anti-stall: touching for over 1 s with neither attacking → act; over 2 s → push or back off. */
+  stall: { touchGap: 40, softTicks: 30, hardTicks: 60 },
+  /** Back within this of the wall counts as cornered. */
+  cornerUnits: 120,
+  /** Never walk backwards into the wall for longer than this. */
+  backIntoWallTicks: 15,
+  /** Technique value tweaks (×100). */
+  value: {
+    punishPct: 130,
+    starve: { rateMin: 13, expensiveCost: 40, witherPct: 140 },
+    heal: { hpPctMax: 40, threatPct: 50, traitPct: 150 },
+    hitPref: { heavyHitBelowPct: 40, gutsOverride: 80, heavyPct: 60 },
+    varietyPct: 115,
+    /** Rival habits: spamsWither / stealsGuts weight, banksForHeavy threshold, waits99 threshold. */
+    habitBias: 300,
+    habitBankGuts: 70,
+    habitWaitGuts: 99,
+  },
+  /** Save or spend. */
+  guts: {
+    /** Never sit at this many guts or more. */
+    spendAt: 90,
+    /** An attack in range fires when its value is at least this share (×100) of the goal technique's value… */
+    slotRatioPct: 60,
+    /** …or when the goal cannot be afforded within this horizon of regen anyway (personality saveBias scales it). */
+    horizonTicks: 180,
+    /** "Affordable soon" for the goal technique: guts plus this horizon of regen. */
+    goalHorizonTicks: 240,
+    /** The opponent at or below this many guts is a target: fire the best technique in range (0 = only when broke). */
+    oppLowGuts: 0,
+    /** Below this many guts, no pokes (the goal, a broke or punishing opponent, 90+ guts and stalls still fire); 0 = off. */
+    pokeFloor: 0,
+    /** Rookies hold this much before attacking. */
+    rookieReserve: 45,
+    /** "Being punished": hit within this many ticks. */
+    punishedTicks: 30,
+  },
+  dash: { behindSecondsLeft: 15, goalBandsCloser: 2, ramPct: 100 },
+  /** §12.10 situation modifiers. */
+  situations: {
+    aheadLate: { secondsLeft: 20, cautionPct: 200 },
+    behindLate: { secondsLeft: 15, aggressionPct: 150, cautionPct: 50 },
+    lowHp: { hpPctMax: 30, cautionPct: 150 },
+    heavyReady: { cautionPct: 130 },
+    punish: { cautionPct: 30 },
+    oppDamageUp: { cautionPct: 150 },
+    ownDamageUp: { aggressionPct: 130 },
+    chillKiteTicks: 90,
+  },
+  /** Events that force a re-plan: the clock marks (seconds left). */
+  clockMarks: [20, 10] as readonly number[],
+  /** The plan icon keeps a mode at least this long, so it reads as a thought and not a flicker. */
+  modeHoldTicks: 15,
+} as const
+
 /** CONTENT §2.1 and NEW_MONSTERS §2: the battle traits' numbers (percentages unless noted). */
 export const BATTLE_TRAITS = {
   nimbleSpd: 50,
@@ -535,7 +656,7 @@ export const BATTLE_TRAITS = {
   enGardeHit: 8,
   hotBlooded: { hpPctMax: 50, pct: 115 },
   tailwindPct: 120,
-  mothDustCritPct: 50,
+  mothDustCritPct: 70,
   etherealWitherPct: 70,
   liveWire: { gutsBelow: 30, regenPct: 110 },
   reflective: { chancePct: 15, pct: 30 },
@@ -548,9 +669,11 @@ export const BATTLE_TRAITS = {
   moonlitCrit: 6,
   greenThumbPct: 200,
   eightArmsExtraHits: 1,
-  statuePosePct: 70,
+  statuePosePct: 50,
   batteringRamPct: 115,
   chillPct: 75,
+  /** M10 Gilded: guts gained each time it lands a hit. */
+  gildedGutsOnHit: 7,
 } as const
 
 /** §13 generated opponents, by tournament grade (Crown and Legend arrive with M5 but the bands are listed). */
@@ -745,6 +868,25 @@ export const PLANNER = {
   stopStress: 50,
   /** Pause between queued weeks on screen at normal speed (the speed setting multiplies it). */
   stepDelayMs: 700,
+} as const
+
+/**
+ * §12.11 arena camera (M10): frames both monsters, zooms to fit and never shows past the walls. Units are arena
+ * units except the pixel fields. The sprite box is 2 × spriteHalf wide; the drawn body fills about 80 % of it.
+ */
+export const BATTLE_CAMERA = {
+  spriteHalf: 100,
+  /** Space beyond each monster's back edge. */
+  margin: 40,
+  /** One sprite may fill at most this share of the arena width… */
+  maxSpritePct: 45,
+  /** …and must leave this many pixels for the ruler and floor. */
+  reservePx: 56,
+  /** Pixel size the portrait is rendered at before the camera scales it. */
+  basePx: 160,
+  /** Critically damped spring: natural frequency (Hz) and the reduced-motion ease time constant (ms). */
+  springHz: 2.2,
+  easeMs: 180,
 } as const
 
 /** §22 battle effect timings (milliseconds). */

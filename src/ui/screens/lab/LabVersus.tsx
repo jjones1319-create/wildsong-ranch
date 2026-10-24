@@ -29,7 +29,7 @@ export function LabVersusScreen() {
   const start = () => {
     if (!a || !b) return
     const origin = screen.value
-    startBattle({ a: a.monster, b: b.monster, aControl: mode === 'player' ? 'player' : 'ai', personalityA: pA, personalityB: pB, timerSec: timer, origin })
+    startBattle({ a: a.monster, b: b.monster, aControl: mode === 'player' ? 'player' : 'ai', personalityA: pA, personalityB: pB, tierA: 'expert', tierB: 'expert', timerSec: timer, origin })
     navigate('battle')
   }
 

@@ -81,22 +81,22 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 | Fluffy | Rest removes 8 more fatigue |
 | Tailwind | Walk and dash speed +20% |
 | Hungry Grub | Food form changes ×1.5; can cocoon (§11) |
-| Moth Dust | Opponents' crit chance against it ×0.5 |
+| Moth Dust | Opponents' crit chance against it ×0.65 |
 | Ethereal | Wither taken ×0.7 |
 | Live Wire | Guts regen +25% while guts < 30 |
 | Reflective | 15% chance to reflect 30% of INT damage taken |
 | Clockwork | Drill fatigue −20% |
 | Hard Shell | POW damage taken −15% |
-| Gilded | Tournament prizes +15%; chore pay ×2 |
+| Gilded | Tournament prizes +15%; chore pay ×2; gains 7 guts on every hit it lands (M10) |
 | Regal | +5 extra fame per tournament win; +5 to the fame-crit cap |
 | Dragonheart | Once per battle, when its HP first drops below 50%, it gains 20 guts |
-| Unshakable | Can't be pushed back or stunned; damage taken −10% |
+| Unshakable | Can't be pushed back or stunned; damage taken −20% |
 | Underdog | +8 hit and +10% damage against opponents with a higher stat total |
 | Blessed | Regenerates 1% of max HP every 5 seconds in battle |
 | Moonlit | Crit chance +6% |
 | Green Thumb | Heal and drain techniques restore 50% more |
 | Eight Arms | Multi-hit techniques get one extra hit |
-| Statue Pose | After standing still for 2 seconds, takes 30% less damage until it moves |
+| Statue Pose | After standing still for 2 seconds, takes 50% less damage until it moves |
 | Battering Ram | Dashing costs no guts, and the first technique after a dash deals +15% damage |
 | Chill | Its hits slow the target's walking by 25% for 3 seconds |
 
@@ -257,10 +257,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Splash Nip | Basic | POW | 1 Close | 10 | 13 | +5 | 7 | 8 | 24 | — | Starter |
-| Bubble Pop | Basic | INT | 3 Mid | 10 | 13 | +4 | 5 | 7 | 24 | — | Starter · sub-quirk |
-| Frill Flick | Hit | POW | 2 Near | 20 | 14 | +17 | 9 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Belly Flop | Heavy | POW | 1 Close | 48 | 50 | -12 | 13 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Splash Nip | Basic | POW | 1 Close | 10 | 12 | +7 | 7 | 8 | 24 | — | Starter |
+| Bubble Pop | Basic | INT | 3 Mid | 10 | 12 | +6 | 5 | 7 | 24 | — | Starter · sub-quirk |
+| Frill Flick | Hit | POW | 2 Near | 20 | 14 | +19 | 9 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Belly Flop | Heavy | POW | 1 Close | 48 | 52 | -10 | 13 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Soggy Cloud | Wither | INT | 3 Mid | 29 | 12 | -2 | 42 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Slipstream Spin | Sharp | POW | 2 Near | 25 | 22 | -4 | 9 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Geyser Burst | Special | INT | 4 Far | 48 | 14 | -4 | 20 | 9 | 36 | 2 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
@@ -271,10 +271,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Scamper Swipe | Basic | POW | 1 Close | 13 | 12 | +6 | 6 | 5 | 24 | — | Starter |
-| Foxfire Flicker | Basic | INT | 3 Mid | 13 | 12 | +4 | 7 | 8 | 24 | — | Starter · sub-quirk |
-| Tail Twirl | Hit | POW | 2 Near | 19 | 16 | +16 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Will-o'-Blaze | Heavy | INT | 2 Near | 44 | 57 | -9 | 13 | 11 | 39 | — | Iron Quarry: INT ≥ 360 |
+| Scamper Swipe | Basic | POW | 1 Close | 13 | 12 | +7 | 6 | 5 | 24 | — | Starter |
+| Foxfire Flicker | Basic | INT | 3 Mid | 13 | 12 | +7 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Tail Twirl | Hit | POW | 2 Near | 19 | 15 | +17 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Will-o'-Blaze | Heavy | INT | 2 Near | 44 | 59 | -9 | 13 | 11 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Trickster's Hush | Wither | INT | 3 Mid | 26 | 15 | +2 | 42 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Mirage Dart | Sharp | INT | 4 Far | 27 | 26 | -3 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Fluffstorm | Special | INT | 2 Near | 48 | 33 | +1 | 20 | 12 | 36 | stun 30 ticks | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
@@ -285,10 +285,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Gravel Swipe | Basic | POW | 1 Close | 10 | 10 | +3 | 6 | 6 | 24 | — | Starter · sub-quirk |
-| Shoulder Check | Basic | POW | 2 Near | 10 | 10 | +3 | 6 | 8 | 24 | — | Starter |
-| Crag Jab | Hit | POW | 1 Close | 16 | 14 | +14 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Landslide Maul | Heavy | POW | 1 Close | 47 | 64 | -12 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Gravel Swipe | Basic | POW | 1 Close | 10 | 11 | +5 | 6 | 6 | 24 | — | Starter · sub-quirk |
+| Shoulder Check | Basic | POW | 2 Near | 10 | 11 | +5 | 6 | 8 | 24 | — | Starter |
+| Crag Jab | Hit | POW | 1 Close | 16 | 15 | +18 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Landslide Maul | Heavy | POW | 1 Close | 47 | 64 | -10 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Moss Smother | Wither | POW | 2 Near | 27 | 16 | +3 | 44 | 4 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Fault Line Claw | Sharp | POW | 2 Near | 26 | 24 | +0 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Boulder Heave | Special | POW | 3 Mid | 46 | 46 | -1 | 16 | 9 | 36 | miss: self-dmg 8% max HP | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
@@ -299,8 +299,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Shell Bump | Basic | POW | 1 Close | 14 | 14 | +5 | 5 | 7 | 24 | — | Starter |
-| Turret Toss | Basic | POW | 3 Mid | 14 | 11 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Shell Bump | Basic | POW | 1 Close | 14 | 13 | +5 | 5 | 7 | 24 | — | Starter |
+| Turret Toss | Basic | POW | 3 Mid | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
 | Drawbridge Snap | Hit | POW | 2 Near | 17 | 14 | +16 | 8 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Keep Slam | Heavy | POW | 1 Close | 44 | 64 | -6 | 12 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Moat Mire | Wither | POW | 2 Near | 28 | 18 | +4 | 48 | 6 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
@@ -314,7 +314,7 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Wishlight Flash | Basic | INT | 3 Mid | 11 | 13 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
-| Paper Flutter | Basic | INT | 2 Near | 13 | 13 | +3 | 7 | 8 | 24 | — | Starter |
+| Paper Flutter | Basic | INT | 1 Close | 13 | 13 | +3 | 7 | 8 | 24 | — | Starter |
 | Glimmer Bolt | Hit | INT | 4 Far | 16 | 13 | +14 | 8 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Lantern Beam | Heavy | INT | 4 Far | 44 | 50 | -12 | 11 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Hypno Glow | Wither | INT | 3 Mid | 27 | 12 | -2 | 38 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
@@ -327,10 +327,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Quill Poke | Basic | POW | 1 Close | 11 | 14 | +5 | 6 | 6 | 24 | — | Starter |
-| Lunge | Basic | POW | 2 Near | 14 | 11 | +7 | 7 | 5 | 24 | — | Starter · sub-quirk |
-| Riposte | Hit | POW | 2 Near | 19 | 15 | +20 | 7 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Spine Burst | Heavy | POW | 1 Close | 44 | 50 | -12 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Quill Poke | Basic | POW | 1 Close | 11 | 12 | +7 | 6 | 6 | 24 | — | Starter |
+| Lunge | Basic | POW | 2 Near | 14 | 10 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Riposte | Hit | POW | 2 Near | 19 | 14 | +19 | 7 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Spine Burst | Heavy | POW | 1 Close | 44 | 52 | -12 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Bramble Bind | Wither | POW | 1 Close | 27 | 12 | -2 | 43 | 5 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Fleche | Sharp | POW | 2 Near | 26 | 22 | -4 | 10 | 34 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Quill Flurry | Special | POW | 3 Mid | 47 | 11 | +2 | 17 | 8 | 36 | 3 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
@@ -341,10 +341,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Ember Swipe | Basic | POW | 1 Close | 13 | 13 | +3 | 5 | 8 | 24 | — | Starter |
-| Spark Pounce | Basic | POW | 2 Near | 13 | 11 | +4 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Ember Swipe | Basic | POW | 1 Close | 13 | 14 | +5 | 5 | 8 | 24 | — | Starter |
+| Spark Pounce | Basic | POW | 2 Near | 13 | 13 | +6 | 7 | 5 | 24 | — | Starter · sub-quirk |
 | Cinder Jab | Hit | POW | 1 Close | 17 | 19 | +14 | 8 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Inferno Maul | Heavy | POW | 1 Close | 45 | 50 | -12 | 11 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Inferno Maul | Heavy | POW | 1 Close | 45 | 54 | -12 | 11 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Smoke Veil | Wither | INT | 3 Mid | 25 | 12 | -2 | 44 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Blazing Rake | Sharp | POW | 2 Near | 29 | 22 | -4 | 11 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Wildfire Rush | Special | POW | 3 Mid | 47 | 36 | -1 | 20 | 11 | 36 | dash to Close after | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
@@ -356,8 +356,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Belly Bounce | Basic | POW | 1 Close | 11 | 10 | +3 | 6 | 7 | 24 | — | Starter |
-| Tongue Lash | Basic | POW | 2 Near | 10 | 10 | +3 | 6 | 6 | 24 | — | Starter · sub-quirk |
-| Sticky Tongue | Hit | POW | 2 Near | 19 | 14 | +14 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Tongue Lash | Basic | POW | 2 Near | 10 | 11 | +3 | 6 | 6 | 24 | — | Starter · sub-quirk |
+| Sticky Tongue | Hit | POW | 2 Near | 19 | 15 | +15 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Bog Slam | Heavy | POW | 1 Close | 44 | 53 | -8 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Croak Quake | Wither | POW | 3 Mid | 26 | 14 | +0 | 38 | 7 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Wart Spitball | Sharp | POW | 3 Mid | 25 | 26 | -3 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -383,8 +383,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Woolly Bump | Basic | POW | 2 Near | 11 | 13 | +3 | 7 | 8 | 24 | — | Starter |
-| Drizzle Puff | Basic | INT | 1 Close | 10 | 13 | +7 | 5 | 8 | 24 | — | Starter · sub-quirk |
+| Woolly Bump | Basic | POW | 2 Near | 11 | 12 | +3 | 7 | 8 | 24 | — | Starter |
+| Drizzle Puff | Basic | INT | 1 Close | 10 | 12 | +7 | 5 | 8 | 24 | — | Starter · sub-quirk |
 | Hail Tuft | Hit | INT | 3 Mid | 19 | 15 | +17 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Downpour | Heavy | INT | 4 Far | 44 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Fog Fleece | Wither | INT | 2 Near | 26 | 12 | -2 | 45 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
@@ -397,10 +397,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Beak Jab | Basic | POW | 2 Near | 11 | 14 | +8 | 5 | 5 | 24 | — | Starter |
-| Gust Feather | Basic | INT | 1 Close | 13 | 14 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
-| Wind Spear | Hit | INT | 3 Mid | 18 | 19 | +20 | 9 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Tempest Dive | Heavy | INT | 4 Far | 44 | 64 | -6 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
+| Beak Jab | Basic | POW | 2 Near | 11 | 12 | +6 | 5 | 5 | 24 | — | Starter |
+| Gust Feather | Basic | INT | 1 Close | 13 | 12 | +6 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Wind Spear | Hit | INT | 3 Mid | 18 | 17 | +18 | 9 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Tempest Dive | Heavy | INT | 4 Far | 44 | 60 | -6 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Downdraft | Wither | INT | 3 Mid | 28 | 18 | +4 | 41 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Lightning Stride | Sharp | POW | 2 Near | 25 | 30 | +2 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Squall Line | Special | INT | 4 Far | 48 | 13 | -1 | 16 | 12 | 36 | 3 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
@@ -411,9 +411,9 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Nibble | Basic | POW | 1 Close | 14 | 12 | +5 | 5 | 5 | 24 | — | Starter |
-| Wriggle Roll | Basic | POW | 2 Near | 11 | 13 | +6 | 5 | 4 | 24 | — | Starter · sub-quirk |
-| Chomp | Hit | POW | 1 Close | 18 | 15 | +18 | 9 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Nibble | Basic | POW | 1 Close | 14 | 13 | +5 | 5 | 5 | 24 | — | Starter |
+| Wriggle Roll | Basic | POW | 2 Near | 11 | 14 | +6 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Chomp | Hit | POW | 1 Close | 18 | 16 | +18 | 9 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Wobble Crush | Heavy | POW | 1 Close | 48 | 64 | -6 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Silk Spray | Wither | INT | 3 Mid | 29 | 18 | +4 | 39 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Mandible Snap | Sharp | POW | 2 Near | 26 | 30 | +2 | 11 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -426,8 +426,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Dust Puff | Basic | INT | 3 Mid | 12 | 13 | +6 | 5 | 5 | 24 | — | Starter · sub-quirk |
-| Wing Flutter | Basic | INT | 2 Near | 12 | 12 | +4 | 6 | 5 | 24 | — | Starter |
-| Moonbeam Dart | Hit | INT | 4 Far | 20 | 15 | +13 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Wing Flutter | Basic | INT | 1 Close | 12 | 12 | +4 | 6 | 5 | 24 | — | Starter |
+| Moonbeam Dart | Hit | INT | 4 Far | 20 | 14 | +13 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Dusk Nova | Heavy | INT | 4 Far | 48 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Drowsy Dust | Wither | INT | 3 Mid | 27 | 12 | -2 | 43 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Eyespot Glare | Sharp | INT | 3 Mid | 27 | 22 | -4 | 9 | 29 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -439,15 +439,15 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Ember Touch | Basic | INT | 2 Near | 10 | 10 | +3 | 6 | 7 | 24 | — | Starter |
-| Ash Flurry | Basic | INT | 3 Mid | 14 | 10 | +3 | 7 | 7 | 24 | — | Starter · sub-quirk |
+| Ember Touch | Basic | INT | 1 Close | 10 | 11 | +4 | 6 | 7 | 24 | — | Starter |
+| Ash Flurry | Basic | INT | 3 Mid | 14 | 11 | +4 | 7 | 7 | 24 | — | Starter · sub-quirk |
 | Wisp Lash | Hit | INT | 3 Mid | 19 | 14 | +14 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Pyre Bloom | Heavy | INT | 4 Far | 48 | 50 | -12 | 12 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Mournful Wail | Wither | INT | 2 Near | 27 | 12 | -2 | 44 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Ghostflame Dart | Sharp | INT | 4 Far | 29 | 22 | -5 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
-| Soulsiphon | Special | INT | 3 Mid | 47 | 29 | 0 | 17 | 10 | 36 | drain 50% of dmg | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
+| Soulsiphon | Special | INT | 3 Mid | 47 | 27 | 0 | 17 | 10 | 36 | drain 50% of dmg | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Phantom Lashes | Chain | INT | 3 Mid | 25 | 19 | +19 | 8 | 11 | 30 | — | Archer's Glade: Wisp Lash Lv3 + INT ≥ 520 |
-| Last Ember | Signature | INT | 2 Near | 56 | 66 | +3 | 22 | 15 | 42 | miss: self-dmg 12% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Last Ember | Signature | INT | 2 Near | 56 | 60 | +3 | 22 | 15 | 42 | miss: self-dmg 12% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
 
 #### Zipwisp
 
@@ -455,7 +455,7 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Zip Bump | Basic | POW | 2 Near | 14 | 11 | +7 | 7 | 5 | 24 | — | Starter |
 | Crackle | Basic | INT | 1 Close | 12 | 13 | +3 | 5 | 6 | 24 | — | Starter · sub-quirk |
-| Arc Flick | Hit | INT | 3 Mid | 18 | 16 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Arc Flick | Hit | INT | 3 Mid | 18 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Overcharge | Heavy | INT | 2 Near | 44 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Static Field | Wither | INT | 4 Far | 27 | 12 | -2 | 43 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Zigzag Bolt | Sharp | INT | 3 Mid | 25 | 22 | -4 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -467,7 +467,7 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Glint | Basic | INT | 2 Near | 12 | 11 | +5 | 7 | 8 | 24 | — | Starter |
+| Glint | Basic | INT | 1 Close | 12 | 11 | +5 | 7 | 8 | 24 | — | Starter |
 | Shard Toss | Basic | INT | 3 Mid | 13 | 11 | +4 | 5 | 7 | 24 | — | Starter · sub-quirk |
 | Reflection Ray | Hit | INT | 3 Mid | 19 | 18 | +17 | 9 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Shatterburst | Heavy | INT | 4 Far | 45 | 60 | -11 | 13 | 10 | 39 | — | Iron Quarry: INT ≥ 360 |
@@ -481,9 +481,9 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Talon Tick | Basic | POW | 2 Near | 11 | 14 | +8 | 7 | 8 | 24 | — | Starter |
-| Lens Flash | Basic | INT | 1 Close | 11 | 14 | +8 | 6 | 8 | 24 | — | Starter · sub-quirk |
-| Calibrated Shot | Hit | INT | 3 Mid | 17 | 19 | +20 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Talon Tick | Basic | POW | 2 Near | 11 | 13 | +7 | 7 | 8 | 24 | — | Starter |
+| Lens Flash | Basic | INT | 1 Close | 11 | 13 | +7 | 6 | 8 | 24 | — | Starter · sub-quirk |
+| Calibrated Shot | Hit | INT | 3 Mid | 17 | 18 | +20 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Overclock Cannon | Heavy | INT | 4 Far | 45 | 64 | -6 | 11 | 8 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Gear Grind | Wither | INT | 2 Near | 26 | 18 | +4 | 46 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Precision Bolt | Sharp | INT | 4 Far | 25 | 30 | +2 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -497,7 +497,7 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Pincer Pinch | Basic | POW | 1 Close | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
 | Shell Shove | Basic | POW | 2 Near | 11 | 10 | +3 | 5 | 7 | 24 | knockback | Starter |
-| Coral Jab | Hit | POW | 2 Near | 16 | 14 | +14 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Coral Jab | Hit | POW | 2 Near | 16 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Tidebreaker Clamp | Heavy | POW | 1 Close | 47 | 62 | -9 | 12 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Barnacle Spray | Wither | POW | 3 Mid | 26 | 15 | +1 | 43 | 4 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Sideways Slash | Sharp | POW | 2 Near | 28 | 24 | -3 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -523,8 +523,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Gilded Claw | Basic | POW | 1 Close | 10 | 14 | +8 | 7 | 6 | 24 | — | Starter |
-| Sun Spark | Basic | INT | 3 Mid | 12 | 14 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Gilded Claw | Basic | POW | 1 Close | 10 | 11 | +5 | 7 | 6 | 24 | — | Starter |
+| Sun Spark | Basic | INT | 3 Mid | 12 | 11 | +5 | 7 | 5 | 24 | — | Starter · sub-quirk |
 | Ribbon Lash | Hit | POW | 2 Near | 17 | 19 | +20 | 7 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Sovereign Crush | Heavy | POW | 1 Close | 46 | 64 | -6 | 12 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Dragon's Glare | Wither | INT | 3 Mid | 29 | 14 | +3 | 39 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
@@ -537,8 +537,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Talon Rake | Basic | POW | 1 Close | 11 | 14 | +4 | 7 | 7 | 24 | — | Starter |
-| Cinder Cough | Basic | INT | 3 Mid | 11 | 11 | +7 | 5 | 5 | 24 | — | Starter · sub-quirk |
+| Talon Rake | Basic | POW | 1 Close | 11 | 13 | +4 | 7 | 7 | 24 | — | Starter |
+| Cinder Cough | Basic | INT | 3 Mid | 11 | 10 | +7 | 5 | 5 | 24 | — | Starter · sub-quirk |
 | Wingbeat Jab | Hit | POW | 2 Near | 19 | 15 | +15 | 8 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Furnace Crush | Heavy | POW | 1 Close | 45 | 53 | -11 | 11 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Smoulder Smoke | Wither | INT | 3 Mid | 27 | 14 | +2 | 37 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
@@ -551,9 +551,9 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Pebble Punch | Basic | POW | 1 Close | 10 | 10 | +3 | 6 | 5 | 24 | — | Starter |
-| Grumble Shove | Basic | POW | 2 Near | 10 | 10 | +3 | 7 | 8 | 24 | knockback | Starter · sub-quirk |
-| Knuckle Knock | Hit | POW | 1 Close | 17 | 14 | +14 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Pebble Punch | Basic | POW | 1 Close | 10 | 11 | +4 | 6 | 5 | 24 | — | Starter |
+| Grumble Shove | Basic | POW | 2 Near | 10 | 11 | +4 | 7 | 8 | 24 | knockback | Starter · sub-quirk |
+| Knuckle Knock | Hit | POW | 1 Close | 17 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Geode Smash | Heavy | POW | 1 Close | 45 | 64 | -6 | 13 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Gravel Grind | Wither | POW | 2 Near | 28 | 18 | +4 | 46 | 8 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Crystal Jab | Sharp | POW | 2 Near | 27 | 30 | +2 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -565,10 +565,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Snap Bite | Basic | POW | 1 Close | 11 | 12 | +6 | 6 | 5 | 24 | — | Starter |
-| Tail Thump | Basic | POW | 2 Near | 12 | 11 | +7 | 7 | 5 | 24 | — | Starter · sub-quirk |
-| Plucky Jab | Hit | POW | 2 Near | 18 | 15 | +14 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Courage Crash | Heavy | POW | 1 Close | 44 | 52 | -11 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Snap Bite | Basic | POW | 1 Close | 11 | 11 | +6 | 6 | 5 | 24 | — | Starter |
+| Tail Thump | Basic | POW | 2 Near | 12 | 10 | +7 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Plucky Jab | Hit | POW | 2 Near | 18 | 15 | +18 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Courage Crash | Heavy | POW | 1 Close | 44 | 54 | -11 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Crest Flare | Wither | INT | 3 Mid | 28 | 14 | +1 | 43 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Rising Claw | Sharp | POW | 2 Near | 25 | 24 | -1 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Stampede Rush | Special | POW | 3 Mid | 50 | 42 | +0 | 17 | 8 | 36 | dash to Close after | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
@@ -579,9 +579,9 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Wing Buffet | Basic | POW | 2 Near | 14 | 12 | +3 | 6 | 8 | 24 | — | Starter |
-| Halo Spark | Basic | INT | 1 Close | 11 | 12 | +5 | 7 | 8 | 24 | — | Starter · sub-quirk |
-| Lightfeather Dart | Hit | INT | 3 Mid | 16 | 14 | +18 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Wing Buffet | Basic | POW | 2 Near | 14 | 10 | +3 | 6 | 8 | 24 | — | Starter |
+| Halo Spark | Basic | INT | 1 Close | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Lightfeather Dart | Hit | INT | 3 Mid | 16 | 14 | +14 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Dawnbreak Beam | Heavy | INT | 4 Far | 47 | 50 | -12 | 13 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Lull of Peace | Wither | INT | 2 Near | 27 | 15 | +1 | 40 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Gleaming Quill | Sharp | INT | 4 Far | 27 | 23 | -2 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -607,9 +607,9 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Trunk Bop | Basic | POW | 2 Near | 14 | 14 | +8 | 6 | 8 | 24 | — | Starter |
-| Seed Sneeze | Basic | INT | 1 Close | 11 | 14 | +8 | 7 | 6 | 24 | — | Starter · sub-quirk |
-| Ear Flap Slap | Hit | POW | 2 Near | 17 | 19 | +20 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Trunk Bop | Basic | POW | 2 Near | 14 | 12 | +6 | 6 | 8 | 24 | — | Starter |
+| Seed Sneeze | Basic | INT | 1 Close | 11 | 12 | +6 | 7 | 6 | 24 | — | Starter · sub-quirk |
+| Ear Flap Slap | Hit | POW | 2 Near | 17 | 18 | +19 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Stomp of Spring | Heavy | POW | 1 Close | 46 | 64 | -6 | 13 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Sleepy Blossom | Wither | INT | 3 Mid | 28 | 18 | +4 | 40 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Thorn Whirl | Sharp | INT | 2 Near | 26 | 30 | +2 | 11 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
@@ -621,10 +621,10 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Tentacle Swat | Basic | POW | 2 Near | 13 | 14 | +8 | 7 | 5 | 24 | — | Starter |
-| Ink Flick | Basic | INT | 1 Close | 12 | 14 | +8 | 5 | 5 | 24 | — | Starter · sub-quirk |
-| Footnote Dart | Hit | INT | 3 Mid | 18 | 19 | +20 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Tome Tsunami | Heavy | INT | 4 Far | 48 | 64 | -6 | 13 | 8 | 39 | — | Iron Quarry: INT ≥ 360 |
+| Tentacle Swat | Basic | POW | 2 Near | 13 | 12 | +6 | 7 | 5 | 24 | — | Starter |
+| Ink Flick | Basic | INT | 1 Close | 12 | 12 | +6 | 5 | 5 | 24 | — | Starter · sub-quirk |
+| Footnote Dart | Hit | INT | 3 Mid | 18 | 17 | +18 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Tome Tsunami | Heavy | INT | 4 Far | 48 | 60 | -6 | 13 | 8 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Ink Cloud | Wither | INT | 2 Near | 27 | 18 | +4 | 48 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Quill Scribble | Sharp | INT | 3 Mid | 29 | 30 | +2 | 9 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Eightfold Lecture | Special | INT | 4 Far | 47 | 9 | -2 | 19 | 11 | 36 | 4 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
@@ -635,12 +635,12 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Grin Bite | Basic | POW | 1 Close | 13 | 14 | +7 | 6 | 6 | 24 | — | Starter |
-| Wing Slap | Basic | POW | 2 Near | 14 | 12 | +4 | 7 | 7 | 24 | — | Starter · sub-quirk |
-| Sneaky Jab | Hit | POW | 1 Close | 17 | 16 | +16 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
-| Rooftop Drop | Heavy | POW | 1 Close | 44 | 56 | -10 | 13 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
-| Spooky Snicker | Wither | INT | 2 Near | 26 | 14 | +0 | 44 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
-| Ledge Claw | Sharp | POW | 2 Near | 29 | 24 | -1 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
+| Grin Bite | Basic | POW | 1 Close | 13 | 14 | +8 | 6 | 6 | 24 | — | Starter |
+| Wing Slap | Basic | POW | 2 Near | 14 | 14 | +8 | 7 | 7 | 24 | — | Starter · sub-quirk |
+| Sneaky Jab | Hit | POW | 1 Close | 17 | 19 | +20 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Rooftop Drop | Heavy | POW | 1 Close | 44 | 64 | -10 | 13 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Spooky Snicker | Wither | INT | 2 Near | 26 | 18 | +4 | 44 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
+| Ledge Claw | Sharp | POW | 2 Near | 29 | 30 | +2 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Rain-Spout Spit | Special | POW | 3 Mid | 49 | 30 | +2 | 16 | 12 | 36 | stun 30 ticks | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Dusk Ambush | Chain | POW | 1 Close | 23 | 22 | +19 | 11 | 13 | 30 | — | Archer's Glade: Sneaky Jab Lv3 + POW ≥ 520 |
 | Petrify Pounce | Signature | POW | 1 Close | 57 | 44 | +2 | 24 | 14 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
@@ -663,8 +663,8 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 
 | Technique | Family | Type | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| Tusk Poke | Basic | POW | 1 Close | 14 | 14 | +8 | 5 | 6 | 24 | — | Starter |
-| Snowflake Puff | Basic | INT | 3 Mid | 12 | 14 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Tusk Poke | Basic | POW | 1 Close | 14 | 13 | +8 | 5 | 6 | 24 | — | Starter |
+| Snowflake Puff | Basic | INT | 3 Mid | 12 | 13 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
 | Icicle Thrust | Hit | POW | 2 Near | 19 | 19 | +20 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Blizzard Lance | Heavy | INT | 4 Far | 46 | 64 | -6 | 13 | 10 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Frostbite Breeze | Wither | INT | 3 Mid | 27 | 18 | +4 | 42 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |

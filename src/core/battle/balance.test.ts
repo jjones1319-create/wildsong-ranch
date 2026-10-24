@@ -6,12 +6,13 @@ import { runBattle, timerTicksFor } from './engine.ts'
 import type { FighterSetup } from './types.ts'
 
 /**
- * GAME_DESIGN §26 battle targets: AI vs AI, stats from the NPC generator, alternating sides, 200 seeds per cell.
+ * GAME_DESIGN §26 battle targets: AI 2.0 Expert vs Expert, stats from the NPC generator, alternating sides, 200 seeds per cell.
  * Measured without sweets, sheets or edits. Tune `tuning.ts` AI or trait numbers to pass; the formulas stay.
  */
 
 const SEEDS = 200
-const ai = (monster: Monster): FighterSetup => ({ monster, control: 'ai', personality: 'Steady' })
+/** M10: the §26 matrix is Expert vs Expert. */
+const ai = (monster: Monster): FighterSetup => ({ monster, control: 'ai', personality: 'Steady', tier: 'expert' })
 const opts = (seed: number) => ({ seed, timerTicks: timerTicksFor(60) })
 
 interface Cell {
@@ -101,16 +102,20 @@ describe('§26 battle balance (AI vs AI, NPC stats, alternating sides)', () => {
 
   it('KO rate in even fights (five starter mirrors): 15–35 % at total 1,000; 3–15 % at 3,000; 4–12 attacks', () => {
     const probes: BreedId[] = ['puddlepup', 'tumblefox', 'quillion', 'pluckrex', 'cobblemaw']
+    // Four NPC rolls per breed (like the balance script's variants), so one lucky kit does not decide the average.
+    const rolls = [2, 3, 4, 5]
     const measure = (total: number) => {
       let ko = 0
       let attacks = 0
       for (const breed of probes) {
-        const m = npcMonster({ breed, total, seed: 2 })
-        const c = cell(m, structuredClone(m), 100)
-        ko += c.koA + c.koB
-        attacks += c.attacksA
+        for (const seed of rolls) {
+          const m = npcMonster({ breed, total, seed })
+          const c = cell(m, structuredClone(m), 50)
+          ko += c.koA + c.koB
+          attacks += c.attacksA
+        }
       }
-      return { ko: ko / probes.length, attacks: attacks / probes.length }
+      return { ko: ko / (probes.length * rolls.length), attacks: attacks / (probes.length * rolls.length) }
     }
     const low = measure(1000)
     const high = measure(3000)
@@ -120,7 +125,7 @@ describe('§26 battle balance (AI vs AI, NPC stats, alternating sides)', () => {
     between(high.ko, 3, 15, 'KO rate at 3,000')
     between(low.attacks, 4, 12, 'attacks per match at 1,000')
     between(high.attacks, 4, 12, 'attacks per match at 3,000')
-  })
+  }, 300_000)
 
   /**
    * M9: the full 30 × 30 matrix at three totals (200 seeds a cell) is run by `npm run sim:balance` and recorded

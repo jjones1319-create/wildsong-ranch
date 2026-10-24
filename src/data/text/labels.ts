@@ -81,6 +81,13 @@ export const PERSONALITY_LABELS = {
   Brawler: { name: 'Brawler', blurb: 'Walks straight in and fights up Close.' },
 } as const
 
+/** §12.11 (M10) the player's Auto styles. */
+export const AUTO_STYLE_LABELS = {
+  balanced: { name: 'Balanced', blurb: 'Plays the odds: steps in when the trade is good, steps back when it is not.' },
+  aggressive: { name: 'Aggressive', blurb: 'Closes in and spends guts on big hits.' },
+  defensive: { name: 'Defensive', blurb: 'Keeps its distance and plays it safe.' },
+} as const
+
 export const BAND_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far', 5: 'Out of range' } as const
 
 /** §13 formats (CONTENT §9). */

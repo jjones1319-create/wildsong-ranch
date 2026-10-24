@@ -138,17 +138,78 @@
   background: var(--line);
 }
 
+/*
+ * The world layer (M10 camera): the loop in BattleScreen writes --cam-x (the world x at the arena's middle,
+ * in arena units), --cam-px (pixels per unit) and --cam-s (the sprite scale). Everything inside places
+ * itself with --wx (its world x) through one calc, so no element is re-rendered per frame.
+ * The defaults frame the opening positions on a 360 px arena until the first frame runs.
+ */
+.arena__world {
+  --cam-x: 0;
+  --cam-px: 0.4865;
+  --cam-s: 0.608;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
 .fighter {
   position: absolute;
+  left: calc(50% + (var(--wx, 0) - var(--cam-x)) * var(--cam-px) * 1px);
   bottom: 40px;
   width: 0;
-  transition: transform 33ms linear;
+  transform: scale(var(--cam-s));
+  transform-origin: 50% 100%;
   will-change: transform;
 }
 
+/* The art shrink-wraps its portrait so translateX(-50%) really centres it on the fighter's x (a zero-width wrapper used to leave every sprite half a sprite to the right). */
 .fighter__art {
+  width: max-content;
   transform: translateX(-50%);
   transition: filter 120ms;
+}
+
+/* The plan icon (§12.11 "Show battle thinking"): counter-scaled with font-size so it stays the same size on screen. */
+.fighter__plan {
+  position: absolute;
+  left: 0;
+  bottom: 92%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.35);
+  font-size: calc(0.95rem / var(--cam-s));
+  line-height: 1;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* The walls: a fence post at each edge of the arena, bottom-anchored on the floor like the sprites. */
+.wall {
+  position: absolute;
+  left: calc(50% + (var(--wx, 0) - var(--cam-x)) * var(--cam-px) * 1px);
+  bottom: 40px;
+  width: 0;
+  transform: scale(var(--cam-s));
+  transform-origin: 50% 100%;
+  opacity: 0.9;
+}
+
+.wall svg {
+  display: block;
+  transform: translateX(-50%);
+}
+
+.wall--right svg {
+  transform: translateX(-50%) scaleX(-1);
 }
 
 .fighter--busy .fighter__art {
@@ -191,14 +252,16 @@
   filter: saturate(0.4);
 }
 
+/* Floats animate transform, so they are counter-scaled with font-size (and stacked in em) rather than transform. */
 .fighter__float {
   position: absolute;
   left: 0;
   bottom: 100%;
+  margin-bottom: calc(var(--stack, 0) * 1.2em);
   transform: translateX(-50%);
   white-space: nowrap;
   font-weight: 800;
-  font-size: 1.1em;
+  font-size: calc(1.1rem / var(--cam-s));
   text-shadow: 0 2px 4px rgb(0 0 0 / 0.6);
   animation: ws-bfloat 1s ease-out both;
   pointer-events: none;
@@ -224,7 +287,7 @@
 
 .float--crit {
   color: var(--accent);
-  font-size: 1.3em;
+  font-size: calc(1.3rem / var(--cam-s));
 }
 
 .float--miss {
@@ -241,15 +304,16 @@
 
 .float--special {
   color: var(--accent);
-  font-size: 1.2em;
+  font-size: calc(1.2rem / var(--cam-s));
 }
 
-/* Range ruler */
+/* Range ruler (outside the world layer: it never moves with the camera) */
 .ruler {
   position: absolute;
   left: 16px;
   right: 16px;
   bottom: 10px;
+  z-index: 2;
   height: 22px;
   display: flex;
   border-radius: 8px;

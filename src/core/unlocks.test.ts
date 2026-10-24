@@ -10,9 +10,9 @@ import { concludeLife, trainedGains } from './legacy.ts'
 import { marketStock } from './market.ts'
 import { loyaltyOf, mixBreeds, type Monster } from './monster.ts'
 import { createRng } from './rng.ts'
-import { createGameState, type GameState } from './state.ts'
+import { createGameState, type GameState, type TournamentState } from './state.ts'
 import { makeMonster, type MonsterOverrides } from './test-helpers.ts'
-import { createTournament, eventsForWeek, finishTournament, simulatePending } from './tournament.ts'
+import { createTournament, eventsForWeek, finishTournament, nextPlayerMatch, recordMatch, simulatePending } from './tournament.ts'
 import { attendVigil, chainStage, cocoonReady, emerge, giveBlueprint, metamorphose, offerAtShrine, offeringsInBag, reefclawArrival, stormChaseReady } from './unlocks.ts'
 
 const at = (year: number, month: number, week: number) => weekIndexOf({ year, month, week })
@@ -30,6 +30,23 @@ function strong(main: MonsterOverrides['main'] = 'puddlepup'): Monster {
   m.lifespanTotal = 400
   m.ageWeeks = 100
   return m
+}
+
+/**
+ * A cup where the player's own matches are recorded as wins and the rest are simulated. The special cups scale
+ * their opponents to the player's total (§13), so a seeded fight is a coin flip; these tests are about the
+ * unlocks, not about one battle (M10's AI changed the seeds).
+ */
+function winCup(s: GameState, eventId: string): TournamentState {
+  let t = createTournament(s, eventId, 'auto')
+  for (let guard = 0; guard < 16; guard++) {
+    t = simulatePending(t)
+    const m = nextPlayerMatch(t)
+    if (!m) break
+    const aIsPlayer = m.match.a === 0
+    t = recordMatch(t, m.index, { winner: aIsPlayer ? 0 : 1, how: 'ko', hpPct: aIsPlayer ? [1000, 0] : [0, 1000] })
+  }
+  return t
 }
 
 /** Plays whole weeks through the controller with no action of its own. */
@@ -246,7 +263,7 @@ describe('4. Mirrorkin: the Masquerade Cup', () => {
     expect(t.participants[1]!.rivalId).toBe('masked-breeder')
     expect(t.participants[1]!.monster.mainBreed).toBe('mirrorkin')
     expect(t.participants[1]!.habit).toBe('stealsGuts')
-    s.tournament = simulatePending(t, true)
+    s.tournament = winCup(s, 'masquerade')
     const done = finishTournament(s, rng)
     expect(done.outcome.placing).toBe(1)
     expect(done.outcome.items).toContainEqual({ id: 'shard-mask', qty: 1 })
@@ -346,7 +363,7 @@ describe('8. Aurelwyrm: four Crowns', () => {
     s.guild.crownsWon = ['dawn', 'tides', 'embers']
     s.guild.crownInvite = true
     expect(eventsForWeek(s).find((v) => v.event.id === 'crown-of-frost')!.eligible).toBe(true)
-    s.tournament = simulatePending(createTournament(s, 'crown-of-frost', 'auto'), true)
+    s.tournament = winCup(s, 'crown-of-frost')
     const done = finishTournament(s, rng)
     expect(done.outcome.placing).toBe(1)
     s = done.state

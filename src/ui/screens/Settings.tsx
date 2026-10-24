@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { audioReady, playSfx, unlockAudio } from '../../audio/player.ts'
 import { canSwitchDifficulty } from '../../core/game.ts'
 import { fill } from '../../data/text/format.ts'
-import { DIFFICULTY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
+import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { TEXT_SIZES, UI } from '../../data/tuning.ts'
-import { SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
+import { AUTO_STYLES, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
 import { readImport } from '../../save/exportImport.ts'
 import type { AnyValidation, AppSettings } from '../../save/schema.ts'
 import { Confirm, Segmented, Sheet, Toggle, TopBar } from '../components/Controls.tsx'
@@ -106,6 +106,12 @@ export function SettingsScreen() {
         <p class="field__label small">{t.speed}</p>
         <Segmented options={SPEEDS.map((v) => ({ value: v, label: SPEED_LABELS[v] }))} value={s.speed} onChange={(v) => void updateSettings({ speed: v })} label={t.speed} />
         <Toggle label={t.assist} hint={t.assistHint} checked={s.assist} onChange={(v) => void updateSettings({ assist: v })} />
+        <p class="field__label small">{t.autoStyle}</p>
+        <Segmented options={AUTO_STYLES.map((m) => ({ value: m, label: AUTO_STYLE_LABELS[m].name }))} value={s.autoStyle} onChange={(v) => void updateSettings({ autoStyle: v })} label={t.autoStyle} />
+        <p class="field__hint">
+          {AUTO_STYLE_LABELS[s.autoStyle].blurb} {t.autoStyleHint}
+        </p>
+        <Toggle label={t.showThinking} hint={t.showThinkingHint} checked={s.showThinking ?? s.transparency === 'lens'} onChange={(v) => void updateSettings({ showThinking: v })} />
         <Toggle label={t.leftHanded} hint={t.leftHandedHint} checked={s.leftHanded} onChange={(v) => void updateSettings({ leftHanded: v })} />
       </section>
 

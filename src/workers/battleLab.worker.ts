@@ -33,9 +33,10 @@ export function runLab(req: LabRequest, onProgress?: (done: number, total: numbe
     const seed = seeds.nextU32()
     const swapped = i % 2 === 1
     const opts = { seed, timerTicks: timerTicksFor(req.timerSec) }
+    // §12.10: the Lab is a fair test, so both brains are expert.
     const r = swapped
-      ? runBattle({ monster: req.b, control: 'ai', personality: req.personalityB }, { monster: req.a, control: 'ai', personality: req.personalityA }, opts)
-      : runBattle({ monster: req.a, control: 'ai', personality: req.personalityA }, { monster: req.b, control: 'ai', personality: req.personalityB }, opts)
+      ? runBattle({ monster: req.b, control: 'ai', personality: req.personalityB, tier: 'expert' }, { monster: req.a, control: 'ai', personality: req.personalityA, tier: 'expert' }, opts)
+      : runBattle({ monster: req.a, control: 'ai', personality: req.personalityA, tier: 'expert' }, { monster: req.b, control: 'ai', personality: req.personalityB, tier: 'expert' }, opts)
     addResult(stats, r, swapped)
     if (onProgress && ((i + 1) % PROGRESS_EVERY === 0 || i + 1 === req.battles)) onProgress(i + 1, req.battles)
   }

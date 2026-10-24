@@ -8,9 +8,9 @@ import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { BATTLE, BATTLE_FX } from '../../data/tuning.ts'
-import type { Habit, Personality } from '../../data/types.ts'
+import type { AiTier, AutoStyle, Habit, Personality, PlanMode } from '../../data/types.ts'
 import type { Screen } from '../router.ts'
-import { settings } from './appStore.ts'
+import { settings, updateSettings } from './appStore.ts'
 
 /**
  * Drives one battle for the screen (§12.11): a requestAnimationFrame loop steps the pure engine at
@@ -34,6 +34,9 @@ export interface BattleSetup {
   personalityA: Personality
   personalityB: Personality
   habitB?: Habit
+  /** §12.10 skill tiers (M10); the engine picks from the grade when missing. Side A on Auto also follows the Auto style setting. */
+  tierA?: AiTier
+  tierB?: AiTier
   timerSec: number
   /** Where Done goes. */
   origin: Screen
@@ -59,6 +62,8 @@ export interface FighterView {
   damage: number
   auto: boolean
   assistTech: string | null
+  /** §12.11 the brain's current plan (the thinking icon); null for a player on the pads. */
+  plan: PlanMode | null
   techniques: { id: string; name: string; range: 1 | 2 | 3 | 4; cost: number; hitPct: number; canFire: boolean; affordable: boolean }[]
 }
 
@@ -153,6 +158,7 @@ function snapshot(): BattleView | null {
     damage: f.damageDealt,
     auto: f.auto,
     assistTech: f.assistTech,
+    plan: f.aiMode,
     techniques: techniqueViews(f, s),
   })) as [FighterView, FighterView]
   return {
@@ -319,7 +325,11 @@ function stopLoop(): void {
 export function startBattle(s: BattleSetup, seed = freshSeed()): void {
   stopLoop()
   setup.value = s
-  battle = createBattle({ monster: s.a, control: s.aControl, personality: s.personalityA }, { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none' }, { seed, timerTicks: timerTicksFor(s.timerSec) })
+  battle = createBattle(
+    { monster: s.a, control: s.aControl, personality: s.personalityA, tier: s.tierA, style: settings.value.autoStyle },
+    { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none', tier: s.tierB },
+    { seed, timerTicks: timerTicksFor(s.timerSec) },
+  )
   if (s.nameB) battle.state.fighters[1].name = s.nameB
   pending = []
   inputs.length = 0
@@ -382,7 +392,16 @@ export const forfeit = () => {
 export function toggleAuto(): void {
   const v = view.value
   if (!v) return
-  act({ kind: 'auto', on: !v.fighters[0].auto })
+  act({ kind: 'auto', on: !v.fighters[0].auto, style: settings.value.autoStyle })
+  if (paused.value) runTicks(1)
+}
+
+/** §12.11 the Auto style: saved as a setting and, when side A is on Auto now, recorded as an input so replays stay exact. */
+export function setAutoStyle(style: AutoStyle): void {
+  void updateSettings({ autoStyle: style })
+  const v = view.value
+  if (!v || !v.fighters[0].auto) return
+  act({ kind: 'auto', on: true, style })
   if (paused.value) runTicks(1)
 }
 

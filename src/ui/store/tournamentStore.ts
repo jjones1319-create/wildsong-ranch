@@ -1,10 +1,12 @@
 import { signal } from '@preact/signals'
 import { concludeTournament, enterTournament, makeTrialOpponent, resolvePendingTechnique, resolveTrial, type TrialOutcome } from '../../core/game.ts'
-import { isComplete, nextPlayerMatch, opponentOf, recordMatch, simulatePending, type TournamentOutcome } from '../../core/tournament.ts'
+import { isComplete, nextPlayerMatch, opponentOf, recordMatch, simulatePending, tierFor, trialTier, type TournamentOutcome } from '../../core/tournament.ts'
+import { EVENT_BY_ID } from '../../data/calendar.ts'
 import { JOURNEY_SITE_BY_ID } from '../../data/journeys.ts'
 import { RIVAL_BY_ID } from '../../data/rivals.ts'
 import { TOURNAMENT } from '../../data/tuning.ts'
 import { navigate } from '../router.ts'
+import { settings } from './appStore.ts'
 import { startBattle, type BattleFinish } from './battleStore.ts'
 import { commit, endWeekNow, game, withRng } from './gameStore.ts'
 
@@ -52,6 +54,9 @@ export function playNext(): void {
     personalityA: 'Steady',
     personalityB: opp.personality,
     habitB: opp.habit,
+    // §12.10: the player's side is always expert (Auto included); the opponent's tier follows its grade and the event.
+    tierA: 'expert',
+    tierB: tierFor(opp, EVENT_BY_ID[t.eventId]!),
     timerSec: 60,
     origin: 'tournamentPlay',
     nameB: rival ? `${opp.monster.name} (${rival.name})` : opp.name,
@@ -113,11 +118,27 @@ export function startTrial(how: 'manual' | 'auto' | 'skip'): void {
   if (how === 'skip') {
     // Simulate instantly with both sides on the CPU.
     const { runBattle, timerTicksFor } = engine
-    const r = runBattle({ monster: g.monster, control: 'ai', personality: 'Steady' }, { monster: wild, control: 'ai', personality: 'Steady' }, { seed: withRng((rng) => rng.nextU32()), timerTicks: timerTicksFor(60) })
+    const r = runBattle(
+      { monster: g.monster, control: 'ai', personality: 'Steady', tier: 'expert', style: settings.value.autoStyle },
+      { monster: wild, control: 'ai', personality: 'Steady', tier: trialTier(wild.grade) },
+      { seed: withRng((rng) => rng.nextU32()), timerTicks: timerTicksFor(60) },
+    )
     done({ winner: r.outcome.winner, how: r.outcome.how, hpPct: r.outcome.hpPct, techUses: r.fighters[0].techUses })
     return
   }
-  startBattle({ a: g.monster, b: wild, aControl: how === 'manual' ? 'player' : 'ai', personalityA: 'Steady', personalityB: 'Steady', timerSec: 60, origin: 'ranch', nameB: `${site.name} ${wild.name.replace(/^Wild /, '')}`, onFinished: done })
+  startBattle({
+    a: g.monster,
+    b: wild,
+    aControl: how === 'manual' ? 'player' : 'ai',
+    personalityA: 'Steady',
+    personalityB: 'Steady',
+    tierA: 'expert',
+    tierB: trialTier(wild.grade),
+    timerSec: 60,
+    origin: 'ranch',
+    nameB: `${site.name} ${wild.name.replace(/^Wild /, '')}`,
+    onFinished: done,
+  })
   navigate('battle')
 }
 

@@ -6,7 +6,7 @@ import { AUDIO, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES 
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type Speed, type TransparencyMode, type UnlockChain } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -526,6 +526,8 @@ const SETTINGS_DEFAULTS = {
   music: true,
   haptics: true,
   assist: true,
+  autoStyle: 'balanced' as AutoStyle,
+  showThinking: null as boolean | null,
   masterVolume: AUDIO.defaultVolume.master as number,
   musicVolume: AUDIO.defaultVolume.music as number,
   sfxVolume: AUDIO.defaultVolume.sfx as number,
@@ -549,6 +551,8 @@ export const SettingsSchema = v.fallback(
     music: bool(true),
     haptics: bool(true),
     assist: bool(true),
+    autoStyle: oneOf(AUTO_STYLES, 'balanced'),
+    showThinking: v.fallback(v.nullable(v.boolean()), null),
     masterVolume: int(0, 100, AUDIO.defaultVolume.master),
     musicVolume: int(0, 100, AUDIO.defaultVolume.music),
     sfxVolume: int(0, 100, AUDIO.defaultVolume.sfx),
@@ -617,6 +621,10 @@ export interface AppSettings {
   haptics: boolean
   /** §12.11 Assist: tapping a card in another column walks there and fires. */
   assist: boolean
+  /** §12.11 how the player's monster fights on Auto (M10). */
+  autoStyle: AutoStyle
+  /** §12.11 the plan icons over the monsters; null = follow the transparency mode (on in Breeder's Lens). */
+  showThinking: boolean | null
   /** §23 volumes, 0–100. */
   masterVolume: number
   musicVolume: number

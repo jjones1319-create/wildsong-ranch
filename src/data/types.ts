@@ -48,6 +48,18 @@ export type Personality = (typeof PERSONALITIES)[number]
 export const HABITS = ['none', 'opensFar', 'banksForHeavy', 'walksClose', 'backsAway', 'spamsWither', 'waits99', 'pushesWhenTouching', 'dashesBelowHalf', 'stealsGuts'] as const
 export type Habit = (typeof HABITS)[number]
 
+/** GAME_DESIGN §12.10 AI 2.0 skill tiers (M10). */
+export const AI_TIERS = ['rookie', 'skilled', 'expert'] as const
+export type AiTier = (typeof AI_TIERS)[number]
+
+/** §12.11 the player's Auto styles. */
+export const AUTO_STYLES = ['balanced', 'aggressive', 'defensive'] as const
+export type AutoStyle = (typeof AUTO_STYLES)[number]
+
+/** §12.11 "Show battle thinking": what a monster's plan icon can say. */
+export const PLAN_MODES = ['distance', 'saving', 'pressing', 'pushing', 'punish', 'safe', 'cornered'] as const
+export type PlanMode = (typeof PLAN_MODES)[number]
+
 /** GAME_DESIGN §13 tournament formats (CONTENT §9). */
 export const FORMATS = ['RR4', 'RR6', 'Elim4', 'Elim8', '1v1', 'Relay'] as const
 export type Format = (typeof FORMATS)[number]

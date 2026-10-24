@@ -47,7 +47,7 @@ describe('the CPU AI (§12.10)', () => {
         const gutsBefore = [b.state.fighters[0].guts, b.state.fighters[1].guts]
         for (const e of step(b)) {
           if (e.kind === 'fire') {
-            expect(gutsBefore[e.side]).toBeGreaterThanOrEqual(AI.rookieReserve)
+            expect(gutsBefore[e.side]).toBeGreaterThanOrEqual(AI.guts.rookieReserve)
             fires += 1
           }
         }

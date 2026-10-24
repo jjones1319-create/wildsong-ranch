@@ -50,7 +50,7 @@ These are battle traits. Add the data and descriptions now; the effects are impl
 | Moonlit | Crit chance +6% |
 | Green Thumb | Heal and drain techniques restore twice as much |
 | Eight Arms | Multi-hit techniques get one extra hit |
-| Statue Pose | After standing still for 2 seconds, takes 30% less damage until it moves |
+| Statue Pose | After standing still for 2 seconds, takes 50% less damage until it moves |
 | Battering Ram | Dashing costs no guts, and the first technique after a dash deals +15% damage |
 | Chill | Its hits slow the target's walking by 25% for 3 seconds |
 

@@ -26,7 +26,7 @@ describe('battle traits (CONTENT §2.1, NEW_MONSTERS §2)', () => {
     expect(traitTakenMul('hard-shell', { techType: 'POW', still: false })).toBe(750)
     expect(traitTakenMul('hard-shell', { techType: 'INT', still: false })).toBe(1000)
     expect(traitTakenMul('unshakable', { techType: 'INT', still: false })).toBe(800)
-    expect(traitTakenMul('statue-pose', { techType: 'INT', still: true })).toBe(700)
+    expect(traitTakenMul('statue-pose', { techType: 'INT', still: true })).toBe(500)
     expect(traitRegenMul('live-wire', 29)).toBe(1100)
     expect(traitRegenMul('live-wire', 30)).toBe(1000)
     expect(traitSpeedMul('tailwind')).toBe(1200)

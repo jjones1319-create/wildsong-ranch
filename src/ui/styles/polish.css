@@ -194,10 +194,12 @@
   pointer-events: none;
 }
 
-.arena .fighter,
-.arena .ruler,
-.arena .shot {
+.arena .arena__world {
   z-index: 1;
+}
+
+.arena .ruler {
+  z-index: 2;
 }
 
 /* ---------- emotes (§22) ---------- */
@@ -914,12 +916,14 @@
   }
 }
 
+/* A shot starts at its monster's world x (--wx), --wy units above the floor, and flies --dx (set from the camera). */
 .shot {
   position: absolute;
-  bottom: 96px;
+  left: calc(50% + (var(--wx, 0) - var(--cam-x)) * var(--cam-px) * 1px);
+  bottom: calc(40px + var(--wy, 100) * var(--cam-px) * 1px);
   width: 18px;
   height: 18px;
-  margin-left: -9px;
+  margin: 0 0 -9px -9px;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 40%, #fff7d6 0%, var(--accent) 45%, rgb(242 181 68 / 0) 75%);
   box-shadow: 0 0 12px rgb(242 181 68 / 0.8);
