@@ -8,7 +8,7 @@ import { firstWeekOfStage } from './presets.ts'
 import { createRng } from './rng.ts'
 
 /**
- * GAME_DESIGN §13 generated opponents: stats spread by the breed's growth grades (weight 0.6 + gf, ±8 % noise)
+ * GAME_DESIGN §13 generated opponents: stats spread by the breed's growth grades (weight 0.9 + gf, ±8 % noise)
  * to a total in the grade's band, a technique set by grade, loyalty and fame bands. Rivals, habits and
  * seeding by cup arrive with the tournaments (M5); the Battle Lab and the §26 balance tests use this now.
  */

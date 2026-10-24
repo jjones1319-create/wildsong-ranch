@@ -161,10 +161,16 @@ function snow(rand: () => number, lite: boolean): string {
   return g({ class: 'ws-bg__snow' }, flakes)
 }
 
+/** Three bolts in different places, each on its own cycle, so the strike seems to wander (M9). */
+const BOLTS = ['M214 10 L198 54 L212 52 L196 96', 'M72 4 L60 40 L74 38 L58 78', 'M318 8 L300 48 L316 46 L302 90'] as const
+
 function storm(): string {
+  const cycle = BACKGROUND.lightningCycleS
   return g({ class: 'ws-bg__storm' }, [
-    rect(0, 0, W, H, 0, { fill: '#ffffff', class: 'ws-bg__flash', style: `animation-duration:${BACKGROUND.lightningCycleS}s` }),
-    path('M214 10 L198 54 L212 52 L196 96', { stroke: '#fff7c2', 'stroke-width': 3, fill: 'none', 'stroke-linejoin': 'round', class: 'ws-bg__bolt', style: `animation-duration:${BACKGROUND.lightningCycleS}s` }),
+    rect(0, 0, W, H, 0, { fill: '#ffffff', class: 'ws-bg__flash', style: `animation-duration:${cycle}s` }),
+    ...BOLTS.map((d, i) =>
+      path(d, { stroke: '#fff7c2', 'stroke-width': 3, fill: 'none', 'stroke-linejoin': 'round', class: 'ws-bg__bolt', style: `animation-duration:${cycle * BOLTS.length}s;animation-delay:-${cycle * i}s` }),
+    ),
   ])
 }
 

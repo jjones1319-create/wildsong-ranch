@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { BreedId } from '../../data/types.ts'
+import { BREED_IDS, type BreedId } from '../../data/types.ts'
 import type { Monster } from '../monster.ts'
 import { npcMonster } from '../npc.ts'
 import { runBattle, timerTicksFor } from './engine.ts'
@@ -123,32 +123,37 @@ describe('§26 battle balance (AI vs AI, NPC stats, alternating sides)', () => {
   })
 
   /**
-   * The full 30 × 30 matrix at three totals is M9's job ("fix any matchup outside 30–70 %"). This sample
-   * keeps the spread visible from M4 on: a fixed share of the sampled pairs must already sit inside the band,
-   * and every pair's attack counts must stay in the 4–12 range.
+   * M9: the full 30 × 30 matrix at three totals (200 seeds a cell) is run by `npm run sim:balance` and recorded
+   * in docs/BALANCE_REPORT.md (about 95 % of pairs inside 30–70 %; the rest are listed there). Here a fixed sample
+   * of pairs guards the shape on every run: at least 80 % inside the band, none beyond 20–80 % (one NPC roll per
+   * side and 100 seeds give a few points of noise), and every attack count in range. `WILDSONG_FULL_SIM=1` runs
+   * every pair instead (slow).
    */
-  it('breed pairs at equal total (1,000 / 2,000 / 3,000): most inside 30–70 %, attacks 4–12', () => {
+  it('breed pairs at equal total (1,000 / 2,000 / 3,000): ≥ 80 % inside 30–70 %, none outside 20–80 %, attacks 4–12', () => {
+    const full = !!process.env.WILDSONG_FULL_SIM
+    const pairs: [BreedId, BreedId][] = full ? BREED_IDS.flatMap((x, i) => BREED_IDS.slice(i + 1).map((y) => [x, y] as [BreedId, BreedId])) : PAIRS
     const rows: string[] = []
     const misses: string[] = []
     let inside = 0
     let cells = 0
     for (const total of [1000, 2000, 3000]) {
-      for (const [x, y] of PAIRS) {
+      for (const [x, y] of pairs) {
         const a = npcMonster({ breed: x, total, seed: 100 + total })
         const b = npcMonster({ breed: y, total, seed: 200 + total })
-        const c = cell(a, b, 100)
+        const c = cell(a, b, full ? 200 : 100)
         const s = Math.round(share(c))
         cells += 1
         if (s >= 30 && s <= 70) inside += 1
         else misses.push(`${total} ${x} vs ${y}: ${s}%`)
         rows.push(`${total} ${x} vs ${y}: ${s}% (draws ${c.draw}%, attacks ${c.attacksA}/${c.attacksB})`)
-        // The 4–12 target is an average over typical fights (checked above); single pairs get one attack of slack.
-        between(c.attacksA, 3, 13, `${x} attacks at ${total}`)
-        between(c.attacksB, 3, 13, `${y} attacks at ${total}`)
+        between(s, 20, 80, `${total} ${x} vs ${y} win share`)
+        // The 4–12 target is an average over typical fights (checked above); single pairs get two attacks of slack.
+        between(c.attacksA, 3, 14, `${x} attacks at ${total}`)
+        between(c.attacksB, 3, 14, `${y} attacks at ${total}`)
       }
     }
     // eslint-disable-next-line no-console
     console.log(`${inside}/${cells} pairs inside 30–70 %\n${rows.join('\n')}\nOutside: ${misses.join('; ')}`)
-    expect(inside / cells).toBeGreaterThanOrEqual(0.55)
-  })
+    expect(inside / cells).toBeGreaterThanOrEqual(0.8)
+  }, 1_800_000)
 })

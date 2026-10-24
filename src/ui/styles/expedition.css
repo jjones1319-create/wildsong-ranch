@@ -104,10 +104,15 @@
   background: var(--moss);
 }
 
-/* The Journal */
+/* The Journal: one scrolling row of chips (M9; they used to wrap onto three rows). */
 .journal-tabs .chips {
-  flex-wrap: wrap;
-  overflow: visible;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.journal-tabs .chip {
+  scroll-snap-align: start;
 }
 
 .jrow {

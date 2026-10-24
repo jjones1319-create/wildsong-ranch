@@ -124,8 +124,12 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
     else if (second !== 0 && scores[second]! > 0 && rng.chance(AI.secondBestPct)) f.aiTargetBand = second
     else f.aiTargetBand = best
     // Kiting only works on a slower opponent: backing away (×0.85) from a chaser never gains ground, so a fighter
-    // that can't outrun the other one fights at the best band it can actually reach instead of never attacking.
-    if (f.aiTargetBand > band && speedPerTick(f, true) <= speedPerTick(opp, false)) {
+    // that can't outrun a *chasing* opponent fights at the best band it can actually reach instead of never
+    // attacking. An opponent that is not pressing forward (it wants distance too, or stands still) is no chaser:
+    // backing off then works, and the fighter keeps its real best band (M9: casters used to walk into Close and
+    // poke with their weakest technique all match).
+    const chaser = opp.moveDir === 1 || opp.aiTargetBand < f.aiTargetBand
+    if (f.aiTargetBand > band && chaser && speedPerTick(f, true) <= speedPerTick(opp, false)) {
       let reachable = 0
       for (let b = 1; b <= band && b <= 4; b++) if (scores[b]! > (scores[reachable] ?? 0)) reachable = b
       if (reachable > 0) f.aiTargetBand = reachable

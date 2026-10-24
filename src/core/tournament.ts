@@ -126,25 +126,45 @@ export function cupSeed(week: number, eventId: string): number {
   return cyrb53(`${d.year}-${weekInYear(week)}-${eventId}`, 1)
 }
 
-function corinFor(player: Monster, event: TournamentEvent, grade: NpcGrade, rng: Rng): Participant {
-  const breed = event.kind === 'crown' || event.kind === 'legend' ? (CORIN.crownBreed ?? CORIN.breed) : CORIN.breed
+const MAX_TOTAL = RANGES.stat.max * 6
+
+/**
+ * A total scaled from the player's (percent), never below the grade's band (M9: the special cups stay a
+ * challenge for a monster far above its band).
+ */
+function scaledTotal(player: Monster, grade: NpcGrade, pct: number): number {
   const band = NPC.totals[grade]!
-  const total = clamp(divRound(totalStats(player.stats) * RIVAL_TUNING.corinScalePct, 100), band[0], band[1] === band[0] ? band[1] : Math.max(band[1], band[0]))
-  const monster = npcMonster({ breed, grade, total: Math.max(band[0], Math.min(total, 5994)), seed: rng.nextU32(), name: CORIN.name.split(' ')[0] })
+  return clamp(divRound(totalStats(player.stats) * pct, 100), band[0], MAX_TOTAL)
+}
+
+/** The special cups' opponents follow the player's total; every other cup uses the grade's band. */
+function specialTotal(player: Monster, event: TournamentEvent, grade: NpcGrade): number | undefined {
+  const pct = (TOURNAMENT.specialScalePct as Partial<Record<string, number>>)[event.kind]
+  return pct === undefined ? undefined : scaledTotal(player, grade, pct)
+}
+
+function corinFor(player: Monster, event: TournamentEvent, grade: NpcGrade, rng: Rng): Participant {
+  const special = event.kind === 'crown' || event.kind === 'legend'
+  const breed = special ? (CORIN.crownBreed ?? CORIN.breed) : CORIN.breed
+  const band = NPC.totals[grade]!
+  const scaled = scaledTotal(player, grade, RIVAL_TUNING.corinScalePct)
+  // In the Officials Corin stays inside the grade's band; at the Crowns he follows the player all the way.
+  const total = special ? scaled : Math.min(scaled, band[1])
+  const monster = npcMonster({ breed, grade, total, seed: rng.nextU32(), name: CORIN.name.split(' ')[0] })
   const personality: Personality = gradeIndex(player.grade) >= gradeIndex(RIVAL_TUNING.corinAggressiveFrom) && CORIN.personalityFromA ? CORIN.personalityFromA : CORIN.personality
   return { name: CORIN.name, monster, personality, habit: CORIN.habit, rivalId: CORIN.id, player: false }
 }
 
-function wildParticipant(grade: NpcGrade, rng: Rng, boss = false): Participant {
+function wildParticipant(grade: NpcGrade, rng: Rng, boss = false, total?: number): Participant {
   const breed = rng.weightedPick(BREEDS, (b) => b.commonness).id
   const name = rng.pick(WILD_NAMES)
-  const monster = npcMonster({ breed, grade, seed: rng.nextU32(), boss, name })
+  const monster = npcMonster({ breed, grade, total, seed: rng.nextU32(), boss, name })
   return { name, monster, personality: rng.pick(['Steady', 'Aggressive', 'Cautious', 'Trickster', 'Sniper', 'Brawler'] as const), habit: 'none', rivalId: null, player: false }
 }
 
-function rivalParticipant(rivalId: string, grade: NpcGrade, rng: Rng): Participant {
+function rivalParticipant(rivalId: string, grade: NpcGrade, rng: Rng, total?: number): Participant {
   const r = RIVAL_BY_ID[rivalId]!
-  const monster = npcMonster({ breed: r.breed, grade, seed: rng.nextU32(), name: r.name.split(' ')[0] })
+  const monster = npcMonster({ breed: r.breed, grade, total, seed: rng.nextU32(), name: r.name.split(' ')[0] })
   return { name: r.name, monster, personality: r.personality, habit: r.habit, rivalId: r.id, player: false }
 }
 
@@ -155,9 +175,10 @@ export function makeOpponents(state: GameState, event: TournamentEvent, rng: Rng
   const count = formatSize(event.format).participants - 1
   const out: Participant[] = []
   if (event.kind === 'rival' || event.kind === 'official' || event.kind === 'crown') out.push(corinFor(player, event, grade, rng))
-  if (event.kind === 'legend') out.push(wildParticipant('Legend', rng, true))
-  // CONTENT §10, §11: the Masquerade Cup is a single match against the Masked Breeder's Mirrorkin at your grade.
-  if (event.kind === 'masquerade') out.push(rivalParticipant('masked-breeder', grade, rng))
+  const special = specialTotal(player, event, grade)
+  if (event.kind === 'legend') out.push(wildParticipant('Legend', rng, true, special))
+  // CONTENT §10, §11: the Masquerade Cup is a single match against the Masked Breeder's Mirrorkin, scaled to you.
+  if (event.kind === 'masquerade') out.push(rivalParticipant('masked-breeder', grade, rng, special))
   if (event.kind === 'cup' && event.grade !== 'any') {
     const eligible = RIVALS.filter((r) => r.special === null && r.grades.includes(event.grade as TournamentGrade))
     for (const r of eligible) {
@@ -171,7 +192,7 @@ export function makeOpponents(state: GameState, event: TournamentEvent, rng: Rng
       const i = clamp(TOURNAMENT_GRADES.indexOf(player.grade) + rng.nextInt(-TOURNAMENT.openSpread, TOURNAMENT.openSpread), 0, TOURNAMENT_GRADES.length - 1)
       g = TOURNAMENT_GRADES[i]!
     }
-    out.push(wildParticipant(g, rng))
+    out.push(wildParticipant(g, rng, false, special))
   }
   return out.slice(0, count)
 }

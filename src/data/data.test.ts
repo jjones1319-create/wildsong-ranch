@@ -29,8 +29,8 @@ describe('breeds (CONTENT §2)', () => {
       }
       expect(b.lifespan).toBeGreaterThanOrEqual(280)
       expect(b.lifespan).toBeLessThanOrEqual(480)
-      expect(b.gutsRate).toBeGreaterThanOrEqual(8)
-      expect(b.gutsRate).toBeLessThanOrEqual(18)
+      expect(b.gutsRate).toBeGreaterThanOrEqual(10)
+      expect(b.gutsRate).toBeLessThanOrEqual(14)
       expect(b.strength).toBeGreaterThanOrEqual(1)
       expect(b.strength).toBeLessThanOrEqual(10)
     }
@@ -46,7 +46,7 @@ describe('breeds (CONTENT §2)', () => {
   it('spot-checks transcribed rows', () => {
     expect(BREED_BY_ID.cobblemaw.base).toEqual({ LIF: 140, POW: 120, INT: 30, SKI: 40, SPD: 30, DEF: 110 })
     expect(BREED_BY_ID.cobblemaw.grades).toEqual({ LIF: 'B', POW: 'A', INT: 'E', SKI: 'D', SPD: 'E', DEF: 'B' })
-    expect(BREED_BY_ID.aurelwyrm.gutsRate).toBe(18)
+    expect(BREED_BY_ID.aurelwyrm.gutsRate).toBe(14)
     expect(BREED_BY_ID.nimbusheep.lifespan).toBe(480)
     expect(BREED_BY_ID.lootlid.trait).toBe('gilded')
     expect(BREED_BY_ID.hearthwing.base).toEqual({ LIF: 130, POW: 120, INT: 90, SKI: 60, SPD: 60, DEF: 100 })
@@ -193,7 +193,6 @@ describe('techniques (CONTENT §3)', () => {
       'wishlume.wishlight-flash sharp=4 (band 5..8)',
       'wishlume.glimmer-bolt force=13 (band 14..19)',
       'nimbusheep.rainbow-arc hit=-5 (band -4..2)',
-      'galeheron.tempest-dive hit=-13 (band -12..-6)',
       'nibblegrub.wriggle-roll sharp=4 (band 5..8)',
       'velvesper.moonbeam-dart hit=13 (band 14..20)',
       'ashwraith.ghostflame-dart hit=-5 (band -4..2)',

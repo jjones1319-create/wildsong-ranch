@@ -19,15 +19,15 @@ Same columns as CONTENT §2. Stats are listed LIF / POW / INT / SKI / SPD / DEF,
 
 | # | Breed | Niche | Start | Growth | Life (wks) | Guts | Lean | Base stats | Grades | Bonus drill | Strength | Common | Trait |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 21 | **Hearthwing** | Late-blooming dragon powerhouse (grows up at Prime) | Shrine | Late | 400 | 16 | Both | 130/120/90/60/60/100 | B A C D D C | Plow Pull | 8 | 3 | Dragonheart |
-| 22 | **Grumblestone** | Unmovable crystal tank | Shrine | Late | 460 | 18 | POW | 160/110/40/40/20/140 | B B E E E A | Waterfall Stand | 7 | 7 | Unshakable |
+| 21 | **Hearthwing** | Late-blooming dragon powerhouse (grows up at Prime) | Shrine | Late | 400 | 14 | Both | 130/120/90/60/60/100 | B A C D D C | Plow Pull | 8 | 3 | Dragonheart |
+| 22 | **Grumblestone** | Unmovable crystal tank | Shrine | Late | 460 | 14 | POW | 160/110/40/40/20/140 | B B E E E A | Waterfall Stand | 7 | 7 | Unshakable |
 | 23 | **Pluckrex** | Brave rookie hero (grows up at Prime) | Market (always) | Early | 360 | 12 | POW | 110/100/50/90/80/80 | C B D C C C | Log Toss | 7 | 9 | Underdog |
-| 24 | **Paladove** | Holy guardian healer (grows up at Prime) | Shrine | Evergreen | 420 | 13 | INT | 130/50/110/80/70/110 | B E B C D B | Moon Meditation | 6 | 6 | Blessed |
-| 25 | **Starhowl** | Swift night hunter | Shrine | Steady | 360 | 10 | Mixed | 90/110/70/100/130/50 | D B C C A E | Wind Chase | 6 | 7 | Moonlit |
-| 26 | **Petalphant** | Blooming support tank | Shrine | Late | 480 | 14 | INT | 180/80/90/50/40/80 | A C B D E C | Hill Sprints | 5 | 7 | Green Thumb |
+| 24 | **Paladove** | Holy guardian healer (grows up at Prime) | Shrine | Evergreen | 420 | 12 | INT | 130/50/110/80/70/110 | B E B C D B | Moon Meditation | 6 | 6 | Blessed |
+| 25 | **Starhowl** | Swift night hunter | Shrine | Steady | 360 | 11 | Mixed | 90/110/70/100/130/50 | D B C C A E | Wind Chase | 6 | 7 | Moonlit |
+| 26 | **Petalphant** | Blooming support tank | Shrine | Late | 480 | 13 | INT | 180/80/90/50/40/80 | A C B D E C | Hill Sprints | 5 | 7 | Green Thumb |
 | 27 | **Scrollopus** | Inky trickster scholar | Shrine | Steady | 380 | 11 | INT | 90/40/140/110/70/60 | D E A B C D | Puzzle Stones | 5 | 6 | Eight Arms |
-| 28 | **Gloomgrin** | Stone-skinned counter-puncher | Shrine | Steady | 380 | 13 | POW | 100/110/60/100/50/120 | C B D B E B | Target Toss | 6 | 6 | Statue Pose |
-| 29 | **Rammerjack** | Charging brawler | Shrine | Early | 340 | 13 | POW | 110/130/40/70/110/70 | C A E D B C | Plow Pull | 7 | 8 | Battering Ram |
+| 28 | **Gloomgrin** | Stone-skinned counter-puncher | Shrine | Steady | 380 | 12 | POW | 100/110/60/100/50/120 | C B D B E B | Target Toss | 6 | 6 | Statue Pose |
+| 29 | **Rammerjack** | Charging brawler | Shrine | Early | 340 | 12 | POW | 110/130/40/70/110/70 | C A E D B C | Plow Pull | 7 | 8 | Battering Ram |
 | 30 | **Frostlance** | Icy precision lancer | Shrine | Evergreen | 400 | 12 | Mixed | 100/90/90/130/70/70 | C C C A D D | Target Toss | 6 | 6 | Chill |
 
 **Notes:**
@@ -44,11 +44,11 @@ These are battle traits. Add the data and descriptions now; the effects are impl
 | Trait | Effect |
 |---|---|
 | Dragonheart | Once per battle, when its HP first drops below 50%, it gains 20 guts |
-| Unshakable | Can't be pushed back or stunned; damage taken −10% |
+| Unshakable | Can't be pushed back or stunned; damage taken −20% |
 | Underdog | +8 hit and +10% damage against opponents with a higher stat total |
 | Blessed | Regenerates 1% of max HP every 5 seconds in battle |
 | Moonlit | Crit chance +6% |
-| Green Thumb | Heal and drain techniques restore 50% more |
+| Green Thumb | Heal and drain techniques restore twice as much |
 | Eight Arms | Multi-hit techniques get one extra hit |
 | Statue Pose | After standing still for 2 seconds, takes 30% less damage until it moves |
 | Battering Ram | Dashing costs no guts, and the first technique after a dash deals +15% damage |

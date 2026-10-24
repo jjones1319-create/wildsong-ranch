@@ -76,10 +76,10 @@ describe('the Shrine of Echoes (§14.1)', () => {
     ]).toMatchInlineSnapshot(`
       [
         "puddlepup/puddlepup Wildsong 145/92/86/110/103/80 life 411 guts 12 nature 21 berry-pudding",
-        "grumblestone/petalphant Twinkle 177/92/55/58/36/137 life 463 guts 18 nature -26 river-fish",
+        "grumblestone/petalphant Twinkle 177/92/55/58/36/137 life 463 guts 15 nature -26 river-fish",
         "tumblefox/tumblefox Hello 100/68/94/78/163/23 life 387 guts 10 nature 16 herbal-pellets",
         "tumblefox/pluckrex 夜明けの歌 113/74/79/75/90/50 life 357 guts 11 nature -27 berry-pudding",
-        "grumblestone/starhowl A 141/104/60/51/45/116 life 434 guts 17 nature -24 honey-bread",
+        "grumblestone/starhowl A 141/104/60/51/45/116 life 434 guts 14 nature -24 honey-bread",
       ]
     `)
   })
@@ -141,6 +141,6 @@ describe('secret phrases (CONTENT §12)', () => {
       const m = monsterFromRoll(r, 'x')
       lines.push(`${r.mainBreed}/${r.subBreed}/${m.variantId ?? '-'} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} ${m.lifespanTotal} ${m.gutsRate} ${m.nature} ${m.likes.food} ${m.likes.drill}`)
     }
-    expect(cyrb53(lines.join('\n'))).toBe(2515594754645409)
+    expect(cyrb53(lines.join('\n'))).toBe(8145457784466491)
   })
 })

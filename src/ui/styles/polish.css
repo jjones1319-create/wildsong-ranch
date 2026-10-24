@@ -108,19 +108,20 @@
   }
 }
 
+/* Three bolts share one 21 s cycle (3 × the flash's 7 s), each delayed by one flash, so every flash lights a different bolt. */
 .ws-bg__bolt {
   opacity: 0;
-  animation: ws-bg-bolt 7s linear infinite;
+  animation: ws-bg-bolt 21s linear infinite;
 }
 
 @keyframes ws-bg-bolt {
   0%,
-  88%,
+  96%,
   100% {
     opacity: 0;
   }
-  89%,
-  94% {
+  96.3%,
+  98% {
     opacity: 1;
   }
 }

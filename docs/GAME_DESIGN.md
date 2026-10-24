@@ -594,7 +594,7 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 ### 12.4 Guts
 
 - **Start and cap:** start at 50, cap at 99.
-- **Regeneration:** +1 every `gutsRate` ticks. Breed rates run 8–18, which is 3.75 down to 1.67 guts per second.
+- **Regeneration:** +1 every `gutsRate` ticks. Breed rates run 10–14, which is 3 down to about 2.1 guts per second (M9 narrowed them from 8–18: the attack count was tracking the rate too closely).
 - **During attacks:** regeneration **pauses during your own attack animation**.
 - **Costs:** the cost is paid on use, even on a miss. Wither removes the opponent's guts on a hit.
 
@@ -697,6 +697,7 @@ The AI thinks every tick while it isn't animating:
    - Walk toward the band centre: 90, 235, 395 or 580.
 4. **Push.** If touching and the target band is 3 or more → push (when not on cooldown).
 5. **Dash.** If the target band is at least 2 bands closer and guts ≥ 30 → 2% chance per tick.
+6. **Kiting (M9).** A fighter that wants a farther band but cannot outrun a *chasing* opponent (its backward speed ≤ the chaser's forward speed) fights at the best band it can reach instead of never attacking. An opponent that is not pressing forward (it wants distance too, or stands still) is no chaser, so backing off then works.
 
 **Personalities** (CONTENT §10 assigns them to rivals):
 
@@ -776,6 +777,7 @@ The AI thinks every tick while it isn't animating:
 - Winning your grade's Official promotes the monster one grade. The **first** Official win at each grade E–S, by any monster, raises breeder rank 1 → 6.
 - Winning the S Official also earns an invitation to the next **Crown**.
 - **Crowns:** four S invitationals, one per season, round robin of 4. Each win invites you to the next one.
+  - **Special cups scale with you (M9):** the Masquerade Cup, the Crowns and the Legend Cup generate their opponents at your monster's stat total (`TOURNAMENT.specialScalePct`, never below the grade's band), so they stay a fight for a monster far above its band. Corin follows you all the way at the Crowns; in the Officials he stays inside the grade's band.
   - The first win of each Crown raises breeder rank 7 → 10.
   - Rank 10 rolls the credits ("The Wildsong Rises"), then play continues.
 - **Legend Cup:** invitation in March once a monster has won **all four Crowns**, over any number of years. A 1v1 in April week 4. A win puts that monster in the **Hall of Fame**.
@@ -805,7 +807,7 @@ The AI thinks every tick while it isn't animating:
 | Loyalty | 50–65 | 55–70 | 60–75 | 65–80 | 70–85 | 80–95 | 85–95 | 95 |
 | Fame | 5–15 | 10–25 | 20–35 | 30–50 | 45–65 | 60–80 | 75–90 | 100 |
 
-- **Stats** are distributed by breed growth grades with weight `0.6 + gf`, plus ±8% personal noise.
+- **Stats** are distributed by breed growth grades with weight `0.9 + gf`, plus ±8% personal noise (M9 raised the base from 0.6 so generated walls and cannons are a little less extreme).
 - **Techniques** by grade:
   - E: Basics only.
   - D: + Hit.

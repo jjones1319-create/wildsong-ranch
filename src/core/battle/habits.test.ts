@@ -10,7 +10,7 @@ const fighter = (monster: Monster, habit: Habit): FighterSetup => ({ monster, co
 const opts = (seed: number) => ({ seed, timerTicks: timerTicksFor(60) })
 
 describe('rival habits (CONTENT §10)', () => {
-  const heron = npcMonster({ breed: 'galeheron', grade: 'C', seed: 1 }) // has a Far Basic
+  const heron = npcMonster({ breed: 'galeheron', grade: 'B', seed: 1 }) // has a Far Heavy (Tempest Dive)
   const pup = npcMonster({ breed: 'puddlepup', grade: 'C', seed: 2 })
 
   it('opens Far: the first technique fired has range 4', () => {

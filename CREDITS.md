@@ -15,7 +15,7 @@ All monsters, characters, names, art, music, sound and text in this project are 
 - idb-keyval, valibot, qrcode (MIT)
 - ZzFX sound engine (MIT); every sound effect is a parameter set written for this game
 - The music is composed in code for this game (a small step sequencer in `src/audio/music.ts`); no samples or recordings are used
-- Vitest (MIT)
+- Vitest (MIT) for the unit and simulation tests; Playwright (Apache-2.0) for the phone-emulation smoke test, driving the locally installed Google Chrome
 - Hosted on GitHub Pages
 
 ## External assets

@@ -399,6 +399,8 @@ export const TOURNAMENT = {
   rivals: { chancePct: 50, maxPerCup: 2 },
   /** New Year Open and the open-grade cups generate opponents at your grade ±1. */
   openSpread: 1,
+  /** The special cups scale their opponents to the player's stat total (percent), never below the grade's band (M9). */
+  specialScalePct: { masquerade: 100, crown: 100, legend: 100 },
 } as const
 
 /** CONTENT §10 Corin Hale scales with you. */
@@ -528,23 +530,23 @@ export const AI = {
 export const BATTLE_TRAITS = {
   nimbleSpd: 50,
   heavyHitterPct: 115,
-  fortifiedPct: 80,
+  fortifiedPct: 70,
   glowHit: 6,
   enGardeHit: 8,
   hotBlooded: { hpPctMax: 50, pct: 115 },
   tailwindPct: 120,
   mothDustCritPct: 50,
   etherealWitherPct: 70,
-  liveWire: { gutsBelow: 30, regenPct: 125 },
+  liveWire: { gutsBelow: 30, regenPct: 110 },
   reflective: { chancePct: 15, pct: 30 },
-  hardShellPct: 85,
+  hardShellPct: 75,
   regalCritCapBonus: 5,
   dragonheart: { hpPctBelow: 50, guts: 20 },
-  unshakablePct: 90,
+  unshakablePct: 80,
   underdog: { hit: 8, pct: 110 },
   blessedPct: 1,
   moonlitCrit: 6,
-  greenThumbPct: 150,
+  greenThumbPct: 200,
   eightArmsExtraHits: 1,
   statuePosePct: 70,
   batteringRamPct: 115,
@@ -557,7 +559,7 @@ export const NPC = {
   loyalty: { E: [50, 65], D: [55, 70], C: [60, 75], B: [65, 80], A: [70, 85], S: [80, 95], Crown: [85, 95], Legend: [95, 95] } as Record<string, readonly [number, number]>,
   fame: { E: [5, 15], D: [10, 25], C: [20, 35], B: [30, 50], A: [45, 65], S: [60, 80], Crown: [75, 90], Legend: [100, 100] } as Record<string, readonly [number, number]>,
   /** Stat weight = weightBase/100 + gf. */
-  weightBase: 60,
+  weightBase: 90,
   noisePct: 8,
   chainChancePct: 50,
   universalFrom: 'B' as const,

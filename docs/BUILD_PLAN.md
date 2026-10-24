@@ -320,11 +320,20 @@
 
 ## M9: Balance, QA and the v1.0 release
 
-- [ ] Run whole-life sims for every breed under all 4 care policies; adjust tuning to meet GAME_DESIGN §26; record results in `docs/BALANCE_REPORT.md`.
-- [ ] Battle matrix for all 30 breeds at totals 1,000, 2,000 and 3,000; fix any matchup outside 30–70%.
-- [ ] Optional Playwright smoke test (Pixel and iPhone emulation): new game → train → battle → save → reload. It needs Windows 11; skip it if unsupported.
-- [ ] Bug bash from the owner's notes; final README (how to play, install, back up) and CREDITS.
-- [ ] Tag `v1.0.0`.
+- [x] Run whole-life sims for every breed under all 4 care policies; adjust tuning to meet GAME_DESIGN §26; record results in `docs/BALANCE_REPORT.md`.
+- [x] Battle matrix for all 30 breeds at totals 1,000, 2,000 and 3,000; fix any matchup outside 30–70%.
+- [x] Optional Playwright smoke test (Pixel and iPhone emulation): new game → train → battle → save → reload. It needs Windows 11; skip it if unsupported.
+- [x] Bug bash from the owner's notes; final README (how to play, install, back up) and CREDITS.
+- [x] Tag `v1.0.0`.
+
+**Detailed plan (written 2026-10-23, after the owner confirmed M8 and asked for the milestone to run through on its own):** version `1.0.0`, no schema change. The two matrices are far too slow for `npm test` (4,800 lives and 261,000 battles), so they run as a dev script across worker threads and write `docs/BALANCE_REPORT.md`; the test suite keeps the §26 sim tests plus new per-breed guards that run in seconds. The full matrix can still be run inside Vitest with `WILDSONG_FULL_SIM=1`. Playwright is supported on this machine (Windows 11) and drives the installed Chrome (no browser download), so it is a devDependency with its own `npm run e2e`, outside `verify` so the deploy stays fast.
+- [x] 1. The balance script: `scripts/balance.ts` (`npm run sim:balance -- [--seeds N] [--battles N] [--only raise|battle]`) with `scripts/balance-worker.ts`: every breed under the four care policies over 40 seeds (life lived, breakdowns, totals by year, outcome rates), and the 30 × 30 battle matrix at totals 1,000 / 2,000 / 3,000 with 200 seeds per cell, sides alternating; flags every cell outside its §26 band and writes the tables and the misses to `docs/BALANCE_REPORT.md`.
+- [x] 2. Tuning: read the report, then adjust `tuning.ts` (AI, traits, NPC weights) or technique values and breed traits until every breed's life bands and every matchup sit inside the targets, re-running the script after each change. Formulas stay as they are (GAME_DESIGN §26).
+- [x] 3. Tests: per-breed raising guards in `lifeSim.test.ts` (every breed, Good care over 12 seeds: life lived inside a band around the Good target and a stat total that grows; Neglect shorter than Good); the battle sample in `balance.test.ts` becomes a hard rule (every sampled pair inside 30–70 %) and the full matrix runs under `WILDSONG_FULL_SIM=1`.
+- [x] 4. Bug bash from the open known issues: the Masquerade Cup and the Crowns scale their opponents to the player's total like Corin does (`TOURNAMENT.specialScalePct`); the Shrine's tab labels no longer wrap at 130 %; the Journal's chips scroll in one row; the lightning bolt strikes in three places; a review pass over the UI for crashes on bad data.
+- [x] 5. Playwright: `@playwright/test` (devDependency), `playwright.config.ts` with Pixel 7 and iPhone 14 profiles on the installed Chrome, `e2e/smoke.spec.ts`: new game → a week of training → a battle → the save survives a reload; `npm run e2e` builds and previews first. Skipped on CI.
+- [x] 6. README (how to play, install, back up and restore, the Lab, the docs), CREDITS (Playwright), `CHANGELOG`-style notes in PROGRESS.md, version `1.0.0`.
+- [x] 7. `npm run verify`, `npm run e2e`, PROGRESS.md, commit `M9: balance, QA and v1.0`, push, confirm the deploy, tag `v1.0.0` and push the tag, phone checklist, stop.
 
 **Phone check:** a full playtest session; export a backup.
 

@@ -2,6 +2,34 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## M9: Balance, QA and the v1.0 release (2026-10-23) · v1.0.0
+
+**Live:** version 1.0. Every breed has been raised under all four care policies and fought against every other breed at three power levels, and the numbers were tuned until the matchups sit inside the design's bands almost everywhere (`docs/BALANCE_REPORT.md`). The special cups now scale to your monster, the casters fight properly at close range, the Shrine's tabs and the Journal's chips stop wrapping, lightning wanders, and a Playwright smoke test plays the game on a Pixel and an iPhone profile. The README explains how to play, install and back up.
+
+**Done**
+- **The balance script** (`scripts/balance.ts`, `scripts/balance-worker.ts`, `npm run sim:balance`): 4,800 lives (30 breeds × 4 policies × 40 seeds) and 279,000 battles (every breed pair, mirrors included, at totals 1,000 / 2,000 / 3,000, 200 seeds a cell, 8 NPC rolls a side, sides alternating) across worker threads in about two minutes; writes `docs/BALANCE_REPORT.md` with the raising table, a per-breed battle summary, the full matrices and the list of everything outside §26.
+- **Raising:** every breed inside its band without any tuning: Great 84.8 %, Good 79.7 %, OK 65.6 %, Neglect 38.6 % of the nominal life (all breeds between 77.7 and 81.6 under Good care); Good-care outcome rates and the stat-total targets hold for every breed.
+- **Battle, before tuning:** only 61 % of pairs sat inside 30–70 %. Two causes. The AI's kiting rule sent a caster to Close whenever it could not outrun its opponent, even one that was not chasing, so INT breeds spent whole matches poking with their weakest POW basic (Scrollopus 19 %, Paladove 24 %, Gearhoot 28 %); and attack counts tracked the breed's guts rate (4 a match at rate 18, 11 at rate 8), so the walls lost (Aurelwyrm 23 %) and the fast casters won (Ashwraith 77 %).
+- **Battle tuning (numbers only; the formulas are untouched):** the AI treats only an opponent that is pressing forward, or that wants a closer band, as a chaser (§12.10 rule 6); every INT breed's INT basic now covers Close (Drizzle Puff, Gust Feather, Crackle, Lens Flash, Halo Spark, Seed Sneeze and Ink Flick moved to Close; Woolly Bump, Talon Tick and Trunk Bop to Near); breed guts rates narrowed from 8–18 to 10–14; the NPC stat weight base rose from 0.6 to 0.9; Fortified −30 %, Unshakable −20 %, Hard Shell −25 %, Live Wire +10 %, Green Thumb ×2; and 168 technique force and hit values nudged toward the top or bottom of their §10.2 bands by breed (walls and the weak casters up, the dominant breeds down). CONTENT §2, §2.1 and §3 and NEW_MONSTERS are updated to match.
+- **Battle, after tuning:** 415 / 419 / 405 of 435 pairs inside 30–70 % at 1,000 / 2,000 / 3,000 (95 %, 96 %, 93 %); every breed's mean win share is between 38 and 63 %; mirrors 45–55 %; attacks 4–12 a match on average; the mirror KO average 15–35 % at 1,000.
+- **Special cups** (`TOURNAMENT.specialScalePct`): the Masquerade Cup, the Crowns and the Legend Cup generate their opponents at your stat total (never below the grade's band); Corin follows you all the way at the Crowns and stays inside the band in the Officials. GAME_DESIGN §13 notes it; `specialCups.test.ts`.
+- **Bug bash:** the Shrine's tabs never wrap (the segmented control scrolls sideways at large text sizes); the Journal's chips scroll in one row; three lightning bolts strike in turn with the flash.
+- **Playwright** (`playwright.config.ts`, `e2e/smoke.spec.ts`, `npm run e2e`): new game → a week of training → a CPU battle at ×4 → the save survives a reload, on Pixel 7 and iPhone 14 profiles, in the installed Google Chrome (no browser download). Outside `verify`, so the deploy stays fast.
+- **Tests** (465, 33 new): the special cups; every breed under Good and Neglect care (sampled); the battle sample is now a hard rule (≥ 80 % of sampled pairs inside 30–70 %, none outside 20–80 %) with `WILDSONG_FULL_SIM=1` for the whole matrix; the data, shrine, trait and habit tests follow the new numbers.
+- **README** (how to play, install, back up and restore, the Lab, the developer commands), **CREDITS** (Playwright), version 1.0.0, tag `v1.0.0`.
+
+**Decisions worth knowing**
+- The matrices are a dev script, not a test: `npm test` would take twenty minutes with them. The report is the record; re-run it after any battle or breed change.
+- Lootlid is the one breed left clearly below the band (30–42 % mean): it is the "challenge / joke breed" with a non-battle trait, and 25 of the 66 remaining misses involve it. Making it even keel would need a battle trait or a formula change, which is the owner's call.
+- The mirror KO average at 3,000 is 18.8 % against a 3–15 % target: Heavy techniques at 37–49 % of HP make late-game cannon mirrors end early. Lowering it would mean touching the damage formula, so it is recorded rather than forced.
+- Per-breed mirror KO rates range from 0 % (walls) to 90 % (glass cannons) by design; the report shows them but only checks the average.
+
+**Next:** the owner's playtest. LATER items start after v1.0 (Sketch Stone, local Versus, coach mini-games, a trainee stall, leagues, cloud sync, localization).
+
+**Known issues**
+- See the balance notes above: Lootlid, a handful of caster-versus-wall pairs at 3,000 (the worst 20–30 % / 70–83 %), and the 3,000 KO average.
+- The Playwright run needs Google Chrome installed on the machine and is skipped on CI.
+
 ## M8: Sound, juice and polish (2026-10-23) · v0.10.0
 
 **Live:** the game has a voice and a pulse. Original music follows you around (the ranch by season, Town, the Shrine, battle, the farewell, a victory fanfare), every tap, drill and hit has a sound, and the ranch stage is a painted scene that changes with the season and the weather (drifting clouds, rain, snow, a storm with lightning). Each drill has its own vignette, monsters show emotes, battles have lunges, projectiles, hit flashes, knockback, crit sparkles, KO flops and victory hops. The title screen helps you install the game, the ranch reminds you to back up, Settings can check for updates, the battle pads flip for left-handed play, Reduce motion really stops everything, the heavy screens load lazily, and the planner runs up to eight weeks on its own.
