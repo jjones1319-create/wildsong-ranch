@@ -72,51 +72,108 @@ export function fightingCopy(m: Monster, event: TournamentEvent): Monster {
   return copy
 }
 
+export interface EntryCheck {
+  eligible: boolean
+  reason: EntryBlock | null
+  /** Entering below your grade costs fame and loyalty (§13). */
+  tooEasy: boolean
+}
+
+/** The blocks that change from week to week (a cup in progress, a Journey, injury, sickness, being away). */
+export const TEMPORARY_BLOCKS: readonly EntryBlock[] = ['inTournament', 'journey', 'injured', 'sick', 'away']
+
+/**
+ * §13 entry rules for one event held in week `at` (absolute). For this week every rule applies. For a later
+ * week (the calendar) only what is knowable today is checked: the grade window, "too easy", the minimum grade,
+ * invitations and the event's rule; the monster's age is projected to that week, and its grade, nature and
+ * techniques are today's. The temporary blocks (a cup in progress, a Journey, injury, sickness, away) are skipped.
+ */
+export function entryCheck(state: GameState, event: TournamentEvent, at: number = state.week): EntryCheck {
+  const m = state.monster
+  const no = (reason: EntryBlock): EntryCheck => ({ eligible: false, reason, tooEasy: false })
+  if (!m) return no('noMonster')
+  if (at <= state.week) {
+    if (state.tournament) return no('inTournament')
+    if (state.journey) return no('journey')
+    if (m.status.injuredWeeks > 0) return no('injured')
+    if (m.status.sickWeeks > 0) return no('sick')
+    if (m.status.missingWeeks > 0 || m.status.clinicWeeks > 0 || m.status.cocoonWeeks > 0 || state.expedition) return no('away')
+  }
+  const grade = m.grade
+  if (event.kind === 'masquerade' && !state.unlocks.masqueradeInvited) return no('invitation')
+  if (event.kind === 'crown' && !(grade === 'S' && state.guild.crownInvite)) return no('invitation')
+  if (event.kind === 'legend' && !state.guild.legendInvite) return no('invitation')
+  if (event.minGrade && gradeIndex(grade) < gradeIndex(event.minGrade)) return no('minGrade')
+  let tooEasy = false
+  if (event.grade !== 'own' && event.grade !== 'any' && event.kind === 'cup') {
+    const diff = gradeIndex(event.grade) - gradeIndex(grade)
+    if (diff > 1) return no('gradeTooHigh')
+    tooEasy = diff < 0
+  }
+  const age = m.ageWeeks + Math.max(0, at - state.week)
+  switch (event.rule) {
+    case 'sprout':
+      if (age >= 48) return no('rule')
+      break
+    case 'elders':
+      if (age < 288) return no('rule')
+      break
+    case 'hero':
+      if (m.nature < 20) return no('rule')
+      break
+    case 'rogue':
+      if (m.nature > -20) return no('rule')
+      break
+    case 'powOnly':
+    case 'intOnly':
+      if (fightingCopy(m, event).techniques.length === 0) return no('noTechniques')
+      break
+    default:
+      break
+  }
+  return { eligible: true, reason: null, tooEasy }
+}
+
 /** This week's events with eligibility and the reason when not (§13 entry rules). Eligible ones first. */
 export function eventsForWeek(state: GameState): WeekEventView[] {
   const d = dateOf(state.week)
-  const m = state.monster
-  const views = eventsAt(weekInYear(state.week), d.year).map((event): WeekEventView => {
-    const grade = m?.grade ?? 'E'
-    const view: WeekEventView = { event, eligible: false, reason: null, tooEasy: false, opponentGrade: opponentGradeOf(event, grade), purse: purseOf(event, grade) }
-    if (!m) return { ...view, reason: 'noMonster' }
-    if (state.tournament) return { ...view, reason: 'inTournament' }
-    if (state.journey) return { ...view, reason: 'journey' }
-    if (m.status.injuredWeeks > 0) return { ...view, reason: 'injured' }
-    if (m.status.sickWeeks > 0) return { ...view, reason: 'sick' }
-    if (m.status.missingWeeks > 0 || m.status.clinicWeeks > 0 || m.status.cocoonWeeks > 0 || state.expedition) return { ...view, reason: 'away' }
-    if (event.kind === 'masquerade' && !state.unlocks.masqueradeInvited) return { ...view, reason: 'invitation' }
-    if (event.kind === 'crown' && !(grade === 'S' && state.guild.crownInvite)) return { ...view, reason: 'invitation' }
-    if (event.kind === 'legend' && !state.guild.legendInvite) return { ...view, reason: 'invitation' }
-    if (event.minGrade && gradeIndex(grade) < gradeIndex(event.minGrade)) return { ...view, reason: 'minGrade' }
-    if (event.grade !== 'own' && event.grade !== 'any' && event.kind === 'cup') {
-      const diff = gradeIndex(event.grade) - gradeIndex(grade)
-      if (diff > 1) return { ...view, reason: 'gradeTooHigh' }
-      view.tooEasy = diff < 0
-    }
-    switch (event.rule) {
-      case 'sprout':
-        if (m.ageWeeks >= 48) return { ...view, reason: 'rule' }
-        break
-      case 'elders':
-        if (m.ageWeeks < 288) return { ...view, reason: 'rule' }
-        break
-      case 'hero':
-        if (m.nature < 20) return { ...view, reason: 'rule' }
-        break
-      case 'rogue':
-        if (m.nature > -20) return { ...view, reason: 'rule' }
-        break
-      case 'powOnly':
-      case 'intOnly':
-        if (fightingCopy(m, event).techniques.length === 0) return { ...view, reason: 'noTechniques' }
-        break
-      default:
-        break
-    }
-    return { ...view, eligible: true }
-  })
+  const grade = state.monster?.grade ?? 'E'
+  const views = eventsAt(weekInYear(state.week), d.year).map((event): WeekEventView => ({ event, opponentGrade: opponentGradeOf(event, grade), purse: purseOf(event, grade), ...entryCheck(state, event) }))
   return views.sort((a, b) => Number(b.eligible) - Number(a.eligible))
+}
+
+/** How many rounds a format plays: a round robin of n has n − 1, an elimination of n has log₂ n, a single match 1. */
+export function roundsOf(format: TournamentEvent['format']): number {
+  const n = formatSize(format).participants
+  if (format === 'RR4' || format === 'RR6') return n - 1
+  if (format === 'Elim4' || format === 'Elim8') {
+    let rounds = 0
+    for (let k = 1; k < n; k *= 2) rounds += 1
+    return rounds
+  }
+  return 1
+}
+
+/** What 1st place wins on top of the purse (§13 item prizes), by event kind and the monster's grade. */
+export type ItemPrizeKind = 'sweets' | 'sheetOrGrand' | 'grandSweets' | 'wondercake' | 'signature' | 'legend' | 'shardMask' | 'none'
+
+export function itemPrizeKind(event: TournamentEvent, grade: TournamentGrade): ItemPrizeKind {
+  switch (event.kind) {
+    case 'summit':
+      return 'none'
+    case 'official':
+      return 'wondercake'
+    case 'crown':
+      return 'signature'
+    case 'legend':
+      return 'legend'
+    case 'masquerade':
+      return 'shardMask'
+    default: {
+      const gi = gradeIndex(grade)
+      return gi <= 2 ? 'sweets' : gi <= 4 ? 'sheetOrGrand' : 'grandSweets'
+    }
+  }
 }
 
 /* ---------- participants ---------- */
@@ -713,11 +770,11 @@ function itemPrizes(state: GameState, event: TournamentEvent, grade: TournamentG
     sheets.push(rng.pick(pool).id)
     return true
   }
-  switch (event.kind) {
-    case 'official':
+  switch (itemPrizeKind(event, grade)) {
+    case 'wondercake':
       addItem('wondercake')
       break
-    case 'crown': {
+    case 'signature': {
       const sig = signatureOf(state.monster!.mainBreed).id
       if (state.songbook.includes(sig)) addItem('potential-pearl')
       else sheets.push(sig)
@@ -727,20 +784,22 @@ function itemPrizes(state: GameState, event: TournamentEvent, grade: TournamentG
       addItem('tempo-bell')
       addItem('wondercake', 3)
       break
-    case 'masquerade':
+    case 'shardMask':
       addItem('shard-mask')
       break
-    default: {
-      const gi = gradeIndex(grade)
-      if (gi <= 2) for (let i = 0; i < TOURNAMENT.itemPrizes.lowSweets; i++) addItem(rng.pick(regular).id)
-      else if (gi <= 4) {
-        if (rng.chance(50) && sheetFrom(['Basic', 'Hit', 'Wither', 'Sharp'])) break
-        addItem(rng.pick(grand).id)
-      } else {
-        for (let i = 0; i < TOURNAMENT.itemPrizes.highGrandSweets; i++) addItem(rng.pick(grand).id)
-        if (rng.chance(TOURNAMENT.itemPrizes.highSheetPct)) sheetFrom(['Heavy', 'Special'])
-      }
-    }
+    case 'sweets':
+      for (let i = 0; i < TOURNAMENT.itemPrizes.lowSweets; i++) addItem(rng.pick(regular).id)
+      break
+    case 'sheetOrGrand':
+      if (rng.chance(50) && sheetFrom(['Basic', 'Hit', 'Wither', 'Sharp'])) break
+      addItem(rng.pick(grand).id)
+      break
+    case 'grandSweets':
+      for (let i = 0; i < TOURNAMENT.itemPrizes.highGrandSweets; i++) addItem(rng.pick(grand).id)
+      if (rng.chance(TOURNAMENT.itemPrizes.highSheetPct)) sheetFrom(['Heavy', 'Special'])
+      break
+    case 'none':
+      break
   }
   return { items, sheets }
 }

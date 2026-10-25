@@ -1,4 +1,5 @@
 import { EVENT_BY_ID } from '../data/calendar.ts'
+import { prunePins } from './calendarView.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
 import { DIFFICULTY, JOURNEY, TOURNAMENT } from '../data/tuning.ts'
 import type { FoodId, StatKey } from '../data/types.ts'
@@ -232,6 +233,8 @@ export function finishWeek(input: GameState, rng: Rng): StepResult {
   }
   // An unanswered storm spark lapses with the week; storms come back.
   r.state.pendingEvent = null
+  // §3 the calendar's ★ reminders tidy themselves: a pin whose week (or expedition month) is over goes.
+  r.state.calendarPins = prunePins(r.state.calendarPins, r.state.week)
   // §18 the Journal's records and CONTENT §14 titles, checked every week so nothing is missed.
   updateRecordsMut(r.state)
   const awarded = awardTitles(r.state)

@@ -24,6 +24,8 @@ export type MatchPlay = 'fight' | 'auto' | 'skip'
 
 export const outcome = signal<TournamentOutcome | null>(null)
 export const trialOutcome = signal<TrialOutcome | null>(null)
+/** An event the calendar sent the player to enter: the entry screen opens with it picked. */
+export const entryPreselect = signal<string | null>(null)
 /** The round whose results and standings are on screen; null shows the next round's preview. Not saved. */
 export const recapRound = signal<number | null>(null)
 

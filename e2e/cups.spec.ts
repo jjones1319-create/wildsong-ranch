@@ -40,11 +40,12 @@ async function noSidewaysScroll(page: Page): Promise<void> {
   expect(width, 'no horizontal scroll at 412 px').toBeLessThanOrEqual(W)
 }
 
-/** Waits for the battle's result card and taps Continue. */
+/** Speeds the battle up (unless it already ended), waits for the result card and taps Continue. */
 async function finishBattle(page: Page): Promise<void> {
-  await page.getByRole('button', { name: '×4' }).click()
-  await expect(page.getByRole('button', { name: 'Continue' })).toBeVisible({ timeout: 60_000 })
-  await page.getByRole('button', { name: 'Continue' }).click()
+  const done = page.getByRole('button', { name: 'Continue' })
+  if (!(await done.isVisible().catch(() => false))) await page.getByRole('button', { name: '×4' }).click({ timeout: 3000 }).catch(() => undefined)
+  await expect(done).toBeVisible({ timeout: 60_000 })
+  await done.click()
 }
 
 test('an Ascension, round by round: fight by hand, take over Auto, skip, finish', async ({ page }, info) => {

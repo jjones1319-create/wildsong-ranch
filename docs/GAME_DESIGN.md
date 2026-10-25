@@ -95,6 +95,37 @@ Shrine / Market ─► NEW MONSTER
 - Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
 - A "Repeat last week" button sits on the ranch screen.
 
+**Calendar screen** (SHOULD; `core/calendarView.ts`, `screens/ranch/Calendar.tsx`):
+- **What's on it,** built only from the existing data and the save, never from a copied table:
+  - Every cup of CONTENT §9 with the year rules (Sprout in even years, Elders' in odd ones, the Summit Qualifier and the Summit in Summit years instead of the Heatwave and Stargazer Cups). Each shows its grade, format and rounds (a round robin of 4 has 3, of 6 has 5), the purse at the monster's grade today, and the 1st-place item prize.
+  - The expeditions open each month, with their grade and fame asks.
+  - Dated notes:
+    - A Crown four weeks ahead, for an S monster: "you're invited", or "win the S Official to be invited". The invitation itself is the standing flag from the S Official, so this is a reminder, not a letter.
+    - The Wildsong Legend, in March, once all four Crowns are won.
+    - The Market's seasonal stall changing in March, June, September and December (a discovered Reefclaw joins the summer note).
+    - Ines's upgrade letter in May week 4.
+    - The monster's birthdays: it turns a year older on every 48th week of age.
+  - **Busy weeks:** the planner's queued drills and rests, a Journey or Expedition in progress, and injury, sickness or time away.
+- **Secrets stay secret.** Nothing from the unlock chains or the secret phrases (the cocoon, the Reefclaw, the storm spark, the Vigil, locked breeds, variants) appears before the save records it, and the weather is never forecast.
+- **"Can I enter?"** uses the same rules as the cup entry screen (`entryCheck`). For a later week only what is knowable today applies:
+  - Checked: the grade window, "too easy", the minimum grade, invitations, and the event's rule, with the age projected to that week and today's nature and techniques.
+  - Skipped: the temporary blocks (a cup in progress, a Journey, injury, sickness, away).
+  - The answer reads "Can enter", "Too easy (−2 fame, −2 loyalty)", or the reason ("Needs grade C", "Invitation only", "Age under 48 weeks"…), with "Based on {name}'s grade today (D)". An Official reads "Your grade (D) · promotion".
+- **Plan clashes.** A planned week on a notable event the monster could enter (anything but an ordinary cup), or on a ★ one, gets a warning on the calendar and in the planner sheet: "Your plan runs through the Summer Ascension". Ordinary cups don't warn, because almost every week holds one.
+- **★ reminders.** A ★ on any event or expedition occurrence is saved as `calendarPins` (`${weekIndex}:${id}`; an expedition is keyed by its month's first week). Save v10 added them, empty for older saves.
+  - Wren mentions a starred cup the week before and on the week, and a starred trip the week before its month and while it's open.
+  - The ranch's Battle button gets a dot in a starred cup's week.
+  - A pin goes by itself at the end of the week its occurrence is over.
+- **The screen:**
+  - **Header:** today's date, arrows for month and year, from January of this year to four years ahead (the next Summit is always in view). A Summit year is marked, and earlier weeks are greyed.
+  - **Views:** **Agenda** (default: the next 12 weeks, "This week" / "Next week" / "In 5 weeks"), **Month** (four week rows of cards) and **Year** (12 month tiles with icons for Officials, Crowns, Opens, invitationals, the Summit and Expeditions; a tile opens its month).
+  - **Filters:** "Only events I can enter" (on; starred ones always show) and "Show expeditions" (on).
+  - **Event details:** a sheet with the date, grade, format and rounds, purse, item prize, the entry answer, ★, and, in the event's own week, **Enter**, which opens the cup entry screen with it picked.
+- **Ways in:**
+  - Tap the ranch's date bar. Under the date it shows "Next: Spring Ascension · in 3 wks": the next notable event the monster can enter, or a sooner ★ item, shown with a ★.
+  - The Calendar row in Town, next to the Guild.
+  - "See calendar" on the cup entry screen.
+
 ---
 
 ## 4. The monster (data model, MUST)
@@ -1226,13 +1257,14 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 |---|---|
 | Title | Continue · New Game · Load · Monster Lab · Settings · Credits/Disclaimer · version |
 | New Game | Breeder name, ranch name, difficulty, first monster (Market gift or Shrine) |
-| Ranch (home) | Monster on stage with idle animation and expression cues · calendar strip (date, weather, upcoming events) · Wren's weekly report bubble · action bar: Train · Rest · Journey · Battle · Town · item button · "Repeat last week" |
+| Ranch (home) | Monster on stage with idle animation and expression cues · calendar strip (date, weather, upcoming events; tap it for the Calendar; a "Next: {event} · in N wks" line, ★ for a starred one) · Wren's weekly report bubble · action bar: Train · Rest · Journey · Battle · Town · item button · "Repeat last week" |
 | Train sheet | Light and Heavy tabs. Drill cards show stat arrows, stars, odds (by transparency mode) and the bonus/liked tags |
 | Drill result | Short vignette (skippable) · banner (Great!/Success/Cheated…/Failed/Slacked off) · stat deltas · praise/scold gesture |
 | Monster Card | Portrait · stats with grade letters and bars (plus "from sweets") · life bar · condition (per transparency) · techniques (by range, mastery) · personality · records · lineage tree · buttons: **Use item** · **Learn technique** (Songbook) · **✏️ Edit** |
 | Bag | Every item with its quantity, by category · Use ×1 / ×5 / ×10 / Max |
 | Songbook | Every Songsheet you own, filtered to what the current monster can learn (★ good fit) · Learn · Forget and relearn |
-| Town | Shop (food, care items, Stat Sweets bakery counter, charms) · Market · Shrine · Lab (Freezer, Fusion, Memorial, Heartstones, Monster Lab; the Monster Lab also holds Versus, the Battle Lab and the **Effects Lab** (V1)) · Guild (this month's events, rank, Hall of Fame, **Guild Library** of Songsheets) · Mailbox · Odd Jobs |
+| Calendar (§3) | Today's date and month/year arrows (up to four years ahead) · Agenda / Month / Year · "Only events I can enter" and "Show expeditions" · event and expedition details with the entry answer, ★ and Enter (this week) |
+| Town | Calendar · Shop (food, care items, Stat Sweets bakery counter, charms) · Market · Shrine · Lab (Freezer, Fusion, Memorial, Heartstones, Monster Lab; the Monster Lab also holds Versus, the Battle Lab and the **Effects Lab** (V1)) · Guild (this month's events, rank, Hall of Fame, **Guild Library** of Songsheets) · Mailbox · Odd Jobs |
 | Tournament entry | This week's events: eligible ones first, ineligible ones with the reason · rules · purse · opponent cards (breed, grade, personality tag) · the default for this cup (Fight / Auto) |
 | Cup (§13) | Round preview with every pairing and Fight / Auto / Skip · round results · standings after each round with ▲/▼ · the breakdown: Standings / Rounds / Bracket (the Summit: Team / Legs) · match details (how it ended, HP left, time) · Watch an NPC match again |
 | Battle | §12.11 |

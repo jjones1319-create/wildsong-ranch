@@ -7,6 +7,7 @@ import { fill } from '../data/text/format.ts'
 import { WREN } from '../data/text/wren.ts'
 import { REPORT } from '../data/tuning.ts'
 import { availability, type AgingEvent } from './aging.ts'
+import { pinnedItems } from './calendarView.ts'
 import type { Monster } from './monster.ts'
 import type { GameState } from './state.ts'
 import type { DrillResult } from './training.ts'
@@ -51,7 +52,24 @@ export function weeklyReport(state: GameState): WrenLine[] {
 
   const r = state.pendingRequest
   if (r) lines.push(r.kind === 'rest' ? say('requestRest', WREN.requestRest, m) : r.kind === 'play' ? say('requestPlay', WREN.requestPlay, m) : say('requestTreat', WREN.requestTreat, m))
+  lines.push(...pinLines(state))
   return dedupe(lines)
+}
+
+/** §3 the calendar's ★ reminders: Wren mentions a pinned cup the week before and on the week, a pinned trip the week before its month and while it's open. */
+export function pinLines(state: GameState): WrenLine[] {
+  const m = state.monster
+  if (!m) return []
+  const lines: WrenLine[] = []
+  for (const p of pinnedItems(state)) {
+    const ahead = p.week - state.week
+    if (p.kind === 'event') {
+      if (ahead === 0) lines.push(say(`pinThisWeek-${p.key}`, WREN.pinThisWeek, m, { event: p.name }))
+      else if (ahead === 1) lines.push(say(`pinNextWeek-${p.key}`, WREN.pinNextWeek, m, { event: p.name }))
+    } else if (ahead === 1) lines.push(say(`pinTripNextWeek-${p.key}`, WREN.pinTripNextWeek, m, { trip: p.name }))
+    else if (ahead <= 0) lines.push(say(`pinTripThisMonth-${p.key}`, WREN.pinTripThisMonth, m, { trip: p.name }))
+  }
+  return lines
 }
 
 /** Wren's one line about a drill result (the banner's caption). */

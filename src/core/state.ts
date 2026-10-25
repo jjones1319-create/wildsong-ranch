@@ -369,6 +369,8 @@ export interface GameState {
   /** The week index of the last paid Echo Stones game, and the best round reached (practice counts). */
   echoStonesWeek: number | null
   echoStonesBest: number
+  /** §3 the calendar's ★ reminders: `${weekIndex}:${eventId or expeditionSiteId}`. Past ones are dropped at each week's end. */
+  calendarPins: string[]
   /** The absolute month the Lantern Garden was last visited (once a month). */
   memorialVisitMonth: number | null
   /** §3 the planner queue (M8). */
@@ -451,6 +453,7 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     oddJobWeek: null,
     echoStonesWeek: null,
     echoStonesBest: 0,
+    calendarPins: [],
     memorialVisitMonth: null,
     planner: emptyPlanner(),
   }

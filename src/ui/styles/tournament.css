@@ -266,3 +266,264 @@
 .bslot__side--me {
   color: var(--accent);
 }
+
+
+/* ---------- the Calendar (§3) ---------- */
+
+.calstrip__date--button {
+  min-height: 44px;
+  padding: 2px 6px 2px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calstrip__next {
+  color: var(--accent);
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.btn--dot {
+  position: relative;
+}
+
+.btn--dot::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface-2);
+}
+
+.calhead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calhead__today {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.calnav {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.calnav .iconbtn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.calnav__label {
+  margin: 0;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.calnav__summit {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.calagenda,
+.calmonth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calweek {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.calweek--now,
+.calrow--now {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.calweek--past,
+.calrow--past,
+.caltile--past {
+  opacity: 0.5;
+}
+
+.calweek__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin: 0;
+}
+
+.calweek__when {
+  font-weight: 800;
+}
+
+.calweek__busy,
+.calweek__note,
+.calweek__clash {
+  margin: 0;
+  font-size: 0.85em;
+}
+
+.calweek__busy {
+  color: var(--muted);
+}
+
+.calweek__clash {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.calcard {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calcard--off {
+  opacity: 0.7;
+}
+
+.calcard__icon {
+  flex: none;
+  width: 1.6em;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.calcard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.calcard__name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.calcard__meta {
+  color: var(--muted);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
+.calcard__star {
+  color: var(--accent);
+}
+
+.calcard__answer {
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.calcard__answer--ok {
+  color: var(--moss);
+}
+
+.calcard__answer--warn {
+  color: var(--accent);
+}
+
+.calcard__answer--no {
+  color: var(--muted);
+}
+
+.calrow {
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.calrow__label {
+  margin: 0;
+  font-weight: 800;
+}
+
+.calrow__now {
+  display: block;
+  color: var(--accent);
+  font-size: 0.75em;
+}
+
+.calrow__items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.calyear {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.caltile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 72px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.caltile--now {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.caltile__name {
+  font-weight: 800;
+}
+
+.caltile__icons {
+  font-size: 0.95em;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

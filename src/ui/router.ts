@@ -44,6 +44,7 @@ export const SCREENS = [
   'journal',
   'oddJobs',
   'upgrades',
+  'calendar',
 ] as const
 export type Screen = (typeof SCREENS)[number]
 
@@ -84,6 +85,7 @@ const SLUGS: Record<Screen, string> = {
   journal: 'town/journal',
   oddJobs: 'town/jobs',
   upgrades: 'town/upgrades',
+  calendar: 'calendar',
 }
 
 /** Where Back goes. */
@@ -124,6 +126,7 @@ const PARENT: Record<Screen, Screen | null> = {
   journal: 'town',
   oddJobs: 'town',
   upgrades: 'town',
+  calendar: 'ranch',
 }
 
 /** The current screen. UI reads this; `navigate()` changes it. */
@@ -179,7 +182,8 @@ export function isRanchScreen(s: Screen): boolean {
     s === 'expedition' ||
     s === 'journal' ||
     s === 'oddJobs' ||
-    s === 'upgrades'
+    s === 'upgrades' ||
+    s === 'calendar'
   )
 }
 

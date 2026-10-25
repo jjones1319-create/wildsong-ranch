@@ -43,6 +43,7 @@ const LabViewScreen = lazyScreen(() => import('./screens/lab/LabView.tsx'), 'Lab
 const ExpeditionScreen = lazyScreen(() => import('./screens/ranch/Expedition.tsx'), 'ExpeditionScreen')
 const JournalScreen = lazyScreen(() => import('./screens/town/Journal.tsx'), 'JournalScreen')
 const OddJobsScreen = lazyScreen(() => import('./screens/town/OddJobs.tsx'), 'OddJobsScreen')
+const CalendarScreen = lazyScreen(() => import('./screens/ranch/Calendar.tsx'), 'CalendarScreen')
 
 function Loading() {
   return (
@@ -126,6 +127,8 @@ function Current({ current }: { current: Screen }) {
       return <OddJobsScreen />
     case 'upgrades':
       return <UpgradesScreen />
+    case 'calendar':
+      return <CalendarScreen />
   }
 }
 

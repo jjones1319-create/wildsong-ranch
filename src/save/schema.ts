@@ -480,6 +480,13 @@ export const GameStateSchema = v.object({
   oddJobWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   echoStonesWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   echoStonesBest: int(0, 10_000, 0),
+  calendarPins: v.fallback(
+    v.pipe(
+      v.array(v.fallback(v.pipe(v.string(), v.regex(/^\d{1,6}:[a-z0-9-]{1,40}$/)), '')),
+      v.transform((keys) => [...new Set(keys.filter((k) => k !== ''))].slice(0, 200)),
+    ),
+    [],
+  ),
   memorialVisitMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   planner: PlannerSchema,
 })

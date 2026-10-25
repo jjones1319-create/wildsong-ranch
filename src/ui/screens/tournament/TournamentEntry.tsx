@@ -12,14 +12,19 @@ import { gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
 import { game } from '../../store/gameStore.ts'
-import { enter } from '../../store/tournamentStore.ts'
+import { enter, entryPreselect } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../../store/versusStore.ts'
 
 /** §21 Tournament entry: this week's events, eligible first, with rules, purse, opponents and the cup's default (Fight / Auto). */
 export function TournamentEntryScreen() {
   const g = game.value
   const t = UI_TEXT.tournament
-  const [picked, setPicked] = useState<string | null>(null)
+  // An event chosen in the calendar opens already picked (once).
+  const [picked, setPicked] = useState<string | null>(() => {
+    const id = entryPreselect.value
+    entryPreselect.value = null
+    return id
+  })
   // §12.11 the cup's default for each of the player's matches; Fight unless the player last chose Auto.
   const [mode, setMode] = useState<'auto' | 'manual'>(settings.value.cupMode)
   useEffect(() => {
@@ -108,6 +113,9 @@ export function TournamentEntryScreen() {
             }}
           >
             {t.spar}
+          </button>
+          <button type="button" class="btn btn--half btn--ghost" onClick={() => navigateFrom('tournament', 'calendar')}>
+            {UI_TEXT.calendar.seeCalendar}
           </button>
         </div>
       </div>

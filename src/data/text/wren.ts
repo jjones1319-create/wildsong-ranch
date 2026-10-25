@@ -6,6 +6,13 @@
 export const WREN = {
   weeklyFresh: '{name} is bright-eyed and raring to go!',
   weeklyFine: '{name} is doing fine today. What shall we do this week?',
+  /** §3 the calendar's ★ reminders: the week before and the week itself. */
+  pinNextWeek: "Next week is the {event}. You gave it a star, so I'll keep {name} fresh for it.",
+  pinThisWeek: 'The {event} is this week, the one you starred! {name} is ready when you are.',
+  pinTripNextWeek: 'The {trip} trip opens next week. You starred it, and Tomas is already packing.',
+  pinTripThisMonth: 'The {trip} trip you starred is open this month. Tomas is waiting by the gate.',
+  /** The planner sheet: a plan that runs through a big event. */
+  planClash: 'Your plan runs through the {event}. Leave a week free if you want {name} in it.',
   weeklyTired: '{name} looks a bit tired. Maybe go easy this week?',
   weeklyExhausted: '{name} can barely keep {their} eyes open. Please let {them} rest!',
   stressed: "{name} seems tense… something's bugging {them}.",

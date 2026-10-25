@@ -22,6 +22,7 @@ export function TownScreen() {
   const unread = g?.mail.filter((m) => !m.read).length ?? 0
   const rows: Row[] = [
     { icon: '🏛', name: t.guild, hint: t.guildHint, go: () => navigate('guild') },
+    { icon: '📅', name: t.calendar, hint: t.calendarHint, go: g ? () => navigateFrom('town', 'calendar') : undefined },
     { icon: '📔', name: t.journal, hint: t.journalHint, go: () => navigate('journal') },
     { icon: '🧺', name: t.shop, hint: t.shopHint, go: () => navigate('shop') },
     { icon: '📜', name: t.library, hint: t.libraryHint, go: () => navigate('library') },

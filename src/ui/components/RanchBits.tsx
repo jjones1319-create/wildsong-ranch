@@ -2,6 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../core/aging.ts'
 import { dateOf, seasonOf } from '../../core/calendar.ts'
+import { nextUp } from '../../core/calendarView.ts'
 import { inDebt } from '../../core/economy.ts'
 import { loyaltyOf, stageOf, strainOf, weeksLeft, type Monster } from '../../core/monster.ts'
 import type { GameState } from '../../core/state.ts'
@@ -43,19 +44,39 @@ export function TipCard({ text, onDismiss }: { text: string; onDismiss: () => vo
 }
 
 /** Year, month, week, season, weather and the purse (§21 calendar strip). */
-export function CalendarStrip({ state, onSettings }: { state: GameState; onSettings?: () => void }) {
+/** The "Next:" line under the date: the next notable cup the monster can enter, or a sooner ★ reminder. */
+export function nextLine(state: GameState): string | null {
+  const n = nextUp(state)
+  if (!n) return null
+  const c = UI_TEXT.calendar
+  const when = n.inWeeks === 0 ? c.whenThisWeek : n.inWeeks === 1 ? c.whenNextWeek : fill(c.whenIn, { n: n.inWeeks })
+  return fill(n.pinned ? c.nextPinned : c.next, { event: n.name, when })
+}
+
+export function CalendarStrip({ state, onSettings, onCalendar }: { state: GameState; onSettings?: () => void; onCalendar?: () => void }) {
   const t = UI_TEXT.ranch
   const d = dateOf(state.week)
   const season = seasonOf(d.month)
+  const next = onCalendar ? nextLine(state) : null
+  const body = (
+    <>
+      <span class="calstrip__year">{fill(t.year, { year: d.year })}</span>
+      <span>{fill(t.date, { month: MONTH_NAMES[d.month - 1], week: d.week })}</span>
+      <span class="muted small">
+        {SEASON_NAMES[season]} · <span aria-hidden="true">{WEATHER_GLYPHS[state.weather]}</span> {WEATHER_LABELS[state.weather]}
+      </span>
+      {next && <span class="calstrip__next">{next}</span>}
+    </>
+  )
   return (
     <header class={`calstrip calstrip--${season.toLowerCase()}`}>
-      <div class="calstrip__date">
-        <span class="calstrip__year">{fill(t.year, { year: d.year })}</span>
-        <span>{fill(t.date, { month: MONTH_NAMES[d.month - 1], week: d.week })}</span>
-        <span class="muted small">
-          {SEASON_NAMES[season]} · <span aria-hidden="true">{WEATHER_GLYPHS[state.weather]}</span> {WEATHER_LABELS[state.weather]}
-        </span>
-      </div>
+      {onCalendar ? (
+        <button type="button" class="calstrip__date calstrip__date--button" onClick={onCalendar} aria-label={`${UI_TEXT.calendar.openCalendar}. ${fill(t.date, { month: MONTH_NAMES[d.month - 1], week: d.week })}${next ? `. ${next}` : ''}`}>
+          {body}
+        </button>
+      ) : (
+        <div class="calstrip__date">{body}</div>
+      )}
       <div class="calstrip__right">
         <span class={`calstrip__money ${inDebt(state) ? 'calstrip__money--debt' : ''}`}>{gold(state.money)}</span>
         {onSettings && (

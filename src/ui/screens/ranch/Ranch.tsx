@@ -25,6 +25,7 @@ import { dismissTip, flow, game, menu, openTrain, plannerRunning, plannerStop, p
 import { lite } from '../../store/perf.ts'
 import { PlannerSheet, PlannerSummary } from './Planner.tsx'
 import { eventsForWeek } from '../../../core/tournament.ts'
+import { pinnedEventThisWeek } from '../../../core/calendarView.ts'
 import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
 import { trialOutcome } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../../store/versusStore.ts'
@@ -80,10 +81,12 @@ export function RanchScreen() {
   const showEvent = g.pendingEvent !== null && quiet && !showFood && !showRequest && !trialPending
   const canPlan = mn.train && !running && f.kind === 'idle'
   const mapInProgress = g.expedition !== null && !g.expedition.ended
+  // §3 a ★ cup this week puts a dot on the Battle button.
+  const starred = pinnedEventThisWeek(g)
 
   return (
     <main class="screen">
-      <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} />
+      <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} onCalendar={() => navigateFrom('ranch', 'calendar')} />
       <p class="eventline">{cups.length ? fill(t.eventsToday, { events: cups.map((c) => c.event.name).join(' · ') }) : t.noEvents}</p>
       {g.journey && <p class="eventline">{fill(t.journeyWeek, { week: g.journey.weekNo, site: JOURNEY_SITE_BY_ID[g.journey.site].name })}</p>}
       {g.expedition && <p class="eventline">{fill(t.expeditionWeek, { week: g.expedition.weekNo, site: EXPEDITION_SITE_BY_ID[g.expedition.site].name })}</p>}
@@ -149,8 +152,9 @@ export function RanchScreen() {
           </button>
           <button
             type="button"
-            class="btn"
+            class={`btn ${starred ? 'btn--dot' : ''}`}
             disabled={!mn.train && !g.tournament}
+            aria-label={starred ? `${t.actions.battle}. ${UI_TEXT.calendar.starredBattle}` : undefined}
             onClick={() => {
               if (g.tournament) navigate('tournamentPlay')
               else if (cups.length > 0) navigate('tournament')

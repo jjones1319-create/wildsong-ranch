@@ -123,6 +123,11 @@ export const FORMAT_LABELS = { RR4: 'Round robin of 4', RR6: 'Round robin of 6',
 
 export const EVENT_KIND_LABELS = { cup: 'Cup', official: 'Official', crown: 'Crown', legend: 'Legend Cup', open: 'Open', summitQualifier: 'Qualifier', summit: 'Summit', rival: 'Rival match', masquerade: 'Invitational' } as const
 
+/** §3 the calendar's icons: one per group of event kinds (the Year view's tiles use the groups). */
+export const EVENT_KIND_ICONS = { cup: '🏆', official: '🎖', crown: '👑', legend: '💌', open: '🎪', summitQualifier: '⛰', summit: '⛰', rival: '💌', masquerade: '💌' } as const
+export const EXPEDITION_ICON = '🧭'
+export const CALENDAR_NOTE_ICONS = { crown: '👑', legend: '🌟', market: '🐾', upgrades: '🔨', birthday: '🎂' } as const
+
 export const FAMILY_LABELS = { Basic: 'Basic', Hit: 'Hit', Heavy: 'Heavy', Wither: 'Wither', Sharp: 'Sharp', Special: 'Special', Chain: 'Chain', Signature: 'Signature' } as const
 
 export const RANGE_LABELS = { 1: 'Close', 2: 'Near', 3: 'Mid', 4: 'Far' } as const

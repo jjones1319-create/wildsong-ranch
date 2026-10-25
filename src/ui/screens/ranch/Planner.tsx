@@ -1,4 +1,5 @@
 import { PLANNER_MAX } from '../../../core/planner.ts'
+import { planClashes } from '../../../core/calendarView.ts'
 import { DRILL_BY_ID, DRILLS } from '../../../data/drills.ts'
 import { fill } from '../../../data/text/format.ts'
 import { STAT_NAMES } from '../../../data/text/labels.ts'
@@ -23,9 +24,16 @@ export function PlannerSheet({ open, onClose }: { open: boolean; onClose: () => 
   if (!g?.monster) return null
   const queue = g.planner.queue
   const full = queue.length >= PLANNER_MAX
+  // §3 a planned week on a big event the monster could enter (or a ★ one).
+  const clashes = planClashes(g)
   return (
     <Sheet open={open} title={t.title} onClose={onClose}>
       <p class="muted small">{fill(WREN.planner.plan, wrenVars(g.monster))}</p>
+      {clashes.length > 0 && (
+        <p class="notice" role="note">
+          ⚠ {fill(WREN.planClash, wrenVars(g.monster, { event: [...new Set(clashes.map((c) => c.event.name))].join(', ') }))}
+        </p>
+      )}
       <p class="field__label small">{fill(t.queueLabel, { n: queue.length, max: PLANNER_MAX })}</p>
       {queue.length === 0 ? (
         <p class="muted small">{t.empty}</p>

@@ -2,6 +2,56 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Calendar (2026-10-24) · v1.5.0
+
+**Live:** a Calendar to plan training around. Tap the date bar on the ranch (or Calendar in Town, or "See calendar" on the cup entry screen):
+- **Agenda:** the next 12 weeks.
+- **Month:** four week rows.
+- **Year:** 12 month tiles with icons for Officials, Crowns, Opens, invitationals, the Summit and Expeditions.
+
+Every cup shows whether your monster can enter it, using the same rules as the entry screen. Star (★) a cup or a trip and Wren reminds you the week before and on the week; the Battle button gets a dot. Under the date, the ranch now shows what's next: "Next: Spring Ascension · in 3 wks".
+
+**Done**
+- **`core/calendarView.ts`** (pure). `calendarWeeks(state, fromWeek, count)` returns, for each week:
+  - The cups with the year rules: Sprout in even years, Elders' in odd ones, and the Summit Qualifier and Summit replacing the Heatwave and Stargazer Cups in Summit years. Each has its purse at today's grade, rounds and item prize.
+  - The expeditions open that month, with today's grade and fame check.
+  - Dated notes: a Crown four weeks ahead for an S monster, the Legend in March once all four Crowns are won, the Market's seasonal stall each season, the May week 4 upgrade letter, and birthdays every 48 weeks of age.
+  - What already occupies the week: the plan, a Journey or Expedition, injury, sickness, or time away.
+  - Plan clashes with notable or starred events.
+
+  Everything comes from `EVENTS`/`eventsAt`, `EXPEDITION_SITES`, `marketStock`, `isUpgradeOfferWeek` and tuning; no table is copied. Locked breeds, the cocoon, the Reefclaw, the storm spark, the Vigil and secret variants never appear until the save records them, and no weather is forecast. The module also provides `nextUp` (the date bar's line), `planClashes`, `togglePin`, `prunePins`, `pinnedItems` and `pinnedEventThisWeek`.
+- **One set of entry rules:** `entryCheck(state, event, week)` in `core/tournament.ts` is now what `eventsForWeek` uses as well. For a later week it checks only what's knowable today, with the age projected and the temporary blocks skipped. `roundsOf(format)` and `itemPrizeKind(event, grade)` are new; the prize code itself now runs through `itemPrizeKind`, so the calendar can't drift from it.
+- **★ reminders:** save **v10** adds `calendarPins` (keys `${weekIndex}:${id}`) with a migration (empty) and validation (bad keys dropped, deduplicated, capped at 200). Pins are pruned at each week's end; an expedition pin lasts its month. Wren mentions a starred cup the week before and on the week (`pinLines` in `core/report.ts`), and a starred trip the week before its month and while it's open. The Battle button gets a dot in a starred cup's week.
+- **The screen** (`screens/ranch/Calendar.tsx`, route `#calendar`, Back returns to where it was opened):
+  - Today's date, month and year arrows from January of this year to four years ahead, and a "Summit year" tag.
+  - Agenda / Month / Year, with "Only events I can enter" (starred ones always show) and "Show expeditions".
+  - Cards with the event-kind pill and icon, ★, the current week highlighted and past weeks greyed.
+  - A detail sheet with the date, grade ("Your grade (D) · promotion" for an Official), format and rounds, purse, item prize, the entry answer with "Based on Pip's grade today (D)", ★, and Enter for this week's event (the entry screen opens with it picked).
+  - The planner sheet warns "Your plan runs through the Summer Ascension".
+- **Tests** (19 new, 605 in all): `core/calendarView.test.ts` covers:
+  - Summit and normal years, even and odd years, and the next Summit always within four years.
+  - Rounds and purses, invitation-only events, knowable-only checks for later weeks.
+  - Entry answers equal to `eventsForWeek` for every event in four years of weeks under eleven monster setups.
+  - No secrets or weather leaked, and a discovered Reefclaw joining the summer Market note.
+  - Birthdays, the Market and upgrade notes, Crown and Legend notes, expeditions, busy weeks, plan clashes.
+  - Pins: toggle, cleanup at week end, Wren's lines and the dot, the v9 → v10 migration, a save round-trip and garbage.
+  - The "Next:" line.
+
+  Playwright `e2e/calendar.spec.ts` at 412 × 915: date bar → calendar, Agenda → Month → Year, a month tile, a ★ that shows on the ranch line and as the Battle dot, then Enter from this week's event; no sideways scroll.
+- **Docs:** GAME_DESIGN §3 (the Calendar screen) and §21 (the date bar's "Next:" line, the Calendar and Town rows).
+
+**Decisions worth knowing**
+- **The Crown and Legend notes are reminders, not letters.** CONTENT §9 says the Crown invitation arrives by mail a month before each Crown and the Legend's in March. The code has always used standing flags instead: the Crown invitation is set by winning the S Official (mailed once, then), and the Legend invitation the moment the fourth Crown is won. The calendar shows the notes on the CONTENT dates without claiming a letter arrives; no rule changed.
+- **Plan-clash warnings and the "Next:" line only count notable events** (Officials, Crowns, Opens, the Legend, the Masquerade, the Rival Showdown, the Summit and its Qualifier) plus anything starred. Ordinary cups are skipped because almost every week holds one, which would make the warning permanent.
+- **The calendar's filters and the browsed month are session-only.** The ★ reminders are saved.
+- **The game has one (dark) theme.** The calendar uses only the shared colour tokens, so it follows any future light theme.
+
+**Next:** the owner's phone pass, then V3 (monster animation 2.0).
+
+**Known issues**
+- A future week's answer uses today's grade, nature and techniques (the sheet says so). A promotion before then can change it.
+- "Summit years only" isn't an answer the calendar gives. Summit events simply aren't listed in other years, and the Year view's header marks Summit years.
+
 ## Playable events + round-by-round cups (2026-10-24) · v1.4.0
 
 **Live:** you can fight every match your monster is in, in every event, the Ascensions included. Before each of your matches the cup asks: **Fight**, **Auto** (watch, and one tap on Auto takes over or hands it back at any moment) or **Skip**. Cups are now played a round at a time: a round preview with every pairing, your match, the round's other results, then the standings after that round with ▲/▼ place changes. Below it, a tournament breakdown: Standings, Rounds, the Bracket for elimination cups, and Team and Legs at the Summit. Tap any finished match for how it ended, the HP left and the time, and watch an NPC match again.

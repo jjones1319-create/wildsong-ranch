@@ -18,7 +18,7 @@ export function EmptyRanch({ g }: { g: GameState }) {
   ]
   return (
     <main class="screen">
-      <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} />
+      <CalendarStrip state={g} onSettings={() => navigateFrom('ranch', 'settings')} onCalendar={() => navigateFrom('ranch', 'calendar')} />
       <section class="stage stage--empty" aria-label={t.title}>
         <p class="stage__caption">{t.title}</p>
         <p class="stage__hint">{t.time}</p>

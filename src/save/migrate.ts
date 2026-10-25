@@ -22,8 +22,9 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  * - v9 (Playable events + round-by-round cups): a cup match's result may carry its length (`ticks`), and match
  *   rounds go up to 30 so a pre-v9 round robin (one round per match, up to 15) keeps its stored schedule. Nothing
  *   to rewrite: older results simply have no length, and `tournament.mode` keeps its meaning (the cup's default).
+ * - v10 (Calendar): the calendar's ★ reminders (`calendarPins`, keys `${week}:${id}`), empty for older saves.
  */
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 type RawSave = Record<string, unknown>
 
@@ -129,6 +130,11 @@ const MIGRATIONS: Record<number, Migration> = {
     return next
   },
   8: (raw) => ({ ...raw, schemaVersion: 9 }),
+  9: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 10 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { calendarPins: [], ...raw.game }
+    return next
+  },
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {
