@@ -114,6 +114,8 @@ export interface MatchResult {
   winner: 0 | 1 | null
   how: 'ko' | 'time' | 'forfeit' | 'walkover'
   hpPct: [number, number]
+  /** How long the match lasted, in battle ticks (v9; older results and walkovers have none). */
+  ticks?: number
 }
 
 export interface MatchRecord {
@@ -128,6 +130,7 @@ export interface TournamentState {
   /** The absolute week index the cup is held in. */
   week: number
   seed: number
+  /** The cup's default for the player's matches (§12.11): 'manual' = Fight, 'auto' = Auto. Each match still offers Fight, Auto and Skip. */
   mode: 'auto' | 'manual'
   /** Participant 0 is the player. */
   participants: Participant[]

@@ -282,15 +282,15 @@ export function BattleScreen() {
                 </tr>
               </tbody>
             </table>
-            {!s.onFinished && <p class="muted small center">{t.result.exhibition}</p>}
+            {!s.onFinished && <p class="muted small center">{s.replay ? t.result.replay : t.result.exhibition}</p>}
             <div class="row">
-              {!s.onFinished && (
+              {!s.onFinished && !s.replay && (
                 <button type="button" class="btn btn--half" onClick={rematch}>
                   {t.result.rematch}
                 </button>
               )}
               <button type="button" class="btn btn--primary btn--half" onClick={() => finishAndLeave(navigate)}>
-                {s.onFinished ? t.result.continue : t.result.done}
+                {s.onFinished ? t.result.continue : s.replay ? t.result.backToCup : t.result.done}
               </button>
             </div>
           </div>

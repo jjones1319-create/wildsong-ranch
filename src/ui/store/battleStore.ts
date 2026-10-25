@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals'
 import { playSfx, playStinger } from '../../audio/player.ts'
 import { canFire, createBattle, currentBand, gapUnits, previewHitTenths, step, timerTicksFor, type Battle } from '../../core/battle/engine.ts'
-import type { BattleEvent, BattleInput, BattleOutcome, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
+import type { BattleEvent, BattleInput, BattleOutcome, FighterSetup, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
 import type { Monster } from '../../core/monster.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
@@ -23,6 +23,8 @@ export interface BattleFinish {
   winner: 0 | 1 | null
   how: 'ko' | 'time' | 'forfeit'
   hpPct: [number, number]
+  /** How long it lasted, in ticks. */
+  ticks: number
   /** Side A's technique uses, for mastery. */
   techUses: Record<string, number>
 }
@@ -45,6 +47,17 @@ export interface BattleSetup {
   nameB?: string
   /** A cup or Trial match: the result goes here and the card's button reads "Continue". Rematch is hidden. */
   onFinished?: (r: BattleFinish) => void
+  /**
+   * The exact fighters to create (a cup's player match or a replay), so the battle on screen is the one the core
+   * would simulate. Without it the fighters are built from the fields above (Versus).
+   */
+  setups?: { a: FighterSetup; b: FighterSetup }
+  /** A fixed seed (a cup match); otherwise a fresh one. */
+  seed?: number
+  /** §12.11 Auto from the first tick, as a recorded input on side A (side A stays under the player's control). */
+  autoStart?: boolean
+  /** A replay of a recorded NPC match: no Rematch, and the card says so. */
+  replay?: boolean
 }
 
 export interface FighterView {
@@ -326,17 +339,19 @@ function stopLoop(): void {
 }
 
 /** Starts (or restarts) the battle described by `s`. */
-export function startBattle(s: BattleSetup, seed = freshSeed()): void {
+export function startBattle(s: BattleSetup, seed = s.seed ?? freshSeed()): void {
   stopLoop()
   setup.value = s
   battle = createBattle(
-    { monster: s.a, control: s.aControl, personality: s.personalityA, tier: s.tierA, style: settings.value.autoStyle },
-    { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none', tier: s.tierB },
+    s.setups?.a ?? { monster: s.a, control: s.aControl, personality: s.personalityA, tier: s.tierA, style: settings.value.autoStyle },
+    s.setups?.b ?? { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none', tier: s.tierB },
     { seed, timerTicks: timerTicksFor(s.timerSec) },
   )
   if (s.nameB) battle.state.fighters[1].name = s.nameB
   pending = []
   inputs.length = 0
+  // §12.11 Auto is the engine's own flag, switched on at tick 1 and recorded, so one tap on Auto takes over.
+  if (s.autoStart && s.aControl === 'player') pending.push({ tick: 0, side: 0, action: { kind: 'auto', on: true, style: battle.state.fighters[0].style } })
   effects.value = []
   fx.value = []
   paused.value = false
@@ -362,7 +377,7 @@ export function leaveBattle(): void {
 export function finishedResult(): BattleFinish | null {
   if (!battle?.state.outcome) return null
   const o = battle.state.outcome
-  return { winner: o.winner, how: o.how, hpPct: o.hpPct, techUses: { ...battle.state.fighters[0].techUses } }
+  return { winner: o.winner, how: o.how, hpPct: o.hpPct, ticks: o.ticks, techUses: { ...battle.state.fighters[0].techUses } }
 }
 
 /** Done on the result card: hand the result to whoever asked for the fight, or go back where we came from. */

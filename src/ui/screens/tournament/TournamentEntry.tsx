@@ -10,16 +10,18 @@ import { Segmented, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { gold } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
+import { settings } from '../../store/appStore.ts'
 import { game } from '../../store/gameStore.ts'
 import { enter } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../../store/versusStore.ts'
 
-/** §21 Tournament entry: this week's events, eligible first, with rules, purse, opponents and Auto / Manual. */
+/** §21 Tournament entry: this week's events, eligible first, with rules, purse, opponents and the cup's default (Fight / Auto). */
 export function TournamentEntryScreen() {
   const g = game.value
   const t = UI_TEXT.tournament
   const [picked, setPicked] = useState<string | null>(null)
-  const [mode, setMode] = useState<'auto' | 'manual'>('auto')
+  // §12.11 the cup's default for each of the player's matches; Fight unless the player last chose Auto.
+  const [mode, setMode] = useState<'auto' | 'manual'>(settings.value.cupMode)
   useEffect(() => {
     if (!g || !g.monster) navigate('ranch')
     else if (g.tournament) navigate('tournamentPlay')
@@ -80,8 +82,8 @@ export function TournamentEntryScreen() {
           </p>
           <Segmented
             options={[
-              { value: 'auto', label: t.modes.auto },
               { value: 'manual', label: t.modes.manual },
+              { value: 'auto', label: t.modes.auto },
             ]}
             value={mode}
             onChange={setMode}

@@ -554,7 +554,7 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 **Mentor bond:** every 8 Journeys at the same site, the mentor gives a Charm that lowers that site's requirements by 50 permanently.
 
 **Trial (end of Journey):**
-- An automatic battle against a wild monster of your grade (+0 or +1 grade). Skippable, simulated if skipped.
+- A battle against a wild monster of your grade (+0 or +1 grade): **Fight**, **Auto** (take over at any time) or **Skip** (simulated exactly as an untouched Auto run would play it), like a cup match (§12.11).
 - Win: 600 × gradeIndex G, plus a 10% chance of a rare drop.
 - A KO uses normal injury rules.
 
@@ -807,12 +807,21 @@ decisions cost well under 0.1 ms per monster per tick.
   - **Tap a glowing card to fire.**
   - **Assist** (setting, default on): tapping a card in another column walks toward that range and fires on arrival, as long as guts are still enough. Tap again to cancel.
 - **Movement:** hold the ◀ or ▶ thumb pads to walk. Double-tap the forward pad to dash. A Push button appears only when touching.
-- **Other buttons:** Auto toggle (AI takes over), speed (×1, ×2, ×4), pause (forfeit and settings).
+- **Other buttons:** Auto toggle (always shown on your side: one tap hands the match to the brain, another takes it back), speed (×1, ×2, ×4), pause (forfeit and settings).
 - **Auto styles** (M10): the player's Auto plays as an Expert with a style chosen in Settings or the pause
   sheet: **Balanced** (default), **Aggressive** (aggression ×1.4, caution ×0.6, Close ×1.4, shorter pauses,
   dashes freely, pokes sooner) or **Defensive** (aggression ×0.7, caution ×1.5, Far ×1.4, longer pauses, saves
   longer). The style travels with the Auto input, so replays stay deterministic.
-- **Before each tournament:** choose Auto or Manual for the whole event. Auto battles can be skipped individually.
+- **Each of your matches: Fight, Auto, or Skip. Auto can be taken over at any time.** This holds in every event (cups,
+  Opens, the Officials, the Crowns, the Legend, the Masquerade, the Rival Showdown, the Summit Qualifier, your Summit
+  leg) and in the Journey Trial.
+  - Your side is always under your control. Auto is the engine's own `auto` flag, switched on by an input recorded at
+    the first tick, so a replay stays exact; on Auto your side plays as an Expert (§12.10) with your saved Auto style.
+  - **Skip** simulates the match at once, giving exactly the result an untouched Auto run on the same seed would give.
+    Each cup match has its own seed from the cup's seed and its place in the schedule.
+  - The cup entry screen sets the **default for this cup** (Fight or Auto). It starts on Fight and remembers your last
+    choice; it only decides which of the three buttons is highlighted. It is kept in the save as `tournament.mode`
+    (`manual` = Fight).
 - **Feedback:** haptic tick on hits on Android (`navigator.vibrate`; iOS has none). Screen shake ≤ 4 px, and none with reduced motion.
 
 ### 12.12 Balance targets (must pass in automated tests; see §26)
@@ -836,6 +845,34 @@ decisions cost well under 0.1 ms per monster per tick.
 - **Regular cups:** round robin of 4 (3 matches) or elimination of 4 (2 matches).
 - **Opens:** elimination of 8, seeded so that you meet your own grade ±1.
 - **Invitationals:** 1v1 or round robin of 4.
+
+**Schedules:**
+- **Round robins** are drawn by the circle method from the cup's seed: RR4 is 3 rounds of 2 matches, RR6 is 5 rounds of 3.
+  - Every pair meets once, and everyone, you included, fights exactly once per round.
+  - Corin is your last-round opponent; if he isn't in the cup, the opponent with the highest stat total is.
+- **Elimination** cups keep their rounds: Elim4 has 2, Elim8 has 3. A 1v1 and the Summit leg are one match.
+- A cup saved before v1.4 keeps its stored schedule (one round per pairing, your matches first) and finishes normally.
+
+**Playing a cup, a round at a time:**
+1. **Round preview** ("Round 2 of 5"): every pairing, yours highlighted, and Fight / Auto / Skip for your match.
+2. **Your match.**
+3. **The round's other matches resolve**, shown as "Round 2 results": the winner, KO / decision / time-out, and HP left.
+4. **Updated standings** ("After round 2 of 5"): place changes since the last round (▲/▼), points, W-L-D and KOs, counting only the rounds played so far.
+5. **The next round.**
+
+- No match is ever simulated ahead of the current round.
+- A **walkover** (your opponent withdrew after a KO) wins your round without a fight.
+- **Knocked out yourself**, you can watch the remaining rounds one at a time, or "Skip to final standings".
+
+**The tournament breakdown** (on the cup screen):
+- Tabs: **Standings | Rounds | Bracket** (the Bracket for elimination cups).
+  - **Rounds** lists every round: who fights whom, results for finished matches, "upcoming" for the rest.
+  - **Bracket** draws the elimination tree; a future slot reads "Winner of A vs B".
+- Tapping a finished match shows how it ended, the HP left and the time.
+- An NPC-vs-NPC match can be **watched again**. The replay uses the same fighters, tiers and seed as the recorded match, with no inputs, so it ends the same way.
+- **The Summit** shows **Team | Legs**:
+  - **Team** is the Vale–Coast score.
+  - **Legs** shows the five grade legs. Your leg is the real, fightable match; the four NPC legs show their results (replayed from the cup's seed, so they always match the score kept at entry).
 
 **Points and placing:**
 - Points: KO win 4 · win 3 · draw 2 · loss 0.
@@ -1196,7 +1233,8 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 | Bag | Every item with its quantity, by category · Use ×1 / ×5 / ×10 / Max |
 | Songbook | Every Songsheet you own, filtered to what the current monster can learn (★ good fit) · Learn · Forget and relearn |
 | Town | Shop (food, care items, Stat Sweets bakery counter, charms) · Market · Shrine · Lab (Freezer, Fusion, Memorial, Heartstones, Monster Lab; the Monster Lab also holds Versus, the Battle Lab and the **Effects Lab** (V1)) · Guild (this month's events, rank, Hall of Fame, **Guild Library** of Songsheets) · Mailbox · Odd Jobs |
-| Tournament entry | This week's events: eligible ones first, ineligible ones with the reason · rules · purse · opponent cards (breed, grade, personality tag) · Auto/Manual choice |
+| Tournament entry | This week's events: eligible ones first, ineligible ones with the reason · rules · purse · opponent cards (breed, grade, personality tag) · the default for this cup (Fight / Auto) |
+| Cup (§13) | Round preview with every pairing and Fight / Auto / Skip · round results · standings after each round with ▲/▼ · the breakdown: Standings / Rounds / Bracket (the Summit: Team / Legs) · match details (how it ended, HP left, time) · Watch an NPC match again |
 | Battle | §12.11 |
 | Results | Placings, purse, fame, stat gains, condition changes, lifespan cost (Lens) |
 | Journey | Mentor's Ledger → a 4-beat progress screen (skippable) → result (gains, technique learned, Trial) |

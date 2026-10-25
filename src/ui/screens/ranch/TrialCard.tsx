@@ -67,7 +67,7 @@ export function TrialCard() {
     <Sheet open title={t.title} onClose={() => undefined}>
       <p class="muted small">{fill(t.hint, { breed: BREED_BY_ID[site.trialBreeds[0]].name, n: trialReward(m) })}</p>
       <div class="sheet__actions">
-        <button type="button" class="btn btn--primary" onClick={() => startTrial('manual')}>
+        <button type="button" class="btn btn--primary" onClick={() => startTrial('fight')}>
           {t.fight}
         </button>
         <button type="button" class="btn" onClick={() => startTrial('auto')}>

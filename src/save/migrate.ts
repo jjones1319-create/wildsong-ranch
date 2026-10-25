@@ -19,8 +19,11 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   Odd Job week, the Lantern Garden visit month, and the Encyclopedia's collected looks.
  * - v7 (M8): the planner queue (`planner`: queue, log, last stop).
  * - v8 (Odd Jobs: Echo Stones): the Echo Stones week and best round (`echoStonesWeek`, `echoStonesBest`).
+ * - v9 (Playable events + round-by-round cups): a cup match's result may carry its length (`ticks`), and match
+ *   rounds go up to 30 so a pre-v9 round robin (one round per match, up to 15) keeps its stored schedule. Nothing
+ *   to rewrite: older results simply have no length, and `tournament.mode` keeps its meaning (the cup's default).
  */
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 type RawSave = Record<string, unknown>
 
@@ -125,6 +128,7 @@ const MIGRATIONS: Record<number, Migration> = {
     }
     return next
   },
+  8: (raw) => ({ ...raw, schemaVersion: 9 }),
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {

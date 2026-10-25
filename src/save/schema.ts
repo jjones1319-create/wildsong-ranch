@@ -268,10 +268,12 @@ const MatchResultSchema = v.object({
   winner: v.fallback(v.nullable(v.picklist([0, 1] as const)), null),
   how: oneOf(['ko', 'time', 'forfeit', 'walkover'] as const, 'time'),
   hpPct: v.fallback(v.tuple([int(0, 1000, 0), int(0, 1000, 0)]), [0, 0]),
+  /** v9: the match's length in ticks; absent on older results. */
+  ticks: v.optional(v.fallback(v.pipe(v.number(), v.transform((n) => clamp(Math.round(n), 0, 100_000))), 0)),
 })
 
 const MatchSchema = v.object({
-  round: int(1, 10, 1),
+  round: int(1, 30, 1),
   a: int(0, 15, 0),
   b: int(0, 15, 0),
   result: v.fallback(v.nullable(MatchResultSchema), null),
@@ -540,6 +542,7 @@ const SETTINGS_DEFAULTS = {
   backupSnoozedAt: 0,
   backupBaselineAt: 0,
   oddJobsRelaxed: false,
+  cupMode: 'manual' as 'manual' | 'auto',
   fxQuality: 'auto' as FxQualitySetting,
   fxIntensity: 'standard' as FxIntensity,
   fxAutoTier: null as FxTier | null,
@@ -569,6 +572,7 @@ export const SettingsSchema = v.fallback(
     backupSnoozedAt: stamp(),
     backupBaselineAt: stamp(),
     oddJobsRelaxed: bool(false),
+    cupMode: oneOf(['manual', 'auto'] as const, 'manual'),
     fxQuality: oneOf(FX_QUALITY_SETTINGS, 'auto'),
     fxIntensity: oneOf(FX_INTENSITIES, 'standard'),
     fxAutoTier: v.fallback(v.nullable(v.picklist(FX_TIERS)), null),
@@ -641,6 +645,8 @@ export interface AppSettings {
   sfxVolume: number
   /** §24 the left-handed battle layout. */
   leftHanded: boolean
+  /** §12.11 the default the cup entry screen offers for the player's matches: 'manual' = Fight, 'auto' = Auto (remembered). */
+  cupMode: 'manual' | 'auto'
   /** V1 effects (VISUAL_V1_EFFECTS §6): Quality (auto picks a tier and remembers it in fxAutoTier) and Intensity. */
   fxQuality: FxQualitySetting
   fxIntensity: FxIntensity

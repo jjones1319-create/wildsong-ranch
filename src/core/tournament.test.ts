@@ -124,27 +124,34 @@ describe('building a cup', () => {
     let t = createTournament(g, 'thaw', 'manual')
     expect(t.matches).toHaveLength(6)
     expect(nextPlayerMatch(t)!.index).toBe(0)
+    // The player's opponents in schedule order: x (round 1), y (round 2), z (round 3).
+    const opp = (i: number) => (t.matches[i]!.a === 0 ? t.matches[i]!.b : t.matches[i]!.a)
+    const mine = t.matches.map((m, i) => ({ m, i })).filter((e) => e.m.a === 0 || e.m.b === 0)
+    expect(mine.map((e) => e.m.round)).toEqual([1, 2, 3])
+    const [x, y, z] = mine.map((e) => opp(e.i))
     // Player wins by KO, then all other results by hand: a three-way tie decided by head-to-head.
     const res = (w: 0 | 1 | null, how: 'ko' | 'time' = 'time', hp: [number, number] = [500, 400]) => ({ winner: w, how, hpPct: hp })
-    t = recordMatch(t, 0, res(0, 'ko', [800, 0])) // 0 beats 1 by KO → 1 withdraws
-    expect(t.koOut).toEqual([1])
-    expect(t.matches.filter((m) => (m.a === 1 || m.b === 1) && m.result?.how === 'walkover')).toHaveLength(2)
+    t = recordMatch(t, 0, res(0, 'ko', [800, 0])) // 0 beats x by KO → x withdraws
+    expect(t.koOut).toEqual([x])
+    expect(t.matches.filter((m) => (m.a === x || m.b === x) && m.result?.how === 'walkover')).toHaveLength(2)
     const pm = nextPlayerMatch(t)!
-    expect(pm.match.a === 0 || pm.match.b === 0).toBe(true)
-    t = recordMatch(t, pm.index, res(1)) // player loses to 2
+    expect(opp(pm.index)).toBe(y)
+    t = recordMatch(t, pm.index, res(1)) // player loses to y
     const pm2 = nextPlayerMatch(t)!
-    t = recordMatch(t, pm2.index, res(0)) // player beats 3
+    expect(opp(pm2.index)).toBe(z)
+    t = recordMatch(t, pm2.index, res(0)) // player beats z
     const rest = t.matches.findIndex((m) => m.result === null)
     expect(rest).toBeGreaterThanOrEqual(0)
-    t = recordMatch(t, rest, res(1)) // 2 vs 3: 3 wins
+    const yz = t.matches[rest]!
+    t = recordMatch(t, rest, res(yz.a === z ? 0 : 1)) // y vs z: z wins
     expect(isComplete(t)).toBe(true)
     const table = standings(t)
-    expect(table[0]!.index).toBe(0) // 4 (KO win) + 0 + 3 = 7; 2 and 3 have a walkover (3) + a win (3) = 6 each
+    expect(table[0]!.index).toBe(0) // 4 (KO win) + 0 + 3 = 7; y and z have a walkover (3) + a win (3) = 6 each
     expect(table[0]!.points).toBe(7)
-    expect(table.find((s) => s.index === 2)!.points).toBe(6)
-    expect(table.find((s) => s.index === 3)!.points).toBe(6)
-    expect(table.find((s) => s.index === 3)!.place).toBe(2) // head-to-head: 3 beat 2
-    expect(table.find((s) => s.index === 1)!.place).toBe(4)
+    expect(table.find((s) => s.index === y)!.points).toBe(6)
+    expect(table.find((s) => s.index === z)!.points).toBe(6)
+    expect(table.find((s) => s.index === z)!.place).toBe(2) // head-to-head: z beat y
+    expect(table.find((s) => s.index === x)!.place).toBe(4)
     expect(nextPlayerMatch(t)).toBeNull()
 
     let e = createTournament(gameAt(at(1, 1, 2)), 'snowdrift', 'manual') // Elim4

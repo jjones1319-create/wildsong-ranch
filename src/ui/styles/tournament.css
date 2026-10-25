@@ -15,3 +15,254 @@
 .cupcard {
   border-color: rgb(242 181 68 / 0.5);
 }
+
+/* ---------- the cup screen: round by round (§13) ---------- */
+
+.cupflow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cupflow__sub {
+  margin-top: 10px;
+}
+
+.cupflow__mine {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.cuprows {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A match row: tappable when finished (details), a plain line when upcoming. */
+.cuprow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cuprow:last-child {
+  border-bottom: 0;
+}
+
+.cuprow:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.cuprow--me {
+  border-radius: 8px;
+  background: rgb(242 181 68 / 0.12);
+}
+
+.cuprow--me .cuprow__main {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.cuprow--future {
+  opacity: 0.75;
+}
+
+.cuprow__main,
+.cuprow__meta {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.cuprow__meta {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.cupround__title {
+  margin: 10px 0 2px;
+  color: var(--muted);
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.cuptab {
+  margin-top: 8px;
+}
+
+.cupscore {
+  margin: 4px 0;
+  font-size: 1.15em;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Fight / Auto / Skip, side by side under the thumb. */
+.cupchoice {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.cupchoice--two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.cupchoice--one {
+  grid-template-columns: 1fr;
+}
+
+.cupchoice .btn {
+  width: auto;
+  padding: 10px 6px;
+}
+
+/* Standings: the name column takes what's left and truncates; numbers stay narrow. */
+.ctable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+
+.ctable th,
+.ctable td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.ctable th {
+  color: var(--muted);
+  font-size: 0.8em;
+  font-weight: 700;
+}
+
+.ctable th:nth-last-child(1) {
+  width: 2.4em;
+}
+
+.ctable th:nth-last-child(2) {
+  width: 3.8em;
+}
+
+.ctable th:nth-last-child(3):not(.ctable__name) {
+  width: 2.6em;
+}
+
+.ctable__place {
+  width: 1.8em;
+}
+
+.ctable__name {
+  text-align: left !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ctable__tag {
+  color: var(--danger);
+  font-size: 0.8em;
+}
+
+.ctable__chg {
+  font-size: 0.8em;
+  font-weight: 700;
+}
+
+.ctable__chg--up {
+  color: var(--moss);
+}
+
+.ctable__chg--down {
+  color: var(--danger);
+}
+
+/* The elimination tree: one column per round, slots spread so each one sits between its two feeders. */
+.bracket {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 6px;
+}
+
+.bracket__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bracket__title {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.75em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bracket__slots {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-around;
+  gap: 6px;
+}
+
+.bslot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.75em;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bslot:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.bracket__col:not(:last-child) .bslot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.bslot__side {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bslot__side--won {
+  font-weight: 800;
+}
+
+.bslot__side--me {
+  color: var(--accent);
+}

@@ -360,6 +360,8 @@ export const SAVES = {
 
 /** §13 tournaments and ranks. */
 export const TOURNAMENT = {
+  /** Every cup match and the Journey Trial last this long (seconds). */
+  matchSeconds: 60,
   points: { koWin: 4, win: 3, draw: 2, loss: 0 },
   /** 1st, 2nd and 3rd place shares of the purse (percent). */
   purseSplitPct: [100, 40, 20] as readonly number[],

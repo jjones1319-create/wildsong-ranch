@@ -4,9 +4,9 @@ import { ITEMS } from '../data/items.ts'
 import { CORIN, RIVALS, RIVAL_BY_ID, WILD_NAMES } from '../data/rivals.ts'
 import { signatureOf, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { DIFFICULTY, NPC, RANGES, RIVALS as RIVAL_TUNING, TOURNAMENT } from '../data/tuning.ts'
-import { STAT_KEYS, TOURNAMENT_GRADES, type AiTier, type Personality, type Stats, type TournamentEvent, type TournamentGrade } from '../data/types.ts'
+import { STAT_KEYS, TOURNAMENT_GRADES, type AiTier, type AutoStyle, type Personality, type Stats, type TournamentEvent, type TournamentGrade } from '../data/types.ts'
 import { runBattle, tierForGrade, timerTicksFor } from './battle/engine.ts'
-import type { BattleResult } from './battle/types.ts'
+import type { BattleInput, BattleOptions, BattleOutcome, BattleResult, FighterSetup } from './battle/types.ts'
 import { WEEKS_PER_YEAR, dateOf } from './calendar.ts'
 import { variantPrizePct } from './variants.ts'
 import { cyrb53 } from './hash.ts'
@@ -199,11 +199,41 @@ export function makeOpponents(state: GameState, event: TournamentEvent, rng: Rng
 
 /* ---------- schedules ---------- */
 
-function roundRobin(n: number): MatchRecord[] {
-  const out: MatchRecord[] = []
-  let round = 1
-  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) out.push({ round: round++, a, b, result: null })
-  return out
+/** The cup's boss for scheduling: Corin when he is in the cup, else the opponent with the highest stat total (the lower index on a tie). */
+export function bossIndex(participants: readonly Participant[]): number {
+  const corin = participants.findIndex((p) => p.rivalId === CORIN.id)
+  if (corin > 0) return corin
+  let best = 1
+  for (let i = 2; i < participants.length; i++) if (totalStats(participants[i]!.monster.stats) > totalStats(participants[best]!.monster.stats)) best = i
+  return best
+}
+
+/**
+ * §13 round robin by the circle method (n even): n − 1 rounds of n / 2 matches. Every pair meets once and
+ * everyone, the player included, fights once per round. The opponents' seats come from the cup's seed; the round
+ * in which the player meets the boss is played last. Within a round the player's match comes first, and a
+ * match's `a` is always its lower index, so the player is side `a`.
+ */
+export function roundRobinSchedule(participants: readonly Participant[], rng: Rng): MatchRecord[] {
+  const n = participants.length
+  let ring = [0, ...rng.shuffle(Array.from({ length: n - 1 }, (_, i) => i + 1))]
+  const rounds: [number, number][][] = []
+  for (let r = 0; r < n - 1; r++) {
+    const pairs: [number, number][] = []
+    for (let i = 0; i < n / 2; i++) {
+      const x = ring[i]!
+      const y = ring[n - 1 - i]!
+      pairs.push(x < y ? [x, y] : [y, x])
+    }
+    pairs.sort((p, q) => p[0] - q[0] || p[1] - q[1])
+    rounds.push(pairs)
+    // Seat 0 stays put; everyone else moves one seat round the table.
+    ring = [ring[0]!, ring[n - 1]!, ...ring.slice(1, n - 1)]
+  }
+  const boss = bossIndex(participants)
+  const last = rounds.findIndex((pairs) => pairs.some(([a, b]) => a === 0 && b === boss))
+  const ordered = last < 0 ? rounds : [...rounds.slice(0, last), ...rounds.slice(last + 1), rounds[last]!]
+  return ordered.flatMap((pairs, r) => pairs.map(([a, b]): MatchRecord => ({ round: r + 1, a, b, result: null })))
 }
 
 /** The first elimination round: the player faces a random opponent; the others pair off. */
@@ -227,7 +257,7 @@ export function createTournament(state: GameState, eventId: string, mode: 'auto'
   const player: Participant = { name: state.breeder.name, monster: fightingCopy(state.monster!, event), personality: 'Steady', habit: 'none', rivalId: null, player: true }
   const participants = [player, ...makeOpponents(state, event, rng)]
   const n = participants.length
-  const matches = event.format === 'RR4' || event.format === 'RR6' ? roundRobin(n) : event.format === 'Elim4' || event.format === 'Elim8' ? firstRound(n, rng) : [{ round: 1, a: 0, b: 1, result: null }]
+  const matches = event.format === 'RR4' || event.format === 'RR6' ? roundRobinSchedule(participants, rng) : event.format === 'Elim4' || event.format === 'Elim8' ? firstRound(n, rng) : [{ round: 1, a: 0, b: 1, result: null }]
   return { eventId, week: state.week, seed, mode, participants, matches, koOut: [], eliminated: [], relayWins: 0, done: false }
 }
 
@@ -262,11 +292,129 @@ export function opponentOf(t: TournamentState, match: MatchRecord): Participant 
   return t.participants[match.a === 0 ? match.b : match.a]!
 }
 
+/* ---------- rounds ---------- */
+
+/** The round being played: the lowest round with an unplayed match, or null once every match has a result. */
+export function currentRound(t: TournamentState): number | null {
+  let r: number | null = null
+  for (const m of t.matches) if (m.result === null && (r === null || m.round < r)) r = m.round
+  return r
+}
+
+/** How many rounds the cup has: RR4 3, RR6 5, Elim4 2, Elim8 3, a 1v1 or the Summit leg 1 (a pre-v9 round robin keeps its stored count). */
+export function roundCount(t: TournamentState): number {
+  if (isElimination(t)) {
+    let rounds = 0
+    for (let k = 1; k < t.participants.length; k *= 2) rounds += 1
+    return rounds
+  }
+  return t.matches.reduce((mx, m) => Math.max(mx, m.round), 1)
+}
+
+/** The last round whose every match has a result (0 before the first round ends; the round count once the cup is over). */
+export function roundsDone(t: TournamentState): number {
+  const r = currentRound(t)
+  return r === null ? roundCount(t) : r - 1
+}
+
+/** The player's match in a round (played or not), or null when the player has none there. */
+export function playerMatchIn(t: TournamentState, round: number): number | null {
+  const i = t.matches.findIndex((m) => m.round === round && (m.a === 0 || m.b === 0))
+  return i >= 0 ? i : null
+}
+
+/** True when the player can't fight again in this cup (KO'd, eliminated, or every match of theirs is played). */
+export function playerIsDone(t: TournamentState): boolean {
+  return nextPlayerMatch(t) === null
+}
+
+/* ---------- match setups (one place, so Fight, Auto, Skip and a replay are the same battle) ---------- */
+
+export interface MatchSetup {
+  a: FighterSetup
+  b: FighterSetup
+  options: BattleOptions
+}
+
+export interface PlayerMatchSetup {
+  /** Battle side 0. */
+  player: FighterSetup
+  /** Battle side 1. */
+  opponent: FighterSetup
+  options: BattleOptions
+  /** Whether the player is the match's `a` (results are stored from `a`'s point of view). */
+  playerIsA: boolean
+  opponentIndex: number
+}
+
+/** Each match fights on its own seed from the cup's seed and its place in the schedule. */
+export function matchSeed(t: TournamentState, index: number): number {
+  return cyrb53(`${t.seed}-${index}`, 2)
+}
+
+export function matchOptions(seed: number): BattleOptions {
+  return { seed, timerTicks: timerTicksFor(TOURNAMENT.matchSeconds) }
+}
+
+function npcFighter(p: Participant, event: TournamentEvent): FighterSetup {
+  return { monster: p.monster, control: 'ai', personality: p.personality, habit: p.habit, tier: tierFor(p, event) }
+}
+
+/** A match with both sides on the CPU, exactly as the cup simulates it (also used to replay it on screen). */
+export function matchSetup(t: TournamentState, index: number): MatchSetup {
+  const match = t.matches[index]!
+  const event = EVENT_BY_ID[t.eventId]!
+  return { a: npcFighter(t.participants[match.a]!, event), b: npcFighter(t.participants[match.b]!, event), options: matchOptions(matchSeed(t, index)) }
+}
+
+/**
+ * §12.11 the player's side: always under the player's control, expert, with the saved Auto style. Auto is the
+ * engine's `auto` flag, switched on by an input at the first tick, so the player can take over at any moment and a
+ * replay stays exact.
+ */
+export function playerFighter(monster: Monster, style: AutoStyle): FighterSetup {
+  return { monster, control: 'player', personality: 'Steady', tier: 'expert', style }
+}
+
+/** Auto from the first tick, as an input (the battle screen records it like a tap on Auto). */
+export function autoStartInput(style: AutoStyle): BattleInput {
+  return { tick: 1, side: 0, action: { kind: 'auto', on: true, style } }
+}
+
+/** The player's match: the player on battle side 0, the opponent on side 1, the match's own seed. */
+export function playerMatchSetup(t: TournamentState, index: number, style: AutoStyle): PlayerMatchSetup {
+  const match = t.matches[index]!
+  const playerIsA = match.a === 0
+  const opponentIndex = playerIsA ? match.b : match.a
+  const event = EVENT_BY_ID[t.eventId]!
+  return {
+    player: playerFighter(t.participants[0]!.monster, style),
+    opponent: npcFighter(t.participants[opponentIndex]!, event),
+    options: matchOptions(matchSeed(t, index)),
+    playerIsA,
+    opponentIndex,
+  }
+}
+
+/** A finished battle with the player on side 0, stored from the match's `a` side. */
+export function playerMatchResult(outcome: BattleOutcome, playerIsA: boolean): MatchResult {
+  const winner = outcome.winner === null ? null : ((playerIsA ? outcome.winner : 1 - outcome.winner) as 0 | 1)
+  const hpPct: [number, number] = playerIsA ? [outcome.hpPct[0], outcome.hpPct[1]] : [outcome.hpPct[1], outcome.hpPct[0]]
+  return { winner, how: outcome.how, hpPct, ticks: outcome.ticks }
+}
+
+/** Skip: the player's match simulated at once, exactly as an untouched Auto run on the same seed plays it. */
+export function skipPlayerMatch(t: TournamentState, index: number, style: AutoStyle): TournamentState {
+  const s = playerMatchSetup(t, index, style)
+  const r = runBattle(s.player, s.opponent, s.options, [autoStartInput(style)])
+  return recordMatch(t, index, playerMatchResult(r.outcome, s.playerIsA), r.fighters[0].techUses)
+}
+
 /** A result from the engine, seen from the match's `a` side. */
 export function matchResultFrom(r: BattleResult, aIsSide0: boolean): MatchResult {
   const winner = r.outcome.winner === null ? null : ((aIsSide0 ? r.outcome.winner : 1 - r.outcome.winner) as 0 | 1)
   const hp: [number, number] = aIsSide0 ? r.outcome.hpPct : [r.outcome.hpPct[1], r.outcome.hpPct[0]]
-  return { winner, how: r.outcome.how, hpPct: hp }
+  return { winner, how: r.outcome.how, hpPct: hp, ticks: r.outcome.ticks }
 }
 
 /** Records a result; KO'd fighters withdraw, elimination losers are out; the next round is built when a round completes. */
@@ -319,24 +467,41 @@ function mergeUses(a: Record<string, number>, b: Record<string, number>): Record
   return out
 }
 
-/** Fights every pending match without the player through the engine (and the player's too when `includePlayer`). */
+/** Fights one unplayed match with both sides on the CPU. */
+function simulateMatch(t: TournamentState, index: number): TournamentState {
+  const s = matchSetup(t, index)
+  const r = runBattle(s.a, s.b, s.options)
+  const match = t.matches[index]!
+  const uses = match.a === 0 ? r.fighters[0].techUses : match.b === 0 ? r.fighters[1].techUses : {}
+  return recordMatch(t, index, matchResultFrom(r, true), uses)
+}
+
+/** Fights the unplayed matches of one round that don't involve the player (never another round's). */
+export function simulateRound(input: TournamentState, round: number): TournamentState {
+  let t = input
+  for (let guard = 0; guard < 64; guard++) {
+    const index = t.matches.findIndex((m) => m.round === round && m.result === null && m.a !== 0 && m.b !== 0)
+    if (index < 0) break
+    t = simulateMatch(t, index)
+  }
+  return t
+}
+
+/**
+ * Plays the cup forward round by round: each round's other matches, stopping at the player's next match (unless
+ * `includePlayer`, which fights it on the CPU too). Never simulates a match in a round after the player's next one.
+ */
 export function simulatePending(input: TournamentState, includePlayer = false): TournamentState {
   let t = input
   for (let guard = 0; guard < 64; guard++) {
-    const index = t.matches.findIndex((m) => m.result === null && (includePlayer || (m.a !== 0 && m.b !== 0)))
-    if (index < 0) break
-    const match = t.matches[index]!
-    const a = t.participants[match.a]!
-    const b = t.participants[match.b]!
-    const seed = cyrb53(`${t.seed}-${index}`, 2)
-    const event = EVENT_BY_ID[t.eventId]!
-    const r = runBattle(
-      { monster: a.monster, control: 'ai', personality: a.personality, habit: a.habit, tier: tierFor(a, event) },
-      { monster: b.monster, control: 'ai', personality: b.personality, habit: b.habit, tier: tierFor(b, event) },
-      { seed, timerTicks: timerTicksFor(60) },
-    )
-    const uses = match.a === 0 ? r.fighters[0].techUses : match.b === 0 ? r.fighters[1].techUses : {}
-    t = recordMatch(t, index, matchResultFrom(r, true), uses)
+    const round = currentRound(t)
+    if (round === null) break
+    t = simulateRound(t, round)
+    const mine = t.matches.findIndex((m) => m.round === round && m.result === null && (m.a === 0 || m.b === 0))
+    if (mine >= 0) {
+      if (!includePlayer) break
+      t = simulateMatch(t, mine)
+    }
   }
   return t
 }
@@ -356,10 +521,21 @@ export interface Standing {
   index: number
   points: number
   wins: number
+  /** Losses include walkovers (a KO'd fighter's remaining matches). */
+  losses: number
+  draws: number
+  /** KO wins. */
   kos: number
   /** Total HP % (tenths) remaining over the matches. */
   hp: number
   place: number
+}
+
+/** An elimination match's loser (a draw: the lower HP % goes out; equal → side `b`, as `recordMatch` decides). */
+function loserOf(m: MatchRecord): number {
+  const r = m.result!
+  if (r.winner !== null) return r.winner === 0 ? m.b : m.a
+  return r.hpPct[0] >= r.hpPct[1] ? m.b : m.a
 }
 
 function pointsFor(m: MatchRecord, who: number): number {
@@ -371,26 +547,30 @@ function pointsFor(m: MatchRecord, who: number): number {
   return TOURNAMENT.points.loss
 }
 
-/** Round robin: points, then head-to-head, KO count, HP % (§13). Elimination: by the round reached. */
-export function standings(t: TournamentState): Standing[] {
+/**
+ * Round robin: points, then head-to-head, KO count, HP % (§13). Elimination: by the round reached.
+ * With `upToRound`, only matches in rounds up to it count (the table "after round r").
+ */
+export function standings(t: TournamentState, upToRound?: number): Standing[] {
   const n = t.participants.length
-  const rows: Standing[] = Array.from({ length: n }, (_, i) => ({ index: i, points: 0, wins: 0, kos: 0, hp: 0, place: 0 }))
-  for (const m of t.matches) {
-    if (!m.result) continue
+  const counted = t.matches.filter((m) => m.result !== null && (upToRound === undefined || m.round <= upToRound))
+  const rows: Standing[] = Array.from({ length: n }, (_, i) => ({ index: i, points: 0, wins: 0, losses: 0, draws: 0, kos: 0, hp: 0, place: 0 }))
+  for (const m of counted) {
     for (const who of [m.a, m.b]) {
       const row = rows[who]!
       const side = m.a === who ? 0 : 1
       row.points += pointsFor(m, who)
-      if (m.result.winner === side) {
+      if (m.result!.winner === side) {
         row.wins += 1
-        if (m.result.how === 'ko') row.kos += 1
-      }
-      row.hp += m.result.hpPct[side]
+        if (m.result!.how === 'ko') row.kos += 1
+      } else if (m.result!.winner === null && m.result!.how !== 'walkover') row.draws += 1
+      else row.losses += 1
+      row.hp += m.result!.hpPct[side]
     }
   }
   if (isElimination(t)) {
     const roundOut = (i: number) => {
-      const lost = t.matches.find((m) => m.result && (m.a === i || m.b === i) && t.eliminated.includes(i) && ((m.result.winner === 0 && m.b === i) || (m.result.winner === 1 && m.a === i) || (m.result.winner === null && t.eliminated.includes(i))))
+      const lost = counted.find((m) => (m.a === i || m.b === i) && loserOf(m) === i)
       return lost ? lost.round : Number.MAX_SAFE_INTEGER
     }
     const sorted = [...rows].sort((x, y) => roundOut(y.index) - roundOut(x.index) || y.hp - x.hp)
@@ -401,7 +581,7 @@ export function standings(t: TournamentState): Standing[] {
     return sorted
   }
   const headToHead = (x: Standing, y: Standing) => {
-    const m = t.matches.find((mm) => mm.result && ((mm.a === x.index && mm.b === y.index) || (mm.a === y.index && mm.b === x.index)))
+    const m = counted.find((mm) => (mm.a === x.index && mm.b === y.index) || (mm.a === y.index && mm.b === x.index))
     if (!m || !m.result || m.result.winner === null) return 0
     const xWon = (m.a === x.index && m.result.winner === 0) || (m.b === x.index && m.result.winner === 1)
     return xWon ? -1 : 1
@@ -415,6 +595,65 @@ export function standings(t: TournamentState): Standing[] {
 
 export function playerPlacing(t: TournamentState): number {
   return standings(t).find((s) => s.index === 0)!.place
+}
+
+/** Places gained since the previous round (positive = moved up), by participant; empty for round 1. */
+export function placeChanges(t: TournamentState, round: number): Map<number, number> {
+  const out = new Map<number, number>()
+  if (round <= 1) return out
+  const before = new Map(standings(t, round - 1).map((s) => [s.index, s.place]))
+  for (const s of standings(t, round)) out.set(s.index, (before.get(s.index) ?? s.place) - s.place)
+  return out
+}
+
+/* ---------- the elimination bracket ---------- */
+
+export type SlotSide = { kind: 'p'; index: number } | { kind: 'winnerOf'; round: number; slot: number }
+
+export interface BracketSlot {
+  round: number
+  slot: number
+  /** The match's index once it exists. */
+  match: number | null
+  a: SlotSide
+  b: SlotSide
+}
+
+function slotWinner(t: TournamentState, s: BracketSlot): number | null {
+  if (s.match === null) return null
+  const m = t.matches[s.match]!
+  if (!m.result) return null
+  return loserOf(m) === m.a ? m.b : m.a
+}
+
+/**
+ * The whole elimination tree, future rounds included: slot j of round r + 1 takes the winners of slots 2j and
+ * 2j + 1 of round r (the order `recordMatch` pairs them in). A side not known yet is "winner of" its feeding slot.
+ */
+export function bracket(t: TournamentState): BracketSlot[][] {
+  const rounds: BracketSlot[][] = []
+  const total = roundCount(t)
+  for (let r = 1; r <= total; r++) {
+    const real = t.matches.map((m, i) => ({ m, i })).filter((x) => x.m.round === r)
+    const prev = rounds[r - 2]
+    const count = r === 1 ? real.length : Math.ceil(prev!.length / 2)
+    const slots: BracketSlot[] = []
+    for (let j = 0; j < count; j++) {
+      const x = real[j]
+      if (x) {
+        slots.push({ round: r, slot: j, match: x.i, a: { kind: 'p', index: x.m.a }, b: { kind: 'p', index: x.m.b } })
+        continue
+      }
+      const side = (k: number): SlotSide => {
+        const feed = prev?.[k]
+        const w = feed ? slotWinner(t, feed) : null
+        return w !== null ? { kind: 'p', index: w } : { kind: 'winnerOf', round: r - 1, slot: k }
+      }
+      slots.push({ round: r, slot: j, match: null, a: side(2 * j), b: side(2 * j + 1) })
+    }
+    rounds.push(slots)
+  }
+  return rounds
 }
 
 export function playerWins(t: TournamentState): number {
@@ -720,23 +959,46 @@ export function applyTooEasy(input: GameState): GameState {
   return state
 }
 
-/** The Summit relay: four NPC teammates fight their grade's slot; the Vale's wins are counted. */
-export function simulateRelay(t: TournamentState, playerGrade: TournamentGrade): number {
+export interface RelayLeg {
+  grade: TournamentGrade
+  /** True for the player's own leg (the cup's real match). */
+  player: boolean
+  vale: Participant | null
+  coast: Participant | null
+  /** From the Vale's side (`a`). */
+  result: MatchResult | null
+}
+
+/**
+ * The Summit relay's five legs (§13): the player's grade is the player's own, fightable leg; the four NPC legs are
+ * fought here between generated Vale and Coast teammates. Deterministic from the cup's seed, so the legs can be
+ * shown again at any time and always match the win count stored at entry.
+ */
+export function relayLegs(t: TournamentState, playerGrade: TournamentGrade): RelayLeg[] {
   const rng = createRng(t.seed ^ 0x5a17)
-  let wins = 0
+  const legs: RelayLeg[] = []
   for (const slot of TOURNAMENT.summit.slots) {
-    if (slot === playerGrade) continue
+    const grade = slot as TournamentGrade
+    if (slot === playerGrade) {
+      legs.push({ grade, player: true, vale: null, coast: null, result: null })
+      continue
+    }
     const g = slot as NpcGrade
     const vale = wildParticipant(g, rng)
     const coast = wildParticipant(g, rng)
     const r = runBattle(
       { monster: vale.monster, control: 'ai', personality: vale.personality, tier: tierOfGrade(vale.monster.grade) },
       { monster: coast.monster, control: 'ai', personality: coast.personality, tier: tierOfGrade(coast.monster.grade) },
-      { seed: rng.nextU32(), timerTicks: timerTicksFor(60) },
+      matchOptions(rng.nextU32()),
     )
-    if (r.outcome.winner === 0) wins += 1
+    legs.push({ grade, player: false, vale, coast, result: matchResultFrom(r, true) })
   }
-  return wins
+  return legs
+}
+
+/** The Summit relay: four NPC teammates fight their grade's slot; the Vale's wins are counted. */
+export function simulateRelay(t: TournamentState, playerGrade: TournamentGrade): number {
+  return relayLegs(t, playerGrade).filter((l) => !l.player && l.result?.winner === 0).length
 }
 
 export function eventName(id: string): string {
