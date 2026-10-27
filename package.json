@@ -1,7 +1,7 @@
 {
   "name": "wildsong-ranch",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
   "type": "module",
   "license": "MIT",
@@ -15,11 +15,16 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "verify": "npm run typecheck && npm test && npm run build",
+    "verify": "npm run typecheck && npm test && npm run build && npm run check:build",
     "icons": "pwa-assets-generator",
     "sim:life": "node scripts/sim-life.ts",
     "sim:balance": "node scripts/balance.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "check:build": "node scripts/check-build.ts",
+    "audio:samples": "node tools/audio/build-samples.ts",
+    "audio:check": "node tools/audio/render-review.ts --check",
+    "audio:review": "node tools/audio/render-review.ts --review",
+    "audio:analyze": "node tools/audio/analyze.ts"
   },
   "dependencies": {
     "@preact/signals": "^2.11.3",
@@ -28,8 +33,7 @@
     "pixi.js": "^8.22.0",
     "preact": "^10.29.8",
     "qrcode": "^1.5.4",
-    "valibot": "^1.5.0",
-    "zzfx": "^1.4.0"
+    "valibot": "^1.5.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -37,6 +41,7 @@
     "@types/node": "^24.19.2",
     "@types/qrcode": "^1.5.6",
     "@vite-pwa/assets-generator": "^2.0.0",
+    "ffmpeg-static": "^5.3.0",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
     "vite-plugin-pwa": "^2.0.0",

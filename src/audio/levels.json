@@ -1,0 +1,35 @@
+{
+  "note": "SOUND_UPGRADE §14.3 calibration trims in dB, written by `npm run audio:check -- --calibrate`. Songs by id, beds by id, effects by id. Every trim stays within ±6 dB; a bigger one means the mix itself is wrong.",
+  "songs": {
+    "wildsong": 0.6,
+    "ranch-spring": -0.5,
+    "ranch-summer": 4.3,
+    "ranch-autumn": 0,
+    "ranch-winter": 1.7,
+    "town": 0.7,
+    "cup": -0.6,
+    "drill-waterfall": 1.6,
+    "drill-generic": 1.4,
+    "matchWin": -2.4,
+    "matchLoss": -2.7,
+    "matchDraw": -2.8,
+    "cupWin": -3.5,
+    "promotion": -5.2
+  },
+  "beds": {
+    "meadow": 1.9,
+    "summer-field": 2,
+    "autumn-wind": 0.4,
+    "winter-yard": 1.5,
+    "brook": 2.6,
+    "waterfall-near": -3.6,
+    "town": 1.1,
+    "market": 1.2,
+    "shop": -0.5,
+    "guild": 0.9,
+    "library": -0.2,
+    "arena-out": 3.2,
+    "arena": 1.2
+  },
+  "effects": {}
+}

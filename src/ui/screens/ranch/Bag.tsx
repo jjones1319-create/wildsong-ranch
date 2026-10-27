@@ -12,6 +12,7 @@ import { QuantitySheet } from '../../components/RanchBits.tsx'
 import { itemEffectText } from '../../lib/itemText.ts'
 import { navigate } from '../../router.ts'
 import { showToast } from '../../store/appStore.ts'
+import { playSfx } from '../../../audio/player.ts'
 import { game, useItems } from '../../store/gameStore.ts'
 
 const USABLE = new Set(['recovery', 'mood', 'form', 'sweet', 'potential', 'tonic', 'fruit', 'toy'])
@@ -59,6 +60,8 @@ export function BagScreen() {
       return
     }
     const parts = [fill(t.used, { name: m.name, n: r.used, item: using.name })]
+    // Sound 2.0 §7.6: a kalimba lift for a Stat Sweet, a harp-and-glock arpeggio for anything else.
+    playSfx(using.category === 'sweet' ? 'sweet' : 'itemGet')
     if (using.category === 'sweet') parts.push(fill(WREN.ateSweet, { name: m.name }))
     const life = r.result?.lifespanChange ?? 0
     if (life < 0) parts.push(fill(t.lifespanDown, { n: -life }))

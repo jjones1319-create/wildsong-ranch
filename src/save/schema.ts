@@ -6,7 +6,7 @@ import { AUDIO, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES 
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -542,6 +542,12 @@ const SETTINGS_DEFAULTS = {
   masterVolume: AUDIO.defaultVolume.master as number,
   musicVolume: AUDIO.defaultVolume.music as number,
   sfxVolume: AUDIO.defaultVolume.sfx as number,
+  ambience: true,
+  ambienceVolume: AUDIO.defaultVolume.ambience as number,
+  buttonSounds: true,
+  listening: 'speaker' as ListeningSetting,
+  monoAudio: false,
+  audioDefaultsV2: true,
   leftHanded: false,
   installHelpDismissedAt: 0,
   lastBackupAt: 0,
@@ -572,6 +578,13 @@ export const SettingsSchema = v.fallback(
     masterVolume: int(0, 100, AUDIO.defaultVolume.master),
     musicVolume: int(0, 100, AUDIO.defaultVolume.music),
     sfxVolume: int(0, 100, AUDIO.defaultVolume.sfx),
+    ambience: bool(true),
+    ambienceVolume: int(0, 100, AUDIO.defaultVolume.ambience),
+    buttonSounds: bool(true),
+    listening: oneOf(LISTENING_SETTINGS, 'speaker'),
+    monoAudio: bool(false),
+    // Sound 2.0 §12: a save from before it lacks this flag, so the one-time volume bump runs once.
+    audioDefaultsV2: bool(false),
     leftHanded: bool(false),
     installHelpDismissedAt: stamp(),
     lastBackupAt: stamp(),
@@ -650,6 +663,13 @@ export interface AppSettings {
   masterVolume: number
   musicVolume: number
   sfxVolume: number
+  /** Sound 2.0 §12: ambience switch and volume, button sounds, the listening preset, mono, and the one-time defaults bump. */
+  ambience: boolean
+  ambienceVolume: number
+  buttonSounds: boolean
+  listening: ListeningSetting
+  monoAudio: boolean
+  audioDefaultsV2: boolean
   /** §24 the left-handed battle layout. */
   leftHanded: boolean
   /** §12.11 the default the cup entry screen offers for the player's matches: 'manual' = Fight, 'auto' = Auto (remembered). */
@@ -855,7 +875,21 @@ export function validateLibrary(raw: unknown): LibraryValidation {
 /** Settings never fail: anything unreadable becomes the defaults. */
 export function validateSettings(raw: unknown): AppSettings {
   const parsed = v.safeParse(SettingsSchema, raw)
-  return parsed.success ? (parsed.output as AppSettings) : defaultSettings()
+  return parsed.success ? applyAudioDefaultsV2(parsed.output as AppSettings) : defaultSettings()
+}
+
+/**
+ * Sound 2.0 §12: existing players keep their own volumes, but the old defaults (music 55, effects 100) move to
+ * the new ones (70, 75) once. Any other value was the player's choice and stays. Runs once per settings record.
+ */
+export function applyAudioDefaultsV2(s: AppSettings): AppSettings {
+  if (s.audioDefaultsV2) return s
+  return {
+    ...s,
+    musicVolume: s.musicVolume === AUDIO.legacyDefaults.music ? AUDIO.defaultVolume.music : s.musicVolume,
+    sfxVolume: s.sfxVolume === AUDIO.legacyDefaults.sfx ? AUDIO.defaultVolume.sfx : s.sfxVolume,
+    audioDefaultsV2: true,
+  }
 }
 
 /** Sorts out any pasted or opened object by its `kind` (a bare monster counts as a monster). Never throws. */

@@ -1323,11 +1323,17 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 
 ## 23. Audio (SHOULD)
 
-- **Sound effects:** **ZzFX** (MIT): UI tap, drill result stingers, hit, crit, miss, KO, level-up, coin, mail, stone hum.
-- **Music:** short original looping chiptune tracks (ranch by season, town, battle, victory, farewell, shrine), written in code with ZzFXM or a tiny step sequencer.
-- **Volume:** master, music and effects volume; mute.
-- **Unlock:** audio starts on the first `pointerup`.
-- **iOS:** set `navigator.audioSession.type = 'ambient'` where supported, so the player's own music keeps playing.
+Sound 2.0 (`docs/SOUND_UPGRADE.md` is the full spec; this is the summary). The style is a calm, warm **storybook folk orchestra**: ocarina and recorder leads, harp, plucked and bowed strings, soft mallets and hand drums, with plenty of space and reverb. Every melody is original (§3.5 of the spec); no oscillator square or saw waves, no bit-crush, nothing that sounds like a phone notification.
+
+- **How it is made.** Real instrument samples (CC0: VCSL, VSCO 2 CE, Kenney Foley, see CREDITS) are played live by our own sequencer from songs written in ABC notation (`src/audio/music/songs/`). Ambience is procedural (filtered noise, chirps, drips). Effects are samples, Foley, filtered noise and sine or triangle tones. Nothing plays until the first tap; the engine chunk loads then, and the core sample pack decodes after it (the fallback voices cover the wait). Everything works offline.
+- **What plays where (S1).** The title and the new-game screen play **Wildsong** (the main theme, which carries the Wildsong motif); the credits roll plays its long arrangement. The ranch plays one of **four seasonal songs** with weather rules (cloudy quietens the sparkle, rain swaps the lead and adds a pad, storm leaves fragments) and a **breath** of 8–20 s of ambience between passes. **Town** is one folk waltz with a **stem** per screen (shop, market, guild, library, journal, mail, workshop, odd jobs), so the music never restarts between shops. Every regular **cup** plays the cup theme in its **season palette** (lead instrument and drum kit by season, a key and tempo nudge per event): the lobby layer on the cup screens, then base, drive from bar three, and the **tension** layer when a fighter is at 30% HP or 10 s remain. A KO cuts the music; the match stinger follows, then the lobby. The other events, the Shrine, the Labs, Journeys, Expeditions, the Farewell and the odd jobs use stand-ins until S2 and S3 (listed in PROGRESS).
+- **Trainings.** A drill cue takes over the music: the place's ambience, Foley on a timeline, a short music bed, and an outcome stinger that lands exactly when the result shows (`drillCue.start` returns the audio-clock time). Waterfall Stand is complete; the other ten drills share a soft generic cue until S3.
+- **Effects.** Button sounds are soft wooden ticks (a setting turns them off). Battle sounds follow each technique's V1 element (cast, travel, impact), scale with the hit's strength, pan from the arena, thin out at ×2 and ×4, and never duck the music; only a Special dips it 3 dB for a second. The crowd reacts (cheers, an "ooh", applause at a KO). Musical effects (coins, mail, items, Songsheets, growing up) play in the key of the song that is on.
+- **Settings → Sound.** Music, effects, ambience and button-sound switches; master, music, effects and ambience volumes (defaults 80 / 70 / 75 / 60, mapped as (v/100)²); **Listening on** (Phone speaker trims the low end and the harsh middle and narrows the stereo; Headphones keeps the full width); **Mono audio**; Test sound; Open Sound Lab.
+- **The Sound Lab** (Monster Lab → Sound, `#lab/sound`, also from Settings): every song with its layers, stems, weather and season chips and the checker's notes; every bed with per-layer sliders; every effect, a battle pad and the crowd; a drill-cue demo; live meters. Each item takes a 👍 / 👎 and a note; "Copy my sound notes" puts them on the clipboard for Claude.
+- **Quality gates.** The music checker runs over every song in Vitest (ranges, breathing, melodic rules, variety, the motif, distinctness, bans). `npm run audio:check` renders every piece offline with the real engine and gates loudness (−20 LUFS places, −18 battles, −32 beds), true peak, crest factor, clicks, dropouts and the effect levels against the music; `npm run audio:review` writes listening files and an HTML report. `npm run check:build` keeps the engine chunk under 45 KB gzipped and the samples precached.
+- **Unlock:** audio starts on the first `pointerup` or `keydown`, with `latencyHint: 'interactive'`.
+- **iOS:** `navigator.audioSession.type = 'ambient'` where supported, so the player's own music keeps playing; iOS Safari before 18.4 only partly decodes Ogg Opus and may stay on the fallback voices.
 
 ## 24. Accessibility and comfort (MUST)
 
@@ -1337,6 +1343,8 @@ baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 
 - No flashing faster than 3 Hz: the effects layer's flash gate allows at most 3 screen flashes in any rolling second, never brighter than alpha 0.3, and Cozy / reduced motion turns them off entirely (V1).
 - Shake, hit-stop and impact frames are Intensity settings and are all off under reduced motion (V1).
 - Haptics toggle.
+- **Mono audio** (Settings → Sound) sums the mix to one channel after the limiter, for one earbud or a hearing aid (Sound 2.0).
+- **Button sounds** can be switched off on their own, and the effects, music and ambience each have their own switch, so nothing is forced on a player who finds it tiring (Sound 2.0).
 - Left-handed battle layout (mirrors the pads).
 - All text readable at 360 px width.
 - Screen-reader labels on buttons where practical.

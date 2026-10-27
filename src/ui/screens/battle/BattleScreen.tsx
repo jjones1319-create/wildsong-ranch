@@ -124,6 +124,7 @@ export function BattleScreen() {
         <button
           type="button"
           class="btn"
+          aria-label={t.pause}
           onClick={() => {
             setPaused(true)
             setPauseOpen(true)

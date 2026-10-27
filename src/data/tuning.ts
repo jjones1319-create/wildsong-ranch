@@ -875,16 +875,43 @@ export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 1
 
 /** §23 audio. Volumes are percentages. */
 export const AUDIO = {
-  defaultVolume: { master: 80, music: 55, sfx: 100 },
-  /** Music fades in and out over this long (milliseconds). */
-  fadeMs: 700,
-  /** Under a burst of effects the music ducks to this percent of its volume and recovers after duckMs. */
-  duckPct: 60,
-  duckMs: 320,
-  /** The sequencer renders at this sample rate: plenty for chiptune, and the buffers stay small. */
-  sampleRate: 22050,
-  /** How long the victory stinger holds the stage before the previous track returns. */
-  stingerMs: 3200,
+  /** SOUND_UPGRADE §12 defaults (sliders 0–100; gain = (v/100)²). */
+  defaultVolume: { master: 80, music: 70, sfx: 75, ambience: 60 },
+  /** The one-time bump for existing players: exactly these old defaults move to the new ones. */
+  legacyDefaults: { music: 55, sfx: 100 },
+  /** §11 crossfades (seconds): between songs, and between ranch seasons. */
+  crossfadeSec: 1.5,
+  seasonCrossfadeSec: 2.5,
+  /** §4.7 an interrupting stinger: the area music fades out, and restarts after it with a fade-in. */
+  stingerFadeOutMs: 150,
+  stingerFadeInSec: 1,
+  stingerFadeInAfterDrillSec: 1.5,
+  /** §4.7 the only duck (a Special) and the battle pause. */
+  duck: { db: 3, sec: 1 },
+  pause: { lowpassHz: 700, db: 4, ms: 300 },
+  /** §4.4 the scheduler. */
+  lookaheadSec: 0.4,
+  lateToleranceMs: 5,
+  tickMs: 25,
+  /** §2 voices at once. */
+  voices: { music: 32, ambience: 16, sfx: 16, ui: 4 },
+  /** §10.1 throttles: the minimum gap per effect id, ms. */
+  throttleMs: { ui: 60, hit: 50, miss: 80, crowd: 350 },
+  /** §11 fast navigation debounce, bed crossfade, pack release. */
+  navDebounceMs: 250,
+  bedCrossfadeSec: 2,
+  packReleaseSec: 60,
+  /** §8.1 drill cues. */
+  drill: { musicFadeOutSec: 0.4, bedFadeInSec: 0.3, skipFadeMs: 80, endFadeSec: 1, instantStingerDb: -6, resultToleranceMs: 25 },
+  /** §7.5 the tension layer comes in at this HP share or with this many seconds left; the timer ticks for the last seconds. */
+  tension: { hpPct: 30, lastSec: 10 },
+  timerTickLastSec: 5,
+  /** §4.5 humanising: timing in ms (drums less) and velocity in percent. */
+  humanise: { timingMs: 6, drumTimingMs: 3, velocityPct: 6 },
+  /** Gain staging (§4.2, §14.3): the dB range velocity spans (f = 0, pp ≈ −range), and the makeup every song and bed gets before its bus, so the calibration trims stay within ±6 dB. */
+  velocityRangeDb: 18,
+  musicMakeupDb: 9,
+  ambienceMakeupDb: 10,
 } as const
 
 /** §3 the planner queue. */

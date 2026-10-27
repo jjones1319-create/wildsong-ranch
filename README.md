@@ -42,13 +42,16 @@ Your ranch lives only on your phone, so back it up now and then (the game remind
 ```
 npm install
 npm run dev          # http://localhost:5173/wildsong-ranch/  (add -- --host to test on a phone)
-npm run verify       # typecheck + unit tests + build
+npm run verify       # typecheck + unit tests + build + build checks
 npm run e2e          # Playwright smoke test on phone emulation (needs Google Chrome installed)
 npm run sim:life -- puddlepup good     # print one simulated life
 npm run sim:balance                    # the §26 balance matrices → docs/BALANCE_REPORT.md
+npm run audio:analyze                  # every song through the music checker
+npm run audio:check                    # offline renders of every piece, gated (needs Google Chrome)
+npm run audio:review                   # listening files and a report in audio-review/
 ```
 
-Built with Vite, TypeScript, Preact and @preact/signals; procedural SVG art; ZzFX sound and music composed in code; an installable, offline-capable web app on GitHub Pages. The core rules are pure, deterministic TypeScript with a seeded RNG, and every tuning number lives in `src/data/tuning.ts`.
+Built with Vite, TypeScript, Preact and @preact/signals; procedural SVG art; original music written in ABC notation and played live from CC0 instrument samples by our own Web Audio sequencer (see `CREDITS.md`); an installable, offline-capable web app on GitHub Pages. The core rules are pure, deterministic TypeScript with a seeded RNG, and every tuning number lives in `src/data/tuning.ts`.
 
 The project docs are in `docs/`: the game design, the content tables, the build plan, the balance report and the research notes. `CLAUDE.md` holds the standing instructions for the AI coding assistant that builds it.
 

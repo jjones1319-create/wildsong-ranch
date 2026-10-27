@@ -7,10 +7,11 @@ import './ui/styles/tournament.css'
 import './ui/styles/legacy.css'
 import './ui/styles/expedition.css'
 import './ui/styles/polish.css'
+import './ui/styles/sound.css'
 import './art/monster/monster.css'
 import { installAudio } from './audio/player.ts'
 import { App } from './ui/app.tsx'
-import { installMusic } from './ui/lib/music.ts'
+import { installDirector } from './ui/lib/audioDirector.ts'
 import { installPromptCapture } from './ui/lib/platform.ts'
 import { installTapSounds } from './ui/lib/tapSounds.ts'
 import { installRouter } from './ui/router.ts'
@@ -24,7 +25,7 @@ installRouter(window)
 installAutosaveOnHide(document)
 installAudio(document)
 installTapSounds(document)
-installMusic()
+installDirector()
 installUpdates(document)
 void bootApp()
 detectPerformance()

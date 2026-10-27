@@ -42,6 +42,10 @@ export type TransparencyMode = (typeof TRANSPARENCY_MODES)[number]
 
 /** GAME_DESIGN §21 global animation speed. */
 export const SPEEDS = ['normal', 'fast', 'instant'] as const
+
+/** Sound 2.0 §12: the listening preset (phone speaker or headphones). */
+export const LISTENING_SETTINGS = ['speaker', 'headphones'] as const
+export type ListeningSetting = (typeof LISTENING_SETTINGS)[number]
 export type Speed = (typeof SPEEDS)[number]
 
 /** GAME_DESIGN §12.10 CPU personalities. */

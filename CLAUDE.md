@@ -39,7 +39,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 ## Tech stack (keep it; ask before adding dependencies)
 - **Build and language:** Vite (current major) + TypeScript (the version the `preact-ts` template installs) + **Preact 10** + `@preact/signals`.
 - **Battle rendering:** SVG/DOM with the Web Animations API (transforms and opacity only).
-- **Libraries:** `idb-keyval` (saves), `valibot` (validation), `vite-plugin-pwa` (`registerType: 'prompt'`), `zzfx` (sound), `qrcode`.
+- **Libraries:** `idb-keyval` (saves), `valibot` (validation), `vite-plugin-pwa` (`registerType: 'prompt'`), `qrcode`, `pixi.js` + `pixi-filters` (the effects layer). Sound has **no runtime dependency**: our own engine on Web Audio (`src/audio/`). Dev only: `ffmpeg-static` (encodes the samples).
 - **Tests:** Vitest. Playwright only in M9, and only if the machine supports it.
 - **Node:** 24 LTS or newer; npm ≥ 11, so the lockfile works on GitHub's Linux runners.
 
@@ -49,11 +49,21 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - Not for now: 3D monsters (the 3D pilot is skipped per `docs/VISUAL_UPGRADE_PLAN.md` §0). Code-drawn SVG monsters stay the source of truth.
 - Scripts live in `tools/blender/`; outputs go to `public/baked/`. Always render a contact-sheet PNG and look at it before using a bake.
 
+## Audio (Sound 2.0; spec `docs/SOUND_UPGRADE.md`)
+- **Originality applies to music too:** every melody, chord progression and rhythm is written for this game. Never quote or paraphrase another work, and never name another game or its music in code or docs; describe a style only in musical words (instruments, modes, tempos). The reference games' names must not appear in any committed file (a Vitest lint checks).
+- **Only `src/audio/engine/` touches Web Audio**, and only `engine/nodes.ts` creates oscillators, PeriodicWaves and compressors (no square or saw waves, no WaveShaper, no bit-crush; a lint test enforces it). `src/core` never imports audio. Audio randomness comes from `engine/rng.ts`, never the game RNG or `Math.random`.
+- **Songs** are one TypeScript file each in `src/audio/music/songs/` (ABC notation for the notes, TypeScript for parts, generators, percussion, form, weather and stems). Run the checker after composing: `npm run audio:analyze` (prints every song's key, tempo, length, step share and the checker's errors). The checker rules are SOUND_UPGRADE §6.7.
+- **Samples:** `npm run audio:samples` rebuilds `public/audio/` from the CC0 libraries pinned in `tools/audio/sources.ts` (sparse clones into `tools/audio/.cache/`, gitignored). It needs ffmpeg: one on PATH, or the `ffmpeg-static` devDependency. If npm blocked its install script, run `npm approve-scripts ffmpeg-static` and `npm rebuild ffmpeg-static`. Commit the processed `.ogg` files and the manifest, never the raw downloads. Packs are computed from `recipes/usage.ts`; the budgets are §2.
+- **Checks:** `npm run audio:check` renders every piece offline through the real engine (Playwright + the installed Chrome) and gates the §14.3 targets; `-- --calibrate` writes `src/audio/levels.json`; `-- --quick` renders one item per group. `npm run audio:review` writes `audio-review/` (gitignored) with listening files and an HTML report for the owner. `npm run check:build` (part of `verify`) keeps the engine chunk ≤ 45 KB gzipped and the samples precached.
+- **Claude can't hear.** Compose with the checker, verify with `audio:check`, and end every sound stage with the Sound Lab (`#lab/sound`) and PROGRESS lines saying what each piece should sound like; the owner's notes decide.
+
 ## Commands
 - `npm run dev`: local dev at http://localhost:5173/wildsong-ranch/. Add `-- --host` to test on a phone over Wi-Fi; service workers and storage persistence won't work over plain LAN http.
 - `npm test` (Vitest) · `npm run typecheck` · `npm run build` · `npm run preview`
-- `npm run verify` = typecheck + test + build. **Run it before every commit.**
+- `npm run verify` = typecheck + test + build + `check:build` (the precache list and the audio chunk budgets). **Run it before every commit.**
+- `npm run e2e`: the Playwright specs against the built app in the installed Chrome (kill any leftover preview on port 4173 first).
 - `npm run sim:life -- <breed> <policy>`: prints a simulated life (dev tool, from M1).
+- Sound (see the Audio section): `npm run audio:samples` · `npm run audio:analyze` · `npm run audio:check [-- --quick | --calibrate]` · `npm run audio:review`.
 
 ## Architecture
 ```
@@ -64,7 +74,9 @@ src/
              journeys · expeditions · rivals · secrets (hashed) · text/ (all player-facing strings)
   save/      db (idb-keyval) · schema (valibot) · migrate · exportImport · shareCode
   art/       monster/ (bodyPlans, parts, palettes, expressions, render) · backgrounds · icons
-  audio/     sfx · music
+  audio/     player (the UI's API) · director (what plays where, pure) · runtime · engine/ (Web Audio: the only
+             place that touches it) · music/ (ABC parser, generators, song model, checker, motifs, songs/)
+             · recipes/ (instruments, kits, ambience, effects, drills, events, packs) · analysis/ (loudness…)
   ui/        app shell, screens/, components/ (Preact)
   workers/   battleLab.worker.ts
 docs/        design docs + PROGRESS.md (+ BALANCE_REPORT.md in M9)

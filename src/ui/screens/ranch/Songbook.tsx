@@ -41,7 +41,7 @@ export function SongbookScreen() {
     setMakingRoomFor(null)
     if (status === 'learned') {
       showToast(learnedLine(m, tech.id).text)
-      playSfx('levelUp')
+      playSfx('learnTechnique')
     }
     else if (status === 'full') setMakingRoomFor(tech)
   }

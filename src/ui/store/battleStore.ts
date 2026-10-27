@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals'
-import { playSfx, playStinger } from '../../audio/player.ts'
+import { playBattleEvent, playBattleFx, playStinger, setBattlePaused } from '../../audio/player.ts'
 import { canFire, createBattle, currentBand, gapUnits, previewHitTenths, step, timerTicksFor, type Battle } from '../../core/battle/engine.ts'
 import type { BattleEvent, BattleInput, BattleOutcome, FighterSetup, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
 import type { Monster } from '../../core/monster.ts'
@@ -7,7 +7,7 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
-import { BATTLE, BATTLE_FX } from '../../data/tuning.ts'
+import { AUDIO, BATTLE, BATTLE_FX } from '../../data/tuning.ts'
 import { fxEventsFor, publishFx, type FighterPose } from '../../fx/bus.ts'
 import type { AiTier, AutoStyle, Habit, Personality, PlanMode } from '../../data/types.ts'
 import type { Screen } from '../router.ts'
@@ -115,6 +115,9 @@ export const setup = signal<BattleSetup | null>(null)
 export const view = signal<BattleView | null>(null)
 export const speed = signal<1 | 2 | 4>(1)
 export const paused = signal(false)
+/** Sound 2.0: when the KO landed (the match stinger follows the KO sound) and the last timer second that ticked. */
+let koAt = 0
+let lastTickSecond = -1
 export const effects = signal<FloatEffect[]>([])
 export const resultLine = signal<string>('')
 
@@ -230,28 +233,30 @@ function describe(events: readonly BattleEvent[]): void {
       { x: s.fighters[0].x / 100, maxHp: s.fighters[0].maxHp },
       { x: s.fighters[1].x / 100, maxHp: s.fighters[1].maxHp },
     ]
-    for (const e of events) publishFx(fxEventsFor(e, poses))
+    for (const e of events) {
+      const fxs = fxEventsFor(e, poses)
+      publishFx(fxs)
+      // Sound 2.0 §10.3: every FxEvent gets its element's sound, panned from where it lands.
+      for (const f of fxs) playBattleFx(f, Math.max(-0.6, Math.min(0.6, f.to.x / 4)), speed.value)
+    }
   }
   for (const e of events) {
     switch (e.kind) {
       case 'fire': {
         const tech = TECHNIQUE_BY_ID[e.tech]
         if (tech && tech.range <= 2) pushFx({ side: e.side, kind: 'lunge' }, BATTLE_FX.lungeMs)
-        playSfx('fire')
         break
       }
       case 'hit':
         pushEffect(e.target, e.crit ? `${t.floats.crit} −${e.damage}` : `−${e.damage}`, e.crit ? 'crit' : 'damage')
         pushFx({ side: e.target, kind: 'hit' }, BATTLE_FX.knockbackMs)
         vibrate(e.crit ? 25 : 12)
-        playSfx(e.crit ? 'crit' : 'hit')
         break
       case 'miss':
         pushEffect(e.target, t.floats.miss, 'miss')
-        playSfx('miss')
         break
       case 'ko':
-        playSfx('ko')
+        koAt = Date.now()
         break
       case 'heal':
         pushEffect(e.side, fill(t.floats.heal, { n: e.amount }), 'heal')
@@ -261,16 +266,18 @@ function describe(events: readonly BattleEvent[]): void {
         break
       case 'special':
         pushEffect(e.side, t.specials[e.special], 'special')
-        playSfx('special')
         break
       case 'reflect':
         pushEffect(e.target, `${t.floats.reflect} −${e.amount}`, 'damage')
+        playBattleEvent('reflect', e.target === 0 ? -0.3 : 0.3)
         break
       case 'recoil':
         pushEffect(e.side, `−${e.amount}`, 'damage')
+        playBattleEvent('recoil', e.side === 0 ? -0.3 : 0.3)
         break
       case 'stun':
         pushEffect(e.side, t.floats.stun, 'note')
+        playBattleEvent('stun', e.side === 0 ? -0.3 : 0.3)
         break
       case 'push':
         pushEffect(e.target, e.blocked ? t.floats.blocked : t.floats.pushed, 'note')
@@ -280,9 +287,13 @@ function describe(events: readonly BattleEvent[]): void {
         break
       case 'jackpot':
         pushEffect(e.side, e.result === 'double' ? t.floats.jackpotDouble : e.result === 'heal' ? t.floats.jackpotHeal : t.floats.jackpotFizzle, 'special')
+        playBattleEvent(e.result === 'double' ? 'jackpotDouble' : e.result === 'heal' ? 'jackpotHeal' : 'jackpotFizzle', e.side === 0 ? -0.3 : 0.3)
         break
       case 'trait':
-        if (e.trait === 'dragonheart') pushEffect(e.side, t.traitMoments.dragonheart, 'special')
+        if (e.trait === 'dragonheart') {
+          pushEffect(e.side, t.traitMoments.dragonheart, 'special')
+          playBattleEvent('traitDragonheart', e.side === 0 ? -0.3 : 0.3)
+        }
         break
       default:
         break
@@ -299,9 +310,11 @@ function finish(): void {
   const w = v.outcome.winner
   const name = w === null ? '' : v.fighters[w].name
   resultLine.value = w === null ? UI_TEXT.battle.result.draw : fill(UI_TEXT.battle.result.win, { name })
-  // §23: the fanfare for the player's monster, a low note for a loss.
-  if (w === 0) playStinger('victory')
-  else if (w === 1) playSfx('lose')
+  // Sound 2.0 §7.5: the KO sound first, then the match stinger; the lobby restarts after it.
+  const stinger = w === 0 ? 'matchWin' : w === 1 ? 'matchLoss' : 'matchDraw'
+  const sinceKo = Date.now() - koAt
+  if (sinceKo < 600) setTimeout(() => playStinger(stinger), 600 - sinceKo)
+  else playStinger(stinger)
 }
 
 function runTicks(n: number): void {
@@ -314,6 +327,12 @@ function runTicks(n: number): void {
     describe(step(battle, now))
   }
   view.value = snapshot()
+  // Sound 2.0 §10.3: the timer ticks softly on each of the last seconds.
+  const left = Math.ceil((battle.state.timerTicks - battle.state.tick) / BATTLE.ticksPerSecond)
+  if (!battle.state.outcome && left <= AUDIO.timerTickLastSec && left > 0 && left !== lastTickSecond) {
+    lastTickSecond = left
+    playBattleEvent('timerTick')
+  }
   if (battle.state.outcome) finish()
 }
 
@@ -355,6 +374,9 @@ export function startBattle(s: BattleSetup, seed = s.seed ?? freshSeed()): void 
   effects.value = []
   fx.value = []
   paused.value = false
+  setBattlePaused(false)
+  koAt = 0
+  lastTickSecond = -1
   resultLine.value = ''
   view.value = snapshot()
   if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(frame)
@@ -452,6 +474,7 @@ export function setSpeed(s: 1 | 2 | 4): void {
 
 export function setPaused(on: boolean): void {
   paused.value = on
+  setBattlePaused(on)
   if (!on) lastTime = 0
 }
 

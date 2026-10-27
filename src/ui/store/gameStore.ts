@@ -265,11 +265,13 @@ function finish(state: GameState, events: WeekEvent[]): void {
     return
   }
   flow.value = { kind: 'summary', lines, aging, fees, grewUp, ended: r.state.ended }
+  playSfx('wrenReport')
 }
 
 /** Closes the end-of-week summary and lets the next week begin. */
 export function nextWeek(): void {
   flow.value = { kind: 'idle' }
+  playSfx('weekStart')
   settle()
 }
 

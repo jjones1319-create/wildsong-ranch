@@ -21,7 +21,7 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
   const tip = tipFor({ screen: 'summary', events: f.aging })
   useEffect(() => {
     if (f.grewUp) playSfx('growUp')
-    else if (f.aging.some((e) => e.kind === 'prime')) playSfx('levelUp')
+    else if (f.aging.some((e) => e.kind === 'prime')) playSfx('prime')
   }, [])
   const title = f.ended ? t.farewell : breakdown ? t.breakdown : f.grewUp ? t.grewUp : t.title
   return (

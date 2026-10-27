@@ -6,6 +6,7 @@ import { UI_TEXT } from '../../../data/text/ui.ts'
 import { ECHO_STONES, ODD_JOBS } from '../../../data/tuning.ts'
 import { TopBar } from '../../components/Controls.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
+import { oddJobMode } from '../../lib/audioDirector.ts'
 import { navigate } from '../../router.ts'
 import { game } from '../../store/gameStore.ts'
 import { EchoStones } from './EchoStones.tsx'
@@ -26,6 +27,14 @@ export function OddJobsScreen() {
   useEffect(() => {
     if (!g) navigate('town')
   }, [g === null])
+
+  // Sound 2.0 §11: the director hears which job is open (Turnip Sort and Echo Stones have their own sound).
+  useEffect(() => {
+    oddJobMode.value = job?.id ?? null
+    return () => {
+      oddJobMode.value = null
+    }
+  }, [job?.id])
 
   if (!g) return null
   if (job?.id === 'turnip') return <TurnipSort practice={job.practice} onDone={() => setJob(null)} />

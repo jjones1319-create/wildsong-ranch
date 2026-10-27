@@ -1,0 +1,125 @@
+/* SOUND_UPGRADE §13: the Sound Lab. Phone-first: fits 412 px, every control at least 44 px tall. */
+
+.sndlab .card {
+  margin-bottom: 0.75rem;
+}
+
+.sndlab__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.sndlab__grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sndlab__grid .btn {
+  min-height: 44px;
+  padding: 0.4rem 0.3rem;
+  font-size: 0.85em;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.sndlab__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+}
+
+.sndlab__item:last-child {
+  border-bottom: 0;
+}
+
+.sndlab__item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sndlab__info {
+  font-variant-numeric: tabular-nums;
+}
+
+.sndlab__notes {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.sndlab__thumb {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  opacity: 0.55;
+}
+
+.sndlab__thumb--on {
+  opacity: 1;
+  outline: 2px solid var(--accent, #7cc);
+  outline-offset: -2px;
+}
+
+.sndlab__note {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.15));
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+  font: inherit;
+}
+
+.sndlab__warn {
+  margin: 0.2rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.85em;
+}
+
+.sndlab__meters {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9em;
+}
+
+.sndlab__meters td,
+.sndlab__meters th {
+  padding: 0.25rem 0.3rem;
+  text-align: right;
+}
+
+.sndlab__meters th:first-child,
+.sndlab__meters td:first-child {
+  text-align: left;
+}
+
+.sndlab__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.sndlab__bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent, #7cc);
+}
+
+.sndlab__slider {
+  display: grid;
+  grid-template-columns: 7rem 1fr 3rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}

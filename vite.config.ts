@@ -42,12 +42,31 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json}'],
+        // Sound 2.0 §5.4: the audio manifest and every sample are precached, so the game sounds right offline.
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json,ogg}'],
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: `${BASE}index.html`,
         cleanupOutdatedCaches: true,
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Sound 2.0 §2: the engine is its own chunk (≤ 45 KB gzipped, checked by check:build); each song is a
+        // lazy chunk that loads with its place.
+        manualChunks(id) {
+          const n = id.replace(/\\/g, '/')
+          if (n.includes('/src/audio/music/songs/') && !n.endsWith('/index.ts')) return `song-${n.split('/').pop()!.replace(/\.ts$/, '')}`
+          if (n.includes('/src/audio/recipes/') || n.includes('/src/audio/music/stingers.ts') || n.includes('/src/audio/music/effects.ts')) return 'audio-recipes'
+          // The checker and the motif detector only serve the Sound Lab and the tools, never the game at play.
+          if (n.includes('/src/audio/music/checker.ts') || n.includes('/src/audio/music/motifs.ts')) return 'audio-checker'
+          if (n.includes('/src/audio/engine/') || n.includes('/src/audio/music/') || n.includes('/src/audio/runtime.ts') || n.includes('/src/audio/levels.json')) return 'audio-engine'
+          return undefined
+        },
+      },
+    },
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],

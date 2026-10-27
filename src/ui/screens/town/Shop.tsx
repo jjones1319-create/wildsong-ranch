@@ -45,7 +45,7 @@ export function ShopScreen() {
     if (r.refused) showToast(UI_TEXT.sell.nothing)
     else {
       showToast(fill(UI_TEXT.sell.sold, { n, item: selling.item.name, gold: gold(r.gold) }))
-      playSfx('coin')
+      playSfx('buy')
     }
   }
 
@@ -65,7 +65,7 @@ export function ShopScreen() {
     if (r.refused) showToast(r.refused === 'money' ? t.gates.money : r.refused === 'debt' ? t.gates.debt : t.gates.notSold)
     else {
       showToast(fill(t.bought, { n, item: buying.item.name }))
-      playSfx('coin')
+      playSfx('buy')
     }
   }
 

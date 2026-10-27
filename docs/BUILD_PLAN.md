@@ -396,6 +396,42 @@ Ranch, town, shrine and arena backdrops as painted parallax with weather, time o
 
 - [ ] Plan in plan mode at the start of the milestone.
 
+## Sound 2.0 (S1–S3)
+
+Decided Oct 25, 2026 (`docs/SOUND_UPGRADE.md` §0), done before V3: calm, warm, acoustic music (ocarina and recorder leads, harp, strings, soft hand drums, lots of space) played live in the browser from CC0 samples (VCSL, VSCO 2 CE, Kenney) by our own sequencer; a theme for every event; a soundscape for every drill; soft, natural effects; procedural ambience. ZzFX goes. `src/core` is untouched. The owner judges every stage on the phone through the Sound Lab, then sends listening notes before the next stage.
+
+### S1: Calm engine and first songs
+
+Spec: `docs/SOUND_UPGRADE.md` §15 S1. Version `1.6.0`, no save-schema change (the new sound settings have per-field fallbacks). Commit `Sound S1: calm engine and first songs`.
+
+- [x] 1. **Baseline:** render the 9 old loops and the ZzFX effects with the shared analysers into `tools/audio/baseline-legacy.json` before anything is removed.
+- [x] 2. **Samples:** `npm run audio:samples` (`tools/audio/build-samples.ts`): sparse, blobless clones of VCSL and VSCO 2 CE at the pinned commits, the two Kenney zips (SHA-256 recorded), per-instrument file rules, pitch detected per sample (YIN), cleaned, loop-baked, Opus via `ffmpeg-static`, re-decoded and measured, `public/audio/manifest.json`, packs computed from what S1 uses, budget check, CREDITS.
+- [x] 3. **Engine** (§4): `engine/{context,nodes,driver,scheduler,samples,sampler,synth,reverb,ambience,sfx,meters}.ts`; buses and master chain, listening presets, mono, fallback voices, seeded reverbs, `window.__audio`. ZzFX removed from the package, the imports, CREDITS and CLAUDE.md.
+- [x] 4. **Music system** (§6): the ABC subset, chord symbols, the 11 accompaniment generators, percussion lines and kits, the song model (layers, stems, weather, breaths, arrangements), the checker (14 rules), the motifs.
+- [x] 5. **Director** (§11): a pure decision table with a row for every Screen and every event, stand-ins marked `TODO_S2` / `TODO_S3`, the controller (crossfades, quantised changes, stingers, debounce, pause filter).
+- [x] 6. **Pieces:** Wildsong (title, lobby and credits arrangements); the four ranch songs with weather rules and breaths; Town with every stem; `cup` with lobby, base, drive and tension plus the four season palettes and kits.
+- [x] 7. **Stingers and musical effects:** `matchWin`, `matchLoss`, `matchDraw`, `cupWin`, `promotion`; `coin`, `buy`, `mail`, `itemGet`, `sweet`, `learnTechnique`, `plannerStop`, `growUp`, `prime`, `weekStart`, `wrenReport`.
+- [x] 8. **Beds:** `meadow`, `summer-field`, `autumn-wind`, `winter-yard`, `brook`, `waterfall-near`, `town`, `market`, `shop`, `guild`, `library`, `arena-out`, `arena`; crowds `small` and `large`; all weather overlays.
+- [x] 9. **Effects:** the whole UI set; the whole battle set (every FxEvent kind by element and strength, the engine-only events, the last-5-s ticks); the Shrine's stone hum; the Echo Stones notes and flourish.
+- [x] 10. **Drill cues:** the system (`drillCue.start/skip/end`, `resultAt`), Waterfall Stand in full as the pilot, a soft generic cue with generic outcome stingers for the other 10 drills.
+- [x] 11. **The rest:** settings (§12) and Settings → Sound; the Sound Lab (§13, `#lab/sound`); `npm run audio:check` (+ `--calibrate` → `src/audio/levels.json`), `audio:review`, `audio:analyze`, `check:build` (in `verify`); the unit tests (§14.2) and `e2e/sound.spec.ts` (§14.5).
+- [x] 12. **Docs:** GAME_DESIGN §23 rewritten and §24 extended; CLAUDE.md (libraries, an Audio section, `.gitignore` entries); CREDITS (VCSL, VSCO 2 CE, Kenney with commits, links and hashes); README; PROGRESS (one line per piece on what to listen for); this list ticked; `docs/SOUND_UPGRADE.md` committed.
+- [x] 13. **Finish:** `npm run verify`, `npm run e2e` and `npm run audio:check` green; commit, push, confirm the deploy, the S1 phone checklist (spec §15), then stop for the owner's listening notes.
+
+**Phone check:** SOUND_UPGRADE §15 "Phone check S1".
+
+### S2: A theme for every event
+
+The 16 event compositions, the per-event arrangement table for all 60 events, the S2 stingers and the rival calling cards, every crowd size, recomputed packs. Spec: `docs/SOUND_UPGRADE.md` §15 S2.
+
+- [ ] Plan in plan mode at the start of the stage, after the owner's S1 listening notes.
+
+### S3: Places, trainings and moments
+
+The Shrine, the Labs, Journey and Expedition pieces, Turnip Sort, the Echo Stones drone, the farewell loop; the S3 stingers; the other 10 drills in full; the remaining beds; monster songs. Spec: `docs/SOUND_UPGRADE.md` §15 S3.
+
+- [ ] Plan in plan mode at the start of the stage, after the owner's S2 listening notes.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

@@ -149,7 +149,7 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
       setCleared(r.cleared)
       setMood('pleased')
       pop('heart')
-      playSfx('drillSuccess')
+      playSfx('echoClear')
       if (r.round >= ECHO_STONES.maxRounds) {
         later(ECHO_STONES.leadMs, () => finish(true))
         return
@@ -161,7 +161,7 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
     // A slip.
     setMood('startled')
     pop('surprise')
-    playSfx('drillFail')
+    playSfx('echoWrong')
     if (r.retries > 0) {
       r.retries -= 1
       setRetriesLeft(r.retries)

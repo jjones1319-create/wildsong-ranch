@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { audioReady, playSfx, unlockAudio } from '../../audio/player.ts'
+import { audioReady, testSound } from '../../audio/player.ts'
 import { canSwitchDifficulty } from '../../core/game.ts'
 import { fill } from '../../data/text/format.ts'
 import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, FX_INTENSITY_LABELS, FX_QUALITY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { TEXT_SIZES, UI } from '../../data/tuning.ts'
-import { AUTO_STYLES, FX_INTENSITIES, FX_QUALITY_SETTINGS, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
+import { AUTO_STYLES, FX_INTENSITIES, FX_QUALITY_SETTINGS, LISTENING_SETTINGS, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
 import { readImport } from '../../save/exportImport.ts'
 import type { AnyValidation, AppSettings } from '../../save/schema.ts'
 import { Confirm, Segmented, Sheet, Toggle, TopBar } from '../components/Controls.tsx'
@@ -14,7 +14,7 @@ import { downloadBackup, shareBackup } from '../lib/backup.ts'
 import { formatWhen } from '../lib/clock.ts'
 import { canShare, readFileText } from '../lib/files.ts'
 import { isStandalone } from '../lib/platform.ts'
-import { goBack } from '../router.ts'
+import { goBack, navigate } from '../router.ts'
 import { librarySource, persisted, settings, showToast, updateSettings } from '../store/appStore.ts'
 import { currentTier, reduceMotionNow, setFxIntensity, setFxQuality } from '../store/fxStore.ts'
 import { game, loadSaveFile, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek } from '../store/gameStore.ts'
@@ -22,7 +22,7 @@ import { applyUpdate, checkForUpdate, lastCheck, needRefresh } from '../store/up
 
 const SANDBOX_MONEY = 10_000
 
-function Volume({ label, field }: { label: string; field: 'masterVolume' | 'musicVolume' | 'sfxVolume' }) {
+function Volume({ label, field }: { label: string; field: 'masterVolume' | 'musicVolume' | 'sfxVolume' | 'ambienceVolume' }) {
   const value = settings.value[field]
   return (
     <label class="volume">
@@ -87,11 +87,6 @@ export function SettingsScreen() {
     goBack()
   }
 
-  const testSound = async () => {
-    await unlockAudio()
-    playSfx('drillGreat')
-  }
-
   const difficultyOptions = (['Gentle', 'Standard'] as Difficulty[]).map((d) => ({ value: d, label: DIFFICULTY_LABELS[d].name }))
   const checkText = check === 'checking' ? t.checking : check === 'upToDate' ? t.upToDate : check === 'updateFound' ? t.updateFound : check === 'failed' ? t.updateFailed : null
 
@@ -139,15 +134,27 @@ export function SettingsScreen() {
 
       <section class="card">
         <p class="field__label">{t.sections.audio}</p>
-        <Toggle label={t.sound} checked={s.sound} onChange={(v) => void updateSettings({ sound: v })} />
         <Toggle label={t.music} checked={s.music} onChange={(v) => void updateSettings({ music: v })} />
+        <Toggle label={t.sound} checked={s.sound} onChange={(v) => void updateSettings({ sound: v })} />
+        <Toggle label={t.ambience} hint={t.ambienceHint} checked={s.ambience} onChange={(v) => void updateSettings({ ambience: v })} />
+        <Toggle label={t.buttonSounds} hint={t.buttonSoundsHint} checked={s.buttonSounds} onChange={(v) => void updateSettings({ buttonSounds: v })} />
         <Toggle label={t.haptics} checked={s.haptics} onChange={(v) => void updateSettings({ haptics: v })} />
         <Volume label={t.masterVolume} field="masterVolume" />
         <Volume label={t.musicVolume} field="musicVolume" />
         <Volume label={t.sfxVolume} field="sfxVolume" />
-        <button type="button" class="btn btn--small" data-silent onClick={() => void testSound()}>
-          🔔 {t.testSound}
-        </button>
+        <Volume label={t.ambienceVolume} field="ambienceVolume" />
+        <p class="field__label small">{t.listening}</p>
+        <Segmented options={LISTENING_SETTINGS.map((l) => ({ value: l, label: l === 'speaker' ? t.listeningSpeaker : t.listeningHeadphones }))} value={s.listening} onChange={(v) => void updateSettings({ listening: v })} label={t.listening} />
+        <p class="field__hint">{t.listeningHint}</p>
+        <Toggle label={t.monoAudio} hint={t.monoAudioHint} checked={s.monoAudio} onChange={(v) => void updateSettings({ monoAudio: v })} />
+        <div class="btn-grid">
+          <button type="button" class="btn btn--small" data-silent onClick={() => void testSound()}>
+            🔔 {t.testSound}
+          </button>
+          <button type="button" class="btn btn--small" onClick={() => navigate('labSound')}>
+            🎧 {t.openSoundLab}
+          </button>
+        </div>
         <p class="field__hint">{audioReady() ? t.audioHint : t.audioLocked}</p>
       </section>
 

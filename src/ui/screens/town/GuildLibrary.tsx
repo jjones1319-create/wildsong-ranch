@@ -34,7 +34,7 @@ export function GuildLibraryScreen() {
     else if (r.refused === 'debt') showToast(UI_TEXT.shop.gates.debt)
     else if (!r.refused) {
       showToast(fill(t.bought, { technique: o.tech.name }))
-      playSfx('coin')
+      playSfx('buy')
     }
   }
 
