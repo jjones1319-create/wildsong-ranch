@@ -170,6 +170,12 @@ export function playStinger(id: StingerId | 'victory' | 'lose'): void {
   runtime.playStinger(engine, mapped)
 }
 
+/** Several interrupting stingers in a row: a cup result, then the rank, then a title (§4.7). */
+export function playStingers(ids: readonly StingerId[]): void {
+  if (!engine || !runtime || hidden || ids.length === 0) return
+  runtime.playStingers(engine, ids)
+}
+
 /** The battle pause filter (§4.7). */
 export function setBattlePaused(on: boolean): void {
   engine?.graph.setPaused(on)

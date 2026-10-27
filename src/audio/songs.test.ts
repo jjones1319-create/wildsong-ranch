@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { checkSong } from './music/checker.ts'
-import { MUSICAL_EFFECTS } from './music/effects.ts'
+import { CALLING_CARDS, callingCardFor, MUSICAL_EFFECTS } from './music/effects.ts'
+import { RIVALS } from '../data/rivals.ts'
+import { THEME_IDS } from './recipes/events.ts'
 import { loadAllSongs } from './music/songs/index.ts'
-import { STINGERS } from './music/stingers.ts'
+import { CROWN_STINGERS, STINGERS } from './music/stingers.ts'
 import { passSeconds, type Song } from './music/song.ts'
 import { DRILL_CUES } from './recipes/drills.ts'
 import { INSTRUMENTS, type SampleRoots } from './recipes/instruments.ts'
@@ -100,8 +102,8 @@ describe('the S1 pieces (§15)', () => {
     }
   })
 
-  it('musical effects are at most 1.5 s and use only real instruments', () => {
-    for (const [id, def] of Object.entries(MUSICAL_EFFECTS)) {
+  it('musical effects and the calling cards are at most 1.5 s and use only real instruments', () => {
+    for (const [id, def] of [...Object.entries(MUSICAL_EFFECTS), ...Object.entries(CALLING_CARDS)]) {
       let end = 0
       for (const l of def.layers) {
         const start = l.delay ?? 0
@@ -111,5 +113,67 @@ describe('the S1 pieces (§15)', () => {
       }
       expect(end, `${id} lasts ${end.toFixed(2)} s`).toBeLessThanOrEqual(1.5)
     }
+  })
+})
+
+describe('the S2 pieces (§15)', () => {
+  it('every event theme has lobby, base, drive and tension, a lobby arrangement, at least 70 s of battle music and the match-start hit', () => {
+    for (const id of THEME_IDS) {
+      const s = songs[id]
+      const layers = new Set(s.lines.flatMap((l) => [...l.layers]))
+      expect([...layers].sort(), id).toEqual(['base', 'drive', 'lobby', 'tension'])
+      expect(s.arrangements?.lobby?.order, id).toEqual(['lobby'])
+      const battle = s.order.filter((n) => n !== 'lobby').reduce((t, n) => t + s.sections[n]!.beats, 0)
+      expect((battle * 60) / s.bpm, id).toBeGreaterThanOrEqual(70)
+      expect(s.order.slice(0, 2), id).toEqual(['lobby', 'intro'])
+      expect(s.sections.intro!.events.hit![0]!.pitches.length, id).toBeGreaterThan(1)
+      expect(s.lines.find((l) => l.id === 'lead')?.role, id).toBe('lead')
+      expect(s.lines.some((l) => l.id === 'colour'), id).toBe(true)
+      expect(s.kit, id).toBeTruthy()
+    }
+  })
+
+  it('the motifs where §3.6 asks, and the derived pieces keep their originals’ form', () => {
+    expect(songs.ascension.motifQuote).toBeTruthy()
+    expect(songs.legend.motifQuote).toBeTruthy()
+    expect(songs.legend.derivedFrom).toBe('wildsong')
+    expect(songs.rival.quotes?.some((q) => q.motif === 'corin')).toBe(true)
+    expect(songs.masquerade.quotes?.some((q) => q.motif === 'masked')).toBe(true)
+    expect(songs['rally-rogue'].derivedFrom).toBe('rally')
+    expect(songs.elders.derivedFrom).toBe('sprout')
+    for (const [a, b] of [['rally-rogue', 'rally'], ['elders', 'sprout']] as const) {
+      expect(Object.keys(songs[a].sections)).toEqual(Object.keys(songs[b].sections))
+      for (const n of Object.keys(songs[b].sections)) expect(songs[a].sections[n]!.bars, `${a}/${n}`).toBe(songs[b].sections[n]!.bars)
+    }
+    expect(songs['crown-tides'].meter).toEqual([6, 8])
+    expect(songs['crown-frost'].meter).toEqual([3, 4])
+    expect(songs.masquerade.meter).toEqual([3, 4])
+  })
+
+  it('the Summit Qualifier drops the horn, the colour and the tension extras', () => {
+    const q = songs.summit.arrangements!.qualifier!
+    for (const id of ['horn', 'colour', 'trem', 'flourish', 'riser']) expect(q.lines).not.toContain(id)
+    for (const id of q.lines!) expect(songs.summit.lines.some((l) => l.id === id), id).toBe(true)
+  })
+
+  it('the S2 stingers: each Crown’s quotes its Crown, the Legend’s anthem quotes the motif', () => {
+    expect(Object.keys(CROWN_STINGERS).sort()).toEqual(['crown-of-dawn', 'crown-of-embers', 'crown-of-frost', 'crown-of-tides'])
+    for (const [event, id] of Object.entries(CROWN_STINGERS)) expect(STINGERS[id].derivedFrom).toBe(event.replace('crown-of-', 'crown-'))
+    expect(STINGERS.legendWon.motifQuote).toBeTruthy()
+    expect(passSeconds(STINGERS.legendWon)).toBeLessThanOrEqual(10)
+    expect(passSeconds(STINGERS.cupPlaced)).toBeCloseTo(3, 1)
+    expect(passSeconds(STINGERS.cupOut)).toBeCloseTo(2, 1)
+    expect(passSeconds(STINGERS.rankUp)).toBeCloseTo(4, 1)
+    expect(passSeconds(STINGERS.titleEarned)).toBeCloseTo(2, 1)
+    for (const id of ['crownWonDawn', 'crownWonTides', 'crownWonEmbers', 'crownWonFrost'] as const) {
+      expect(passSeconds(STINGERS[id])).toBeGreaterThanOrEqual(7.5)
+      expect(passSeconds(STINGERS[id])).toBeLessThanOrEqual(8.5)
+    }
+  })
+
+  it('every named rival has a calling card', () => {
+    for (const r of RIVALS) expect(callingCardFor(r.id), r.id).toBeTruthy()
+    expect(callingCardFor('nobody')).toBeNull()
+    expect(CALLING_CARDS['card-masked-breeder'].layers.some((l) => l.kind === 'note' && l.semis)).toBe(true)
   })
 })

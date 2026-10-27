@@ -17,7 +17,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { encodeWav } from '../../src/audio/analysis/wav.ts'
 import { checkSong } from '../../src/audio/music/checker.ts'
-import { MUSICAL_EFFECT_IDS } from '../../src/audio/music/effects.ts'
+import { CALLING_CARD_IDS, MUSICAL_EFFECT_IDS } from '../../src/audio/music/effects.ts'
+import { THEME_IDS, type ThemeId } from '../../src/audio/recipes/events.ts'
+import { CROWD_SIZES, type CrowdSize } from '../../src/audio/recipes/ambience.ts'
 import { SONG_LOADERS } from '../../src/audio/music/songs/index.ts'
 import { STINGER_IDS, STINGERS } from '../../src/audio/music/stingers.ts'
 import { passSeconds, type Song } from '../../src/audio/music/song.ts'
@@ -40,6 +42,8 @@ const REVIEW = flag('--review')
 const CALIBRATE = flag('--calibrate')
 const QUICK = flag('--quick')
 const ONLY = after('--only')
+/** Items rendered at once, each in its own page (the renders are single-threaded; two use two cores). */
+const JOBS = Math.max(1, Number(after('--jobs') ?? 2))
 const NO_BUILD = flag('--no-build')
 const BASE = 'http://localhost:4173/wildsong-ranch/'
 const OUT = 'audio-review'
@@ -68,9 +72,15 @@ function specs(): Spec[] {
     out.push({ id, item: { kind: 'song', id, seconds: 45, layers: ['main'], weather: 'Sunny', stem: id === 'town' ? 'town' : null }, group: 'song', key: { kind: 'songs', id }, target: { lufs: -20, stem: 'music' } })
   }
   if (!QUICK) for (const stem of ['shop', 'market', 'guild', 'library', 'mail', 'upgrades', 'oddJobs']) out.push({ id: `town:${stem}`, item: { kind: 'song', id: 'town', seconds: 20, layers: ['main'], stem }, group: 'song' })
-  out.push({ id: 'cup', item: { kind: 'battleDemo', seconds: 60 }, group: 'battle', key: { kind: 'songs', id: 'cup' }, target: { lufs: -18, stem: 'music' } })
-  out.push({ id: 'cup:lobby', item: { kind: 'song', id: 'cup', seconds: 30, layers: ['lobby'], arrangement: 'lobby' }, group: 'lobby', target: { lufs: -22, stem: 'music' } })
-  out.push({ id: 'cup:tension', item: { kind: 'song', id: 'cup', seconds: 30, layers: ['base', 'drive', 'tension'] }, group: 'tension', target: { lufs: -18, stem: 'music' } })
+  // Every event theme: the scripted 60 s battle with its event's crowd, then the lobby and the tension layer alone.
+  const THEME_CROWD: Partial<Record<ThemeId, CrowdSize>> = { open: 'medium', ascension: 'large', 'crown-dawn': 'large+', 'crown-tides': 'large+', 'crown-embers': 'large+', 'crown-frost': 'large+', legend: 'huge', masquerade: 'hushed', rival: 'medium', summit: 'chanting', trial: 'none', practice: 'none' }
+  for (const id of THEME_IDS) {
+    if (QUICK && id !== 'cup') continue
+    out.push({ id, item: { kind: 'battleDemo', seconds: 60, song: id, crowd: THEME_CROWD[id] ?? 'small' }, group: 'battle', key: { kind: 'songs', id }, target: { lufs: -18, stem: 'music' } })
+    out.push({ id: `${id}:lobby`, item: { kind: 'song', id, seconds: 30, layers: ['lobby'], arrangement: 'lobby' }, group: 'lobby', target: { lufs: -22, stem: 'music' } })
+    out.push({ id: `${id}:tension`, item: { kind: 'song', id, seconds: 30, layers: ['base', 'drive', 'tension'] }, group: 'tension', target: { lufs: -18, stem: 'music' } })
+  }
+  if (!QUICK) out.push({ id: 'summit:qualifier', item: { kind: 'song', id: 'summit', seconds: 30, layers: ['base', 'drive'], arrangement: 'qualifier' }, group: 'tension', target: { lufs: -18, stem: 'music' } })
   for (const id of BED_IDS) {
     if (QUICK && id !== 'meadow' && id !== 'waterfall-near') continue
     out.push({ id: `bed:${id}`, item: { kind: 'bed', id, seconds: 20, weather: 'Sunny', crowd: id === 'arena' ? 'small' : undefined }, group: 'bed', key: { kind: 'beds', id }, target: { lufs: id === 'waterfall-near' ? -24 : -32, stem: 'ambience' } })
@@ -81,11 +91,18 @@ function specs(): Spec[] {
       out.push({ id: `drill:${cue.id}:${outcome}`, item: { kind: 'drill', drill: cue.id === 'generic' ? 'hill-sprints' : cue.id, outcome, seconds: 9 }, group: 'drill', key: { kind: 'songs', id: cue.song.id }, target: { lufs: (cue.id === 'waterfall-stand' ? -24 : -22) - (outcome === 'Slacked' ? 1 : 0), stem: 'master' } })
     }
   }
-  for (const id of STINGER_IDS) out.push({ id: `stinger:${id}`, item: { kind: 'stinger', id, transpose: 2 }, group: 'stinger', key: { kind: 'songs', id }, target: { lufs: -20, stem: 'music' } })
-  for (const id of MUSICAL_EFFECT_IDS) {
-    if (QUICK && id !== 'coin') continue
+  for (const id of STINGER_IDS) {
+    if (QUICK && id !== 'matchWin' && id !== 'crownWonDawn') continue
+    out.push({ id: `stinger:${id}`, item: { kind: 'stinger', id, transpose: 2 }, group: 'stinger', key: { kind: 'songs', id }, target: { lufs: -20, stem: 'music' } })
+  }
+  // A results chain (§4.7): three stingers back to back, checked for clicks and gaps.
+  if (!QUICK) out.push({ id: 'stinger:chain', item: { kind: 'stinger', id: 'cupWin', chain: ['cupWin', 'rankUp', 'titleEarned'], transpose: 2 }, group: 'stinger' })
+  for (const id of [...MUSICAL_EFFECT_IDS, ...CALLING_CARD_IDS]) {
+    if (QUICK && id !== 'coin' && id !== 'card-corin-hale') continue
     out.push({ id: `effect:${id}`, item: { kind: 'effect', id, seconds: 3 }, group: 'musical', key: { kind: 'effects', id } })
   }
+  // Every crowd size over the arena bed (reported: clicks and peaks; §9.4 sets no loudness target).
+  if (!QUICK) for (const size of CROWD_SIZES) if (size !== 'none') out.push({ id: `crowd:${size}`, item: { kind: 'bed', id: 'arena', seconds: 20, weather: 'Sunny', crowd: size }, group: 'bed' })
   for (const id of UI_SFX_IDS) {
     if (QUICK && id !== 'tap') continue
     out.push({ id: `ui:${id}`, item: { kind: 'effect', id, seconds: 1.5 }, group: 'ui', key: { kind: 'effects', id } })
@@ -102,7 +119,9 @@ function specs(): Spec[] {
     }
   }
   if (!QUICK) for (const element of ['Physical', 'Nature', 'Light'] as const) out.push({ id: `battle:${element}:kinds`, item: { kind: 'battleFx', kinds: ['push', 'dash', 'distract', 'wither', 'heal'], element, strength: 'medium' }, group: 'battleFx' })
-  return ONLY ? out.filter((s) => s.id === ONLY || s.id.startsWith(`${ONLY}:`)) : out
+  if (!ONLY) return out
+  const wanted = ONLY.split(',').map((x) => x.trim()).filter(Boolean)
+  return out.filter((s) => wanted.some((w) => s.id === w || s.id.startsWith(`${w}:`)))
 }
 
 /* ---------- gates (§14.3) ---------- */
@@ -132,7 +151,10 @@ function gate(s: Spec, r: RenderResult, levels: Levels): Verdict {
     const trim = s.key ? (levels[s.key.kind][s.key.id] ?? 0) : 0
     measured.trimDb = trim
     if (Math.abs(stem.lufs - s.target.lufs) > 1) fail(`${s.target.stem} ${stem.lufs} LUFS, target ${s.target.lufs} ±1`)
-    if (stem.truePeakDb > -1) fail(`true peak ${stem.truePeakDb} dBTP (≤ −1)`)
+    // §14.3: place songs gate their own stem; battle themes gate the master (what can clip, about 5.6 dB under
+    // the stems), and so do lobbies, tension layers and stingers, for which the spec sets no peak of their own.
+    const peakOn = s.group === 'battle' || s.group === 'lobby' || s.group === 'tension' || s.group === 'stinger' ? master : stem
+    if (peakOn.truePeakDb > -1) fail(`${peakOn === master ? 'master ' : ''}true peak ${peakOn.truePeakDb} dBTP (≤ −1)`)
     if (s.group === 'song' && stem.crestDb < 10) fail(`crest ${stem.crestDb} dB (≥ 10)`)
     measured.truePeakDb = stem.truePeakDb
     measured.crestDb = stem.crestDb
@@ -257,7 +279,7 @@ async function main(): Promise<void> {
   console.log(`${list.length} items${QUICK ? ' (quick)' : ''}${ONLY ? ` matching ${ONLY}` : ''}`)
   if (!NO_BUILD) {
     console.log('building…')
-    execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], { stdio: 'inherit' })
+    execFileSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'build'], { stdio: 'inherit', shell: process.platform === 'win32' })
   }
   killStalePreview()
   let preview: ChildProcess = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore', shell: process.platform === 'win32' })
@@ -272,11 +294,16 @@ async function main(): Promise<void> {
       await waitFor(BASE, 60_000)
     }
     const browser = await chromium.launch({ channel: 'chrome', headless: true })
-    const page: Page = await browser.newPage({ viewport: { width: 412, height: 915 } })
     const errors: string[] = []
-    page.on('pageerror', (e) => errors.push(e.message))
-    await page.goto(`${BASE}#lab/sound`)
-    await page.waitForFunction(() => (window as unknown as { __audio?: { labReady?: boolean } }).__audio?.labReady === true, undefined, { timeout: 60_000 })
+    const pages: Page[] = []
+    for (let j = 0; j < Math.min(JOBS, list.length); j++) {
+      const page: Page = await browser.newPage({ viewport: { width: 412, height: 915 } })
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.goto(`${BASE}#lab/sound`)
+      await page.waitForFunction(() => (window as unknown as { __audio?: { labReady?: boolean } }).__audio?.labReady === true, undefined, { timeout: 60_000 })
+      pages.push(page)
+    }
+    if (JOBS > 1) console.log(`rendering ${pages.length} at a time`)
     const levels = JSON.parse(readFileSync(LEVELS, 'utf8')) as Levels
     mkdirSync(OUT, { recursive: true })
     const opus = hasLibopus()
@@ -288,20 +315,28 @@ async function main(): Promise<void> {
       return h >>> 0
     }
     const started = Date.now()
-    for (const s of list) {
-      const t0 = Date.now()
-      const r = (await page.evaluate(([item, seed, pcm]) => (window as unknown as { __audio: { render: (i: unknown, s: number, o: { pcm: boolean }) => Promise<unknown> } }).__audio.render(item, seed, { pcm }), [s.item, seedOf(s.id), REVIEW] as const)) as RenderResult
-      results[s.id] = { ...r, pcm: undefined }
-      const v = gate(s, r, levels)
-      verdicts.push(v)
-      console.log(`${v.ok ? 'ok ' : 'FAIL'} ${s.id.padEnd(34)} ${Object.entries(v.measured).map(([k, n]) => `${k}=${n}`).join(' ')}  (${((Date.now() - t0) / 1000).toFixed(1)} s)`)
-      for (const n of v.notes) console.log(`      ${n}`)
-      if (REVIEW && r.pcm) {
-        const wav = join(OUT, `${s.id.replace(/[^\w-]+/g, '_')}.wav`)
-        pcmToWav(r, wav)
-        encodeReview(wav, wav.replace(/\.wav$/, '.ogg'), opus)
+    let next = 0
+    const worker = async (page: Page) => {
+      while (next < list.length) {
+        const s = list[next++]!
+        const t0 = Date.now()
+        const r = (await page.evaluate(([item, seed, pcm]) => (window as unknown as { __audio: { render: (i: unknown, s: number, o: { pcm: boolean }) => Promise<unknown> } }).__audio.render(item, seed, { pcm }), [s.item, seedOf(s.id), REVIEW] as const)) as RenderResult
+        results[s.id] = { ...r, pcm: undefined }
+        const v = gate(s, r, levels)
+        verdicts.push(v)
+        console.log(`${v.ok ? 'ok ' : 'FAIL'} ${s.id.padEnd(34)} ${Object.entries(v.measured).map(([k, n]) => `${k}=${n}`).join(' ')}  (${((Date.now() - t0) / 1000).toFixed(1)} s)`)
+        for (const n of v.notes) console.log(`      ${n}`)
+        if (REVIEW && r.pcm) {
+          const wav = join(OUT, `${s.id.replace(/[^\w-]+/g, '_')}.wav`)
+          pcmToWav(r, wav)
+          encodeReview(wav, wav.replace(/\.wav$/, '.ogg'), opus)
+        }
       }
     }
+    await Promise.all(pages.map((p) => worker(p)))
+    // Back in list order for the report.
+    const order = new Map(list.map((s, i) => [s.id, i]))
+    verdicts.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
     if (CALIBRATE) {
       let bad = false
       // A key's trim is the mean correction over every item that carries it (a drill cue's five outcomes, the
@@ -332,7 +367,7 @@ async function main(): Promise<void> {
       console.log(`wrote ${LEVELS}; rebuild and run audio:check again to confirm`)
     }
     // Decoded samples vs the manifest.
-    const decoded = (await page.evaluate(() => (window as unknown as { __audio: { checkSamples: () => Promise<unknown> } }).__audio.checkSamples())) as { file: string; onsetMs: number; lengthMs: number; ok: boolean }[]
+    const decoded = (await pages[0]!.evaluate(() => (window as unknown as { __audio: { checkSamples: () => Promise<unknown> } }).__audio.checkSamples())) as { file: string; onsetMs: number; lengthMs: number; ok: boolean }[]
     const badDecodes = decoded.filter((d) => !d.ok)
     console.log(`decoded samples: ${decoded.length} checked, ${badDecodes.length} off (onset ±1 ms, length ±20 ms)`)
     for (const d of badDecodes.slice(0, 10)) console.log(`   ${d.file}: onset ${d.onsetMs} ms, length ${d.lengthMs} ms`)

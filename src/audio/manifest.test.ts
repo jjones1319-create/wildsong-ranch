@@ -6,6 +6,12 @@ import { INSTRUMENT_IDS, INSTRUMENTS, playableRange, type SampleRoots } from './
 import { packFor, packsNeededBy } from './recipes/packs.ts'
 import { buildUsage } from './recipes/usage.ts'
 import { manifestRoots } from './songs.test.ts'
+import { EVENTS } from '../data/calendar.ts'
+import { JOURNEY_SITE_IDS } from '../data/types.ts'
+import { SCREENS } from '../ui/router.ts'
+import { decide, type Scene } from './director.ts'
+import { loadAllSongs } from './music/songs/index.ts'
+import { KITS } from './recipes/kits.ts'
 
 const ROOT = join(process.cwd(), 'public', 'audio')
 const manifest = JSON.parse(readFileSync(join(ROOT, 'manifest.json'), 'utf8')) as Manifest
@@ -94,6 +100,39 @@ describe('the sample manifest (§5)', () => {
       expect(entry!.pack, `${inst} pack`).toBe(packFor(contexts))
       for (const c of contexts) expect(packsNeededBy(c), `${inst} in ${c}`).toContain(entry!.pack)
     }
+  })
+
+  it('every request names the packs its music needs: the cup screens, battles, Trials and the Lab want events', async () => {
+    const songs = await loadAllSongs()
+    const base: Scene = { screen: 'ranch', season: 'Spring', weather: 'Sunny', eventId: null, opponentRivalId: null, battle: null, drill: null, journeySite: null, expeditionSite: null, oddJob: null }
+    const match = (origin: 'cup' | 'trial' | 'lab' | 'versus') => ({ phase: 'match' as const, origin, hp: [1, 1] as const, secondsLeft: 8, matchSeconds: 60, paused: false, speed: 1 as const })
+    const scenes: Scene[] = [
+      ...SCREENS.map((screen) => ({ ...base, screen })),
+      ...EVENTS.flatMap((e) => [
+        { ...base, screen: 'tournamentPlay' as const, eventId: e.id },
+        { ...base, screen: 'battle' as const, eventId: e.id, battle: match('cup') },
+        { ...base, screen: 'battle' as const, eventId: e.id, opponentRivalId: 'corin-hale', battle: match('cup') },
+      ]),
+      ...JOURNEY_SITE_IDS.map((site) => ({ ...base, screen: 'battle' as const, journeySite: site, battle: match('trial') })),
+      { ...base, screen: 'battle', battle: match('lab') },
+    ]
+    const missing: string[] = []
+    for (const scene of scenes) {
+      const r = decide(scene)
+      if (!r.song || r.song === 'keep') continue
+      const song = songs[r.song.id]
+      const insts = new Set<string>(song.lines.map((l) => l.inst))
+      if (r.song.lead) insts.add(r.song.lead)
+      if (r.song.colour) insts.add(r.song.colour)
+      if (r.song.kit) for (const i of Object.values(KITS[r.song.kit])) if (i) insts.add(i)
+      for (const inst of insts) {
+        if (INSTRUMENTS[inst as keyof typeof INSTRUMENTS]?.patch) continue
+        const pack = manifest.instruments[inst]?.pack
+        if (!pack) missing.push(`${scene.screen}/${scene.eventId}: ${inst} has no samples`)
+        else if (pack !== 'core' && !r.packs.includes(pack)) missing.push(`${scene.screen}/${scene.eventId ?? scene.journeySite}: ${inst} is in ${pack}, not wanted`)
+      }
+    }
+    expect(missing.slice(0, 10)).toEqual([])
   })
 
   it('credits every source', () => {

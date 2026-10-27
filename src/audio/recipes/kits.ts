@@ -4,7 +4,7 @@
  */
 import type { InstrumentId } from './instruments.ts'
 
-export const KIT_IDS = ['meadow', 'festival', 'harvest', 'frost', 'ceremony', 'knockout', 'wild'] as const
+export const KIT_IDS = ['meadow', 'festival', 'harvest', 'frost', 'ceremony', 'knockout', 'wild', 'tide', 'masque'] as const
 export type KitId = (typeof KIT_IDS)[number]
 
 export const PERC_ROLES = ['low', 'mid', 'high', 'shaker', 'accent'] as const
@@ -20,6 +20,10 @@ export const KITS: Record<KitId, Kit> = {
   ceremony: { low: 'timpani', mid: 'bass-drum', high: 'triangle', shaker: null, accent: 'cymbal-swell' },
   knockout: { low: 'cajon', mid: 'darbuka', high: 'claves', shaker: null, accent: 'claps' },
   wild: { low: 'frame-drum', mid: 'darbuka', high: null, shaker: 'shaker', accent: 'bass-drum' },
+  // S2: the Crown of Tides rolls on a frame drum and shaker with ocean-drum swells; the Masquerade keeps a
+  // muted frame drum (the line asks for the muted stroke), finger cymbals and a light tambourine.
+  tide: { low: 'frame-drum', mid: null, high: null, shaker: 'shaker', accent: 'ocean-drum' },
+  masque: { low: 'frame-drum', mid: null, high: 'finger-cymbals', shaker: null, accent: 'tambourine' },
 }
 
 export function isKitId(id: string): id is KitId {

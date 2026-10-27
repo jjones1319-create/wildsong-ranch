@@ -3,22 +3,24 @@ import { SONG_IDS, type SongId } from '../../../audio/director.ts'
 import type { Engine } from '../../../audio/engine/index.ts'
 import { DEFAULT_KEY } from '../../../audio/engine/sfx.ts'
 import { checkSong, type CheckIssue } from '../../../audio/music/checker.ts'
-import { MUSICAL_EFFECT_IDS } from '../../../audio/music/effects.ts'
+import { CALLING_CARD_IDS, MUSICAL_EFFECT_IDS } from '../../../audio/music/effects.ts'
 import { passSeconds, type Arrangement, type Song } from '../../../audio/music/song.ts'
 import { STINGER_IDS, STINGERS } from '../../../audio/music/stingers.ts'
 import { audioReady, getEngine, getRuntime, loadSongForLab, playSfx, unlockAudio } from '../../../audio/player.ts'
 import { BED_IDS, bedLayers, CROWD_SIZES, type BedId, type CrowdReaction, type CrowdSize } from '../../../audio/recipes/ambience.ts'
 import { DRILL_CUES } from '../../../audio/recipes/drills.ts'
-import { SEASON_PALETTES } from '../../../audio/recipes/events.ts'
+import { EVENT_ARRANGEMENT_BY_ID, EVENT_ARRANGEMENTS, SEASON_PALETTES, THEME_IDS, TRIAL_ARRANGEMENTS, type EventArrangement, type ThemeId } from '../../../audio/recipes/events.ts'
+import type { SongRequest } from '../../../audio/director.ts'
+import { eventName } from '../../../core/tournament.ts'
 import { battleSfx, UI_SFX_IDS, WORLD_SFX_IDS, type Strength } from '../../../audio/recipes/sfx.ts'
 import { AUDIO } from '../../../data/tuning.ts'
 import { DRILL_BY_ID } from '../../../data/drills.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { fill } from '../../../data/text/format.ts'
-import { DRILL_IDS, ELEMENTS, LISTENING_SETTINGS, SEASONS, WEATHERS, type DrillId, type Element, type Season, type Weather } from '../../../data/types.ts'
+import { DRILL_IDS, ELEMENTS, JOURNEY_SITE_IDS, LISTENING_SETTINGS, SEASONS, WEATHERS, type DrillId, type Element, type JourneySiteId, type Season, type Weather } from '../../../data/types.ts'
 import type { FxEventKind } from '../../../fx/bus.ts'
 import type { DrillOutcome } from '../../../core/training.ts'
-import { Chips, Segmented, Toggle, TopBar } from '../../components/Controls.tsx'
+import { Chips, Segmented, Select, Toggle, TopBar } from '../../components/Controls.tsx'
 import { settings, showToast, updateSettings } from '../../store/appStore.ts'
 import { checkDecodedSamples, renderItem } from './soundRender.ts'
 
@@ -155,6 +157,37 @@ interface MusicItem {
   stinger?: (typeof STINGER_IDS)[number]
   drill?: keyof typeof DRILL_CUES
   effect?: string
+  /** An event row (the event picker, the Summit Qualifier, a Trial site): its lead, kit, colour, key and tempo. */
+  row?: EventArrangement
+}
+
+const THEME_LABELS: Record<ThemeId, string> = {
+  cup: 'Cup (every regular cup, season chips below)',
+  open: 'New Year Open',
+  ascension: 'Ascensions',
+  'crown-dawn': 'Crown of Dawn',
+  'crown-tides': 'Crown of Tides',
+  'crown-embers': 'Crown of Embers',
+  'crown-frost': 'Crown of Frost',
+  legend: 'The Wildsong Legend',
+  masquerade: 'Masquerade Cup',
+  rival: 'Rival Showdown (and Corin)',
+  summit: 'Vale–Coast Summit',
+  rally: "Hero's Rally",
+  'rally-rogue': "Rogue's Rally",
+  sprout: 'Sprout Cup',
+  elders: "Elders' Cup",
+  trial: 'Journey Trial (site chips below)',
+  practice: 'Practice (the Lab)',
+}
+
+/** The director's request for an event row, so the Lab plays it exactly as the game would. */
+function requestFor(row: EventArrangement, layers: readonly string[]): SongRequest {
+  return { id: row.theme, arrangement: row.arrangement, layers, stem: null, transpose: row.transpose, tempoNudge: row.tempoNudge, kit: row.kit, lead: row.lead, leadArt: row.leadArt, colour: row.colour, musicSend: row.musicSend, crossfadeSec: 0.5 }
+}
+
+function describeRow(row: EventArrangement, bpm: number): string {
+  return fill(t.eventRow, { theme: row.theme, lead: row.lead, kit: row.kit, colour: row.colour, transpose: row.transpose > 0 ? `+${row.transpose}` : String(row.transpose), tempo: bpm + row.tempoNudge })
 }
 
 const MUSIC_ITEMS: MusicItem[] = [
@@ -166,11 +199,13 @@ const MUSIC_ITEMS: MusicItem[] = [
   { id: 'ranch-autumn', label: 'Ranch, autumn', group: 'ranch', song: 'ranch-autumn' },
   { id: 'ranch-winter', label: 'Ranch, winter', group: 'ranch', song: 'ranch-winter' },
   { id: 'town', label: 'Town', group: 'town', song: 'town' },
-  { id: 'cup', label: 'Cup (every regular cup)', group: 'battles', song: 'cup' },
+  ...THEME_IDS.map((id): MusicItem => ({ id, label: THEME_LABELS[id], group: 'events', song: id })),
+  { id: 'summit:qualifier', label: 'Summit Qualifier', group: 'events', song: 'summit', row: EVENT_ARRANGEMENT_BY_ID['summit-qualifier'] },
   { id: 'drill-waterfall', label: 'Waterfall Stand bed', group: 'drills', drill: 'waterfall-stand' },
   { id: 'drill-generic', label: 'Generic drill bed', group: 'drills', drill: 'generic' },
   ...STINGER_IDS.map((id): MusicItem => ({ id, label: id, group: 'stingers', stinger: id })),
   ...MUSICAL_EFFECT_IDS.map((id): MusicItem => ({ id, label: id, group: 'musical', effect: id })),
+  ...CALLING_CARD_IDS.map((id): MusicItem => ({ id, label: id.replace('card-', ''), group: 'cards', effect: id })),
 ]
 
 function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: Notes; onNotes: (n: Notes) => void; debug: ReturnType<Engine['debug']> | null }) {
@@ -180,6 +215,8 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
   const [stem, setStem] = useState<string>('town')
   const [weather, setWeather] = useState<Weather>('Sunny')
   const [season, setSeason] = useState<Season>('Spring')
+  const [site, setSite] = useState<JourneySiteId>('iron-quarry')
+  const [eventId, setEventId] = useState<string>(EVENT_ARRANGEMENTS[0]!.event)
   const [issues, setIssues] = useState<CheckIssue[]>([])
   const [loading, setLoading] = useState(false)
   const playing = debug?.song ?? null
@@ -208,16 +245,29 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
     setLoading(false)
     setSong(s)
     setIssues(checkSong(s, { roots: engine.bank.roots() }))
-    startSong(s, item, layers, stem, weather, season)
+    startSong(s, item, layers, stem, weather, season, site)
   }
 
-  const startSong = (s: Song, item: MusicItem, ly: string, st: string, w: Weather, se: Season) => {
-    const palette = SEASON_PALETTES[se]
+  /** The row a battle theme plays with: the item's own (the event picker), a Trial site's, or the cup in its season. */
+  const rowFor = (s: Song, item: MusicItem, se: Season, si: JourneySiteId): EventArrangement | null => {
+    if (item.row) return item.row
+    if (s.id === 'trial') return TRIAL_ARRANGEMENTS[si]
+    if (s.id === 'cup') {
+      const p = SEASON_PALETTES[se]
+      return { ...EVENT_ARRANGEMENTS.find((r) => r.theme === 'cup')!, palette: se, lead: p.leads[0], kit: p.kit, colour: p.colour, transpose: 0, tempoNudge: 0, musicSend: null }
+    }
+    return null
+  }
+
+  const startSong = (s: Song, item: MusicItem, ly: string, st: string, w: Weather, se: Season, si: JourneySiteId) => {
     const base: Arrangement | null = item.arrangement ? (s.arrangements?.[item.arrangement] ?? null) : null
     const battle = s.kind === 'battle'
-    const arrangement: Arrangement | null = battle ? { ...(ly === 'lobby' ? (s.arrangements?.lobby ?? {}) : {}), kit: palette.kit, swap: { lead: palette.leads[0], lobbyLead: palette.leads[0] } } : base
     const layerSet = battle ? (ly === 'lobby' ? ['lobby'] : ly === 'base' ? ['base'] : ly === 'drive' ? ['base', 'drive'] : ['base', 'drive', 'tension']) : ['main']
-    engine.music.play(s, { layers: layerSet, stem: s.stems ? st : null, weather: w, arrangement, fadeInSec: 0.3, fadeOutSec: 0.5, startIndex: battle && ly !== 'lobby' ? Math.max(0, s.order.indexOf('intro')) : 0 })
+    const row = battle ? rowFor(s, item, se, si) : null
+    const runtime = getRuntime()
+    // Battle themes play through the game's own request path (the runtime's arrangement), so the Lab sounds like the cup.
+    const arrangement: Arrangement | null = battle && runtime ? runtime.arrangementFor(s, row ? requestFor(row, layerSet) : { id: s.id as SongId, arrangement: null, layers: layerSet, stem: null, transpose: 0, tempoNudge: 0, kit: null, lead: null, leadArt: null, colour: null, musicSend: null, crossfadeSec: 0.5 }) : base
+    engine.music.play(s, { layers: layerSet, stem: s.stems ? st : null, weather: w, arrangement, transpose: row?.transpose ?? 0, fadeInSec: 0.3, fadeOutSec: 0.5, startIndex: battle && ly !== 'lobby' ? Math.max(0, s.order.indexOf('intro')) : 0 })
   }
 
   const info = song && debug && playing === song.id ? fill(t.info, { key: song.tune.key.text, tempo: song.tune.tempoText, meter: `${song.meter[0]}/${song.meter[1]}`, length: passSeconds(song).toFixed(0), section: debug.section }) : null
@@ -251,20 +301,39 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
                 onChange={(v) => {
                   setLayers(v)
                   if (playing === song.id && v !== 'lobby' && layers !== 'lobby') engine.music.setLayers(v === 'base' ? ['base'] : v === 'drive' ? ['base', 'drive'] : ['base', 'drive', 'tension'])
-                  else startSong(song, current, v, stem, weather, season)
+                  else startSong(song, current, v, stem, weather, season, site)
                 }}
                 label={t.layers}
               />
-              <p class="field__label small">{t.season}</p>
-              <Chips
-                options={SEASONS.map((s) => ({ value: s, label: s }))}
-                value={season}
-                onChange={(v) => {
-                  setSeason(v)
-                  startSong(song, current, layers, stem, weather, v)
-                }}
-                label={t.season}
-              />
+              {song.id === 'cup' && !current.row && (
+                <>
+                  <p class="field__label small">{t.season}</p>
+                  <Chips
+                    options={SEASONS.map((s) => ({ value: s, label: s }))}
+                    value={season}
+                    onChange={(v) => {
+                      setSeason(v)
+                      startSong(song, current, layers, stem, weather, v, site)
+                    }}
+                    label={t.season}
+                  />
+                </>
+              )}
+              {song.id === 'trial' && !current.row && (
+                <>
+                  <p class="field__label small">{t.site}</p>
+                  <Chips
+                    options={JOURNEY_SITE_IDS.map((x) => ({ value: x, label: x }))}
+                    value={site}
+                    onChange={(v) => {
+                      setSite(v)
+                      startSong(song, current, layers, stem, weather, season, v)
+                    }}
+                    label={t.site}
+                  />
+                </>
+              )}
+              {current.row && <p class="sndlab__info small">{describeRow(current.row, song.bpm)}</p>}
             </>
           )}
           {song.stems && (
@@ -276,7 +345,7 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
                 onChange={(v) => {
                   setStem(v)
                   if (playing === song.id) engine.music.setStem(v)
-                  else startSong(song, current, layers, v, weather, season)
+                  else startSong(song, current, layers, v, weather, season, site)
                 }}
                 label={t.stems}
               />
@@ -292,7 +361,7 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
                   setWeather(v)
                   engine.ambience.setWeather(v)
                   if (playing === song.id) engine.music.setWeather(v)
-                  else startSong(song, current, layers, stem, v, season)
+                  else startSong(song, current, layers, stem, v, season, site)
                 }}
                 label={t.weather}
               />
@@ -327,6 +396,28 @@ function MusicTab({ engine, notes, onNotes, debug }: { engine: Engine; notes: No
           ))}
         </section>
       ))}
+      <section class="card">
+        <p class="field__label">{t.eventPicker}</p>
+        <Select
+          label={t.eventPick}
+          value={eventId}
+          options={EVENT_ARRANGEMENTS.map((r) => ({ value: r.event, label: `${eventName(r.event)} (${r.theme})` }))}
+          onChange={(v) => setEventId(v)}
+        />
+        <div class="row">
+          <button
+            type="button"
+            class="btn btn--small"
+            data-silent
+            onClick={() => {
+              const row = EVENT_ARRANGEMENT_BY_ID[eventId]!
+              void play({ id: `event:${eventId}`, label: eventName(eventId), group: 'events', song: row.theme, row })
+            }}
+          >
+            ▶ {t.play}
+          </button>
+        </div>
+      </section>
     </>
   )
 }
@@ -427,6 +518,7 @@ function EffectsTab({ engine, notes, onNotes }: { engine: Engine; notes: Notes; 
   const [moment, setMoment] = useState<FxEventKind>('hit')
   const [strength, setStrength] = useState<Strength>('medium')
   const [pan, setPan] = useState(0)
+  const [clap, setClap] = useState(false)
   const [crowd, setCrowd] = useState<CrowdSize>('small')
   const fire = () => {
     const def = battleSfx(moment, element, strength, moment === 'crit')
@@ -496,6 +588,15 @@ function EffectsTab({ engine, notes, onNotes }: { engine: Engine; notes: Notes; 
             </button>
           ))}
         </div>
+        <Toggle
+          label={t.clapAlong}
+          checked={clap}
+          onChange={(v) => {
+            setClap(v)
+            engine.ambience.setCrowd(crowd)
+            getRuntime()?.setClapAlong(engine, v)
+          }}
+        />
         <NoteRow id={`crowd:${crowd}`} notes={notes} onChange={onNotes} />
       </section>
     </>

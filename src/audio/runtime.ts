@@ -13,7 +13,7 @@ import type { Request, SongRequest } from './director.ts'
 import type { Engine } from './engine/index.ts'
 import { allowedAtSpeed, DEFAULT_KEY } from './engine/sfx.ts'
 import type { Playback } from './engine/transport.ts'
-import { MUSICAL_EFFECTS, type MusicalEffectId } from './music/effects.ts'
+import { musicalEffectDef } from './music/effects.ts'
 import type { Arrangement, Song } from './music/song.ts'
 import { loadSong } from './music/songs/index.ts'
 import { STINGERS, type StingerId } from './music/stingers.ts'
@@ -47,8 +47,7 @@ const LEGACY: Partial<Record<LegacySfxId, EffectId | { battle: FxEvent['kind'] }
 function defFor(id: EffectId): SfxDef | null {
   if (id in UI_SFX) return UI_SFX[id as UiSfxId]
   if (id in WORLD_SFX) return WORLD_SFX[id as WorldSfxId]
-  if (id in MUSICAL_EFFECTS) return MUSICAL_EFFECTS[id as MusicalEffectId]
-  return null
+  return musicalEffectDef(id)
 }
 
 export function playEffect(engine: Engine, id: EffectId, o: { pan?: number } = {}): void {
@@ -89,21 +88,74 @@ function transposeToArea(engine: Engine): number {
   return tonic > 6 ? tonic - 12 : tonic
 }
 
+const MATCH_ENDS: ReadonlySet<StingerId> = new Set(['matchWin', 'matchLoss', 'matchDraw'])
+
 export function playStinger(engine: Engine, id: StingerId): void {
-  const song = STINGERS[id]
-  engine.music.interrupt(song, { transpose: transposeToArea(engine), fadeInAfterSec: AUDIO.stingerFadeInSec })
+  playStingers(engine, [id])
+}
+
+/** Interrupting stingers in a row (§4.7): the area music stays down between them and returns once, after the last. */
+export function playStingers(engine: Engine, ids: readonly StingerId[]): void {
+  if (ids.length === 0) return
+  // §9.4 a match end gets applause (polite in a hushed hall); a KO has already cheered.
+  if (ids.some((id) => MATCH_ENDS.has(id))) engine.ambience.react('applause')
+  engine.music.interruptChain(
+    ids.map((id) => STINGERS[id]),
+    { transpose: transposeToArea(engine), fadeInAfterSec: AUDIO.stingerFadeInSec },
+  )
+}
+
+/* ---------- the crowd claps along (§9.4) ---------- */
+
+let clapping = false
+let clapUntil = 0
+let clapFiller = false
+
+/** In the last 10 s the crowd claps on the music's beats (a chanting crowd on two and four). */
+export function setClapAlong(engine: Engine, on: boolean): void {
+  if (!clapFiller) {
+    clapFiller = true
+    engine.scheduler.addFiller((until) => {
+      if (!clapping) return
+      const from = Math.max(clapUntil, engine.ctx.currentTime)
+      const backbeat = engine.ambience.crowdBackbeat()
+      for (const b of engine.music.beatsIn(from, until)) if (!backbeat || b.beat % 2 === 1) engine.ambience.clapAlong(b.time)
+      clapUntil = Math.max(clapUntil, until)
+    })
+  }
+  if (on && !clapping) clapUntil = engine.ctx.currentTime
+  clapping = on
 }
 
 /* ---------- the director's requests ---------- */
 
-function arrangementFor(song: Song, r: SongRequest): Arrangement | null {
+/**
+ * The arrangement a request plays: a named arrangement (the Summit Qualifier) merged with the lobby form when
+ * only the lobby layer is on, then the event row's changes. Only real changes are written: a row whose lead,
+ * kit or colour is the song's own leaves the song alone, so a named theme keeps its own lobby lead.
+ */
+export function arrangementFor(song: Song, r: SongRequest): Arrangement | null {
   const named = r.arrangement ? (song.arrangements?.[r.arrangement] ?? null) : null
   const lobby = r.layers.length === 1 && r.layers[0] === 'lobby' && song.kind === 'battle' ? (song.arrangements?.lobby ?? null) : null
-  const base = named ?? lobby
-  const out: Arrangement = { ...(base ?? {}) }
-  if (r.kit) out.kit = r.kit
-  if (r.lead) out.swap = { ...(base?.swap ?? {}), lead: r.lead, lobbyLead: r.lead }
-  if (r.tempoNudge) out.tempoNudge = (base?.tempoNudge ?? 0) + r.tempoNudge
+  const out: Arrangement = { ...(named ?? {}) }
+  if (lobby) {
+    if (lobby.order) out.order = lobby.order
+    if (lobby.loopFrom !== undefined) out.loopFrom = lobby.loopFrom
+    if (lobby.gainDb) out.gainDb = (out.gainDb ?? 0) + lobby.gainDb
+    if (lobby.halfTime) out.halfTime = true
+    if (lobby.swap) out.swap = { ...lobby.swap, ...(out.swap ?? {}) }
+  }
+  if (r.kit && r.kit !== song.kit) out.kit = r.kit
+  const own = (id: string) => song.lines.find((l) => l.id === id)?.inst
+  const swap = { ...(out.swap ?? {}) }
+  if (r.lead && own('lead') !== undefined && own('lead') !== r.lead) {
+    swap.lead = r.lead
+    if (own('lobbyLead') !== undefined) swap.lobbyLead = r.lead
+  }
+  if (r.colour && own('colour') !== undefined && own('colour') !== r.colour) swap.colour = r.colour
+  if (Object.keys(swap).length) out.swap = swap
+  if (r.leadArt) out.arts = { ...(out.arts ?? {}), lead: r.leadArt }
+  if (r.tempoNudge) out.tempoNudge = (out.tempoNudge ?? 0) + r.tempoNudge
   if (r.musicSend !== null) out.musicSend = r.musicSend
   return Object.keys(out).length ? out : null
 }
@@ -137,6 +189,10 @@ export async function applyRequest(engine: Engine, r: Request): Promise<void> {
 async function applyNow(engine: Engine, r: Request): Promise<void> {
   engine.graph.setPaused(r.paused)
   if (r.drillOwned) return
+  if (r.song !== 'keep') {
+    engine.want(r.packs)
+    setClapAlong(engine, r.clapAlong)
+  }
   if (r.bed !== 'keep') {
     engine.ambience.setWeather(r.weather)
     engine.ambience.setBed(r.bed, AUDIO.bedCrossfadeSec)

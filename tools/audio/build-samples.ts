@@ -398,7 +398,7 @@ function processOne(c: Chosen, octaveShift: number | null): Omit<Processed, 'enc
       const exact = p.midi + p.cents / 100
       let diff = (((exact - named) % 12) + 12) % 12
       if (diff > 6) diff -= 12
-      if (Math.abs(diff) * 100 > 50) throw new MismatchError(`${c.path}: named ${named} (${c.parsed.note}) but sounds at MIDI ${p.midi} ${p.cents >= 0 ? '+' : ''}${p.cents} cents (${p.hz.toFixed(1)} Hz, confidence ${p.confidence.toFixed(2)})`)
+      if (Math.abs(diff) * 100 > (rule.toleranceCents ?? 50)) throw new MismatchError(`${c.path}: named ${named} (${c.parsed.note}) but sounds at MIDI ${p.midi} ${p.cents >= 0 ? '+' : ''}${p.cents} cents (${p.hz.toFixed(1)} Hz, confidence ${p.confidence.toFixed(2)})`)
       root = p.midi
     } else {
       // Inharmonic: the name's pitch class with the library's octave convention.
@@ -536,9 +536,12 @@ async function main(): Promise<void> {
     for (const e of pending) {
       if (e.c.rule.pitch !== 'named' || e.c.nameMidi === null) continue
       const expected = e.c.nameMidi + (octaveShift.get(e.c.rule.lib) ?? 0)
-      if (e.p.root !== expected) {
-        log(`   octave: ${basename(e.c.path)} measured MIDI ${e.p.root}, convention says ${expected}; using ${expected}`)
-        e.p.root = expected
+      // Only whole octaves are the detector's mistake. A leftover semitone is real tuning (a wine glass tuned
+      // by water sits between notes), so the measured nearest note and its cents stay as they are.
+      const octaves = Math.round((e.p.root - expected) / 12) * 12
+      if (octaves !== 0) {
+        log(`   octave: ${basename(e.c.path)} measured MIDI ${e.p.root}, convention says ${expected}; using ${e.p.root - octaves}`)
+        e.p.root -= octaves
       }
     }
     for (const c of chosen) {

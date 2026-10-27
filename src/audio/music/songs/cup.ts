@@ -5,7 +5,8 @@
  * counter and the rest of the kit from bar 3), `tension` (string tremolo, a double-time drum and a glock
  * flourish when someone is low or the clock is nearly out). The intro bar carries the match-start drum
  * hit and harp chord. The lead instrument, the kit and the key move with the season palette and the event
- * row, written as arrangement data by the director. Original.
+ * row, written as arrangement data by the director; a `colour` line rings at phrase starts in the season's
+ * colour (or an event's own). Original.
  */
 import { defineSong } from '../song.ts'
 
@@ -54,6 +55,14 @@ V:counter
 [P:A2] !mp! z8 | z4 f2 e2 | z8 | z4 a2 g2 | z8 | z4 b2 a2 | z8 | z4 f2 e2 |
 [P:C] !mp! z8 | z4 b2 a2 | z8 | z4 e2 d2 | z8 | z4 b2 a2 | z8 | z4 f2 e2 |
 [P:B2] !mp! z8 | z4 e2 d2 | z8 | z4 g2 f2 | z8 | z4 e2 d2 | z8 | z4 f2 e2 |
+V:colour
+[P:lobby] z8 | z8 | z8 | z8 | z8 | z8 | z8 | z8 |
+[P:intro] z8 | z8 |
+[P:A] !mp! B2 z6 | z8 | c2 z6 | z8 | d2 z6 | z4 c2 e2 | d2 z6 | z4 B4 |
+[P:B] B2 z6 | z8 | B2 z6 | z8 | d2 z6 | z8 | c2 z6 | z4 B4 |
+[P:A2] B2 z6 | z8 | c2 z6 | z8 | d2 z6 | z4 c2 e2 | d2 z6 | z4 B4 |
+[P:C] d2 z6 | z8 | B2 z6 | z8 | d2 z6 | z8 | d2 z6 | z4 B4 |
+[P:B2] B2 z6 | z8 | B2 z6 | z8 | d2 z6 | z8 | c2 z6 | z4 B4 |
 V:hit
 [P:lobby] z8 | z8 | z8 | z8 | z8 | z8 | z8 | z8 |
 [P:intro] !mf! [E,G,B,E]4 z4 | z8 |
@@ -67,6 +76,8 @@ V:hit
     lead: { inst: 'ocarina', role: 'lead', layers: ['base', 'drive', 'tension'], gain: 0, pan: 0.05 },
     lobbyLead: { inst: 'ocarina', role: 'lead', layers: ['lobby'], gain: -3, pan: 0.05 },
     counter: { inst: 'kalimba', role: 'counter', layers: ['drive', 'tension'], gain: -7, pan: 0.3 },
+    // The season's colour (harp, glock, strumstick) or an event's own (hand chimes, wine glasses), from the row.
+    colour: { inst: 'harp', role: 'colour', layers: ['drive', 'tension'], gain: -11, pan: -0.35 },
     hit: { inst: 'harp', role: 'accomp', layers: ['base', 'drive', 'tension'], gain: -4 },
   },
   accomp: {

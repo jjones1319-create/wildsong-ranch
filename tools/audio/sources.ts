@@ -37,6 +37,8 @@ export interface SourceRule {
   minHz?: number
   /** Unpitched takes to keep (default 2 for drums, 4 for Foley). */
   takes?: number
+  /** How far (cents) a named pitch may sit from its name before the build refuses it (default 50). Wine glasses are tuned by water level, not to the scale. */
+  toleranceCents?: number
   /** Length cap in seconds, overriding the class default (§5.3 step 3). */
   capSec?: number
 }
@@ -100,6 +102,8 @@ export const SOURCE_RULES: readonly SourceRule[] = [
   { inst: 'flute', art: 'sus', lib: 'vsco', dir: 'Woodwinds/Flute/susNV/', prefer: { vel: ['v1', 'v3'] }, cls: 'sustain', pitch: 'named', minHz: 150 },
   { inst: 'flute', art: 'stac', lib: 'vsco', dir: 'Woodwinds/Flute/stac/', prefer: { vel: ['v1', 'v2'] }, cls: 'pluck', pitch: 'named', minHz: 150 },
   // ---- noble
+  { inst: 'clarinet', art: 'sus', lib: 'vsco', dir: 'Woodwinds/Clarinet/susLong/', prefer: { vel: ['v1', 'v2'] }, cls: 'sustain', pitch: 'named', minHz: 100, range: NOTE('D2', 'D5') },
+  { inst: 'clarinet', art: 'stac', lib: 'vsco', dir: 'Woodwinds/Clarinet/stac/', prefer: { vel: ['v1', 'v2'] }, cls: 'pluck', pitch: 'named', minHz: 100, range: NOTE('D2', 'D5') },
   { inst: 'horn', art: 'sus', lib: 'vsco', dir: 'Brass/F Horn/sus/', prefer: { vel: ['v2', 'v1', 'v3'] }, cls: 'sustain', pitch: 'named', minHz: 50, range: NOTE('C1', 'C4') },
   { inst: 'horn', art: 'stac', lib: 'vsco', dir: 'Brass/F Horn/stac/', prefer: { vel: ['v2', 'v1'] }, cls: 'pluck', pitch: 'named', minHz: 50, range: NOTE('C1', 'C4') },
   { inst: 'violins', art: 'vib', lib: 'vsco', dir: 'Strings/Violin Section/susVib/', prefer: { vel: ['v1', 'v2'] }, cls: 'sustain', pitch: 'named', minHz: 150, range: NOTE('G2', 'C6') },
@@ -125,6 +129,11 @@ export const SOURCE_RULES: readonly SourceRule[] = [
   { inst: 'vibes', art: 'hit', lib: 'vcsl', dir: `${VI}Vibraphone/Soft Mallets/`, prefer: { vel: ['v1'] }, cls: 'pluck', pitch: 'inharmonic', minHz: 100, capSec: 2 },
   { inst: 'vibes', art: 'bowed', lib: 'vcsl', dir: `${VI}Vibraphone/Bowed/`, cls: 'sustain', pitch: 'inharmonic', minHz: 100 },
   // ---- percussion (unpitched unless said)
+  { inst: 'balafon', art: 'hit', lib: 'vcsl', dir: `${VI}Balafon/Soft Mallet/`, prefer: { vel: ['vl2', 'vl1', 'vl3'] }, cls: 'pluck', pitch: 'inharmonic', minHz: 100, capSec: 1.5 },
+  { inst: 'wine-glasses', art: 'slow', lib: 'vcsl', dir: 'Idiophones/Friction Idiophones/Wine Glasses/Sustains/Slow/', cls: 'sustain', pitch: 'named', minHz: 200, toleranceCents: 70 },
+  { inst: 'wine-glasses', art: 'fast', lib: 'vcsl', dir: 'Idiophones/Friction Idiophones/Wine Glasses/Sustains/Fast/', cls: 'sustain', pitch: 'named', minHz: 200, toleranceCents: 70 },
+  { inst: 'harpsichord', art: 'pluck', lib: 'vcsl', dir: 'Chordophones/Zithers/Harpsichord, Flemish/Sustains/Low/', cls: 'pluck', pitch: 'named', minHz: 40, range: NOTE('F#1', 'C5'), capSec: 2 },
+  { inst: 'organ', art: 'sus', lib: 'vcsl', dir: `${V}Renaissance Organ/8'/`, cls: 'sustain', pitch: 'named', minHz: 50, range: NOTE('C2', 'C5') },
   { inst: 'frame-drum', art: 'hit', lib: 'vcsl', dir: `${VM}Frame Drum/`, filter: /HDrumL_Hit_/, prefer: { vel: ['v2', 'v1'] }, alt: { rr: ['2'] }, cls: 'drum', pitch: 'none' },
   { inst: 'frame-drum', art: 'muted', lib: 'vcsl', dir: `${VM}Frame Drum/`, filter: /HDrumL_HitMuted_/, prefer: { vel: ['v2', 'v1'] }, alt: { rr: ['2'] }, cls: 'drum', pitch: 'none' },
   { inst: 'shaker', art: 'hit', lib: 'vcsl', dir: `${VI}Shaker, Small/`, filter: /ShakerDouble_Down/, alt: { rr: ['2'] }, cls: 'drum', pitch: 'none' },
@@ -143,6 +152,7 @@ export const SOURCE_RULES: readonly SourceRule[] = [
   { inst: 'darbuka', art: 'hit', lib: 'vcsl', dir: `${VM}Darbuka/`, filter: /Darbuka_1_hit/, prefer: { vel: ['vl1', 'vl2'] }, alt: { rr: ['2'] }, cls: 'drum', pitch: 'none', takes: 2 },
   { inst: 'bongos', art: 'hit', lib: 'vcsl', dir: `${VM}Bongos/`, filter: /Bongo[HL]_Hit1_/, prefer: { vel: ['v1'] }, cls: 'drum', pitch: 'none', takes: 2 },
   { inst: 'cajon', art: 'hit', lib: 'vcsl', dir: `${VI}Cajon/`, filter: /Cajon_hit1_/, prefer: { dyn: ['f', 'mf', 'ff'] }, alt: { rr: ['2'] }, cls: 'drum', pitch: 'none', takes: 2 },
+  { inst: 'ocean-drum', art: 'swell', lib: 'vcsl', dir: 'Membranophones/Other Membranophones/Ocean Drum/', cls: 'ringing', pitch: 'none', takes: 3 },
   { inst: 'cymbal-swell', art: 'swell', lib: 'vcsl', dir: `${VI}Suspended Cymbal 1/`, filter: /roll_\w+_nloop/i, cls: 'ringing', pitch: 'none', takes: 2 },
   // ---- Foley (Kenney): the name prefix is the articulation
   ...(['footstep_grass', 'footstep_wood', 'footstep_concrete', 'impactWood_light', 'impactWood_heavy', 'impactSoft_heavy', 'impactSoft_medium', 'impactPlank_medium', 'impactMining', 'impactPunch_medium'] as const).map(

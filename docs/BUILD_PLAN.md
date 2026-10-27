@@ -422,9 +422,22 @@ Spec: `docs/SOUND_UPGRADE.md` §15 S1. Version `1.6.0`, no save-schema change (t
 
 ### S2: A theme for every event
 
-The 16 event compositions, the per-event arrangement table for all 60 events, the S2 stingers and the rival calling cards, every crowd size, recomputed packs. Spec: `docs/SOUND_UPGRADE.md` §15 S2.
+The 16 event compositions, the per-event arrangement table for all 60 events, the S2 stingers and the rival calling cards, every crowd size, recomputed packs. Spec: `docs/SOUND_UPGRADE.md` §15 S2. Version `1.7.0`, no save-schema change. Commit `Sound S2: a theme for every event`.
 
-- [ ] Plan in plan mode at the start of the stage, after the owner's S1 listening notes.
+Decided at the start of the stage (Oct 27, 2026, approved with the plan): the horn's samples stop at middle C, so horn-led pieces pair the horn in its warm range with violins or flute an octave up; two new kits, `tide` and `masque`; one 8 s stinger per Crown; Trial tonics up to ±5 semitones; the checker also asks for the Wildsong motif in `ascension` and `legend`, Corin's motif in `rival` and the masked motif in `masquerade`.
+
+- [x] 1. **S1 gaps:** the `events` pack loads on the cup screens and stays in use while wanted; swapped leads fold into their instrument's range; the results screen plays its stinger; Trials read their site from the Trial.
+- [x] 2. **Samples:** `organ`, `wine-glasses`, `ocean-drum`, `harpsichord`, `balafon`, `clarinet`; `npm run audio:samples`; packs recomputed (the new instruments land in `events`); budgets.
+- [x] 3. **Event table and director:** every row plays its own theme; `THEME_DEFAULTS`; Ascensions take the season colour; the Summit Qualifier arrangement; Trial sites; the Corin rule; requests carry their packs and the clap-along; no `TODO_S2` left.
+- [x] 4. **Pieces:** `open`, `ascension`, `crown-dawn`, `crown-tides`, `crown-embers`, `crown-frost`, `legend`, `masquerade`, `rival`, `summit` (+ `qualifier`), `rally`, `rally-rogue`, `sprout`, `elders`, `trial` (five sites), `practice`; the cup's colour line.
+- [x] 5. **Stingers and cards:** `cupPlaced`, `cupOut`, the four Crown stingers, `legendWon`, `rankUp`, `titleEarned`; stinger chains; the nine rival calling cards; the results screen and the round preview wired.
+- [x] 6. **Crowds:** a profile per size, `hushed` polite only, `chanting` on 2 and 4, clap-along on the music's beats in the last 10 s, applause at every match end.
+- [x] 7. **Sound Lab and tools:** the Events group, the event picker, the cards; render items for every theme (battle, lobby, tension), the new stingers, cards and crowds; `--jobs`, `--only` lists.
+- [x] 8. **Tests:** event table, director, songs, stingers, cards, crowds, folding, stinger chains, e2e (the `events` pack on the cup screen, an Ascension plays `ascension`).
+- [x] 9. **Docs:** GAME_DESIGN §23; SOUND_UPGRADE §6.4, §7.4, §7.6; PROGRESS (one line per piece); CREDITS; this list ticked.
+- [x] 10. **Finish:** calibrate; `npm run verify`, `npm run e2e`, `npm run audio:check` green; `audio:review`; commit, push, confirm the deploy, the S2 phone check, then stop for the owner's listening notes.
+
+**Phone check:** SOUND_UPGRADE §15 S2 (an Ascension, the Masquerade, the Rival Showdown, every Crown in the Sound Lab, two regular cups from one season, "does any tune sound familiar?").
 
 ### S3: Places, trainings and moments
 

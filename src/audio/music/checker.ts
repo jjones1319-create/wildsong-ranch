@@ -6,7 +6,7 @@
 import { INSTRUMENTS, nearestRoot, playableRange, type InstrumentId, type SampleRoots } from '../recipes/instruments.ts'
 import { strongBeats } from './abc.ts'
 import { chordAt, isChordTone, type ChordAt } from './chords.ts'
-import { containsMotif, WILDSONG_MOTIF } from './motifs.ts'
+import { containsMotif, CORIN_MOTIF, MASKED_MOTIF, WILDSONG_MOTIF } from './motifs.ts'
 import { BREATH, passSeconds, type LineEvent, type Song, type SongKind } from './song.ts'
 
 export interface CheckIssue {
@@ -313,8 +313,9 @@ export function checkSong(song: Song, ctx: CheckContext): CheckIssue[] {
     }
   }
 
-  // 12. The Wildsong motif where §3.6 requires it.
-  const needsMotif = song.kind === 'ranch' || song.id === 'wildsong'
+  // 12. The motifs where §3.6 requires them: the Wildsong motif in the title, the ranch songs, the Ascension
+  // and the Legend; Corin's motif in the rival theme; the masked turn in the Masquerade.
+  const needsMotif = song.kind === 'ranch' || song.id === 'wildsong' || song.id === 'ascension' || song.id === 'legend'
   if (needsMotif || song.motifQuote) {
     const q = song.motifQuote
     if (!q) err(12, 'this song must quote the Wildsong motif (motifQuote)')
@@ -324,6 +325,16 @@ export function checkSong(song: Song, ctx: CheckContext): CheckIssue[] {
       if (!sec || !evs) err(12, `motifQuote names ${q.part}/${q.section}, which does not exist`)
       else if (!containsMotif(evs.map(topPitch), WILDSONG_MOTIF)) err(12, `the Wildsong motif is not in ${q.part}/${q.section}`)
     }
+  }
+
+  const needs: Partial<Record<string, 'corin' | 'masked'>> = { rival: 'corin', masquerade: 'masked' }
+  const wanted = needs[song.id]
+  if (wanted && !song.quotes?.some((q) => q.motif === wanted)) err(12, `this song must quote the ${wanted} motif (quotes)`)
+  for (const q of song.quotes ?? []) {
+    const evs = song.sections[q.section]?.events[q.part]
+    const m = q.motif === 'corin' ? CORIN_MOTIF : MASKED_MOTIF
+    if (!evs) err(12, `a ${q.motif} quote names ${q.part}/${q.section}, which does not exist`)
+    else if (!containsMotif(evs.map(topPitch), m)) err(12, `the ${q.motif} motif is not in ${q.part}/${q.section}`)
   }
 
   // 13. Distinctness across songs.

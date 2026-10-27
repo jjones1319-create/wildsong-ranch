@@ -1,4 +1,6 @@
 import { useEffect } from 'preact/hooks'
+import { resultStingers } from '../../../audio/director.ts'
+import { playStingers } from '../../../audio/player.ts'
 import { eventName } from '../../../core/tournament.ts'
 import { ITEM_BY_ID } from '../../../data/items.ts'
 import { TECHNIQUE_BY_ID } from '../../../data/techniques.ts'
@@ -15,6 +17,9 @@ import { settings } from '../../store/appStore.ts'
 import { game } from '../../store/gameStore.ts'
 import { afterResults, outcome } from '../../store/tournamentStore.ts'
 
+/** The outcome whose stingers already played, so a re-render never plays them twice. */
+let soundedOutcome: object | null = null
+
 /** §21 Results: placings, purse, items, fame, stat gains, condition changes, lifespan cost (Lens), and what changed at the Guild. */
 export function TournamentResultsScreen() {
   const g = game.value
@@ -24,6 +29,12 @@ export function TournamentResultsScreen() {
     if (!g || !g.monster) navigate('title')
     else if (!o) navigate('ranch')
   }, [g === null, o === null])
+  // Sound 2.0 §7.6: the result's stinger chain (first place, a placing or out, then rank and title).
+  useEffect(() => {
+    if (!o || soundedOutcome === o) return
+    soundedOutcome = o
+    playStingers(resultStingers(o))
+  }, [o])
   if (!g || !g.monster || !o) return null
   const m = g.monster
   const lens = settings.value.transparency === 'lens'

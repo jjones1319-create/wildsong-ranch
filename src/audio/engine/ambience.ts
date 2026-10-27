@@ -7,7 +7,7 @@
  */
 import { AUDIO } from '../../data/tuning.ts'
 import type { Weather } from '../../data/types.ts'
-import { bedLayers, CROWDS, WEATHER_OVERLAYS, type BedId, type BedLayer, type CrowdReaction, type CrowdSize, type NoiseColor, type SpawnEvent, type SpawnLayer } from '../recipes/ambience.ts'
+import { bedLayers, CROWD_PROFILES, CROWDS, WEATHER_OVERLAYS, type BedId, type BedLayer, type CrowdReaction, type CrowdSize, type NoiseColor, type SpawnEvent, type SpawnLayer } from '../recipes/ambience.ts'
 import { dbToGain, makeFilter, makeGain, makeOscillator, rampTo } from './nodes.ts'
 import { between, createRng, type Rng } from './rng.ts'
 import type { SampleBank } from './samples.ts'
@@ -363,13 +363,22 @@ export class Ambience {
     rampTo(inst.out.gain, dbToGain(AUDIO.ambienceMakeupDb), now, 1.5)
   }
 
-  /** A crowd reaction: a swell of the crowd layers, darker for an "ooh". Throttled to 350 ms by the caller. */
+  /** A crowd reaction: a swell of the crowd layers, darker for an "ooh", sized by the crowd (§9.4). A polite crowd only applauds. */
   react(kind: CrowdReaction, at: number = this.ctx.currentTime): void {
     if (!this.crowd || this.crowdSize === 'none') return
+    const profile = CROWD_PROFILES[this.crowdSize]
+    if (profile.polite) {
+      if (kind !== 'applause' && kind !== 'ko') return
+      const t = Math.max(this.ctx.currentTime, at)
+      if (t < this.reactionUntil) return
+      this.reactionUntil = t + profile.applause.seconds
+      this.applause(t, profile.applause.seconds)
+      return
+    }
     const t = Math.max(this.ctx.currentTime, at)
     if (t < this.reactionUntil && kind !== 'ko') return
-    const big = kind === 'ko' ? 2 : kind === 'applause' ? 1.5 : kind === 'cheer' ? 0.6 : 0.5
-    const up = kind === 'ko' ? 9 : kind === 'applause' ? 6 : kind === 'cheer' ? 5 : kind === 'ooh' ? 3 : 2
+    const big = kind === 'ko' ? 2 : kind === 'applause' ? profile.applause.seconds : kind === 'cheer' ? 0.6 : 0.5
+    const up = (kind === 'ko' ? 9 : kind === 'applause' ? 6 : kind === 'cheer' ? 5 : kind === 'ooh' ? 3 : 2) * profile.react
     this.reactionUntil = t + big
     for (const l of this.crowd.layers) {
       if (l.kind !== 'noise') continue
@@ -390,13 +399,29 @@ export class Ambience {
   }
 
   private applause(t: number, seconds: number): void {
-    // Many soft claps: short filtered bursts at a high rate.
-    const n = Math.round(seconds * 14)
+    // Many soft claps: short filtered bursts, as many and as loud as the crowd is big.
+    const a = CROWD_PROFILES[this.crowdSize].applause
+    const n = Math.round(seconds * a.rate)
     for (let i = 0; i < n; i++) {
       const at = t + (i / n) * seconds + between(this.rng, 0, 0.05)
       const env = 1 - i / n
-      this.burst(at, 'white', { type: 'bandpass', hz: 1800, q: 1 }, 0.02 + 0.02 * this.rng(), -38 + 6 * env, between(this.rng, -0.6, 0.6), 3500, this.crowd?.out ?? this.dest)
+      this.burst(at, 'white', { type: 'bandpass', hz: 1800, q: 1 }, 0.02 + 0.02 * this.rng(), a.levelDb + 6 * env, between(this.rng, -0.6, 0.6), 3500, this.crowd?.out ?? this.dest)
     }
+  }
+
+  /** The crowd claps on the beat at `at` (the last 10 s, §9.4): a handful of hands, a few ms apart. */
+  clapAlong(at: number): void {
+    if (!this.crowd || this.crowdSize === 'none') return
+    const c = CROWD_PROFILES[this.crowdSize].clap
+    for (let i = 0; i < c.voices; i++) {
+      const t = Math.max(this.ctx.currentTime, at + between(this.rng, -0.012, 0.012))
+      this.burst(t, 'white', { type: 'bandpass', hz: between(this.rng, 1400, 2200), q: 1.1 }, 0.018 + 0.012 * this.rng(), c.levelDb + between(this.rng, -3, 1), between(this.rng, -0.6, 0.6), 3500, this.crowd.out)
+    }
+  }
+
+  /** A chanting crowd claps on two and four only. */
+  crowdBackbeat(): boolean {
+    return CROWD_PROFILES[this.crowdSize].clap.backbeat
   }
 
   private clapOnce(t: number): void {

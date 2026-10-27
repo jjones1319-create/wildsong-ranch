@@ -13,6 +13,22 @@ export const SONG_LOADERS: Record<SongId, () => Promise<{ default: Song }>> = {
   'ranch-winter': () => import('./ranch-winter.ts'),
   town: () => import('./town.ts'),
   cup: () => import('./cup.ts'),
+  open: () => import('./open.ts'),
+  ascension: () => import('./ascension.ts'),
+  'crown-dawn': () => import('./crown-dawn.ts'),
+  'crown-tides': () => import('./crown-tides.ts'),
+  'crown-embers': () => import('./crown-embers.ts'),
+  'crown-frost': () => import('./crown-frost.ts'),
+  legend: () => import('./legend.ts'),
+  masquerade: () => import('./masquerade.ts'),
+  rival: () => import('./rival.ts'),
+  summit: () => import('./summit.ts'),
+  rally: () => import('./rally.ts'),
+  'rally-rogue': () => import('./rally-rogue.ts'),
+  sprout: () => import('./sprout.ts'),
+  elders: () => import('./elders.ts'),
+  trial: () => import('./trial.ts'),
+  practice: () => import('./practice.ts'),
 }
 
 const cache = new Map<SongId, Promise<Song>>()

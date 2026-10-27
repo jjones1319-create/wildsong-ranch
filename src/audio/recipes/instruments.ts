@@ -10,6 +10,7 @@ export const INSTRUMENT_IDS = [
   'recorder-alto',
   'recorder-tenor',
   'flute',
+  'clarinet',
   'horn',
   'violins',
   'violas',
@@ -23,6 +24,10 @@ export const INSTRUMENT_IDS = [
   'hand-chimes',
   'tubular-bells',
   'vibes',
+  'balafon',
+  'wine-glasses',
+  'harpsichord',
+  'organ',
   'music-box',
   'frame-drum',
   'shaker',
@@ -40,11 +45,12 @@ export const INSTRUMENT_IDS = [
   'bongos',
   'cajon',
   'cymbal-swell',
+  'ocean-drum',
   'foley',
 ] as const
 export type InstrumentId = (typeof INSTRUMENT_IDS)[number]
 
-export type Family = 'wind' | 'bowed' | 'pluck' | 'mallet' | 'perc' | 'foley' | 'patch'
+export type Family = 'wind' | 'bowed' | 'pluck' | 'mallet' | 'keys' | 'perc' | 'foley' | 'patch'
 export type FallbackVoice = 'wind' | 'pad' | 'pluck' | 'mallet' | 'silent'
 
 export interface InstrumentDef {
@@ -74,6 +80,7 @@ export const INSTRUMENTS: Record<InstrumentId, InstrumentDef> = {
   'recorder-alto': { family: 'wind', arts: ['sus', 'vib', 'stac'], longArt: 'vib', mono: true, melody: [65, 88], fallback: 'wind', attackMs: 30, releaseMs: 90 },
   'recorder-tenor': { family: 'wind', arts: ['sus', 'vib'], longArt: 'vib', mono: true, melody: [60, 84], fallback: 'wind', attackMs: 35, releaseMs: 100 },
   flute: { family: 'wind', arts: ['sus', 'vib', 'stac'], longArt: 'vib', mono: true, melody: [65, 93], fallback: 'wind', attackMs: 35, releaseMs: 100 },
+  clarinet: { family: 'wind', arts: ['sus', 'stac'], mono: true, melody: [52, 86], fallback: 'wind', attackMs: 40, releaseMs: 120 },
   horn: { family: 'wind', arts: ['sus', 'stac'], mono: true, melody: [43, 64], fallback: 'wind', attackMs: 60, releaseMs: 150 },
   violins: { family: 'bowed', arts: ['vib', 'spic', 'pizz', 'trem'], longArt: 'vib', melody: [55, 86], fallback: 'pad', attackMs: 80, releaseMs: 400 },
   violas: { family: 'bowed', arts: ['vib', 'pizz'], longArt: 'vib', melody: [48, 79], fallback: 'pad', attackMs: 80, releaseMs: 450 },
@@ -87,6 +94,10 @@ export const INSTRUMENTS: Record<InstrumentId, InstrumentDef> = {
   'hand-chimes': { family: 'mallet', arts: ['hit'], melody: [60, 96], bright: true, fallback: 'mallet', attackMs: 3, releaseMs: 1500 },
   'tubular-bells': { family: 'mallet', arts: ['hit'], melody: [60, 76], bright: true, fallback: 'mallet', attackMs: 3, releaseMs: 1500 },
   vibes: { family: 'mallet', arts: ['hit', 'bowed'], melody: [53, 88], fallback: 'mallet', attackMs: 3, releaseMs: 1200 },
+  balafon: { family: 'mallet', arts: ['hit'], melody: [58, 89], fallback: 'mallet', attackMs: 3, releaseMs: 400 },
+  'wine-glasses': { family: 'mallet', arts: ['slow', 'fast'], melody: [72, 89], bright: true, fallback: 'pad', attackMs: 60, releaseMs: 900 },
+  harpsichord: { family: 'pluck', arts: ['pluck'], melody: [41, 84], fallback: 'pluck', attackMs: 2, releaseMs: 300 },
+  organ: { family: 'keys', arts: ['sus'], melody: [48, 81], fallback: 'pad', attackMs: 30, releaseMs: 250 },
   'music-box': {
     family: 'patch',
     arts: ['pluck'],
@@ -118,6 +129,7 @@ export const INSTRUMENTS: Record<InstrumentId, InstrumentDef> = {
   darbuka: { family: 'perc', arts: ['hit'], fallback: 'silent', attackMs: 2, releaseMs: 200 },
   bongos: { family: 'perc', arts: ['hit'], fallback: 'silent', attackMs: 2, releaseMs: 200 },
   cajon: { family: 'perc', arts: ['hit'], fallback: 'silent', attackMs: 2, releaseMs: 250 },
+  'ocean-drum': { family: 'perc', arts: ['swell'], fallback: 'silent', attackMs: 2, releaseMs: 1500 },
   'cymbal-swell': { family: 'perc', arts: ['swell'], fallback: 'silent', attackMs: 2, releaseMs: 1500 },
   foley: { family: 'foley', arts: ['footstep_grass', 'footstep_wood', 'footstep_concrete', 'impactWood_light', 'impactWood_heavy', 'impactSoft_heavy', 'impactSoft_medium', 'impactPlank_medium', 'impactMining', 'impactPunch_medium', 'cloth', 'creak', 'handleCoins', 'bookFlip'], fallback: 'silent', attackMs: 2, releaseMs: 200 },
 }
@@ -153,6 +165,31 @@ export function playableRange(roots: SampleRoots, inst: InstrumentId, art?: stri
   const list = roots[inst]?.[a]
   if (!list || list.length === 0) return null
   return [Math.min(...list) - 4, Math.max(...list) + 4]
+}
+
+/** The octave move (a multiple of 12) that puts the most of these pitches inside the range; a tie goes to the smaller move. */
+export function octaveShiftInto(pitches: readonly number[], range: readonly [number, number]): number {
+  let best = 0
+  let bestIn = -1
+  for (let k = -4; k <= 4; k++) {
+    const s = k * 12
+    let n = 0
+    for (const p of pitches) if (p + s >= range[0] && p + s <= range[1]) n++
+    if (n > bestIn || (n === bestIn && Math.abs(s) < Math.abs(best))) {
+      best = s
+      bestIn = n
+    }
+  }
+  return best
+}
+
+/** A pitch moved by octaves into the range (a range narrower than an octave keeps whichever octave lands nearer). */
+export function foldInto(midi: number, range: readonly [number, number]): number {
+  let m = midi
+  while (m > range[1]) m -= 12
+  while (m < range[0]) m += 12
+  if (m > range[1]) return m - range[1] <= range[0] - (m - 12) ? m : m - 12
+  return m
 }
 
 /** The nearest sample root to `midi` within ±4 semitones, preferring the one just below (§4.5). */

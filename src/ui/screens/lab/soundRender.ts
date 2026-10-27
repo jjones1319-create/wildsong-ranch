@@ -11,7 +11,7 @@ import { bandShares } from '../../../audio/analysis/spectrum.ts'
 import { truePeakDb } from '../../../audio/analysis/truepeak.ts'
 import { createEngine, type Engine } from '../../../audio/engine/index.ts'
 import { DEFAULT_KEY } from '../../../audio/engine/sfx.ts'
-import { MUSICAL_EFFECTS, type MusicalEffectId } from '../../../audio/music/effects.ts'
+import { musicalEffectDef } from '../../../audio/music/effects.ts'
 import type { Arrangement } from '../../../audio/music/song.ts'
 import { loadSong } from '../../../audio/music/songs/index.ts'
 import { STINGERS } from '../../../audio/music/stingers.ts'
@@ -58,8 +58,7 @@ function round(n: number): number {
 function effectDef(id: string): SfxDef | null {
   if (id in UI_SFX) return UI_SFX[id as UiSfxId]
   if (id in WORLD_SFX) return WORLD_SFX[id as WorldSfxId]
-  if (id in MUSICAL_EFFECTS) return MUSICAL_EFFECTS[id as MusicalEffectId]
-  return null
+  return musicalEffectDef(id)
 }
 
 function secondsOf(item: RenderItem): number {
@@ -70,7 +69,7 @@ function secondsOf(item: RenderItem): number {
     case 'loopSeam':
       return item.seconds
     case 'stinger':
-      return 12
+      return item.chain ? 18 : 12
     case 'effect':
       return item.seconds ?? 4
     case 'battleFx':
@@ -112,7 +111,8 @@ async function prepare(ctx: OfflineAudioContext, item: RenderItem, seed: number,
       if (item.crowd) engine.ambience.setCrowd(item.crowd)
       break
     case 'stinger':
-      engine.music.play(STINGERS[item.id], { once: true, transpose: item.transpose ?? 0, fadeInSec: 0.02 })
+      if (item.chain) engine.music.interruptChain(item.chain.map((id) => STINGERS[id]), { transpose: item.transpose ?? 0 })
+      else engine.music.play(STINGERS[item.id], { once: true, transpose: item.transpose ?? 0, fadeInSec: 0.02 })
       break
     case 'effect': {
       const def = effectDef(item.id)
@@ -139,9 +139,9 @@ async function prepare(ctx: OfflineAudioContext, item: RenderItem, seed: number,
       break
     }
     case 'battleDemo': {
-      const song = await loadSong('cup')
+      const song = await loadSong(item.song ?? 'cup')
       engine.ambience.setBed('arena', 0.05)
-      engine.ambience.setCrowd('small')
+      engine.ambience.setCrowd(item.crowd ?? 'small')
       engine.music.play(song, { layers: item.layers ?? ['base'], weather: 'Sunny', fadeInSec: 0.02, startIndex: Math.max(0, song.order.indexOf('intro')) })
       engine.scheduler.add(4, () => engine.music.setLayers(['base', 'drive']))
       // A scripted match: hits every 1.2 s with elements in turn, a Special at 20 s, tension at 45 s, a KO at 58 s.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fakeDriver } from './driver.ts'
-import { beatToTime, nextBoundary, quantisedTime, Scheduler, timeToBeat, type Transport } from './scheduler.ts'
+import { beatGrid, beatToTime, nextBoundary, quantisedTime, Scheduler, timeToBeat, type Transport } from './scheduler.ts'
 
 describe('the scheduler (§4.4)', () => {
   it('plays every event within the lookahead, in order, and drops only events later than 5 ms', () => {
@@ -80,5 +80,20 @@ describe('the scheduler (§4.4)', () => {
     expect(beatToTime(b, 8)).toBeCloseTo(0.5 + 8 * (60 / 90))
     expect(nextBoundary(a, 2.2, 'bar')).toBe(4)
     expect(nextBoundary(b, 2.2, 'bar')).toBe(4)
+  })
+})
+
+describe('the beat grid (§9.4, the crowd claps along)', () => {
+  it('lists the beats in a window with their place in the bar, dotted quarters in compound time', () => {
+    const t: Transport = { startTime: 1, bpm: 120, beatsPerBar: 4 }
+    const g = beatGrid(t, [4, 4], 1, 3)
+    expect(g.map((b) => b.time)).toEqual([1, 1.5, 2, 2.5])
+    expect(g.map((b) => b.beat)).toEqual([0, 1, 2, 3])
+    expect(beatGrid(t, [4, 4], 1.2, 1.4)).toEqual([])
+    expect(beatGrid(t, [4, 4], 0, 1.1).map((b) => b.time)).toEqual([1])
+    const c = beatGrid({ startTime: 0, bpm: 114, beatsPerBar: 3 }, [6, 8], 0, 3.2)
+    expect(c.map((b) => b.beat)).toEqual([0, 1, 0, 1, 0])
+    expect(c[1]!.time).toBeCloseTo(60 / 114 * 1.5, 6)
+    expect(beatGrid({ startTime: 0, bpm: 108, beatsPerBar: 3 }, [3, 4], 0, 2).map((b) => b.beat)).toEqual([0, 1, 2, 0])
   })
 })

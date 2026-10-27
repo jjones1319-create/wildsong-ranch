@@ -111,6 +111,24 @@ export function beatToTime(t: Transport, beat: number): number {
   return t.startTime + (beat * 60) / t.bpm
 }
 
+/**
+ * The beats of a transport in [from, to) with their index in the bar. Compound meters (6/8, 9/8, 12/8) count
+ * dotted quarters. Pure: the crowd's clap-along (§9.4) and the tests read it.
+ */
+export function beatGrid(t: Transport, meter: readonly [number, number], from: number, to: number): { time: number; beat: number }[] {
+  const compound = meter[1] === 8 && meter[0] % 3 === 0
+  const step = compound ? 1.5 : 1
+  const perBar = Math.max(1, Math.round(t.beatsPerBar / step))
+  const out: { time: number; beat: number }[] = []
+  let k = Math.max(0, Math.ceil(((from - t.startTime) * t.bpm) / 60 / step - 1e-9))
+  for (let guard = 0; guard < 256; guard++, k++) {
+    const time = beatToTime(t, k * step)
+    if (time >= to) break
+    if (time >= from) out.push({ time, beat: k % perBar })
+  }
+  return out
+}
+
 export function timeToBeat(t: Transport, time: number): number {
   return ((time - t.startTime) * t.bpm) / 60
 }

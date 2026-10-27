@@ -5,7 +5,7 @@
  * `defineSong` parses and compiles everything once into plain events per section per line, which the
  * scheduler, the checker, the analyser and the Sound Lab all read. Pure.
  */
-import { articulationOf, INSTRUMENTS, isInstrumentId, type InstrumentId } from '../recipes/instruments.ts'
+import { articulationOf, foldInto, INSTRUMENTS, isInstrumentId, octaveShiftInto, type InstrumentId } from '../recipes/instruments.ts'
 import { KITS, type KitId, type PercRole } from '../recipes/kits.ts'
 import { beatsPerBar, parseAbc, type Tune } from './abc.ts'
 import { chordAt, chordTrack, type Chord, type ChordAt } from './chords.ts'
@@ -82,6 +82,8 @@ export interface Arrangement {
   kit?: KitId
   /** Swap the instrument of these lines. */
   swap?: Partial<Record<string, InstrumentId>>
+  /** The articulation of these lines (a lead swapped to a violin tremolo). */
+  arts?: Partial<Record<string, string>>
   transpose?: number
   /** Quarter-note BPM added to the song's tempo. */
   tempoNudge?: number
@@ -119,6 +121,8 @@ export interface SongDef {
   kit?: KitId
   /** Where the Wildsong motif is quoted, for the checker. */
   motifQuote?: { part: string; section: string }
+  /** Where the other motifs are quoted (Corin's in `rival`, the masked turn in `masquerade`), for the checker. */
+  quotes?: readonly { motif: 'corin' | 'masked'; part: string; section: string }[]
 }
 
 export interface LineEvent {
@@ -345,6 +349,25 @@ export function instrumentFor(song: Song, lineId: string, o: { weather?: Weather
   const line = song.lines.find((l) => l.id === lineId)
   if (!line) throw new Error(`${song.id}: no line ${lineId}`)
   return o.weather?.swap?.[lineId] ?? o.arrangement?.swap?.[lineId] ?? line.inst
+}
+
+/**
+ * A line moved onto another instrument (an event row's lead, a weather swap) keeps its shape: the whole line
+ * moves by the octave that fits most of its notes into the new instrument's melody range, and any note still
+ * outside folds in on its own (§7.4, checker rules 2–3 on every row).
+ */
+export function lineFoldShift(song: Song, lineId: string, inst: InstrumentId, transpose = 0): number {
+  const range = INSTRUMENTS[inst].melody
+  if (!range) return 0
+  const pitches: number[] = []
+  for (const sec of Object.values(song.sections)) for (const e of sec.events[lineId] ?? []) for (const p of e.pitches) pitches.push(p + transpose)
+  return octaveShiftInto(pitches, range)
+}
+
+/** The sounding pitches of one event of a line moved onto `inst`, given the line's fold shift. */
+export function foldedPitches(pitches: readonly number[], inst: InstrumentId, transpose: number, shift: number): number[] {
+  const range = INSTRUMENTS[inst].melody
+  return pitches.map((p) => (range ? foldInto(p + transpose + shift, range) : p + transpose))
 }
 
 /** The breath between passes, in seconds, drawn from the song's (or the weather's) range. */

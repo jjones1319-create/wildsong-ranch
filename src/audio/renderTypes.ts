@@ -15,11 +15,11 @@ import type { FxEventKind } from '../fx/bus.ts'
 export type RenderItem =
   | { kind: 'song'; id: SongId; seconds: number; layers?: string[]; stem?: string | null; weather?: Weather; arrangement?: string; lead?: InstrumentId; kit?: KitId; transpose?: number; startIndex?: number }
   | { kind: 'bed'; id: BedId; seconds: number; weather?: Weather; crowd?: CrowdSize }
-  | { kind: 'stinger'; id: StingerId; transpose?: number }
+  | { kind: 'stinger'; id: StingerId; transpose?: number; chain?: StingerId[] }
   | { kind: 'effect'; id: string; seconds?: number }
   | { kind: 'battleFx'; kinds: FxEventKind[]; element: Element; strength: Strength; seconds?: number }
   | { kind: 'drill'; drill: DrillId; outcome: DrillOutcome; seconds?: number }
-  | { kind: 'battleDemo'; seconds: number; layers?: string[] }
+  | { kind: 'battleDemo'; seconds: number; layers?: string[]; song?: SongId; crowd?: CrowdSize }
   | { kind: 'loopSeam'; id: SongId; seconds: number }
 
 export interface StemStats {

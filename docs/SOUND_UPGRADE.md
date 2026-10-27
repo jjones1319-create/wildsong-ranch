@@ -580,6 +580,8 @@ Input: the chord track, meter, tempo, the instrument's range, a pattern name and
   | `ceremony` | timpani | bass drum | triangle | none | cymbal swell |
   | `knockout` | cajon | darbuka | claves | none | claps |
   | `wild` | frame drum | darbuka | none | shaker | bass drum |
+  | `tide` (S2) | frame drum | none | none | shaker | ocean drum |
+  | `masque` (S2) | frame drum (muted) | none | finger cymbals | none | tambourine |
 
 - **Pitched percussion** (timpani, tubular bells) takes `pitch: 'root' | 'fifth'` from the chord track.
 
@@ -762,6 +764,8 @@ All stems share the key and tempo, and switch at the next bar.
 | Archer's Glade | G | alto recorder and balafon |
 | Glacier Bastion | D | violin tremolo and vibes |
 
+The Trial theme is written in E and each site's row moves it to the site's tonic by the nearest road (A +5, B −5, G +3, D −2), so Trial rows may move up to ±5 semitones; the calendar rows keep −3…+3 (decided at the start of S2).
+
 **Season palettes** (for `cup`, and to tint `ascension`):
 
 | Season | Leads | Kit | Colour |
@@ -824,7 +828,7 @@ It's plain data the owner can edit.
 | `cupWin` (6 s) | first place | S1 |
 | `promotion` (6 s) | "Ascended!", from `ascension` | S1 |
 | `cupPlaced` (3 s) · `cupOut` (2 s, gentle) | second or third place · knocked out | S2 |
-| `crownWon` (8 s) | from that Crown's theme | S2 |
+| `crownWonDawn` · `crownWonTides` · `crownWonEmbers` · `crownWonFrost` (8 s each) | one per Crown, quoting that Crown's theme | S2 |
 | `legendWon` (10 s) | becomes the Hall of Fame anthem from Wildsong | S2 |
 | `rankUp` (4 s) · `titleEarned` (2 s) | | S2 |
 | `birth` (6 s) | at the Shrine: the monster's song on ocarina over harp and glock; the stones answer with the Wildsong motif | S3 |
@@ -1316,7 +1320,7 @@ Every id in §7.6, every piece and every bed belongs to exactly one stage. Anyth
 
 - **Pieces:** `open`, `ascension`, `crown-dawn`, `crown-tides`, `crown-embers`, `crown-frost`, `legend`, `masquerade`, `rival` (with the Corin rule), `summit` (with the Qualifier arrangement), `rally`, `rally-rogue`, `sprout`, `elders`, `trial` (with the five site tonics and leads) and `practice`.
 - **The per-event arrangement table** for all 60 events.
-- **Stingers and effects:** `cupPlaced`, `cupOut`, `crownWon`, `legendWon` (with the Hall of Fame anthem), `rankUp`, `titleEarned`, and the rival calling cards.
+- **Stingers and effects:** `cupPlaced`, `cupOut`, the four Crown stingers, `legendWon` (with the Hall of Fame anthem), `rankUp`, `titleEarned`, and the rival calling cards.
 - **Crowds:** every size, the Summit's on-beat claps, the Masquerade's hushed crowd.
 - **Packs:** recompute them; `events` gets what's new.
 - **Finish:** tests, `audio:check` and `audio:review`, docs, the commit, and the phone check: an Ascension, the Masquerade, the Rival Showdown, every Crown in the Sound Lab, two regular cups from the same season (they should sound different), and "does any tune sound familiar?". Then stop.

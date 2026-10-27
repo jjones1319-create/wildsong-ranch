@@ -3,9 +3,10 @@ import { MIRROR_KEY, saveJsonAt } from './saves.ts'
 
 /**
  * SOUND_UPGRADE §14.5 at 412 × 915: the first tap unlocks audio; the ranch plays the season's song (read from
- * window.__audio); Town switches song within 2 s; a cup battle uses its event's theme; Pause sets the music
- * filter to 700 Hz; the Sound Lab plays a song and an effect without console errors. Nothing here needs to
- * be heard: the engine's debug view says what plays.
+ * window.__audio); Town switches song within 2 s; a cup battle uses its event's theme and the cup screens load
+ * the events sample pack (S2); Pause sets the music filter to 700 Hz; the Sound Lab plays a song and an
+ * effect without console errors, and its event picker plays an Ascension on the Ascension theme. Nothing here
+ * needs to be heard: the engine's debug view says what plays.
  */
 const BASE = '/wildsong-ranch/'
 const W = 412
@@ -58,7 +59,7 @@ async function waitForSong(page: Page, song: string, timeout = 8000): Promise<vo
 
 test('the first tap unlocks audio, the ranch plays its season, Town switches, a cup fights to its theme, Pause filters, the Lab plays', async ({ page }, info) => {
   test.skip(info.project.name !== 'pixel-7', 'one profile is enough')
-  test.setTimeout(240_000)
+  test.setTimeout(420_000)
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   // March week 2: spring, the Meadow Cup this week.
@@ -72,7 +73,7 @@ test('the first tap unlocks audio, the ranch plays its season, Town switches, a 
   await waitForSong(page, 'ranch-spring', 15_000)
   const ranch = await audioState(page)
   expect(ranch?.bed).toBe('meadow')
-  await page.waitForFunction(() => window.__audio?.state?.packs.some((p) => p.pack === 'core' && p.state === 'ready'), undefined, { timeout: 30_000 })
+  await page.waitForFunction(() => window.__audio?.state?.packs.some((p) => p.pack === 'core' && p.state === 'ready'), undefined, { timeout: 90_000 })
   await page.screenshot({ path: info.outputPath('1-ranch.png') })
   await lateSoFar(page, 'the ranch')
 
@@ -94,6 +95,8 @@ test('the first tap unlocks audio, the ranch plays its season, Town switches, a 
   await expect(page.locator('.cupflow')).toBeVisible()
   await waitForSong(page, 'cup')
   await page.waitForFunction(() => window.__audio?.state?.layers.includes('lobby'), undefined, { timeout: 5000 })
+  // S2: the cup screens want the events pack (violins, cajon, the new instruments), and it decodes.
+  await page.waitForFunction(() => window.__audio?.state?.packs.some((p) => p.pack === 'events' && p.state === 'ready'), undefined, { timeout: 90_000 })
   await page.locator('.cupchoice .btn', { hasText: 'Fight' }).click()
   await page.waitForFunction(() => window.__audio?.state?.layers.includes('base'), undefined, { timeout: 8000 })
   await page.screenshot({ path: info.outputPath('2-battle.png') })
@@ -120,6 +123,11 @@ test('the first tap unlocks audio, the ranch plays its season, Town switches, a 
   await page.waitForTimeout(500)
   const lab = await audioState(page)
   expect(lab?.song).toBe('wildsong')
+  // S2: the event picker plays any calendar event as its row plays; an Ascension is the Ascension march.
+  await page.getByRole('tab', { name: 'Music' }).click()
+  await page.getByRole('combobox', { name: 'Event', exact: true }).selectOption('spring-ascension')
+  await page.locator('section.card', { has: page.getByRole('combobox', { name: 'Event', exact: true }) }).getByRole('button', { name: /Play/ }).click()
+  await waitForSong(page, 'ascension', 20_000)
   // Late notes are logged, not gated: a software-rendered headless browser on a busy PC stalls past the 400 ms
   // lookahead at boot, at the match start (the effects layer) and when a chunk loads. The unit test (300 ms stalls,
   // zero late notes) and audio:check (offline, zero late events) hold the guarantee.

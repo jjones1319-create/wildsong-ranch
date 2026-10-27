@@ -16,7 +16,7 @@ export type SfxLayer =
   | { kind: 'noise'; color: NoiseColor; filter?: FilterSpec; sweepTo?: number; a: number; h?: number; d: number; gainDb?: number; delay?: number; lowpassHz?: number; am?: number; reverse?: boolean }
   | { kind: 'tone'; wave: 'sine' | 'triangle'; hz: number; to?: number; a: number; h?: number; d: number; gainDb?: number; delay?: number; detune?: number; lowpassHz?: number }
   | { kind: 'sample'; inst: InstrumentId; art?: string; midi?: number; vel?: number; gainDb?: number; delay?: number; cents?: number; lowpassHz?: number }
-  | { kind: 'note'; inst: InstrumentId; art?: string; degree: number; octave?: number; dur: number; vel?: number; gainDb?: number; delay?: number; detune?: number; rateRamp?: number }
+  | { kind: 'note'; inst: InstrumentId; art?: string; degree: number; octave?: number; dur: number; vel?: number; gainDb?: number; delay?: number; detune?: number; rateRamp?: number; semis?: number }
   | { kind: 'chord'; inst: InstrumentId; art?: string; degrees: readonly number[]; octave?: number; dur: number; vel?: number; gainDb?: number; delay?: number; rollMs?: number }
 
 export interface SfxDef {

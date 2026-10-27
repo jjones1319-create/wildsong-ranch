@@ -8,16 +8,16 @@
  */
 import { AUDIO } from '../../data/tuning.ts'
 import type { Weather } from '../../data/types.ts'
-import { INSTRUMENTS, type InstrumentId } from '../recipes/instruments.ts'
+import { articulationOf, INSTRUMENTS, type InstrumentId } from '../recipes/instruments.ts'
 import { KITS } from '../recipes/kits.ts'
 import { beatsPerBar, type Mode } from '../music/abc.ts'
-import { BREATH, breathSeconds, instrumentFor, loopFromOf, orderOf, sounding, type Arrangement, type LineEvent, type Song, type WeatherRule } from '../music/song.ts'
+import { BREATH, breathSeconds, foldedPitches, instrumentFor, lineFoldShift, loopFromOf, orderOf, sounding, type Arrangement, type LineEvent, type Song, type WeatherRule } from '../music/song.ts'
 import type { Graph } from './context.ts'
 import { dbToGain, makeGain, rampTo } from './nodes.ts'
 import { between, jitter, type Rng } from './rng.ts'
 import type { SampleBank } from './samples.ts'
 import { playSample, type NoteParams, type Voice } from './sampler.ts'
-import { beatToTime, type Scheduler, type Transport } from './scheduler.ts'
+import { beatGrid, beatToTime, type Scheduler, type Transport } from './scheduler.ts'
 import type { KeyContext } from './sfx.ts'
 import { playSynth } from './synth.ts'
 import { VoicePool } from './voices.ts'
@@ -64,6 +64,8 @@ export interface Playback {
   stopping: boolean
   transpose: number
   mono: Map<string, Voice>
+  /** Octave shifts of lines moved onto another instrument, by `line/inst`. */
+  folds: Map<string, number>
   onEnd?: () => void
   pendingBreathBeats: number | null
 }
@@ -156,6 +158,7 @@ export class MusicPlayer {
       stopping: false,
       transpose: o.transpose ?? 0,
       mono: new Map(),
+      folds: new Map(),
       onEnd: o.onEnd,
       pendingBreathBeats: null,
     }
@@ -289,20 +292,38 @@ export class MusicPlayer {
 
   /** An interrupting stinger: the area music fades over 150 ms, the stinger plays, then the area music restarts at the section after the one it interrupted. */
   interrupt(stinger: Song, o: { transpose?: number; fadeInAfterSec?: number; gainDb?: number; onDone?: () => void } = {}): Playback {
+    return this.interruptChain([stinger], o)!
+  }
+
+  /**
+   * Several interrupting stingers in a row (a cup result, then the rank, then a title): the area music stays
+   * suspended between them and restarts once, after the last. A song started meanwhile (the player left the
+   * screen) wins: the chain stops and the area music is not brought back over it.
+   */
+  interruptChain(stingers: readonly Song[], o: { transpose?: number; fadeInAfterSec?: number; gainDb?: number; onDone?: () => void } = {}): Playback | null {
+    if (stingers.length === 0) return null
     this.suspendArea(0.15)
     const fadeIn = o.fadeInAfterSec ?? 1
-    const p = this.play(stinger, {
-      transpose: o.transpose ?? 0,
-      once: true,
-      fadeInSec: 0.02,
-      fadeOutSec: 0.15,
-      arrangement: o.gainDb ? { gainDb: o.gainDb } : null,
-      onEnd: () => {
-        this.resumeArea(fadeIn)
-        o.onDone?.()
-      },
-    })
-    return p
+    const playAt = (i: number): Playback => {
+      const p: Playback = this.play(stingers[i]!, {
+        transpose: o.transpose ?? 0,
+        once: true,
+        fadeInSec: 0.02,
+        fadeOutSec: 0.15,
+        arrangement: o.gainDb ? { gainDb: o.gainDb } : null,
+        onEnd: () => {
+          if (this.current !== null && this.current !== p) return
+          if (i + 1 < stingers.length) {
+            playAt(i + 1)
+            return
+          }
+          this.resumeArea(fadeIn)
+          o.onDone?.()
+        },
+      })
+      return p
+    }
+    return playAt(0)
   }
 
   /** §8.3 Slacked: every voice of the playing bed ramps its playback rate down (the pitch sags too). */
@@ -321,6 +342,16 @@ export class MusicPlayer {
   /** Restarts a song at an order index with a fade-in (after a stinger or a drill cue). */
   restart(old: Playback, index: number, fadeInSec: number): Playback {
     return this.play(old.song, { arrangement: old.arrangement, layers: old.layers, stem: old.stem, weather: old.weather, fadeInSec, fadeOutSec: 0.1, startIndex: index, transpose: old.transpose })
+  }
+
+  /**
+   * The playing song's beats in [from, to) on the audio clock, with their index in the bar (§9.4: the crowd
+   * claps along on them). Compound meters (6/8, 9/8, 12/8) count dotted quarters. Empty while nothing loops.
+   */
+  beatsIn(from: number, to: number): { time: number; beat: number }[] {
+    const p = this.current
+    if (!p || p.ended || p.stopping || p.once) return []
+    return beatGrid(p.transport, p.song.meter, from, to)
   }
 
   state(): { song: string; section: string; bar: number; layers: string[]; stem: string | null; weather: Weather | null; bpm: number } | null {
@@ -427,6 +458,20 @@ export class MusicPlayer {
         }
       }
       const def = INSTRUMENTS[inst]
+      // A swapped line takes the new instrument's articulation and folds into its range (§7.4).
+      const swapped = inst !== line.inst && line.kind !== 'perc' && def.melody !== undefined
+      const wantArt = p.arrangement?.arts?.[line.id]
+      const lineArt = wantArt ? articulationOf(inst, wantArt) : swapped ? articulationOf(inst, line.art) : line.art
+      let shift = 0
+      if (swapped) {
+        const k = `${line.id}/${inst}`
+        let s = p.folds.get(k)
+        if (s === undefined) {
+          s = lineFoldShift(p.song, line.id, inst, p.transpose)
+          p.folds.set(k, s)
+        }
+        shift = s
+      }
       const phrase = events.filter((e) => e.bar === bar)
       for (const e of phrase) {
         let beat = barStartBeat + e.t
@@ -435,10 +480,12 @@ export class MusicPlayer {
         const time = beatToTime(t, beat) + human
         const dur = e.dur * spb
         const vel = Math.max(0.05, Math.min(1, e.vel * (1 + 0.06 * jitter(this.rng)) * phraseShape(e, phrase)))
-        const pitches = e.pitches.map((m) => m + p.transpose)
-        const art = e.dur >= 1 && def.longArt && line.art === def.arts[0] ? def.longArt : line.art
+        const pitches = swapped ? foldedPitches(e.pitches, inst, p.transpose, shift) : e.pitches.map((m) => m + p.transpose)
+        const art = e.dur >= 1 && def.longArt && lineArt === def.arts[0] ? def.longArt : lineArt
         this.scheduler.add(
-          time - 0.05,
+          // Never in the past: a song starts 50 ms ahead and humanising can pull its first note a few ms
+          // earlier, which once put the callback beyond the late tolerance and dropped the note.
+          Math.max(this.ctx.currentTime, time - 0.05),
           () => {
             if (p.ended) return
             if (def.mono) {

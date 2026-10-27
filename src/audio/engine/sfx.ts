@@ -245,7 +245,8 @@ export class SfxEngine {
         const db = (l.gainDb ?? 0) + trim
         let first: Voice | null = null
         degrees.forEach((degree, i) => {
-          const midi = this.clampToRange(l.inst, degreeToMidi(degree, octave, key))
+          // `semis` bends a degree off the scale (the masked breeder's chromatic turn).
+          const midi = this.clampToRange(l.inst, degreeToMidi(degree, octave, key) + (l.kind === 'note' ? (l.semis ?? 0) : 0))
           const t = at + (l.kind === 'chord' ? (i * (l.rollMs ?? 0)) / 1000 : 0)
           const params: NoteParams = { inst: l.inst, art, midi, vel: l.vel ?? 0.5, time: t, dur: l.dur, gainDb: db, detuneCents: between(rng, -10, 10) + (l.kind === 'note' ? (l.detune ?? 0) : 0), rateScale }
           const v = this.playNote(params, dest)

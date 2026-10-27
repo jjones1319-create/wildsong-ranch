@@ -60,7 +60,8 @@ export function buildScene(): Scene {
     opponentRivalId,
     battle,
     drill: drillCueActive.value,
-    journeySite: g?.journey?.site ?? null,
+    // A Journey Trial keeps its site on the trial; a Journey week on the journey.
+    journeySite: g?.trial?.site ?? g?.journey?.site ?? null,
     expeditionSite: g?.expedition?.site ?? null,
     oddJob: current === 'oddJobs' ? oddJobMode.value : null,
   }

@@ -229,23 +229,57 @@ export const BEDS: Record<BedId, BedRecipe> = {
 export const CROWD_SIZES = ['none', 'small', 'medium', 'large', 'large+', 'huge', 'hushed', 'chanting'] as const
 export type CrowdSize = (typeof CROWD_SIZES)[number]
 
-function crowdLayers(levelDb: number, hz: number): BedLayer[] {
-  return [
-    { kind: 'noise', id: 'crowd', color: 'pink', filters: [{ type: 'bandpass', hz, q: 1 }, { type: 'lowpass', hz: 2500, q: 0.5 }], levelDb, am: { rateHz: [3, 5], depth: 0.35 }, lfo: { rateHz: [0.05, 0.15], depthDb: 3 } },
-    { kind: 'noise', id: 'crowd-air', color: 'pink', filters: [{ type: 'bandpass', hz: hz * 2.5, q: 1.2 }, { type: 'lowpass', hz: 4000, q: 0.5 }], levelDb: levelDb - 10, am: { rateHz: [4, 7], depth: 0.4 } },
-  ]
+interface CrowdShape {
+  levelDb: number
+  hz: number
+  /** A low body band (bigger crowds), dB under the main band; null for none. */
+  low?: number
+  /** A far band with a slower swell (the biggest crowds), dB under the main band. */
+  far?: number
+  /** Syllable-rate swell depth (a hushed room barely moves). */
+  amDepth?: number
+  q?: number
 }
 
-export const CROWDS: Record<CrowdSize, readonly BedLayer[]> = {
-  none: [],
-  small: crowdLayers(-46, 500),
-  medium: crowdLayers(-42, 500),
-  large: crowdLayers(-38, 450),
-  'large+': crowdLayers(-36, 450),
-  huge: crowdLayers(-33, 400),
-  hushed: crowdLayers(-52, 600),
-  chanting: crowdLayers(-38, 450),
+function crowdLayers(c: CrowdShape): BedLayer[] {
+  const am = c.amDepth ?? 0.35
+  const out: BedLayer[] = [
+    { kind: 'noise', id: 'crowd', color: 'pink', filters: [{ type: 'bandpass', hz: c.hz, q: c.q ?? 1 }, { type: 'lowpass', hz: 2500, q: 0.5 }], levelDb: c.levelDb, am: { rateHz: [3, 5], depth: am }, lfo: { rateHz: [0.05, 0.15], depthDb: 3 } },
+    { kind: 'noise', id: 'crowd-air', color: 'pink', filters: [{ type: 'bandpass', hz: c.hz * 2.5, q: 1.2 }, { type: 'lowpass', hz: 4000, q: 0.5 }], levelDb: c.levelDb - 10, am: { rateHz: [4, 7], depth: am + 0.05 } },
+  ]
+  if (c.low !== undefined) out.push({ kind: 'noise', id: 'crowd-low', color: 'pink', filters: [{ type: 'bandpass', hz: c.hz * 0.5, q: 0.8 }, { type: 'lowpass', hz: 1200, q: 0.5 }], levelDb: c.levelDb - c.low, am: { rateHz: [2, 3.5], depth: am * 0.8 }, lfo: { rateHz: [0.04, 0.1], depthDb: 3 } })
+  if (c.far !== undefined) out.push({ kind: 'noise', id: 'crowd-far', color: 'pink', filters: [{ type: 'bandpass', hz: c.hz * 1.8, q: 0.9 }, { type: 'lowpass', hz: 3000, q: 0.5 }], levelDb: c.levelDb - c.far, am: { rateHz: [1.5, 2.5], depth: am }, lfo: { rateHz: [0.03, 0.08], depthDb: 4 } })
+  return out
 }
+
+/**
+ * §9.4 each crowd size has its own sound and manners: how loud and wide its murmur is, how big its swells
+ * are, how it applauds and how many hands clap along in the last ten seconds. The Masquerade's crowd is
+ * hushed and polite (applause only); the Summit's chants, clapping on two and four.
+ */
+export interface CrowdProfile {
+  layers: readonly BedLayer[]
+  /** Multiplies every reaction's swell. */
+  react: number
+  /** Polite only: no cheers, gasps or murmurs; a KO gets applause. */
+  polite: boolean
+  applause: { rate: number; levelDb: number; seconds: number }
+  clap: { voices: number; levelDb: number; backbeat: boolean }
+}
+
+export const CROWD_PROFILES: Record<CrowdSize, CrowdProfile> = {
+  none: { layers: [], react: 0, polite: true, applause: { rate: 0, levelDb: -60, seconds: 0 }, clap: { voices: 0, levelDb: -60, backbeat: false } },
+  small: { layers: crowdLayers({ levelDb: -46, hz: 500 }), react: 0.6, polite: false, applause: { rate: 8, levelDb: -42, seconds: 1.2 }, clap: { voices: 3, levelDb: -40, backbeat: false } },
+  medium: { layers: crowdLayers({ levelDb: -42, hz: 500, low: 8 }), react: 0.8, polite: false, applause: { rate: 12, levelDb: -40, seconds: 1.4 }, clap: { voices: 5, levelDb: -38, backbeat: false } },
+  large: { layers: crowdLayers({ levelDb: -38, hz: 450, low: 7 }), react: 1, polite: false, applause: { rate: 16, levelDb: -38, seconds: 1.6 }, clap: { voices: 7, levelDb: -36, backbeat: false } },
+  'large+': { layers: crowdLayers({ levelDb: -36, hz: 450, low: 6, far: 8 }), react: 1.1, polite: false, applause: { rate: 20, levelDb: -37, seconds: 1.8 }, clap: { voices: 9, levelDb: -35, backbeat: false } },
+  huge: { layers: crowdLayers({ levelDb: -33, hz: 400, low: 6, far: 8 }), react: 1.25, polite: false, applause: { rate: 26, levelDb: -35, seconds: 2.2 }, clap: { voices: 12, levelDb: -34, backbeat: false } },
+  hushed: { layers: crowdLayers({ levelDb: -54, hz: 650, q: 1.6, amDepth: 0.12 }), react: 0, polite: true, applause: { rate: 6, levelDb: -46, seconds: 1 }, clap: { voices: 0, levelDb: -60, backbeat: false } },
+  chanting: { layers: crowdLayers({ levelDb: -38, hz: 450, low: 7 }), react: 1, polite: false, applause: { rate: 16, levelDb: -38, seconds: 1.6 }, clap: { voices: 8, levelDb: -35, backbeat: true } },
+}
+
+/** The crowd layers by size (the usage graph and the Sound Lab read these). */
+export const CROWDS: Record<CrowdSize, readonly BedLayer[]> = Object.fromEntries(Object.entries(CROWD_PROFILES).map(([k, p]) => [k, p.layers])) as Record<CrowdSize, readonly BedLayer[]>
 
 export type CrowdReaction = 'cheer' | 'ooh' | 'murmur' | 'ko' | 'applause' | 'clap'
 

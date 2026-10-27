@@ -1,18 +1,22 @@
 /**
  * SOUND_UPGRADE §11: the director's decision. A pure function turns the scene (the screen and its context)
  * into a request: which song, arrangement, layers and stem, which bed, crowd and reverb. Every Screen and
- * every event in EVENTS has an explicit row; pieces not yet written (S2, S3) map to stand-ins tagged
- * TODO_S2 / TODO_S3. The controller that applies it lives in `ui/lib/audioDirector.ts`.
+ * every event in EVENTS has an explicit row; pieces not yet written (S3) map to stand-ins tagged TODO_S3.
+ * A request also names the sample packs its screen needs and whether the crowd claps along. The controller
+ * that applies it lives in `ui/lib/audioDirector.ts`.
  */
 import type { Screen } from '../ui/router.ts'
+import { EVENT_BY_ID } from '../data/calendar.ts'
+import type { StingerId } from './music/stingers.ts'
 import type { Season, Weather, DrillId, JourneySiteId, ExpeditionSiteId } from '../data/types.ts'
-import { EVENT_ARRANGEMENT_BY_ID, PRACTICE_ARRANGEMENT, TRIAL_ARRANGEMENT, type EventArrangement } from './recipes/events.ts'
+import { corinRow, EVENT_ARRANGEMENT_BY_ID, PRACTICE_ARRANGEMENT, THEME_IDS, TRIAL_ARRANGEMENT, TRIAL_ARRANGEMENTS, type EventArrangement } from './recipes/events.ts'
 import type { BedId, CrowdSize } from './recipes/ambience.ts'
 import type { ReverbPreset } from './engine/reverb.ts'
 import type { InstrumentId } from './recipes/instruments.ts'
 import type { KitId } from './recipes/kits.ts'
+import type { PackId } from './recipes/packs.ts'
 
-export const SONG_IDS = ['wildsong', 'ranch-spring', 'ranch-summer', 'ranch-autumn', 'ranch-winter', 'town', 'cup'] as const
+export const SONG_IDS = ['wildsong', 'ranch-spring', 'ranch-summer', 'ranch-autumn', 'ranch-winter', 'town', ...THEME_IDS] as const
 export type SongId = (typeof SONG_IDS)[number]
 
 export type BattlePhase = 'lobby' | 'match' | 'result'
@@ -51,6 +55,10 @@ export interface SongRequest {
   tempoNudge: number
   kit: KitId | null
   lead: InstrumentId | null
+  /** The lead's articulation when the row changes it (a violin tremolo). */
+  leadArt: string | null
+  /** The instrument of the song's `colour` line (the season colour, a Trial site's doubling). */
+  colour: InstrumentId | null
   musicSend: number | null
   /** Crossfade seconds when this replaces another song. */
   crossfadeSec: number
@@ -66,9 +74,13 @@ export interface Request {
   weather: Weather
   /** The drill cue owns the music. */
   drillOwned: boolean
-  standIn: 'TODO_S2' | 'TODO_S3' | null
+  standIn: 'TODO_S3' | null
   /** The pause filter wanted. */
   paused: boolean
+  /** The sample packs besides core that this screen needs loaded and kept (§5.2). */
+  packs: readonly PackId[]
+  /** The last 10 s of a match with a crowd that claps: claps on the music's beats (§9.4). */
+  clapAlong: boolean
 }
 
 export const TENSION_HP = 0.3
@@ -93,7 +105,7 @@ export const TOWN_STEMS: Partial<Record<Screen, string>> = {
 const TOWN_BEDS: Partial<Record<Screen, BedId>> = { shop: 'shop', market: 'market', guild: 'guild', library: 'library', journal: 'library' }
 
 function song(id: SongId, extra: Partial<SongRequest> = {}): SongRequest {
-  return { id, arrangement: null, layers: ['main'], stem: null, transpose: 0, tempoNudge: 0, kit: null, lead: null, musicSend: null, crossfadeSec: 1.5, ...extra }
+  return { id, arrangement: null, layers: ['main'], stem: null, transpose: 0, tempoNudge: 0, kit: null, lead: null, leadArt: null, colour: null, musicSend: null, crossfadeSec: 1.5, ...extra }
 }
 
 function battleLayers(s: NonNullable<Scene['battle']>): string[] {
@@ -107,28 +119,34 @@ function battleLayers(s: NonNullable<Scene['battle']>): string[] {
   return layers
 }
 
-/** The arrangement row for the battle's origin. Matches against Corin take `rival` (S2); until then the event's cup. */
-export function arrangementFor(scene: Scene): { row: EventArrangement; standIn: 'TODO_S2' | null } {
+/**
+ * The arrangement row for the scene (§7.4, §11.10): a Trial's site row, the Lab's practice row, or the event's
+ * row. On the battle screen a match against Corin Hale plays `rival` with the event's lead and kit; the cup
+ * screens around it keep the event's own theme (his calling card plays over the lobby instead).
+ */
+export function arrangementFor(scene: Scene): EventArrangement {
   const origin = scene.battle?.origin ?? (scene.eventId ? 'cup' : 'versus')
-  if (origin === 'trial') return { row: TRIAL_ARRANGEMENT, standIn: 'TODO_S2' }
-  if (origin === 'lab' || origin === 'versus') return { row: PRACTICE_ARRANGEMENT, standIn: 'TODO_S2' }
+  if (origin === 'trial') return scene.journeySite ? TRIAL_ARRANGEMENTS[scene.journeySite] : TRIAL_ARRANGEMENT
+  if (origin === 'lab' || origin === 'versus') return PRACTICE_ARRANGEMENT
   const row = scene.eventId ? EVENT_ARRANGEMENT_BY_ID[scene.eventId] : undefined
-  if (!row) return { row: PRACTICE_ARRANGEMENT, standIn: 'TODO_S2' }
-  const corin = scene.opponentRivalId === 'corin-hale'
-  return { row, standIn: corin || row.status === 'TODO_S2' ? 'TODO_S2' : null }
+  if (!row) return PRACTICE_ARRANGEMENT
+  if (scene.battle && scene.opponentRivalId === 'corin-hale') return corinRow(row)
+  return row
 }
 
-function cupSong(scene: Scene, layers: readonly string[]): { song: SongRequest; crowd: CrowdSize; standIn: 'TODO_S2' | null } {
-  const { row, standIn } = arrangementFor(scene)
+const NO_CLAPS: ReadonlySet<CrowdSize> = new Set(['none', 'hushed'])
+
+function themeSong(scene: Scene, layers: readonly string[]): { song: SongRequest; crowd: CrowdSize } {
+  const row = arrangementFor(scene)
+  const origin = scene.battle?.origin
   return {
-    song: song('cup', { layers, transpose: row.transpose, tempoNudge: row.tempoNudge, kit: row.kit, lead: row.lead, musicSend: row.musicSend, arrangement: `palette-${row.palette.toLowerCase()}` }),
-    crowd: scene.battle?.origin === 'trial' || scene.battle?.origin === 'lab' || scene.battle?.origin === 'versus' ? 'none' : row.crowd,
-    standIn,
+    song: song(row.theme, { layers, transpose: row.transpose, tempoNudge: row.tempoNudge, kit: row.kit, lead: row.lead, leadArt: row.leadArt, colour: row.colour, musicSend: row.musicSend, arrangement: row.arrangement }),
+    crowd: origin === 'trial' || origin === 'lab' || origin === 'versus' ? 'none' : row.crowd,
   }
 }
 
 export function decide(scene: Scene): Request {
-  const base: Request = { song: null, bed: null, crowd: 'none', reverb: 'outdoor', weather: scene.weather, drillOwned: false, standIn: null, paused: false }
+  const base: Request = { song: null, bed: null, crowd: 'none', reverb: 'outdoor', weather: scene.weather, drillOwned: false, standIn: null, paused: false, packs: [], clapAlong: false }
   if (scene.drill) return { ...base, song: 'keep', bed: 'keep', drillOwned: true }
   const ranch = (): Request => ({ ...base, song: song(SEASON_SONG[scene.season], { crossfadeSec: 2.5 }), bed: SEASON_BED[scene.season], reverb: 'outdoor' })
   const town = (stem: string, bed: BedId = 'town', reverb: ReverbPreset = 'outdoor'): Request => ({ ...base, song: song('town', { stem }), bed, reverb })
@@ -176,27 +194,29 @@ export function decide(scene: Scene): Request {
     case 'labVersus':
       return { ...base, song: song('town', { stem: 'shop' }), bed: null, reverb: 'room', standIn: 'TODO_S3' }
     case 'labSound':
-      return { ...base, song: null, bed: null, reverb: 'room' }
+      // The Lab auditions everything, the event themes included.
+      return { ...base, song: null, bed: null, reverb: 'room', packs: ['events'] }
     case 'journey':
     case 'expedition':
       return { ...ranch(), standIn: 'TODO_S3', reverb: scene.expeditionSite === 'hollowmoon-caverns' ? 'cave' : scene.expeditionSite === 'sunken-library' ? 'underwater' : 'outdoor' }
     case 'farewell':
       return { ...base, song: song(SEASON_SONG[scene.season], { crossfadeSec: 2.5 }), bed: 'meadow', reverb: 'outdoor', standIn: 'TODO_S3' }
     case 'tournament': {
-      const c = cupSong({ ...scene, battle: null, eventId: scene.eventId }, ['lobby'])
-      return { ...base, song: c.song, bed: 'arena-out', crowd: 'none', reverb: 'outdoor', standIn: c.standIn }
+      const c = themeSong({ ...scene, battle: null, eventId: scene.eventId }, ['lobby'])
+      return { ...base, song: c.song, bed: 'arena-out', crowd: 'none', reverb: 'outdoor', packs: ['events'] }
     }
     case 'tournamentPlay':
     case 'tournamentResults': {
-      const c = cupSong({ ...scene, battle: null }, ['lobby'])
-      return { ...base, song: c.song, bed: 'arena', crowd: c.crowd, reverb: 'outdoor', standIn: c.standIn }
+      const c = themeSong({ ...scene, battle: null }, ['lobby'])
+      return { ...base, song: c.song, bed: 'arena', crowd: c.crowd, reverb: 'outdoor', packs: ['events'] }
     }
     case 'battle': {
       const b = scene.battle
-      if (!b) return { ...base, song: null, bed: 'arena', reverb: 'room' }
-      const c = cupSong(scene, battleLayers(b))
+      if (!b) return { ...base, song: null, bed: 'arena', reverb: 'room', packs: ['events'] }
+      const c = themeSong(scene, battleLayers(b))
       const arenaBed: BedId | null = b.origin === 'trial' || b.origin === 'lab' || b.origin === 'versus' ? null : 'arena'
-      return { ...base, song: c.song, bed: arenaBed, crowd: c.crowd, reverb: 'room', standIn: c.standIn, paused: b.paused }
+      const clapAlong = b.phase === 'match' && b.secondsLeft <= TENSION_SECONDS && !NO_CLAPS.has(c.crowd)
+      return { ...base, song: c.song, bed: arenaBed, crowd: c.crowd, reverb: 'room', paused: b.paused, packs: ['events'], clapAlong }
     }
     case 'settings':
     case 'calendar':
@@ -204,9 +224,45 @@ export function decide(scene: Scene): Request {
   }
 }
 
-/** Every stand-in in the S1 table, for PROGRESS and the tests. */
-export const STAND_INS: readonly { what: string; uses: string; stage: 'TODO_S2' | 'TODO_S3' }[] = [
-  { what: 'every event theme but the regular cup (Opens, Ascensions, Crowns, the Legend, the Masquerade, the Rival Showdown, the Summit, the Rallies, Sprout and Elders, Journey Trials, the Lab)', uses: 'cup in the season palette', stage: 'TODO_S2' },
+/** Each Crown's own stinger (kept here as ids so the director never loads the stinger scores). */
+const CROWN_STINGER: Readonly<Record<string, StingerId>> = { 'crown-of-dawn': 'crownWonDawn', 'crown-of-tides': 'crownWonTides', 'crown-of-embers': 'crownWonEmbers', 'crown-of-frost': 'crownWonFrost' }
+
+export interface ResultForSound {
+  eventId: string
+  placing: number
+  participants: number
+  koed: boolean
+  promoted: unknown
+  rankBefore: number
+  rankAfter: number
+  titles: readonly string[]
+  relayTeamWin: boolean | null
+}
+
+/**
+ * §7.6 the results screen's stingers, played as one chain: first place gets the Legend's anthem, its Crown's
+ * stinger, `promotion` (an Ascension) or `cupWin`; second or third in a field of four or more gets
+ * `cupPlaced`; anything else (a lost final, a knockout) gets the gentle `cupOut`. Then `rankUp` if the rank
+ * rose and `titleEarned` if a title came.
+ */
+export function resultStingers(o: ResultForSound): StingerId[] {
+  const kind = EVENT_BY_ID[o.eventId]?.kind
+  const won = o.relayTeamWin ?? o.placing === 1
+  const out: StingerId[] = []
+  if (won) {
+    if (kind === 'legend') out.push('legendWon')
+    else if (kind === 'crown') out.push(CROWN_STINGER[o.eventId] ?? 'cupWin')
+    else if (o.promoted) out.push('promotion')
+    else out.push('cupWin')
+  } else if (!o.koed && o.relayTeamWin === null && o.placing <= 3 && o.participants >= 4) out.push('cupPlaced')
+  else out.push('cupOut')
+  if (o.rankAfter > o.rankBefore) out.push('rankUp')
+  if (o.titles.length > 0) out.push('titleEarned')
+  return out
+}
+
+/** Every stand-in left in the table (S3's places, moments and drills), for PROGRESS and the tests. */
+export const STAND_INS: readonly { what: string; uses: string; stage: 'TODO_S3' }[] = [
   { what: 'the Shrine', uses: 'the Town library stem (harp and music box), no bed', stage: 'TODO_S3' },
   { what: "Pell's Lab", uses: 'the Town workshop stem with the shop bed', stage: 'TODO_S3' },
   { what: 'the Monster Lab screens', uses: 'the Town shop stem, no bed', stage: 'TODO_S3' },

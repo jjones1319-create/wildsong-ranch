@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { EVENTS } from '../data/calendar.ts'
 import { SEASONS, WEATHERS } from '../data/types.ts'
 import { SCREENS } from '../ui/router.ts'
-import { arrangementFor, decide, STAND_INS, TENSION_HP, TENSION_SECONDS, type Scene } from './director.ts'
+import { JOURNEY_SITE_IDS } from '../data/types.ts'
+import { arrangementFor, decide, resultStingers, STAND_INS, TENSION_HP, TENSION_SECONDS, type Scene, type SongRequest } from './director.ts'
+import { EVENT_ARRANGEMENT_BY_ID, THEME_DEFAULTS, TRIAL_SITES } from './recipes/events.ts'
 
 const base: Scene = { screen: 'ranch', season: 'Spring', weather: 'Sunny', eventId: null, opponentRivalId: null, battle: null, drill: null, journeySite: null, expeditionSite: null, oddJob: null }
 
@@ -26,20 +28,85 @@ describe('the director (§11)', () => {
     for (const weather of WEATHERS) expect(decide({ ...base, weather }).song).not.toBeNull()
   })
 
-  it('every event has a row and every battle origin resolves; Corin takes the rival rule (a stand-in in S1)', () => {
+  it('every event plays its own theme in the lobby with its row, the events pack wanted and no stand-in (S2)', () => {
     for (const e of EVENTS) {
       const r = decide({ ...base, screen: 'tournamentPlay', eventId: e.id })
-      expect(r.song).not.toBe('keep')
-      expect((r.song as { id: string }).id).toBe('cup')
-      expect((r.song as { layers: readonly string[] }).layers).toEqual(['lobby'])
+      const song = r.song as SongRequest
+      const row = EVENT_ARRANGEMENT_BY_ID[e.id]!
+      expect(song.id, e.id).toBe(row.theme)
+      expect(song.layers).toEqual(['lobby'])
+      expect(song.lead).toBe(row.lead)
+      expect(song.kit).toBe(row.kit)
+      expect(song.colour).toBe(row.colour)
+      expect(song.transpose).toBe(row.transpose)
+      expect(song.arrangement).toBe(row.arrangement)
       expect(r.bed).toBe('arena')
+      expect(r.packs).toContain('events')
+      expect(r.standIn).toBeNull()
     }
-    const corin = arrangementFor({ ...base, eventId: 'rival-showdown', opponentRivalId: 'corin-hale' })
-    expect(corin.standIn).toBe('TODO_S2')
-    const trial = arrangementFor({ ...base, battle: { phase: 'match', origin: 'trial', hp: [1, 1], secondsLeft: 60, matchSeconds: 60, paused: false, speed: 1 } })
-    expect(trial.row.event).toBe('trial')
-    const lab = arrangementFor({ ...base, battle: { phase: 'match', origin: 'lab', hp: [1, 1], secondsLeft: 60, matchSeconds: 60, paused: false, speed: 1 } })
-    expect(lab.row.event).toBe('practice')
+    expect((decide({ ...base, screen: 'tournamentPlay', eventId: 'summit-qualifier' }).song as SongRequest).arrangement).toBe('qualifier')
+  })
+
+  const fight = (eventId: string | null, origin: 'cup' | 'trial' | 'lab' | 'versus', extra: Partial<Scene> = {}): Scene => ({ ...base, screen: 'battle', eventId, battle: { phase: 'match', origin, hp: [1, 1], secondsLeft: 50, matchSeconds: 60, paused: false, speed: 1 }, ...extra })
+
+  it('a match against Corin plays rival with the event’s lead and kit; the cup screens around it keep the event theme', () => {
+    const inCup = decide(fight('meadow', 'cup', { opponentRivalId: 'corin-hale' })).song as SongRequest
+    const meadow = EVENT_ARRANGEMENT_BY_ID.meadow!
+    expect(inCup.id).toBe('rival')
+    expect(inCup.lead).toBe(meadow.lead)
+    expect(inCup.kit).toBe(meadow.kit)
+    expect(THEME_DEFAULTS.rival.bpm + inCup.tempoNudge).toBeGreaterThanOrEqual(100)
+    expect(THEME_DEFAULTS.rival.bpm + inCup.tempoNudge).toBeLessThanOrEqual(132)
+    const inCrown = decide(fight('crown-of-frost', 'cup', { opponentRivalId: 'corin-hale' })).song as SongRequest
+    expect(inCrown.id).toBe('rival')
+    expect(inCrown.lead).toBe(THEME_DEFAULTS['crown-frost'].lead)
+    expect(inCrown.kit).toBe('frost')
+    expect((decide(fight('rival-showdown', 'cup', { opponentRivalId: 'corin-hale' })).song as SongRequest).id).toBe('rival')
+    // Not on the lobby screens: his calling card plays there.
+    expect((decide({ ...base, screen: 'tournamentPlay', eventId: 'meadow', opponentRivalId: 'corin-hale' }).song as SongRequest).id).toBe('cup')
+  })
+
+  it('Trials play the trial theme at the site’s tonic with its lead; the Lab plays practice', () => {
+    for (const site of JOURNEY_SITE_IDS) {
+      const song = decide(fight(null, 'trial', { journeySite: site })).song as SongRequest
+      expect(song.id).toBe('trial')
+      expect(song.transpose).toBe(TRIAL_SITES[site].transpose)
+      expect(song.lead).toBe(TRIAL_SITES[site].lead)
+      expect(song.colour).toBe(TRIAL_SITES[site].colour)
+    }
+    expect((decide(fight(null, 'trial', { journeySite: 'glacier-bastion' })).song as SongRequest).leadArt).toBe('trem')
+    expect(arrangementFor({ ...base, battle: { phase: 'match', origin: 'trial', hp: [1, 1], secondsLeft: 60, matchSeconds: 60, paused: false, speed: 1 } }).theme).toBe('trial')
+    for (const origin of ['lab', 'versus'] as const) {
+      const r = decide(fight(null, origin))
+      expect((r.song as SongRequest).id).toBe('practice')
+      expect(r.crowd).toBe('none')
+    }
+  })
+
+  it('the crowd claps along in the last 10 s, except a hushed hall or no crowd', () => {
+    const last = (eventId: string, secondsLeft: number): Scene => ({ ...base, screen: 'battle', eventId, battle: { phase: 'match', origin: 'cup', hp: [1, 1], secondsLeft, matchSeconds: 60, paused: false, speed: 1 } })
+    expect(decide(last('meadow', 30)).clapAlong).toBe(false)
+    expect(decide(last('meadow', TENSION_SECONDS)).clapAlong).toBe(true)
+    expect(decide(last('vale-coast-summit', 5)).crowd).toBe('chanting')
+    expect(decide(last('vale-coast-summit', 5)).clapAlong).toBe(true)
+    expect(decide(last('masquerade', 5)).crowd).toBe('hushed')
+    expect(decide(last('masquerade', 5)).clapAlong).toBe(false)
+    expect(decide({ ...last('meadow', 5), battle: { ...last('meadow', 5).battle!, phase: 'result' } }).clapAlong).toBe(false)
+  })
+
+  it('the results screen chains the right stingers', () => {
+    const r = (o: Partial<Parameters<typeof resultStingers>[0]>) => resultStingers({ eventId: 'meadow', placing: 1, participants: 4, koed: false, promoted: null, rankBefore: 1, rankAfter: 1, titles: [], relayTeamWin: null, ...o })
+    expect(r({})).toEqual(['cupWin'])
+    expect(r({ placing: 2 })).toEqual(['cupPlaced'])
+    expect(r({ placing: 4 })).toEqual(['cupOut'])
+    expect(r({ placing: 2, koed: true })).toEqual(['cupOut'])
+    expect(r({ eventId: 'masquerade', placing: 2, participants: 2 })).toEqual(['cupOut'])
+    expect(r({ eventId: 'crown-of-tides' })).toEqual(['crownWonTides'])
+    expect(r({ eventId: 'wildsong-legend' })).toEqual(['legendWon'])
+    expect(r({ eventId: 'spring-ascension', promoted: 'B' })).toEqual(['promotion'])
+    expect(r({ rankAfter: 2, titles: ['x'] })).toEqual(['cupWin', 'rankUp', 'titleEarned'])
+    expect(r({ eventId: 'vale-coast-summit', placing: 3, relayTeamWin: true })).toEqual(['cupWin'])
+    expect(r({ eventId: 'vale-coast-summit', placing: 1, relayTeamWin: false })).toEqual(['cupOut'])
   })
 
   it('battle layers build: base, then drive, then tension at low HP or in the last 10 s; pause is passed on', () => {
@@ -78,6 +145,8 @@ describe('the director (§11)', () => {
     expect(decide({ ...base, screen: 'shrine' }).standIn).toBe('TODO_S3')
     expect(decide({ ...base, screen: 'journey' }).standIn).toBe('TODO_S3')
     expect(decide({ ...base, screen: 'labSound' }).song).toBeNull()
+    expect(decide({ ...base, screen: 'labSound' }).packs).toContain('events')
+    expect(STAND_INS.every((x) => x.stage === 'TODO_S3')).toBe(true)
     expect(STAND_INS.length).toBeGreaterThan(5)
     expect(decide({ ...base, screen: 'title' }).song).toMatchObject({ id: 'wildsong', arrangement: null })
     expect(decide({ ...base, screen: 'newGame' }).song).toMatchObject({ id: 'wildsong', arrangement: 'lobby' })

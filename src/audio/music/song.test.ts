@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../engine/rng.ts'
 import { containsMotif, CORIN_MOTIF, MASKED_MOTIF, transposeMotif, WILDSONG_MOTIF } from './motifs.ts'
+import { foldInto, octaveShiftInto } from '../recipes/instruments.ts'
 import { breathSeconds, defineSong, instrumentFor, passSeconds, sounding, type SongDef } from './song.ts'
 
 const ABC = `
@@ -116,5 +117,19 @@ describe('motifs (§3.6)', () => {
     expect(containsMotif([62, 64, 69, 68, 66, 65])).toBe(false)
     expect(containsMotif([67, 71, 74, 79], CORIN_MOTIF)).toBe(true)
     expect(containsMotif([72, 73, 72, 71, 72], MASKED_MOTIF)).toBe(true)
+  })
+})
+
+describe('moving a line onto another instrument (§7.4)', () => {
+  it('moves the whole line by the octave that fits it best, and folds any straggler by octaves', () => {
+    expect(octaveShiftInto([74, 76, 84], [36, 69])).toBe(-24)
+    expect(octaveShiftInto([60, 64, 71], [55, 86])).toBe(0)
+    expect(octaveShiftInto([50, 55], [69, 85])).toBe(24)
+    expect(foldInto(84, [36, 69])).toBe(60)
+    expect(foldInto(30, [36, 69])).toBe(42)
+    expect(foldInto(64, [60, 64])).toBe(64)
+    // A range narrower than an octave keeps whichever octave lands nearer.
+    expect(foldInto(70, [57, 64])).toBe(58)
+    expect(foldInto(66, [57, 64])).toBe(66)
   })
 })

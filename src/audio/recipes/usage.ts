@@ -6,10 +6,26 @@
  * and in `places` otherwise. Tools and tests import this; the runtime reads the result from the manifest.
  */
 import { ELEMENTS } from '../../data/types.ts'
-import { MUSICAL_EFFECTS } from '../music/effects.ts'
+import { CALLING_CARDS, MUSICAL_EFFECTS } from '../music/effects.ts'
 import type { Song } from '../music/song.ts'
 import { STINGERS } from '../music/stingers.ts'
+import ascension from '../music/songs/ascension.ts'
+import crownDawn from '../music/songs/crown-dawn.ts'
+import crownEmbers from '../music/songs/crown-embers.ts'
+import crownFrost from '../music/songs/crown-frost.ts'
+import crownTides from '../music/songs/crown-tides.ts'
 import cup from '../music/songs/cup.ts'
+import elders from '../music/songs/elders.ts'
+import legend from '../music/songs/legend.ts'
+import masquerade from '../music/songs/masquerade.ts'
+import open from '../music/songs/open.ts'
+import practice from '../music/songs/practice.ts'
+import rally from '../music/songs/rally.ts'
+import rallyRogue from '../music/songs/rally-rogue.ts'
+import rival from '../music/songs/rival.ts'
+import sprout from '../music/songs/sprout.ts'
+import summit from '../music/songs/summit.ts'
+import trial from '../music/songs/trial.ts'
 import ranchAutumn from '../music/songs/ranch-autumn.ts'
 import ranchSpring from '../music/songs/ranch-spring.ts'
 import ranchSummer from '../music/songs/ranch-summer.ts'
@@ -18,14 +34,23 @@ import town from '../music/songs/town.ts'
 import wildsong from '../music/songs/wildsong.ts'
 import { BED_IDS, bedLayers, CROWDS, WEATHER_OVERLAYS, type BedLayer } from './ambience.ts'
 import { DRILL_CUES } from './drills.ts'
-import { SEASON_PALETTES } from './events.ts'
+import { EVENT_ARRANGEMENTS, SEASON_PALETTES, THEME_IDS, TRIAL_ARRANGEMENTS } from './events.ts'
 import { INSTRUMENTS, type InstrumentId } from './instruments.ts'
 import { KITS } from './kits.ts'
 import { setUsage, type Usage, type UsageContext } from './packs.ts'
 import { battleSfx, UI_SFX, WORLD_SFX, type SfxDef } from './sfx.ts'
 
-const SONG_CONTEXT: Record<string, UsageContext> = { wildsong: 'place', 'ranch-spring': 'ranch', 'ranch-summer': 'ranch', 'ranch-autumn': 'ranch', 'ranch-winter': 'ranch', town: 'town', cup: 'event' }
-const SONGS: Song[] = [wildsong, ranchSpring, ranchSummer, ranchAutumn, ranchWinter, town, cup]
+const SONG_CONTEXT: Record<string, UsageContext> = {
+  wildsong: 'place',
+  'ranch-spring': 'ranch',
+  'ranch-summer': 'ranch',
+  'ranch-autumn': 'ranch',
+  'ranch-winter': 'ranch',
+  town: 'town',
+  // Every event theme, the Trials and the Lab's practice included, plays on screens that load the events pack.
+  ...Object.fromEntries(THEME_IDS.map((id) => [id, 'event' as const])),
+}
+const SONGS: Song[] = [wildsong, ranchSpring, ranchSummer, ranchAutumn, ranchWinter, town, cup, open, ascension, crownDawn, crownTides, crownEmbers, crownFrost, legend, masquerade, rival, summit, rally, rallyRogue, sprout, elders, trial, practice]
 
 /** The instruments a patch expands to, plus itself. */
 function expand(inst: InstrumentId): InstrumentId[] {
@@ -74,7 +99,15 @@ export function buildUsage(): Usage {
   }
   for (const inst of Object.values(KITS.knockout)) if (inst) add(inst, 'event')
   for (const inst of Object.values(KITS.wild)) if (inst) add(inst, 'event')
+  // The event table's leads and colours (the Arcane Cup's wine glasses, the festivals' hand chimes, the Trial sites).
+  for (const row of [...EVENT_ARRANGEMENTS, ...Object.values(TRIAL_ARRANGEMENTS)]) {
+    add(row.lead, 'event')
+    add(row.colour, 'event')
+    for (const inst of Object.values(KITS[row.kit])) if (inst) add(inst, 'event')
+  }
   for (const s of Object.values(STINGERS)) addSong(u, s, 'event', add)
+  // The rival calling cards play over the cup lobby.
+  for (const def of Object.values(CALLING_CARDS)) addSfx(def, 'event', add)
   for (const def of Object.values(MUSICAL_EFFECTS)) addSfx(def, 'world', add)
   for (const def of Object.values(UI_SFX)) addSfx(def, 'ui', add)
   for (const def of Object.values(WORLD_SFX)) addSfx(def, 'world', add)

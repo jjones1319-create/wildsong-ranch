@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import type { MatchResult, TournamentState } from '../../../core/state.ts'
-import { bracket, currentRound, eventName, isComplete, isElimination, nextPlayerMatch, placeChanges, playerMatchIn, relayLegs, roundCount, roundsDone, standings, type BracketSlot, type RelayLeg, type SlotSide } from '../../../core/tournament.ts'
+import { callingCardFor } from '../../../audio/music/effects.ts'
+import { playSfx } from '../../../audio/player.ts'
+import { bracket, currentRound, eventName, isComplete, isElimination, nextPlayerMatch, opponentOf, placeChanges, playerMatchIn, relayLegs, roundCount, roundsDone, standings, type BracketSlot, type RelayLeg, type SlotSide } from '../../../core/tournament.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { EVENT_BY_ID } from '../../../data/calendar.ts'
 import { fill } from '../../../data/text/format.ts'
@@ -12,6 +14,19 @@ import { game } from '../../store/gameStore.ts'
 import { conclude, nextRound, playMatch, playRound, recapRound, skipToFinal, watchMatch } from '../../store/tournamentStore.ts'
 
 const p = UI_TEXT.tournament.play
+
+/** The cup and round whose calling card already played (a re-render never plays it twice). */
+let cardPlayedFor = ''
+
+/** The named rival the round preview shows (the player's next match this round), if any. */
+function previewRivalOf(tt: TournamentState | null): { key: string; rivalId: string } | null {
+  if (!tt || recapRound.value !== null) return null
+  const next = nextPlayerMatch(tt)
+  const round = currentRound(tt)
+  if (!next || round === null || next.match.round !== round) return null
+  const rivalId = opponentOf(tt, next.match).rivalId
+  return rivalId ? { key: `${tt.seed}:${round}`, rivalId } : null
+}
 
 type Tab = 'standings' | 'rounds' | 'bracket' | 'team' | 'legs'
 
@@ -279,6 +294,16 @@ export function TournamentPlayScreen() {
   const [tab, setTab] = useState<Tab>(summit ? 'team' : 'standings')
   const [detail, setDetail] = useState<Detail | null>(null)
   const legs = useMemo(() => (tt && summit ? relayLegs(tt, tt.participants[0]!.monster.grade) : []), [tt?.seed, summit])
+  // Sound 2.0 §3.6: a named rival's calling card plays over the lobby when the round preview shows them.
+  const preview = previewRivalOf(tt)
+  useEffect(() => {
+    if (!preview || preview.key === cardPlayedFor) return
+    const card = callingCardFor(preview.rivalId)
+    if (!card) return
+    cardPlayedFor = preview.key
+    const timer = setTimeout(() => playSfx(card), 700)
+    return () => clearTimeout(timer)
+  }, [preview?.key, preview?.rivalId])
 
   useEffect(() => {
     if (!g) navigate('title')

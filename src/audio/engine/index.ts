@@ -64,6 +64,9 @@ export interface Engine {
   stop(): void
   loadCore(): Promise<void>
   loadPack(pack: PackId): Promise<void>
+  /** The packs the current scene needs (§5.2): loaded after core, and kept in use so the 60 s release never drops them. */
+  want(packs: readonly PackId[]): void
+  readonly wanted: ReadonlySet<PackId>
   render(): Promise<AudioBuffer>
   debug(): AudioDebugView
   /** The last drill cue's timing error, set by the cue. */
@@ -85,11 +88,14 @@ export function createEngine(ctx: BaseAudioContext, o: EngineOptions): Engine {
   sfx.trims = { ...LEVELS.effects }
   ambience.bedTrims = { ...LEVELS.beds }
   let lastSweep = 0
+  let wanted = new Set<PackId>(['core'])
+  let coreReady: Promise<void> | null = null
   scheduler.addFiller((until) => {
     const now = ctx.currentTime
     ambience.tick(now, until)
     if (now - lastSweep > 10) {
       lastSweep = now
+      for (const p of wanted) bank.touch(p, now)
       bank.sweep(now)
     }
     const key = music.key()
@@ -113,11 +119,27 @@ export function createEngine(ctx: BaseAudioContext, o: EngineOptions): Engine {
       ambience.stopAll()
       sfx.stopAll()
     },
-    loadCore: async () => {
-      await bank.loadManifest()
-      await bank.loadPack('core', ctx.currentTime)
+    loadCore: () => {
+      coreReady ??= (async () => {
+        await bank.loadManifest()
+        await bank.loadPack('core', ctx.currentTime)
+      })()
+      return coreReady
     },
     loadPack: (pack) => bank.loadPack(pack, ctx.currentTime),
+    want: (packs) => {
+      wanted = new Set<PackId>(['core', ...packs])
+      for (const p of wanted) {
+        if (p === 'core') continue
+        bank.touch(p, ctx.currentTime)
+        // Core first: a scene's extra pack decodes after the instruments every screen needs.
+        const load = () => bank.loadPack(p, ctx.currentTime).then(() => undefined)
+        void (coreReady ? coreReady.then(load) : load()).catch((err: unknown) => console.warn(`audio: pack ${p} failed to load`, err))
+      }
+    },
+    get wanted() {
+      return wanted
+    },
     render: () => {
       if (!('render' in driver)) throw new Error('render needs the offline driver')
       return (driver as OfflineDriver).render()
