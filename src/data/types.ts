@@ -23,6 +23,10 @@ export type TechRange = 1 | 2 | 3 | 4
 export const FAMILIES = ['Basic', 'Hit', 'Heavy', 'Wither', 'Sharp', 'Special', 'Chain', 'Signature'] as const
 export type Family = (typeof FAMILIES)[number]
 
+/** CONTENT §2.3: what a breed is, for picking Fusion surprises. The rules read it; no screen shows it. */
+export const KINDS = ['beast', 'bird', 'reptile', 'dragon', 'water', 'stone', 'plant', 'bug', 'spirit', 'construct', 'fire', 'sky', 'ice', 'night', 'knight'] as const
+export type Kind = (typeof KINDS)[number]
+
 /** V1 (VISUAL_V1_EFFECTS §5): the look of a technique's effects. Presentation only; the rules never read it. */
 export const ELEMENTS = ['Fire', 'Water', 'Ice', 'Lightning', 'Wind', 'Earth', 'Nature', 'Light', 'Dark', 'Sound', 'Physical'] as const
 export type Element = (typeof ELEMENTS)[number]
@@ -335,7 +339,7 @@ export interface Breed {
   base: Stats
   grades: Grades
   bonusDrill: DrillId
-  /** Fusion lineage strength 1–10. */
+  /** Lineage strength 1–10. Unused since Fusion 2 (v1.10.0), which picks babies by kinds; kept for later. */
   strength: number
   /** Shrine pick weight. */
   commonness: number

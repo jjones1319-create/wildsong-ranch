@@ -467,6 +467,32 @@ The owner asked (2026-10-28) for: Echo Stones pay that rises by 1G a round after
 - [x] 6. Save schema v12 with its migration and test.
 - [x] 7. Tests, docs, `npm run verify`, the e2e specs, PROGRESS, commit, deploy, phone checklist.
 
+## Fusion 2: whole-breed babies and surprise recipes (v1.10.0)
+
+The owner asked (2026-10-28) for Fusion to give one of four breeds, each with a %:
+- the first parent's breed and the second parent's breed;
+- two random-feeling **surprises** that make sense for the pair, like a snake and a bird making a dragon.
+
+Their choices:
+- Fusion babies are always one whole breed. Mixes stay in the Shrine and ✏️ Edit for now.
+- New combo-only breeds (a bull-warrior and others) wait for the Blender monster work, which comes next.
+
+Spec: GAME_DESIGN §14.3 and §15; CONTENT §2, §2.3 and §6.
+
+- [x] 1. Kinds, rules and signature recipes (`data/fusionRecipes.ts`, CONTENT §2.3), tuned with `npm run fusion:table` so every breed is reachable and none crowds the table.
+- [x] 2. Core:
+  - odds of 35 / 35 / 20 / 10;
+  - the Seal, locked breeds dropping out and the found recipes (`core/fusion.ts`);
+  - a pure baby;
+  - universal techniques count as part of every kit for inheritance (§10.5).
+- [x] 3. Save schema v13 (`fusionFinds`) with its migration and test.
+- [x] 4. Pell's Lab (the Fusion tab):
+  - hidden "???" rows and source labels;
+  - no "most likely" on a tie; Dr. Pell's hint;
+  - "New recipe!" on a first find;
+  - the right refusal lines.
+- [x] 5. Tests (odds, surprises, the pinned table, the spread, data mirror, schema v13), the e2e spec (`e2e/fusion.spec.ts`), docs, PROGRESS, commit, deploy, phone checklist.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

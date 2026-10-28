@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals'
 import { useState } from 'preact/hooks'
-import { catalystEffect, compatTier, compatibility, fusionOutcomes, type FusionResult } from '../../../core/fusion.ts'
+import { catalystEffect, compatTier, compatibility, fusionOutcomes, outcomeKnown, type FusionResult } from '../../../core/fusion.ts'
 import { countOf } from '../../../core/items.ts'
 import { duplicateMonster } from '../../../core/lab.ts'
 import { canReceiveHeartstone, elderMentorUsedThisMonth, elderSite, freezerFull, fusionCandidates, heartstoneCap, heartstoneGrant, ranchBusy, findStored } from '../../../core/legacy.ts'
@@ -17,7 +17,7 @@ import { FAMILY_LABELS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { WREN } from '../../../data/text/wren.ts'
 import { FREEZER, FUSION, HEARTSTONE, JOURNEY, RANGES, UPGRADES } from '../../../data/tuning.ts'
-import { STAT_KEYS } from '../../../data/types.ts'
+import { STAT_KEYS, type BreedId } from '../../../data/types.ts'
 import { Badge, Chips, Confirm, Field, Select, Sheet, TopBar } from '../../components/Controls.tsx'
 import { MonsterCard } from '../../components/MonsterCard.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
@@ -214,7 +214,12 @@ function FusionTab({ g }: { g: GameState }) {
   const seal = catalystEffect(catalystId).lineageSeal
   const outcomes = m1 && m2 ? fusionOutcomes(m1, m2, g.unlocked, seal) : []
   const top = outcomes[0]
-  const compat = m1 && m2 && top ? compatibility(m1, m2, top.main, top.sub) : null
+  // A 35/35 tie has no single most likely breed.
+  const topRow = top && outcomes[1]?.pct !== top.pct ? 0 : -1
+  const compat = m1 && m2 && top ? compatibility(m1, m2, top.breed, top.breed) : null
+  const known = (o: (typeof outcomes)[number]) => outcomeKnown(o, g.fusionFinds)
+  const nameOf = (o: (typeof outcomes)[number]) => (known(o) ? BREED_BY_ID[o.breed].name : t.hidden)
+  const sealWasted = seal && m1 !== null && !g.unlocked.includes(m1.mainBreed)
   const toRanch = g.monster === null && !g.ended
   const whereText = toRanch ? t.whereRanch : t.whereFreezer
 
@@ -223,8 +228,7 @@ function FusionTab({ g }: { g: GameState }) {
     if (!id1 || !id2) return
     const r = fuse(id1, id2, catalystId)
     if (!r || r.refused) {
-      const reason = r?.refused
-      showToast(reason === 'money' ? t.refused.money : reason === 'freezerFull' ? t.refused.freezerFull : reason === 'busy' ? t.refused.busy : reason === 'sameMonster' ? t.refused.sameMonster : t.freezeBusy)
+      showToast(r?.refused ? t.refused[r.refused] : t.freezeBusy)
       return
     }
     setBorn({ result: r.result!, placed: r.placed! })
@@ -249,6 +253,8 @@ function FusionTab({ g }: { g: GameState }) {
 
   if (born) {
     const baby = born.result.baby
+    const [pair] = (born.result.outcome.key ?? '').split('>')
+    const [a, b] = (pair ?? '').split('+') as [BreedId, BreedId]
     return (
       <>
         <h2 class="heading center">{fill(t.born, { name: baby.name })}</h2>
@@ -260,10 +266,11 @@ function FusionTab({ g }: { g: GameState }) {
           <p class="muted">
             {fill(t.compat, { m: born.result.compat })} · {t.comments[born.result.tier]}
           </p>
+          {born.result.newFind && <p class="notice">{fill(t.newRecipe, { a: BREED_BY_ID[a].name, b: BREED_BY_ID[b].name, breed: BREED_BY_ID[baby.mainBreed].name })}</p>}
           <p class="muted small">{fill(t.bornAt, { where: born.placed === 'ranch' ? t.bornRanch : t.bornFreezer })}</p>
         </SpeakerCard>
         <SpeakerCard speaker={UI_TEXT.wren} tone="muted">
-          <p>{say('fused', WREN.fused, baby).text}</p>
+          <p>{born.result.outcome.source === 'surprise' ? say('fusedSurprise', WREN.fusedSurprise, baby).text : say('fused', WREN.fused, baby).text}</p>
         </SpeakerCard>
         <div class="spacer" />
         <div class="actionbar">
@@ -295,18 +302,25 @@ function FusionTab({ g }: { g: GameState }) {
         onChange={setCatalyst}
         hint={fill(t.catalystHint, { shard: FUSION.shardStat, amber: ITEM_BY_ID['amber-charm']?.effect.kind === 'catalyst' ? ITEM_BY_ID['amber-charm'].effect.lifespan : 20 })}
       />
+      {sealWasted && <p class="muted small">{t.sealWasted}</p>}
       {m1 && m2 && (
         <section class="card">
           <p class="field__label">{t.odds}</p>
           <div class="odds">
             {outcomes.map((o, i) => (
-              <div key={`${o.main}/${o.sub}`} class={`odds__row ${i === 0 ? 'odds__row--top' : ''}`}>
-                <MonsterPortrait breed={o.main} sub={o.sub} size={52} animate={false} />
+              <div key={o.breed} class={`odds__row ${i === topRow ? 'odds__row--top' : ''} ${o.source === 'surprise' ? 'odds__row--surprise' : ''}`}>
+                {known(o) ? (
+                  <MonsterPortrait breed={o.breed} size={52} animate={false} />
+                ) : (
+                  <span class="odds__mystery" aria-hidden="true">
+                    ？
+                  </span>
+                )}
                 <span class="odds__name">
-                  <span>{variantNameOf({ mainBreed: o.main, subBreed: o.sub, variantId: null })}</span>
+                  <span>{nameOf(o)}</span>
                   <span class="muted small">
-                    {BREED_BY_ID[o.main].name} / {BREED_BY_ID[o.sub].name}
-                    {i === 0 ? ` · ${t.mostLikely}` : ''}
+                    {known(o) ? t.source[o.source] : `${t.source.surprise} ${t.hiddenLine}`}
+                    {i === topRow ? ` · ${t.mostLikely}` : ''}
                   </span>
                   <span class="odds__bar">
                     <span class="odds__fill" style={{ width: `${o.pct}%` }} />
@@ -316,9 +330,17 @@ function FusionTab({ g }: { g: GameState }) {
               </div>
             ))}
           </div>
-          {compat !== null && (
+          {compat !== null && top && (
             <p class="muted" style={{ marginTop: 8 }}>
-              <span class="speaker">{UI_TEXT.pell}</span> {t.comments[compatTier(compat)]} <span class="small">({fill(t.compat, { m: compat })}, {t.mostLikely})</span>
+              <span class="speaker">{UI_TEXT.pell}</span> {t.comments[compatTier(compat)]}{' '}
+              <span class="small">
+                ({fill(t.compat, { m: compat })} {fill(t.compatFor, { breed: nameOf(top) })})
+              </span>
+            </p>
+          )}
+          {outcomes.some((o) => !known(o)) && (
+            <p class="muted small" style={{ marginTop: 4 }}>
+              <span class="speaker">{UI_TEXT.pell}</span> {t.surpriseHint}
             </p>
           )}
         </section>

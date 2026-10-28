@@ -28,8 +28,9 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   punished on its first launch), keepsakes, each monster's bond boost (`status.bondPct`, with its fallback), the
  *   endings 'neglected' and 'wandered' (and their Memorial causes), and the new drill result levels in the
  *   planner log. Nothing to rewrite but the defaults.
+ * - v13 (Fusion 2): the surprise recipes found at Dr. Pell's (`fusionFinds`, keys `a+b>c`), empty for older saves.
  */
-export const SAVE_VERSION = 12
+export const SAVE_VERSION = 13
 
 type RawSave = Record<string, unknown>
 
@@ -152,6 +153,11 @@ const MIGRATIONS: Record<number, Migration> = {
       const settings = isRawSave(game.settings) ? { vacation: false, ...game.settings } : game.settings
       next.game = { keepsakes: [], away: { armedAt: null, lastGreetAt: null }, ...game, settings }
     }
+    return next
+  },
+  12: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 13 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { fusionFinds: [], ...raw.game }
     return next
   },
 }

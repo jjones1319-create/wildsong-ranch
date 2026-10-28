@@ -48,6 +48,24 @@
   border-color: var(--accent);
 }
 
+/* Fusion 2: a surprise row; an unfound one shows a question tile instead of a portrait. */
+.odds__row--surprise {
+  border-style: dashed;
+}
+
+.odds__mystery {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 1.6em;
+  font-weight: 800;
+}
+
 .odds__name {
   flex: 1;
   display: flex;

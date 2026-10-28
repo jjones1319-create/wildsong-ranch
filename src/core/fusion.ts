@@ -1,8 +1,9 @@
-import { BREED_BY_ID } from '../data/breeds.ts'
+import { BREED_KINDS, FUSION_RECIPES, FUSION_RULES } from '../data/fusionRecipes.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
-import { startersOf, techniquesOfBreed, TECHNIQUE_BY_ID } from '../data/techniques.ts'
+import { startersOf, techniquesOfBreed, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { FREEZER, FUSION, SONGBOOK } from '../data/tuning.ts'
-import { FAMILIES, STAT_KEYS, type BreedId, type Stats } from '../data/types.ts'
+import { BREED_IDS, FAMILIES, STAT_KEYS, type BreedId, type Kind, type Stats } from '../data/types.ts'
+import { cyrb53 } from './hash.ts'
 import { countOf } from './items.ts'
 import { findStored, placeOnRanch, ranchBusy, recordInEncyclopedia } from './legacy.ts'
 import { divRound } from './mathx.ts'
@@ -12,61 +13,109 @@ import type { GameState } from './state.ts'
 import { variantNameOf } from './variants.ts'
 
 /**
- * GAME_DESIGN §15: Fusion at Dr. Pell's Lab. Outcome odds, compatibility, the baby's stats and
- * inheritance, catalysts, and the parents' move to the Memorial as Ancestors. Pure; integer math.
+ * GAME_DESIGN §15: Fusion at Dr. Pell's Lab. Outcome odds (the parents' breeds and two surprises), compatibility,
+ * the baby's stats and inheritance, catalysts, found recipes, and the parents' move to the Memorial as
+ * Ancestors. The baby is always one whole breed. Pure; integer math.
  */
 
+export type OutcomeSource = 'p1' | 'p2' | 'both' | 'surprise'
+
 export interface FusionOutcome {
-  main: BreedId
-  sub: BreedId
-  /** Whole percent; the shown list sums to 100. */
+  /** The baby's breed (main and sub alike). */
+  breed: BreedId
+  /** Whole percent; the list sums to 100. */
   pct: number
+  /** Whose breed it is: the first parent's, the second's, both (same breed), or a surprise. */
+  source: OutcomeSource
+  /** A surprise's found-recipe key (`a+b>breed`); null for the parents' breeds. */
+  key: string | null
 }
 
-type WeightMap = Map<BreedId, number>
+/* ---------- surprises (CONTENT §2.3) ---------- */
 
-function addW(map: WeightMap, id: BreedId, w: number): void {
-  map.set(id, (map.get(id) ?? 0) + w)
+/** The unordered pair: the two main breeds sorted, e.g. `coilfang+galeheron`. */
+export function pairKey(a: BreedId, b: BreedId): string {
+  return a < b ? `${a}+${b}` : `${b}+${a}`
 }
 
-/** Steps 1–5 of §15 "Outcome odds". */
-export function fusionOutcomes(p1: Pick<Monster, 'mainBreed' | 'subBreed'>, p2: Pick<Monster, 'mainBreed' | 'subBreed'>, unlocked: readonly BreedId[], lineageSeal = false): FusionOutcome[] {
-  const w = FUSION.mainWeights
-  const mains: WeightMap = new Map()
-  addW(mains, p1.mainBreed, w.p1Main * (lineageSeal ? FUSION.sealMultiplier : 1))
-  addW(mains, p2.mainBreed, w.p2Main)
-  addW(mains, p1.subBreed, w.p1Sub)
-  addW(mains, p2.subBreed, w.p2Sub)
-  const s = FUSION.subWeights
-  const subs: WeightMap = new Map()
-  addW(subs, p2.mainBreed, s.p2Main)
-  addW(subs, p1.subBreed, s.p1Sub)
-  addW(subs, p2.subBreed, s.p2Sub)
-  addW(subs, p1.mainBreed, s.p1Main)
-  // weight = mainW · subW · strength / 5: the divisor cancels in the normalization, so integers suffice.
-  const raw: { main: BreedId; sub: BreedId; weight: number }[] = []
-  for (const [main, mw] of mains) {
-    if (!unlocked.includes(main)) continue
-    for (const [sub, sw] of subs) raw.push({ main, sub, weight: mw * sw * BREED_BY_ID[main].strength })
+/** A found recipe: `coilfang+galeheron>hearthwing`. */
+export function findKey(a: BreedId, b: BreedId, result: BreedId): string {
+  return `${pairKey(a, b)}>${result}`
+}
+
+export interface SurpriseScore {
+  breed: BreedId
+  score: number
+}
+
+/** Every candidate surprise for a pair, best first: unlocked breeds other than the parents, scored by kinds. */
+export function surpriseScores(a: BreedId, b: BreedId, unlocked: readonly BreedId[]): SurpriseScore[] {
+  const pair = pairKey(a, b)
+  const ka = BREED_KINDS[a]
+  const kb = BREED_KINDS[b]
+  const recipes = new Set(FUSION_RECIPES.filter((r) => pairKey(r.a, r.b) === pair).map((r) => r.makes))
+  const ruleKinds: Kind[] = FUSION_RULES.filter((r) => (ka.includes(r.a) && kb.includes(r.b)) || (ka.includes(r.b) && kb.includes(r.a))).map((r) => r.makes)
+  const w = FUSION.surprise
+  const scored: (SurpriseScore & { tie: number })[] = []
+  for (const id of BREED_IDS) {
+    if (id === a || id === b || !unlocked.includes(id)) continue
+    const kc = BREED_KINDS[id]
+    let score = recipes.has(id) ? w.recipe : 0
+    for (const k of ruleKinds) if (kc.includes(k)) score += w.rule
+    if (kc.some((k) => ka.includes(k)) && kc.some((k) => kb.includes(k))) score += w.sharesBoth
+    for (const k of kc) if (ka.includes(k) || kb.includes(k)) score += w.sharedKind
+    scored.push({ breed: id, score, tie: cyrb53(`${pair}>${id}`) })
   }
-  const total = raw.reduce((a, r) => a + r.weight, 0)
-  if (total === 0) return []
-  const kept = raw
-    .filter((r) => r.weight * 100 >= total * FUSION.minPct)
-    .sort((a, b) => b.weight - a.weight || a.main.localeCompare(b.main) || a.sub.localeCompare(b.sub))
-    .slice(0, FUSION.maxOutcomes)
-  // Largest-remainder rounding so the shown percentages add up to exactly 100.
-  const keptTotal = kept.reduce((a, r) => a + r.weight, 0)
-  const scaled = kept.map((r) => ({ ...r, exact: (r.weight * 10000) / keptTotal }))
-  const floors = scaled.map((r) => Math.floor(r.exact / 100))
+  scored.sort((x, y) => y.score - x.score || x.tie - y.tie || (x.breed < y.breed ? -1 : 1))
+  return scored.map(({ breed, score }) => ({ breed, score }))
+}
+
+/** The pair's surprises, best first (two, or fewer when there are not enough candidates). */
+export function fusionSurprises(a: BreedId, b: BreedId, unlocked: readonly BreedId[]): BreedId[] {
+  return surpriseScores(a, b, unlocked)
+    .slice(0, FUSION.odds.surprises.length)
+    .map((s) => s.breed)
+}
+
+/** Largest-remainder rounding: whole percents that add up to exactly 100 (ties go to the earlier row). */
+function toPercents(weights: readonly number[]): number[] {
+  const total = weights.reduce((a, b) => a + b, 0)
+  if (total <= 0) return weights.map(() => 0)
+  const floors = weights.map((w) => Math.floor((w * 100) / total))
   let remaining = 100 - floors.reduce((a, b) => a + b, 0)
-  const order = scaled.map((r, i) => ({ i, rem: r.exact - floors[i]! * 100 })).sort((a, b) => b.rem - a.rem || a.i - b.i)
+  const order = weights.map((w, i) => ({ i, rem: (w * 100) % total })).sort((a, b) => b.rem - a.rem || a.i - b.i)
   for (const o of order) {
     if (remaining <= 0) break
     floors[o.i]! += 1
     remaining -= 1
   }
-  return kept.map((r, i) => ({ main: r.main, sub: r.sub, pct: floors[i]! }))
+  return floors
+}
+
+/** §15 "Outcome odds": the first parent's breed, the second's and the two surprises; locked breeds drop out. */
+export function fusionOutcomes(p1: Pick<Monster, 'mainBreed'>, p2: Pick<Monster, 'mainBreed'>, unlocked: readonly BreedId[], lineageSeal = false): FusionOutcome[] {
+  const odds = FUSION.odds
+  const rows: { breed: BreedId; weight: number; source: OutcomeSource; key: string | null }[] = []
+  const addParent = (breed: BreedId, weight: number, source: OutcomeSource) => {
+    if (!unlocked.includes(breed)) return
+    const same = rows.find((r) => r.breed === breed)
+    if (same) {
+      same.weight += weight
+      same.source = 'both'
+    } else rows.push({ breed, weight, source, key: null })
+  }
+  addParent(p1.mainBreed, odds.p1 * (lineageSeal ? FUSION.sealMultiplier : 1), 'p1')
+  addParent(p2.mainBreed, odds.p2, 'p2')
+  fusionSurprises(p1.mainBreed, p2.mainBreed, unlocked).forEach((breed, i) => {
+    rows.push({ breed, weight: odds.surprises[i]!, source: 'surprise', key: findKey(p1.mainBreed, p2.mainBreed, breed) })
+  })
+  const pcts = toPercents(rows.map((r) => r.weight))
+  return rows.map((r, i) => ({ breed: r.breed, pct: pcts[i]!, source: r.source, key: r.key })).filter((o) => o.pct > 0)
+}
+
+/** Whether this ranch has bred this outcome before (the parents' breeds always count as known). */
+export function outcomeKnown(o: FusionOutcome, finds: readonly string[]): boolean {
+  return o.key === null || finds.includes(o.key)
 }
 
 /* ---------- compatibility ---------- */
@@ -159,7 +208,8 @@ export function inheritedTechniques(baby: Monster, p1: Monster, p2: Monster): Te
     const take = Math.floor((learned.length * FUSION.inherit.num) / FUSION.inherit.den)
     for (const t of learned.slice(0, take)) out.push({ ...t })
   } else {
-    const kit = new Set(techniquesOfBreed(baby.mainBreed).map((t) => t.id))
+    // §10.5: universal techniques count as part of every breed's kit.
+    const kit = new Set([...techniquesOfBreed(baby.mainBreed), ...UNIVERSAL_TECHNIQUES].map((t) => t.id))
     const pool = [...p1.techniques, ...p2.techniques]
     for (const fam of FAMILIES) {
       if (fam === 'Basic') continue
@@ -176,28 +226,31 @@ export interface FusionResult {
   outcome: FusionOutcome
   compat: number
   tier: CompatTier
+  /** A surprise this ranch had never bred from this pair before. */
+  newFind: boolean
 }
 
-/** Builds the baby for a chosen outcome (the roll itself happens in `fuse`). */
+/** Builds the baby for a chosen outcome (the roll itself happens in `fuse`). The baby is one whole breed. */
 export function makeBaby(p1: Monster, p2: Monster, outcome: FusionOutcome, catalyst: CatalystEffect, id: string, rng: Rng): FusionResult {
-  const compat = compatibility(p1, p2, outcome.main, outcome.sub)
+  const breed = outcome.breed
+  const compat = compatibility(p1, p2, breed, breed)
   const offsets = babyStatOffsets(p1, p2, compat, outcome.pct, catalyst)
   const likes = rollLikes(rng)
   const baby = createMonster({
     id,
-    mainBreed: outcome.main,
-    subBreed: outcome.sub,
+    mainBreed: breed,
+    subBreed: breed,
     likes,
     offsets: { stats: offsets, lifespan: catalyst.lifespan, gutsRate: 0, nature: divRound(FUSION.blend.p1 * p1.nature + FUSION.blend.p2 * p2.nature, FUSION.blend.div) },
     generation: Math.max(p1.generation, p2.generation) + 1,
     parents: [p1.id, p2.id],
-    name: variantNameOf({ mainBreed: outcome.main, subBreed: outcome.sub, variantId: null }),
+    name: variantNameOf({ mainBreed: breed, subBreed: breed, variantId: null }),
   })
   baby.form = divRound(FUSION.blend.p1 * p1.form + FUSION.blend.p2 * p2.form, FUSION.blend.div)
   // Starters first (createMonster), then the inherited ones.
-  const starters = new Set(startersOf(outcome.main).map((t) => t.id))
+  const starters = new Set(startersOf(breed).map((t) => t.id))
   baby.techniques = [...baby.techniques.filter((t) => starters.has(t.id) || TECHNIQUE_BY_ID[t.id]?.subQuirk), ...inheritedTechniques(baby, p1, p2)]
-  return { baby, outcome, compat, tier: compatTier(compat) }
+  return { baby, outcome, compat, tier: compatTier(compat), newFind: false }
 }
 
 export type FuseRefusal = 'notFound' | 'sameMonster' | 'money' | 'freezerFull' | 'busy' | 'noOutcome' | 'noCatalyst'
@@ -238,6 +291,10 @@ export function fuse(input: GameState, id1: string, id2: string, catalystId: str
   }
   const outcome = rng.weightedPick(outcomes, (o) => o.pct)
   const result = makeBaby(s1.monster, s2.monster, outcome, catalyst, babyId, rng)
+  if (outcome.key !== null && !state.fusionFinds.includes(outcome.key)) {
+    state.fusionFinds.push(outcome.key)
+    result.newFind = true
+  }
   // Parents become Ancestors.
   for (const stored of [s1, s2]) {
     state.memorial.unshift({ monster: structuredClone(stored.monster), cause: 'fused', epitaph: '', week: state.week })

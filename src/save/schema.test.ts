@@ -325,3 +325,38 @@ describe('schema version 12 (Bonds)', () => {
     expect(r2.save.game.ended).toBe('neglected')
   })
 })
+
+describe('schema version 13 (Fusion 2)', () => {
+  it('migrates a version-12 save to no found recipes, and keeps only well-formed finds of real breeds', () => {
+    const game = structuredClone(createGameState({ monster: makeMonster() })) as unknown as Record<string, unknown>
+    delete game.fusionFinds
+    const v12 = { schemaVersion: 12, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.9.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v12))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game.fusionFinds).toEqual([])
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game).toEqual(createGameState({ monster: r.save.game.monster }))
+    // Garbage is dropped, never fatal.
+    const bad = JSON.parse(JSON.stringify(up)) as { game: Record<string, unknown> }
+    bad.game.fusionFinds = [
+      'coilfang+galeheron>hearthwing',
+      'coilfang+galeheron>hearthwing',
+      'galeheron+coilfang>hearthwing',
+      'coilfang+galeheron>coilfang',
+      'coilfang+notabreed>hearthwing',
+      'COILFANG+galeheron>hearthwing',
+      7,
+      'puddlepup+puddlepup>bloatoad',
+    ]
+    const r2 = validateSave(bad)
+    expect(r2.ok).toBe(true)
+    if (!r2.ok) return
+    expect(r2.save.game.fusionFinds).toEqual(['coilfang+galeheron>hearthwing', 'puddlepup+puddlepup>bloatoad'])
+    const notList = JSON.parse(JSON.stringify(up)) as { game: Record<string, unknown> }
+    notList.game.fusionFinds = 'hearthwing'
+    const r3 = validateSave(notList)
+    expect(r3.ok && r3.save.game.fusionFinds).toEqual([])
+  })
+})

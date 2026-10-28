@@ -30,7 +30,7 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 
 ## 2. Breeds (30)
 
-`commonness` weights the Shrine's main-breed pick (unlocked and locked breeds alike). `strength` (1–10) weights Fusion outcomes. Stats are listed LIF / POW / INT / SKI / SPD / DEF. Grades use the same order.
+`commonness` weights the Shrine's main-breed pick (unlocked and locked breeds alike). `strength` (1–10) is unused since Fusion 2 (v1.10.0), which picks babies by kinds (§2.3); it is kept for later. Stats are listed LIF / POW / INT / SKI / SPD / DEF. Grades use the same order.
 
 | # | Breed | Niche | Start | Growth | Life (wks) | Guts | Lean | Base stats | Grades | Bonus drill | Strength | Common | Trait |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -235,6 +235,89 @@ Each brief lists: body plan · signature features · palette (body / belly / acc
     - A long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.
     - Palette: #D8EEF7 / #F5FBFE / #1F7A8C (tusk #BDE8F5) / #1B263B.
     - Accent: ice tusk · adjective "Frosty".
+
+### 2.3 Fusion kinds and recipes (GAME_DESIGN §15)
+
+Fusion babies are one whole breed: the first parent's, the second's, or one of two **surprises** that make sense for the pair. Surprises are scored from these tables (`src/data/fusionRecipes.ts` mirrors them; a test checks it). Players never see the kinds; they find recipes by breeding.
+
+The 15 kinds are beast, bird, reptile, dragon, water, stone, plant, bug, spirit, construct, fire, sky, ice, night and knight. "Knight" means a hero or a fighter.
+
+| Breed | Kinds |
+|---|---|
+| Puddlepup | beast · water |
+| Tumblefox | beast · spirit |
+| Cobblemaw | beast · stone |
+| Moatshell | stone · water |
+| Wishlume | spirit · fire |
+| Quillion | beast · knight |
+| Cinderlynx | beast · fire |
+| Bloatoad | water · plant |
+| Coilfang | reptile · night |
+| Nimbusheep | sky · water |
+| Galeheron | bird · sky |
+| Nibblegrub | bug · plant |
+| Velvesper | bug · sky |
+| Ashwraith | spirit · fire |
+| Zipwisp | spirit · sky |
+| Mirrorkin | spirit · construct |
+| Gearhoot | construct · bird |
+| Reefclaw | water · knight |
+| Lootlid | construct |
+| Aurelwyrm | dragon |
+| Hearthwing | dragon · fire |
+| Grumblestone | stone |
+| Pluckrex | reptile · knight |
+| Paladove | bird · knight |
+| Starhowl | beast · night |
+| Petalphant | beast · plant |
+| Scrollopus | water · night |
+| Gloomgrin | stone · night |
+| Rammerjack | beast · knight |
+| Frostlance | water · ice |
+
+**Kind rules.** When one parent has the first kind and the other has the second (either way round), breeds of the third kind are favored.
+
+| One parent | The other | Favors |
+|---|---|---|
+| reptile | bird | dragon |
+| reptile | fire | dragon |
+| fire | bird | dragon |
+| dragon | reptile | dragon |
+| bug | sky | bug |
+| bug | bird | bug |
+| spirit | fire | spirit |
+| spirit | construct | construct |
+| stone | spirit | night |
+| beast | plant | plant |
+| water | sky | ice |
+| sky | spirit | sky |
+| construct | bird | construct |
+| bird | water | bird |
+| reptile | plant | reptile |
+| dragon | water | reptile |
+| plant | sky | bug |
+| stone | ice | stone |
+| stone | fire | stone |
+
+**Signature recipes.** A hand-picked pair always offers its recipe breed once that breed is unlocked. A locked recipe breed is skipped, and the next-best surprise takes its place.
+
+| Parents | Surprise |
+|---|---|
+| Coilfang + Galeheron | Hearthwing |
+| Coilfang + Pluckrex | Hearthwing |
+| Cobblemaw + Gloomgrin | Grumblestone |
+| Cobblemaw + Moatshell | Grumblestone |
+| Nibblegrub + Puddlepup | Bloatoad |
+| Coilfang + Hearthwing | Aurelwyrm |
+| Coilfang + Hearthwing | Pluckrex |
+| Nibblegrub + Wishlume | Velvesper |
+| Galeheron + Nibblegrub | Velvesper |
+| Cinderlynx + Wishlume | Ashwraith |
+| Nimbusheep + Wishlume | Zipwisp |
+| Puddlepup + Quillion | Reefclaw |
+| Mirrorkin + Moatshell | Lootlid |
+
+`npm run fusion:table` prints every pair's surprises (`-- --all` with every breed unlocked, `-- --summary` for counts and weak picks, `-- --pair coilfang galeheron` for one pair's scores).
 
 ---
 
@@ -822,7 +905,7 @@ There's **no limit** on how many items you use or buy (GAME_DESIGN §8). Life fr
 | Straw Bed → Feather Bed → Cloud Bed | Charm · Bedding | 2k / 6k / 15k | Rest removes +3 / +6 / +10 more fatigue (best one only) |
 | Power / Mind / Skill / Swift / Guard / Life Shard | Catalyst | found / 3,000G | Fusion: +40 to that stat |
 | Amber Charm | Catalyst | found | Fusion: baby lifespan +20 weeks |
-| Lineage Seal | Catalyst | 5,000G (rank 5+) | Fusion: doubles the first parent's main-breed weight |
+| Lineage Seal | Catalyst | 5,000G (rank 5+) | Fusion: doubles the first parent's chance |
 | Vigil Lantern · Stormglass · Shard Mask · Brass Blueprint · Wyrm Scale | Key item | event | Unlocks (§11) |
 | Oduya's Charm · Lark's Charm · Ilsabet's Charm · Teo's Charm · Brask's Charm | Key item | mentor bond (every 8 Journeys at that site) | Lowers that mentor's technique requirements by 50, for good (GAME_DESIGN §11) |
 | Old Coin · Silver Locket · Ruby Chip · Starstone | Sellable | sell 300 / 800 / 2,000 / 6,000G | Expedition loot |

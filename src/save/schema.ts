@@ -2,7 +2,7 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { AUDIO, BOND, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { AUDIO, BOND, FREEZER, FUSION, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
@@ -505,6 +505,14 @@ export const GameStateSchema = v.object({
   ),
   memorialVisitMonth: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   planner: PlannerSchema,
+  // §15 found recipes `a+b>c`; tidyGame checks the breeds.
+  fusionFinds: v.fallback(
+    v.pipe(
+      v.array(v.fallback(v.pipe(v.string(), v.regex(/^[a-z]{1,24}\+[a-z]{1,24}>[a-z]{1,24}$/)), '')),
+      v.transform((keys) => [...new Set(keys.filter((k) => k !== ''))].slice(0, FUSION.findsCap)),
+    ),
+    [],
+  ),
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -749,6 +757,14 @@ function tidyHistory(list: (HistoryEntry | null)[]): HistoryEntry[] {
     .slice(-LAB.historyLimit)
 }
 
+/** A found recipe names three real breeds: a sorted pair and a result that is neither parent. */
+function isFindKey(key: string): boolean {
+  const [pair, result] = key.split('>') as [string, string]
+  const [a, b] = pair.split('+') as [string, string]
+  const known = (id: string) => (BREED_IDS as readonly string[]).includes(id)
+  return known(a) && known(b) && known(result) && a <= b && result !== a && result !== b
+}
+
 function tidyGame(game: GameState): GameState {
   if (game.monster) game.monster = tidyMonster(game.monster)
   game.songbook = [...new Set(game.songbook.filter((id) => TECHNIQUE_BY_ID[id] !== undefined))].sort()
@@ -781,6 +797,7 @@ function tidyGame(game: GameState): GameState {
   game.sleepingStones = (game.sleepingStones as (GameState['sleepingStones'][number] | null)[]).filter((p): p is GameState['sleepingStones'][number] => p !== null)
   game.unlocked = [...new Set([...STARTING_UNLOCKED, ...game.unlocked])]
   game.encyclopedia.combos = [...new Set(game.encyclopedia.combos)]
+  game.fusionFinds = game.fusionFinds.filter(isFindKey)
   // M7: the expedition's node ids must fit the map its seed rebuilds; otherwise the trip is dropped (nothing else is lost).
   if (game.expedition) {
     const e = game.expedition

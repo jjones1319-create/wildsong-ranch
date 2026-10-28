@@ -329,7 +329,7 @@ export const UI_TEXT = {
       charmComfort: 'Stress −{n} in week 1 of each month (best one only)',
       charmBedding: 'Rest removes {n} more fatigue (best one only)',
       catalyst: 'Fusion: +40 to that stat',
-      lineageSeal: "Fusion: doubles the first parent's weight",
+      lineageSeal: "Fusion: doubles the first parent's chance",
       amber: 'Fusion: baby lifespan +20 weeks',
       key: 'A key to something.',
       sellable: 'Sells for {n}G',

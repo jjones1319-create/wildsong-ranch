@@ -114,6 +114,7 @@ export const WREN = {
   emptyRanch: 'The barn is quiet without anyone in it. Shall we go find someone?',
   elderMentor: '{elder} came along from the Elder Grove to show {name} the ropes. Old hands, new tricks.',
   fused: 'Dr. Pell did it! {name} is here, with {their} parents’ eyes. Sort of.',
+  fusedSurprise: 'Nobody expected {name}! Not Dr. Pell, not me, maybe not even {name}.',
   /** Journeys (§11) and the Signature (§10.4). */
   journeyStart: "{name} is off to {site} with {mentor}. Four weeks of hard work!",
   journeyGood: 'Week {week}: {mentor} nodded. That means it went well.',

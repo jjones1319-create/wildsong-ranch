@@ -50,8 +50,13 @@ test('new game, a week of training, a battle, and the save survives a reload', a
 
   // The ranch: welcome, the month's food, then a drill.
   await expect(page.getByText('Hillside').first()).toBeVisible()
-  await tapIfVisible(page, 'Got it')
-  await expect(page.getByText("This month's food")).toBeVisible()
+  // Wren's welcome tips come first (since v1.9.0 the away rule is one of them); tap through until the food shows.
+  const food = page.getByText("This month's food")
+  for (let i = 0; i < 4 && !(await food.isVisible()); i++) {
+    await tapIfVisible(page, 'Got it')
+    await page.waitForTimeout(300)
+  }
+  await expect(food).toBeVisible()
   await tapIfVisible(page, 'Got it')
   await tap(page, 'Serve').click()
   await expect(tap(page, 'Train')).toBeVisible()

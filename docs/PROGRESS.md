@@ -2,6 +2,79 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Fusion 2: whole-breed babies and surprise recipes (2026-10-28) · v1.10.0
+
+**Live:** a Fusion baby at Dr. Pell's is now always one whole breed, never a mix. The board shows four rows:
+- the first parent's breed, 35%;
+- the second parent's breed, 35%;
+- two **surprises**, 20% and 10%. They show as "???" until you've bred that pair into that breed once. Then they show the breed's picture and name, and the first time, Dr. Pell says "A new recipe!".
+
+Surprises make sense for the pair. Coilfang (a snake) + Galeheron (a bird) can make Hearthwing (a dragon). A fiery monster + a bird leans toward dragons too. Water + sky leans toward Frostlance (ice). Puddlepup + Nibblegrub can make Bloatoad. Some recipes lead to breeds you unlock later, like Wishlume + Nibblegrub → Velvesper, the moth drawn to the lantern. Those wait until that breed is awake.
+
+**Done**
+- **Recipes** (`data/fusionRecipes.ts`, CONTENT §2.3):
+  - **Kinds:** every breed has one or two of 15 kinds (beast, bird, reptile, dragon, water, stone, plant, bug, spirit, construct, fire, sky, ice, night, knight).
+  - **Rules:** 19 kind rules, such as "reptile + bird → dragon".
+  - **Recipes:** 13 signature recipes.
+  - **Scoring** (`FUSION.surprise`): a recipe +100, each rule that fires +6, sharing a kind with both parents +4, and +1 for each shared kind. Ties are broken by a hash, so pairs with the same kinds don't all get the same surprise.
+- **`npm run fusion:table`** prints every pair's surprises:
+  - `-- --all`: the same with every breed unlocked;
+  - `-- --summary`: per-breed counts, idle rules and weak picks;
+  - `-- --pair coilfang galeheron`: one pair's scores.
+
+  I tuned the kinds with it. With the 22 starting breeds, every breed is a surprise for 7–39 of the 253 pairs. With all 30 unlocked, it's 11–43 of 465, and every rule picks something.
+- **Odds** (`core/fusion.ts`, `FUSION.odds`):
+  - **Normal:** 35 / 35 / 20 / 10. Same-breed parents: 70 / 20 / 10.
+  - **Lineage Seal:** doubles the first parent's chance, giving 52 / 26 / 15 / 7 (78 / 15 / 7 for a same-breed pair).
+  - **Locked breeds** drop out and the rest renormalize, so the list always adds up to 100.
+  - **Subs are ignored:** a mixed parent counts as its main breed.
+- **Inheritance fix:** universal techniques now count as part of every breed's kit, as GAME_DESIGN §10.5 always said. A surprise baby can inherit its parents' Songsheet techniques; before this fix, a different-breed baby got nothing outside its own kit.
+- **Pell's Lab** (the Fusion tab):
+  - parent rows say "Like the first parent" or "Like the second parent";
+  - hidden surprises show a "？" tile, with Dr. Pell's hint when one is on the board;
+  - "most likely" is hidden on a 35/35 tie;
+  - the compatibility comment names the breed it means;
+  - "New recipe!" on a first find, and a new Wren line for surprise babies;
+  - the "not found", "no catalyst" and "no outcome" refusals have their own messages (they used to say "Finish the cup…").
+- **Schema v13:** `fusionFinds` (keys `a+b>c`) with a migration and a test. Bad keys are dropped on load.
+- **Tests:** 914 Vitest tests, up from 899.
+  - **Odds:** every split above, plus the stat bonus K for each row.
+  - **Surprises:**
+    - Coilfang + Galeheron → Hearthwing;
+    - swapping the parents changes nothing;
+    - never a parent and never locked; a locked recipe waits until it is unlocked;
+    - too few candidates.
+  - **Spread and the pinned table:** the spread limits, and a hash that pins the whole table.
+  - **Babies:** pure babies, universal-technique inheritance, and finds recorded once.
+  - **Data:** the CONTENT §2.3 tables match the data.
+  - **Saves:** the v12 → v13 migration with garbage dropped.
+  - **Playwright:** the new `e2e/fusion.spec.ts` at 360 px:
+    - the board shows 35/35/???/???, then a fuse;
+    - a found recipe shows Hearthwing by name.
+  - **`e2e/smoke.spec.ts` fix:** it now taps through every welcome tip. It had been stuck since v1.9.0 added the away-rule tip.
+  - **Full Playwright run:** 21 passed, 17 skipped by design (one phone profile is enough for those specs). The Effects Lab spec timed out once while the PC was busy and passed on a re-run.
+- **Docs:** GAME_DESIGN §14.3 and §15, CONTENT §2, §2.3 (new) and §6, and BUILD_PLAN.
+
+**Decisions worth knowing**
+- **The owner's choices:**
+  - Fusion babies are whole breeds; mixes stay in the Shrine and ✏️ Edit for now.
+  - New combo-only breeds (a bull-warrior and others) wait for the Blender work.
+- **Same-breed pairs can surprise:** two Hearthwings are now 70% Hearthwing (78% with the Seal), not 100%. This follows the "parents + two surprises" rule; ✏️ Edit can always change a baby.
+- **All Fusion babies are pure,** so they get pure's +10% lifespan, the classic colors and Signature access. That's a mild late-game buff, and no balance sim covers Fusion.
+- **Surprises carry more stats:**
+  - The stat bonus (K) follows a row's odds: 0.5 for a parent's breed, 0.6 and 0.7 for the surprises, 0.85 for a Seal's 7% surprise.
+  - The ≤2% row can no longer happen.
+- **Unlocking a breed can move a pair's surprises.** A recipe for a locked breed takes its slot once that breed wakes, so a found recipe can stop showing for that pair.
+- **The surprise table is part of the save contract.** A test pins it, so a later change to kinds, rules or recipes is deliberate.
+- **The breed `strength` number** is no longer used (it only fed the old Fusion odds). It stays in the data for later.
+
+**Known issues**
+- **Elder Memorial entry:** fusing an Elder from the Elder Grove gives it a second Memorial entry, because it already got one when it retired. This is an older bug and wasn't touched here.
+- **A few weak pairs:** about 23 of the 253 starting pairs have no strong reason for their surprise, so the hash picks a loose fit (e.g. Galeheron + Grumblestone → Moatshell). `npm run fusion:table -- --summary` lists them, and they're easy to hand-tune with more recipes.
+- **Test time-outs:** the full Vitest run timed out in the four life-sim tests while another project's dev server was busy on this PC. Alone they pass in 60 s, and the next full run was green.
+
+**Next:** the owner's phone pass. Then the Blender monster work: one breed modeled first so the owner can judge it on the phone. That reverses VISUAL_UPGRADE_PLAN §0's "3D pilot skipped" and the CLAUDE.md "Not for now: 3D monsters" line, so those get updated together with it.
+
 ## The Bonds update (2026-10-28) · v1.9.0
 
 **Live:** your monster now notices you. Open the game after a couple of hours and it comes to say hello (running up if it's loyal); pet it or give it a treat. Stay away a day and it's sad; two days and the ranch looks abandoned and it falls ill; four days and you find a note on the gate, and it has passed away (on Gentle it goes back to the wild). **Vacation mode** in Settings turns this off. The scenes are Blender-rendered scenery with your own monster drawn over it. There's a new weekly action, **Bond 💞** (fetch, hide-and-seek, or a shopping trip where your monster finds a keepsake to buy for the ranch), which boosts the next weeks' training ×1.75, ×1.5, ×1.25. Training has more levels: Fine +0, Good +2, Great +4, Superb +5 (loyalty 50+), Perfect +7 (loyalty 70+), and loyalty raises the odds of the top ones. Echo Stones pays 1G more each round after round 10.

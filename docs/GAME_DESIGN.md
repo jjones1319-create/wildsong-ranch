@@ -1073,7 +1073,7 @@ So "Hello,  World!" equals "hello world".
 | Pure (main = sub) | +10% lifespan, the classic palette, Signature technique access, "(Pure)" badge |
 | Variant name | "{sub adjective} {Main name}", e.g. "Cinder Puddlepup"; pure → "Puddlepup" |
 
-That gives 30 × 30 = 900 combinations, plus special variants.
+That gives 30 × 30 = 900 combinations, plus special variants. Mixes come from the Shrine and ✏️ Edit. Since Fusion 2 (v1.10.0), a Fusion baby is always pure (§15).
 
 ---
 
@@ -1083,12 +1083,28 @@ That gives 30 × 30 = 900 combinations, plus special variants.
 - **Output:** the baby goes to the Freezer, or becomes active if the ranch is empty.
 - **The parents become Ancestors.** They move to the Memorial with a "Fused" badge and are never deleted. The baby's Monster Card shows the family tree.
 
-**Outcome odds:**
-1. Candidate mains come from {P1.main, P2.main, P1.sub, P2.sub}, weighted 4 / 3 / 2 / 1 (duplicates add up).
-2. Candidate subs are weighted P2.main 3, P1.sub 2, P2.sub 2, P1.main 1.
-3. `weight(main, sub) = mainW · subW · lineageStrength(main)/5` (strength 1–10, CONTENT §2).
-4. Remove locked mains. Normalize, drop anything under 1%, and show up to 6 outcomes with %.
-5. **Lineage Seal** catalyst: doubles P1.main's main weight.
+**Outcome odds (Fusion 2, v1.10.0).** The baby is always **one whole breed** (main = sub, so it's pure). Mixes still come from the Shrine and ✏️ Edit.
+1. The rows:
+   - P1's main breed, weight 35;
+   - P2's main breed, weight 35;
+   - the pair's two **surprises**, weights 20 and 10, best first.
+2. Subs never matter here: a mixed parent counts as its main breed.
+3. A breed that appears twice adds up. Same-breed parents give 70 / 20 / 10.
+4. **Locked breeds never appear.**
+   - A locked parent breed drops out, and so does a locked surprise; the next-best surprise takes that slot.
+   - The rest is normalized to whole percents that add up to 100 (largest remainder).
+   - Examples: 54 / 31 / 15 with P1's breed locked; 67 / 33 with both parents' breeds locked.
+   - No rows left means no Fusion.
+5. **Lineage Seal** catalyst: doubles P1's weight (52 / 26 / 15 / 7; same breed 78 / 15 / 7). It does nothing when P1's breed is locked, and the Lab says so.
+6. **Surprises** (CONTENT §2.3). The pair is the two main breeds, unordered, so swapping the parents never changes the surprises. Every unlocked breed other than the parents is scored:
+   - **+100** if it is the pair's signature recipe;
+   - **+6** for each kind rule that fires (one parent has kind *a*, the other has *b*, and the candidate has the rule's result kind);
+   - **+4** if it shares at least one kind with each parent;
+   - **+1** for each of its kinds that either parent has.
+
+   Ties go by the hash `cyrb53("<pair>><candidate>")`, then by id. The top two are the surprises. Unlocking a breed can move a pair's surprises, for example when a locked recipe breed wakes.
+7. **Found recipes.** An unfound surprise shows as "???" with its %. Breeding it records `a+b>c` in the save (`fusionFinds`); from then on the row shows the breed, and the first find gets a "New recipe!" line.
+8. The surprise table is part of the save contract, like §14.1. A test pins it, so changing kinds, rules or recipes is deliberate.
 
 **Compatibility:**
 - Rank each parent's stats by value (1–6).
@@ -1107,6 +1123,7 @@ P         = 0.20 + 0.09·M                                            (20%…74%
 K (rarity of the chosen outcome) = ≤2% → 1.0 · ≤7% → 0.85 · ≤15% → 0.7 · ≤30% → 0.6 · ≤50% → 0.5 · >50% → 0.4
 baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 999
 ```
+With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the surprises (20% and 10%), and 0.85 for a Seal's 7% surprise. So a surprise carries more of the parents' gains. The ≤2% row can no longer happen; it stays for later rules.
 
 **Inheritance:**
 - Growth grades, guts rate, lifespan and trait always come from the baby's own breed (lineages raise starting stats, not growth).

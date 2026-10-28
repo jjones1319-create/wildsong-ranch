@@ -727,16 +727,16 @@ export const FREEZER = { slots: 20 } as const
 /** §15 Fusion at Dr. Pell's Lab. */
 export const FUSION = {
   fee: 1000,
-  /** Candidate mains come from P1.main, P2.main, P1.sub, P2.sub (duplicates add up). */
-  mainWeights: { p1Main: 4, p2Main: 3, p1Sub: 2, p2Sub: 1 },
-  /** Candidate subs. */
-  subWeights: { p2Main: 3, p1Sub: 2, p2Sub: 2, p1Main: 1 },
-  /** weight = mainW · subW · lineageStrength / strengthDivisor. */
-  strengthDivisor: 5,
-  /** Outcomes under this percentage are dropped; at most `maxOutcomes` are shown. */
-  minPct: 1,
-  maxOutcomes: 6,
-  /** The Lineage Seal multiplies P1.main's main weight. */
+  /**
+   * Fusion 2: the baby is one whole breed. Weights for the first parent's main breed, the second's, and the two
+   * surprises (best first). Same breeds add up; locked breeds drop out; the rest is normalized to 100.
+   */
+  odds: { p1: 35, p2: 35, surprises: [20, 10] as readonly number[] },
+  /** Surprise scoring (CONTENT §2.3): a signature recipe, each kind rule that fires, a kind shared with both parents, each shared kind. */
+  surprise: { recipe: 100, rule: 6, sharesBoth: 4, sharedKind: 1 },
+  /** At most this many found recipes are kept in a save. */
+  findsCap: 2000,
+  /** The Lineage Seal multiplies the first parent's weight. */
   sealMultiplier: 2,
   /** offset = (2·P1gain + P2gain) / 3. */
   offset: { p1: 2, p2: 1, div: 3 },

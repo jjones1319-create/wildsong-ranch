@@ -397,6 +397,8 @@ export interface GameState {
   memorialVisitMonth: number | null
   /** §3 the planner queue (M8). */
   planner: PlannerState
+  /** §15 surprise recipes bred on this ranch (Fusion 2): `coilfang+galeheron>hearthwing`. */
+  fusionFinds: string[]
 }
 
 export interface NewGameOptions {
@@ -483,6 +485,7 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     calendarPins: [],
     memorialVisitMonth: null,
     planner: emptyPlanner(),
+    fusionFinds: [],
   }
 }
 
