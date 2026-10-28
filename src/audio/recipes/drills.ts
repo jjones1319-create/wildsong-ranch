@@ -5,7 +5,7 @@
  * the other ten drills share a soft generic cue until S3. All original.
  */
 import type { DrillId } from '../../data/types.ts'
-import type { DrillOutcome } from '../../core/training.ts'
+import type { BaseOutcome } from '../../core/outcomes.ts'
 import { defineSong, type Song } from '../music/song.ts'
 import type { ReverbPreset } from '../engine/reverb.ts'
 import type { BedId } from './ambience.ts'
@@ -26,7 +26,7 @@ export interface DrillCueRecipe {
   musicGainDb: number
   reverb: ReverbPreset
   song: Song
-  stingers: Record<DrillOutcome, Song>
+  stingers: Record<BaseOutcome, Song>
   foley: readonly FoleyTimeline[]
   /** The Slacked stinger's playback-rate sag (§8.3). */
   sag: { rate: number; seconds: number }
@@ -68,7 +68,7 @@ V:lead
 const wf = (id: string, brief: string, abc: string, parts: Parameters<typeof defineSong>[0]['parts'], accomp?: Parameters<typeof defineSong>[0]['accomp']) =>
   defineSong({ id, kind: 'stinger', brief, energy: 2, musicSend: 0.3, abc, parts, accomp, order: ['A'], loopFrom: 0 })
 
-const WATERFALL_STINGERS: Record<DrillOutcome, Song> = {
+const WATERFALL_STINGERS: Record<BaseOutcome, Song> = {
   Great: wf(
     'drill-waterfall-great',
     'Great: a harp glissando rises and a high ocarina note rings out through the roar.',
@@ -187,7 +187,7 @@ V:lead
 const gn = (id: string, brief: string, abc: string, parts: Parameters<typeof defineSong>[0]['parts'], accomp?: Parameters<typeof defineSong>[0]['accomp']) =>
   defineSong({ id, kind: 'stinger', brief, energy: 2, musicSend: 0.3, abc, parts, accomp, order: ['A'], loopFrom: 0 })
 
-const GENERIC_STINGERS: Record<DrillOutcome, Song> = {
+const GENERIC_STINGERS: Record<BaseOutcome, Song> = {
   Great: gn(
     'drill-generic-great',
     'Great: a harp run up to the octave with a high recorder note and a glock double.',

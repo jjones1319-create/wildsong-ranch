@@ -3,6 +3,7 @@ export const LEGACY_TEXT = {
   farewell: {
     passed: 'Farewell, {name}',
     retired: '{name} retires',
+    wandered: '{name} has gone',
     dusk: 'The ranch at dusk. {name} is resting by the gate, the way {they} always liked.',
     bestMoments: 'Best moments',
     lived: 'Lived {n} weeks of {total}',
@@ -19,6 +20,7 @@ export const LEGACY_TEXT = {
     retireNow: 'Walk {them} to the Elder Grove',
     /** After concludeLife. */
     restsNow: '{name} rests on the Memorial wall now.',
+    wildNow: "{name}'s place on the Memorial wall says: went back to the wild.",
     elderNow: '{name} has a sunny spot in the Elder Grove, and can still mentor and fuse.',
     heartstone: '{name} left a Heartstone. Give it to a young monster at Dr. Pell’s Lab.',
     heartstoneLost: 'There was no room for another Heartstone. Dr. Pell keeps up to {n}.',
@@ -35,7 +37,7 @@ export const LEGACY_TEXT = {
     market: 'Market',
     shrine: 'Shrine of Echoes',
     lab: 'Monster Lab',
-    time: 'Time waits with you: the weeks only pass once a monster is home.',
+    time: 'No one is waiting on you right now: the weeks, and your visits, only count once a monster is home.',
   },
   pellLab: {
     title: 'Dr. Pell’s Lab',
@@ -92,7 +94,7 @@ export const LEGACY_TEXT = {
     pctRow: '{pct}%',
     /* Memorial */
     memorialEmpty: 'No names on the wall yet.',
-    cause: { passed: 'Passed away', retired: 'Retired', fused: 'Fused' },
+    cause: { passed: 'Passed away', retired: 'Retired', fused: 'Fused', neglected: 'Left alone', wandered: 'Went back to the wild' },
     livedShort: 'Lived {n} of {total} weeks',
     editEntry: 'Edit name and epitaph',
     nameLabel: 'Name',

@@ -5,7 +5,7 @@ import { UI_TEXT } from '../../data/text/ui.ts'
 import { InstallCard } from '../components/InstallHelp.tsx'
 import { navigate } from '../router.ts'
 import { ready } from '../store/appStore.ts'
-import { game } from '../store/gameStore.ts'
+import { arrival, game } from '../store/gameStore.ts'
 
 const LOGO_URL = `${import.meta.env.BASE_URL}logo.svg`
 
@@ -22,7 +22,7 @@ export function TitleScreen() {
         <p class="title__tagline">{t.tagline}</p>
       </header>
       <nav class="menu" aria-label="Main menu">
-        <button type="button" class={`btn ${g ? 'btn--primary' : ''}`} disabled={!booted || !g} onClick={() => navigate(g?.ended ? 'farewell' : 'ranch')}>
+        <button type="button" class={`btn ${g ? 'btn--primary' : ''}`} disabled={!booted || !g} onClick={() => navigate(g?.ended && !arrival.value ? 'farewell' : 'ranch')}>
           {t.menu.continue}
           {g && d && (
             <>

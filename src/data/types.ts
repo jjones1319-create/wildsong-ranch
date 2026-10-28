@@ -218,6 +218,14 @@ export type FoodId = (typeof FOOD_IDS)[number]
 export const TOY_IDS = ['rubber-ball', 'rope-tug', 'music-box', 'paper-kite', 'squeaky-fish', 'puzzle-cube'] as const
 export type ToyId = (typeof TOY_IDS)[number]
 
+/** GAME_DESIGN §6.9 keepsakes: things a monster finds on a shopping trip; bought, they stay on the ranch (CONTENT §4.2). */
+export const KEEPSAKE_IDS = ['kick-ball', 'pinwheel', 'hay-hammock', 'wind-chime', 'puzzle-board', 'splash-tub', 'star-plush', 'climbing-stump', 'kite-post', 'story-blocks'] as const
+export type KeepsakeId = (typeof KEEPSAKE_IDS)[number]
+
+/** GAME_DESIGN §6.9 the Bond week's activities. */
+export const BOND_ACTIVITIES = ['fetch', 'hide', 'shop'] as const
+export type BondActivity = (typeof BOND_ACTIVITIES)[number]
+
 export const JOURNEY_SITE_IDS = [
   'iron-quarry',
   'windrun-steppe',

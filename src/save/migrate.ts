@@ -24,8 +24,12 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   to rewrite: older results simply have no length, and `tournament.mode` keeps its meaning (the cup's default).
  * - v10 (Calendar): the calendar's ★ reminders (`calendarPins`, keys `${week}:${id}`), empty for older saves.
  * - v11 (Odd Jobs 2): Turnip Sort's best (`turnipBest`) and Meadow Dash's week and best heats (`dashWeek`, `dashBest`).
+ * - v12 (Bonds): Vacation mode (`settings.vacation`), the away clock (`away`, unarmed so an old save is never
+ *   punished on its first launch), keepsakes, each monster's bond boost (`status.bondPct`, with its fallback), the
+ *   endings 'neglected' and 'wandered' (and their Memorial causes), and the new drill result levels in the
+ *   planner log. Nothing to rewrite but the defaults.
  */
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 
 type RawSave = Record<string, unknown>
 
@@ -139,6 +143,15 @@ const MIGRATIONS: Record<number, Migration> = {
   10: (raw) => {
     const next: RawSave = { ...raw, schemaVersion: 11 }
     if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { turnipBest: 0, dashWeek: null, dashBest: 0, ...raw.game }
+    return next
+  },
+  11: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 12 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) {
+      const game = raw.game
+      const settings = isRawSave(game.settings) ? { vacation: false, ...game.settings } : game.settings
+      next.game = { keepsakes: [], away: { armedAt: null, lastGreetAt: null }, ...game, settings }
+    }
     return next
   },
 }

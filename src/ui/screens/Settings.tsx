@@ -17,7 +17,8 @@ import { isStandalone } from '../lib/platform.ts'
 import { goBack, navigate } from '../router.ts'
 import { librarySource, persisted, settings, showToast, updateSettings } from '../store/appStore.ts'
 import { currentTier, reduceMotionNow, setFxIntensity, setFxQuality } from '../store/fxStore.ts'
-import { game, loadSaveFile, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek } from '../store/gameStore.ts'
+import { BONDS_TEXT } from '../../data/text/bonds.ts'
+import { game, loadImportedSave, previewArrival, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek, setVacation } from '../store/gameStore.ts'
 import { applyUpdate, checkForUpdate, lastCheck, needRefresh } from '../store/updateStore.ts'
 
 const SANDBOX_MONEY = 10_000
@@ -80,7 +81,7 @@ export function SettingsScreen() {
 
   const doImport = () => {
     if (!result?.ok || result.kind !== 'save') return
-    loadSaveFile(result.save)
+    loadImportedSave(result.save)
     setImportOpen(false)
     setText('')
     showToast(fill(t.imported, { ranch: result.save.game.breeder.ranchName }))
@@ -174,6 +175,14 @@ export function SettingsScreen() {
           />
         )}
         {g && <Toggle label={t.onePerWeek} hint={t.onePerWeekHint} checked={g.settings.onePerWeek} onChange={setOnePerWeek} />}
+        {g && (
+          <Toggle
+            label={BONDS_TEXT.settings.vacation}
+            hint={fill(BONDS_TEXT.settings.vacationHint, { name: g.monster?.name ?? UI_TEXT.wren })}
+            checked={g.settings.vacation}
+            onChange={setVacation}
+          />
+        )}
       </section>
 
       <section class="card">
@@ -228,6 +237,24 @@ export function SettingsScreen() {
         <button type="button" class="btn" disabled={!g} onClick={() => setConfirmMoney(true)}>
           {t.addMoney}
         </button>
+        <p class="field__label small">{BONDS_TEXT.settings.previews}</p>
+        <p class="muted small">{BONDS_TEXT.settings.previewHint}</p>
+        <div class="btn-grid">
+          {(['greet', 'sad', 'abandoned', 'gone'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              class="btn"
+              disabled={!g?.monster || g.ended !== null}
+              onClick={() => {
+                previewArrival(k)
+                navigate('ranch')
+              }}
+            >
+              {BONDS_TEXT.settings[k === 'greet' ? 'previewGreet' : k === 'sad' ? 'previewSad' : k === 'abandoned' ? 'previewAbandoned' : 'previewGone']}
+            </button>
+          ))}
+        </div>
       </section>
 
       <div class="spacer" />

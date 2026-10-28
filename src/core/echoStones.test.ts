@@ -66,12 +66,16 @@ describe('Echo Stones (CONTENT §13)', () => {
     expect(echoTempo(0, false)).toEqual(echoTempo(1, false))
   })
 
-  it('pays 15G a round with no cap', () => {
+  it('pays 15G a round, and after round 10 each round 1G more than the last, with no cap', () => {
     expect(echoPay(0)).toBe(0)
     expect(echoPay(1)).toBe(ECHO_STONES.payPerRound)
     expect(echoPay(7)).toBe(105)
     expect(echoPay(10)).toBe(150)
-    expect(echoPay(30)).toBe(450)
+    expect(echoPay(11)).toBe(166)
+    expect(echoPay(12)).toBe(183)
+    expect(echoPay(20)).toBe(355)
+    // Each round's own pay: 15G through round 10, then 16G, 17G, …
+    for (let r = 1; r <= 60; r++) expect(echoPay(r) - echoPay(r - 1)).toBe(r <= 10 ? 15 : r + 5)
     expect(echoPay(-3)).toBe(0)
     expect(echoPay(2.9)).toBe(30)
     expect(echoPay(Number.NaN)).toBe(0)
@@ -91,8 +95,8 @@ describe('Echo Stones (CONTENT §13)', () => {
     expect(r.stressRelief).toBe(0)
     // The same week again: refused, nothing changes.
     expect(applyEchoStones(r.state, 9, false)).toMatchObject({ pay: 0, refused: 'played' })
-    // No cap: a long game pays every round.
-    expect(applyEchoStones(g, 24, false).pay).toBe(360)
+    // No cap: a long game pays every round, more and more after round 10.
+    expect(applyEchoStones(g, 24, false).pay).toBe(465)
     expect(canPlayEchoStones(r.state)).toEqual({ ok: false, reason: 'played' })
     // Turnip Sort has its own week.
     const t = applyOddJob(r.state, 10, 0)

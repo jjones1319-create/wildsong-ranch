@@ -1,8 +1,10 @@
 import { DRILL_BY_ID } from '../data/drills.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
 import { UPGRADES } from '../data/tuning.ts'
-import type { BreedId, ExpeditionSiteId, FoodId, FoodEffect, JourneySiteId, StatKey, UnlockChain, Weather } from '../data/types.ts'
+import { KEEPSAKE_BY_ID } from '../data/keepsakes.ts'
+import type { BondActivity, BreedId, ExpeditionSiteId, FoodId, FoodEffect, JourneySiteId, KeepsakeId, StatKey, UnlockChain, Weather } from '../data/types.ts'
 import { availability, endOfWeekTick, type AgingEvent } from './aging.ts'
+import { bondMonster, canBuyKeepsake, fadeBond, keepsakeStress, type BondEffect } from './bond.ts'
 import { dateOf, isMonthStart, isUpgradeOfferWeek, rollWeather, seasonOf } from './calendar.ts'
 import type { Placed } from './creation.ts'
 import { canStartExpedition, startExpedition, tickExpeditionWeek } from './expedition.ts'
@@ -40,6 +42,10 @@ export type WeekEvent =
   | { kind: 'reaction'; reaction: Reaction }
   | { kind: 'rest'; fatigue: number; stress: number }
   | { kind: 'play'; fatigue: number; stress: number }
+  /** §6.9 a Bond week (not the Journey mentor `bond` below): the activity, its score, the effect, the keepsake bought. */
+  | { kind: 'bondWeek'; activity: BondActivity; score: number; effect: BondEffect; bought: KeepsakeId | null; price: number }
+  /** §6.9 the ranch's keepsakes took this much stress off at the end of the week. */
+  | { kind: 'keepsakes'; stress: number }
   | { kind: 'journeyStart'; site: JourneySiteId; cost: number }
   | { kind: 'journeyWeek'; result: JourneyWeekResult }
   | { kind: 'journeyDone'; progress: JourneyProgress }
@@ -160,8 +166,18 @@ export interface ResolveResult {
   journey: JourneyWeekResult | null
 }
 
-/** Phase 3: the one action of the week. */
+/**
+ * Phase 3: the one action of the week. Every week but a Bond week fades the bond boost by 0.25 afterwards, so the
+ * boost lifts the drills of the weeks that follow a Bond week (×1.75, ×1.5, ×1.25).
+ */
 export function resolveAction(input: GameState, action: WeekAction, rng: Rng): ResolveResult {
+  const r = resolveActionOnce(input, action, rng)
+  const bonded = r.events.some((e) => e.kind === 'bondWeek')
+  if (bonded || !r.state.monster) return r
+  return { ...r, state: { ...r.state, monster: fadeBond(r.state.monster) } }
+}
+
+function resolveActionOnce(input: GameState, action: WeekAction, rng: Rng): ResolveResult {
   const state = structuredClone(input)
   const events: WeekEvent[] = [{ kind: 'phase', phase: 'action' }]
   const none: ResolveResult = { state, events, drill: null, journey: null }
@@ -229,6 +245,19 @@ export function resolveAction(input: GameState, action: WeekAction, rng: Rng): R
       events.push({ kind: 'play', fatigue: r.fatigue, stress: r.stress })
       return { state, events, drill: null, journey: null }
     }
+    case 'bondWeek': {
+      // The keepsake is bought only if the ranch can afford it and doesn't have it yet; the week happens either way.
+      const buy = chosen.activity === 'shop' && chosen.buy && canBuyKeepsake(state.money, state.keepsakes, chosen.buy) ? chosen.buy : null
+      const price = buy ? KEEPSAKE_BY_ID[buy].price : 0
+      if (buy) {
+        state.money -= price
+        state.keepsakes = [...state.keepsakes, buy]
+      }
+      const r = bondMonster(m, chosen.activity, chosen.score, buy !== null)
+      state.monster = r.monster
+      events.push({ kind: 'bondWeek', activity: chosen.activity, score: chosen.score, effect: r.effect, bought: buy, price })
+      return { state, events, drill: null, journey: null }
+    }
     case 'journey': {
       const month = dateOf(state.week).month
       if (!isSiteOpen(chosen.site, month) || !canEnterSite(m, chosen.site).ok) {
@@ -289,6 +318,12 @@ export function endWeek(input: GameState, rng: Rng): { state: GameState; events:
   if (state.monster && !state.ended) {
     const tick = endOfWeekTick(state.monster, state.difficulty, rng)
     state.monster = tick.monster
+    const calm = keepsakeStress(state.keepsakes)
+    if (calm > 0 && state.monster.stress > 0) {
+      const before = state.monster.stress
+      state.monster.stress = addCondition(before, -calm)
+      events.push({ kind: 'keepsakes', stress: state.monster.stress - before })
+    }
     if (tick.fees > 0) {
       state.money -= tick.fees
       events.push({ kind: 'fees', amount: tick.fees })

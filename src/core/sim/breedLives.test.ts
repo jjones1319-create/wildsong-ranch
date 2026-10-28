@@ -21,7 +21,8 @@ describe('every breed under Good and Neglect care (§26, sampled)', () => {
       const [y1, , y3] = good.totalsByYear
       expect(y1!).toBeGreaterThan(400)
       expect(y3!).toBeGreaterThan(y1! * 1.5)
-      expect(good.outcomesPct.Great + good.outcomesPct.Success).toBeGreaterThan(70)
+      const o = good.outcomesPct
+      expect(o.Perfect + o.Superb + o.Great + o.Good + o.Success).toBeGreaterThan(70)
 
       const neglect = averageReports(Array.from({ length: NEGLECT_SEEDS }, (_, i) => simulateLife({ breed, policy: 'Neglect', seed: 700 + i })))
       expect(neglect.lifeLivedPct).toBeLessThan(good.lifeLivedPct - 25)

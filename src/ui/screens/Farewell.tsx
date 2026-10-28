@@ -38,14 +38,15 @@ export function FarewellScreen() {
   if (done) {
     const { result, name } = done
     const retired = result.cause === 'retired'
+    const wild = result.cause === 'wandered'
     return (
       <main class="screen">
-        <TopBar title={fill(retired ? t.retired : t.passed, { name })} />
+        <TopBar title={fill(retired ? t.retired : wild ? t.wandered : t.passed, { name })} />
         <div class="farewell__art dusk">
-          <MonsterPortrait monster={result.state.memorial[0]!.monster} size={160} expression={retired ? 'happy' : 'sleepy'} animate={false} />
+          <MonsterPortrait monster={result.state.memorial[0]!.monster} size={160} expression={retired ? 'happy' : wild ? 'sad' : 'sleepy'} animate={false} />
         </div>
         <section class="card">
-          <p>{fill(retired ? t.elderNow : t.restsNow, { name })}</p>
+          <p>{fill(retired ? t.elderNow : wild ? t.wildNow : t.restsNow, { name })}</p>
           {result.heartstone ? <p class="notice notice--ok">{fill(t.heartstone, { name })}</p> : result.heartstoneLost ? <p class="notice">{fill(t.heartstoneLost, { n: heartstoneCap(result.state) })}</p> : null}
         </section>
         <div class="spacer" />
@@ -64,7 +65,10 @@ export function FarewellScreen() {
   if (!g.monster || !g.ended) return null
   const m = g.monster
   const retired = g.ended === 'retired'
-  const pronounLine = say(retired ? 'retireScene' : 'farewellScene', retired ? WREN.retireScene : WREN.farewellScene, m).text
+  const wild = g.ended === 'wandered'
+  // §6.10 a life that ended because no one came has its own words.
+  const scene = retired ? WREN.retireScene : wild ? WREN.wanderScene : g.ended === 'neglected' ? WREN.neglectScene : WREN.farewellScene
+  const pronounLine = say('farewellScene', scene, m).text
   const moments: string[] = []
   if (m.records.highestGrade !== 'E') moments.push(fill(WREN.moments.grade, { grade: m.records.highestGrade }))
   if (m.records.wins > 0) moments.push(fill(WREN.moments.wins, { n: m.records.wins }))
@@ -87,9 +91,9 @@ export function FarewellScreen() {
 
   return (
     <main class="screen">
-      <TopBar title={fill(retired ? t.retired : t.passed, { name: m.name })} />
+      <TopBar title={fill(retired ? t.retired : wild ? t.wandered : t.passed, { name: m.name })} />
       <div class="farewell__art dusk">
-        <MonsterPortrait monster={m} size={200} expression={retired ? 'happy' : 'sleepy'} />
+        <MonsterPortrait monster={m} size={200} expression={retired ? 'happy' : wild ? 'sad' : 'sleepy'} />
       </div>
       <SpeakerCard speaker={UI_TEXT.wren}>
         <p>{pronounLine}</p>

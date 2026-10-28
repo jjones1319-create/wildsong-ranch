@@ -99,6 +99,7 @@ export function chooseAction(input: GameState, action: WeekAction, rng: Rng): Ac
   state = r.state
   events.push(...r.events)
   const done = r.events.some((e) => e.kind === 'drill') ? 'drill' : r.events.some((e) => e.kind === 'rest' || e.kind === 'play') ? 'rest' : null
+  // A Bond week is never "repeated" (its game has to be played), so it leaves the last action alone.
   if (done === 'drill') {
     state.counters.drillsDone += 1
     state.lastAction = action

@@ -29,7 +29,7 @@ const NOTES_KEY = 'wildsong/soundNotes'
 type Tab = 'music' | 'ambience' | 'effects' | 'moments' | 'mix'
 type Notes = Record<string, { v: 1 | -1; note: string }>
 const FX_KINDS: FxEventKind[] = ['fire', 'travel', 'hit', 'crit', 'miss', 'ko', 'special', 'push', 'dash', 'distract', 'wither', 'heal']
-const OUTCOMES: DrillOutcome[] = ['Great', 'Success', 'Cheat', 'Fail', 'Slacked']
+const OUTCOMES: DrillOutcome[] = ['Perfect', 'Superb', 'Great', 'Good', 'Success', 'Cheat', 'Fail', 'Slacked']
 const REACTIONS: CrowdReaction[] = ['cheer', 'ooh', 'murmur', 'ko', 'applause', 'clap']
 
 function readNotes(): Notes {

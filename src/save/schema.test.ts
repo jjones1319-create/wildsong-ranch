@@ -293,3 +293,35 @@ describe('schema version 11 (Odd Jobs 2)', () => {
     }
   })
 })
+
+describe('schema version 12 (Bonds)', () => {
+  it('migrates a version-11 save: Vacation off, an unarmed away clock, no keepsakes, every monster at no bond boost', () => {
+    const game = structuredClone(createGameState({ monster: makeMonster() })) as unknown as Record<string, unknown>
+    delete game.keepsakes
+    delete game.away
+    game.settings = { onePerWeek: false }
+    delete ((game.monster as Record<string, unknown>).status as Record<string, unknown>).bondPct
+    const v11 = { schemaVersion: 11, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.8.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v11))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game).toMatchObject({ keepsakes: [], away: { armedAt: null, lastGreetAt: null }, settings: { onePerWeek: false, vacation: false } })
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.monster!.status.bondPct).toBe(100)
+    expect(r.save.game).toEqual(createGameState({ monster: r.save.game.monster }))
+    // Garbage is clamped or dropped, never fatal; the new endings and levels are accepted.
+    const bad = JSON.parse(JSON.stringify(up)) as { game: Record<string, unknown> & { monster: { status: Record<string, unknown> } } }
+    bad.game.keepsakes = ['pinwheel', 'pinwheel', 'not-a-thing', 7]
+    bad.game.away = { armedAt: -5, lastGreetAt: 'soon' }
+    bad.game.monster.status.bondPct = 900
+    bad.game.ended = 'neglected'
+    const r2 = validateSave(bad)
+    expect(r2.ok).toBe(true)
+    if (!r2.ok) return
+    expect(r2.save.game.keepsakes).toEqual(['pinwheel', 'kick-ball'])
+    expect(r2.save.game.away).toEqual({ armedAt: null, lastGreetAt: null })
+    expect(r2.save.game.monster!.status.bondPct).toBe(175)
+    expect(r2.save.game.ended).toBe('neglected')
+  })
+})

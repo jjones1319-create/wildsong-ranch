@@ -2,11 +2,11 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { AUDIO, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { AUDIO, BOND, FREEZER, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, KEEPSAKE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -97,6 +97,7 @@ const StatusSchema = v.fallback(
     warnedQuarterLife: bool(false),
     warned48: bool(false),
     warned10: bool(false),
+    bondPct: int(100, BOND.boostPct, 100),
   }),
   {
     injuredWeeks: 0,
@@ -114,6 +115,7 @@ const StatusSchema = v.fallback(
     warnedQuarterLife: false,
     warned48: false,
     warned10: false,
+    bondPct: 100,
   },
 )
 
@@ -182,6 +184,8 @@ const JourneySchema = v.object({
 })
 
 const stamp = () => int(0, Number.MAX_SAFE_INTEGER, 0)
+/** A real-world time in ms, or null; anything that isn't a positive, finite number becomes null. */
+const maybeTime = () => v.fallback(v.nullable(v.pipe(v.number(), v.finite(), v.minValue(1), v.transform((n) => Math.round(n)))), null)
 
 const HistoryEntrySchema = v.object({ monster: MonsterSchema, savedAt: stamp() })
 
@@ -239,7 +243,7 @@ const PLANNER_STOPS = [
 const PlannerLogSchema = v.object({
   week: int(0, 1_000_000, 0),
   step: PlannerStepSchema,
-  outcome: v.fallback(v.nullable(v.picklist(['Great', 'Success', 'Cheat', 'Fail', 'Slacked'] as const)), null),
+  outcome: v.fallback(v.nullable(v.picklist(['Perfect', 'Superb', 'Great', 'Good', 'Success', 'Cheat', 'Fail', 'Slacked'] as const)), null),
   gains: v.fallback(v.record(v.picklist(STAT_KEYS), int(-100_000, 100_000, 0)), {}),
   pay: int(0, 1_000_000_000, 0),
 })
@@ -328,7 +332,7 @@ const JourneysBySiteSchema = v.fallback(
 
 const MemorialSchema = v.object({
   monster: MonsterSchema,
-  cause: oneOf(['passed', 'retired', 'fused'] as const, 'passed'),
+  cause: oneOf(['passed', 'retired', 'fused', 'neglected', 'wandered'] as const, 'passed'),
   epitaph: text('', 80),
   week: int(0, 1_000_000, 0),
 })
@@ -434,7 +438,7 @@ export const GameStateSchema = v.object({
   week: int(0, 1_000_000, 0),
   money: int(-1_000_000_000, 1_000_000_000, 0),
   difficulty: oneOf(DIFFICULTIES, 'Standard'),
-  settings: v.fallback(v.object({ onePerWeek: bool(false) }), { onePerWeek: false }),
+  settings: v.fallback(v.object({ onePerWeek: bool(false), vacation: bool(false) }), { onePerWeek: false, vacation: false }),
   monster: v.nullable(MonsterSchema),
   inventory: v.fallback(v.record(v.string(), int(0, 1_000_000_000, 0)), {}),
   songbook: v.fallback(v.array(v.string()), []),
@@ -448,7 +452,7 @@ export const GameStateSchema = v.object({
   weather: oneOf(WEATHERS, 'Sunny'),
   itemsUsedThisWeek: int(0, 1_000_000, 0),
   journey: v.fallback(v.nullable(JourneySchema), null),
-  ended: v.fallback(v.nullable(v.picklist(['passed', 'retired'] as const)), null),
+  ended: v.fallback(v.nullable(v.picklist(['passed', 'retired', 'neglected', 'wandered'] as const)), null),
   breeder: v.fallback(v.object({ name: text('Breeder', 24), ranchName: text('Wildsong Ranch', 24), rank: int(1, 10, 1) }), { name: 'Breeder', ranchName: 'Wildsong Ranch', rank: 1 }),
   weekPhase: oneOf(['start', 'action'] as const, 'start'),
   pendingRequest: RequestSchema,
@@ -483,6 +487,15 @@ export const GameStateSchema = v.object({
   echoStonesBest: int(0, 10_000, 0),
   dashWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   dashBest: int(0, 10_000, 0),
+  keepsakes: v.fallback(
+    v.pipe(
+      v.array(v.fallback(v.picklist(KEEPSAKE_IDS), KEEPSAKE_IDS[0])),
+      v.transform((ids) => [...new Set(ids)]),
+    ),
+    [],
+  ),
+  // §6.10 a bad time is "not armed" (never 0, which would read as armed long ago and could punish an import).
+  away: v.fallback(v.object({ armedAt: maybeTime(), lastGreetAt: maybeTime() }), { armedAt: null, lastGreetAt: null }),
   calendarPins: v.fallback(
     v.pipe(
       v.array(v.fallback(v.pipe(v.string(), v.regex(/^\d{1,6}:[a-z0-9-]{1,40}$/)), '')),

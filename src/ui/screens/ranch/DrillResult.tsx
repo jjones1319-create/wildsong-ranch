@@ -19,7 +19,10 @@ import { closeResult, dismissTip, reactTo, tipFor, type ResultFlow } from '../..
 
 function expressionFor(f: ResultFlow): { expression: Expression; mischief: boolean } {
   switch (f.drill.outcome) {
+    case 'Perfect':
+    case 'Superb':
     case 'Great':
+    case 'Good':
     case 'Success':
       return { expression: 'happy', mischief: false }
     case 'Cheat':

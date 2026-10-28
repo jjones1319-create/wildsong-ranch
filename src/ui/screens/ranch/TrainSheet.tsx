@@ -10,13 +10,15 @@ import { DRILL } from '../../../data/tuning.ts'
 import type { Drill } from '../../../data/types.ts'
 import { Segmented, Sheet } from '../../components/Controls.tsx'
 import { settings } from '../../store/appStore.ts'
-import { closeTrain, game, takeAction } from '../../store/gameStore.ts'
+import { BONDS_TEXT } from '../../../data/text/bonds.ts'
+import { BOND_ACTIVITIES, type BondActivity } from '../../../data/types.ts'
+import { closeTrain, game, startBond, takeAction } from '../../store/gameStore.ts'
 
 /** §6.1 and §21: Light and Heavy drills with stat arrows, stars, tags and odds by transparency mode. */
 export function TrainSheet({ open }: { open: boolean }) {
   const g = game.value
   const t = UI_TEXT.train
-  const [tab, setTab] = useState<'light' | 'heavy'>('light')
+  const [tab, setTab] = useState<'light' | 'heavy' | 'bond'>('light')
   if (!open || !g || !g.monster) return null
   const m = g.monster
   const mode = settings.value.transparency
@@ -28,6 +30,12 @@ export function TrainSheet({ open }: { open: boolean }) {
     closeTrain()
     takeAction({ kind: 'drill', drill: d.id })
   }
+  const bond = (a: BondActivity) => {
+    closeTrain()
+    startBond(a)
+  }
+  const b = BONDS_TEXT.bond
+  const say = (s: string) => fill(s, { name: m.name, them: 'them', their: 'their', they: 'they' })
 
   return (
     <Sheet open title={t.title} onClose={closeTrain}>
@@ -35,13 +43,32 @@ export function TrainSheet({ open }: { open: boolean }) {
         options={[
           { value: 'light', label: t.tabs.light },
           { value: 'heavy', label: t.tabs.heavy },
+          { value: 'bond', label: b.tab },
         ]}
         value={tab}
         onChange={setTab}
         label={t.title}
       />
-      <p class="muted small">{tab === 'light' ? t.lightHint : t.heavyHint}</p>
-      <div class="list">
+      {tab === 'bond' && (
+        <>
+          <p class="muted small">{say(b.hint)}</p>
+          {m.status.bondPct > 100 && <p class="small jobcard__status">{fill(b.boostNow, { x: (m.status.bondPct / 100).toFixed(2) })}</p>}
+          <div class="list">
+            {BOND_ACTIVITIES.map((a) => (
+              <button key={a} type="button" class="drill" onClick={() => bond(a)}>
+                <span class="drill__head">
+                  <span class="drill__name">
+                    {b.activities[a].icon} {b.activities[a].name}
+                  </span>
+                </span>
+                <span class="muted small">{say(b.activities[a].blurb)}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {tab !== 'bond' && <p class="muted small">{tab === 'light' ? t.lightHint : t.heavyHint}</p>}
+      <div class="list" hidden={tab === 'bond'}>
         {drills.map((d) => {
           const locked = d.needsTrainingYard && !g.upgrades.trainingYard
           const stars = starsFor(m.stats[d.main])
@@ -74,6 +101,7 @@ export function TrainSheet({ open }: { open: boolean }) {
                 {!locked && mode === 'lens' && (
                   <>
                     <span class="drill__odds">{fill(t.exact, { g: odds.pct.great.toFixed(0), s: odds.pct.success.toFixed(0), c: odds.pct.cheat.toFixed(0), f: odds.pct.fail.toFixed(0) })}</span>
+                    {odds.superb > 0 && <span class="drill__tag drill__tag--love">{fill(t.topLevels, { s: odds.superb.toFixed(0), p: odds.perfect.toFixed(0) })}</span>}
                     {odds.truancyPct > 0 && <span class="drill__tag drill__tag--down">{fill(t.truancy, { n: odds.truancyPct.toFixed(0) })}</span>}
                   </>
                 )}

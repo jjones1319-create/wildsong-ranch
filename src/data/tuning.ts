@@ -116,8 +116,16 @@ export const BIRTH = {
 export const DRILL = {
   light: { fatigue: 10, stress: 4, form: -1, pay: 30 },
   heavy: { fatigue: 15, stress: 9, form: -2, pay: 50 },
-  greatPayBonusPct: 50,
-  greatFatigueRelief: 3,
+  /**
+   * §6.3 the result levels above Fine (Success): extra main and secondary gain (added after the light/heavy and
+   * secondary caps, so it is never lost), fatigue saved, and extra chore pay (percent).
+   */
+  levels: {
+    Good: { main: 2, second: 0, fatigueRelief: 1, payPct: 0 },
+    Great: { main: 4, second: 1, fatigueRelief: 3, payPct: 50 },
+    Superb: { main: 5, second: 1, fatigueRelief: 4, payPct: 75 },
+    Perfect: { main: 7, second: 2, fatigueRelief: 6, payPct: 100 },
+  },
   cheatFatigueRelief: 5,
   /** Main stat under the first value → 1★, under the second → 2★, otherwise 3★. */
   starThresholds: [300, 600] as readonly number[],
@@ -133,8 +141,6 @@ export const DRILL = {
     secondMin: 1,
     secondMax: 10,
     noise: { min: -1, max: 1 },
-    greatMainBonus: 3,
-    greatSecondBonus: 1,
     cheatMainDivisor: 2,
     cheatSecond: { min: 0, max: 1 },
     loweredOnSuccess: { min: 2, max: 3 },
@@ -150,7 +156,7 @@ export const OUTCOME = {
   great: {
     base: 10_000,
     loyaltyOver: 40,
-    loyaltyPer: 150,
+    loyaltyPer: 200,
     naturePer: 100,
     fatigueOver: 40,
     fatiguePer: 200,
@@ -178,6 +184,16 @@ export const OUTCOME = {
   },
   floors: { great: 1_000, cheat: 1_000, fail: 2_000, success: 20_000 },
   total: 100_000,
+  /**
+   * §6.2 step 3: loyalty splits the buckets into levels, in thousandths of the bucket. Of the great bucket,
+   * Perfect takes `per` × (loyalty − minLoyalty + 1) from loyalty `minLoyalty` up to `max`, Superb likewise, and
+   * Great the rest; of the success bucket, Good takes `per` × (loyalty − over) up to `max`, and Fine the rest.
+   */
+  levels: {
+    perfect: { minLoyalty: 70, per: 10, max: 450 },
+    superb: { minLoyalty: 50, per: 6, max: 300 },
+    good: { loyaltyOver: 20, per: 3, max: 250 },
+  },
 } as const
 
 /** §6.4 praise / scold / skip effects. `scoldStressBad` applies when nature < 0. */
@@ -863,7 +879,9 @@ export const ECHO_STONES = {
   firstStones: 4,
   stones: 5,
   moonRound: 11,
+  /** 15G a round; every round after `payRiseAfter` pays 1G more than the one before (round 11 = 16G, 12 = 17G…). */
   payPerRound: 15,
+  payRiseAfter: 10,
   /** Reaching this round takes this much stress off the monster (paid plays only). */
   stressRound: 8,
   stressRelief: 5,
@@ -915,6 +933,50 @@ export const DASH = {
   resultLockMs: 800,
   clickDedupeMs: 400,
   hapticEveryMs: 80,
+} as const
+
+/**
+ * GAME_DESIGN §6.9 Bond weeks and keepsakes. A Bond week sets the training boost to `boostPct` (percent of every
+ * drill gain); each later week takes `decayPct` off, down to 100. A Bond week relieves stress by base + perPoint ×
+ * score and adds spoil (affection) the same way; it costs a little fatigue (play is still play). Shopping counts as
+ * `shopScore`; buying the keepsake adds `buySpoil`. Keepsakes on the ranch take `keepsakeStress` off each week, at
+ * most `keepsakeStressMax` in all; the ranch shows `keepsakesShown` of them.
+ */
+export const BOND = {
+  boostPct: 175,
+  decayPct: 25,
+  stressRelief: { base: 8, perPoint: 2 },
+  spoil: { base: 2, perPoint: 1 },
+  fatigue: 4,
+  maxScore: 5,
+  shopScore: 3,
+  buySpoil: 3,
+  keepsakeStress: 1,
+  keepsakeStressMax: 4,
+  keepsakesShown: 4,
+  /** Fetch: throws per game; the power bar's cycle and its green zone (percent of the bar). Times are ms. */
+  fetch: { throws: 5, barCycleMs: 1400, zone: { from: 62, to: 84 }, runMs: 1100, backMs: 900 },
+  /** Hide-and-seek: rounds, haystacks, how long the rustle shows, and how long you have to pick. */
+  hide: { rounds: 5, spots: 4, rustleMs: 450, pickMs: 3500, hideMs: 900 },
+} as const
+
+/**
+ * GAME_DESIGN §6.10 arriving at the ranch (times in ms of real time, measured in the UI and passed in). After
+ * `greetAfterMs` away (and at most once every `greetEveryMs`) your monster comes to say hello; its loyalty picks
+ * how. After `sadMs` it is sad, after `abandonedMs` the ranch looks abandoned, and after `goneMs` it has gone.
+ * Vacation mode turns the away check off.
+ */
+export const ARRIVAL = {
+  greetAfterMs: 2 * 3600000,
+  greetEveryMs: 12 * 3600000,
+  greetLoyalty: { happy: 50, curious: 25 },
+  pet: { spoil: 1, stress: -2 },
+  treat: { price: 20, spoil: 3, stress: -3 },
+  sadMs: 24 * 3600000,
+  abandonedMs: 48 * 3600000,
+  goneMs: 96 * 3600000,
+  sad: { stress: 15, spoil: -10, fear: -5 },
+  abandoned: { stress: 30, spoil: -20, fear: -10, lifespanWeeks: 2, sickWeeks: 1 },
 } as const
 
 /** CONTENT §14 title thresholds that are not tournament placings. */

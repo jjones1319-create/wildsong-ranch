@@ -17,12 +17,12 @@ import {
   traitOf,
   type Monster,
 } from './monster.ts'
+import { isGoodOutcome, ROLLED_OUTCOMES, baseOutcome, type DrillOutcome, type RolledOutcome } from './outcomes.ts'
 import type { Rng } from './rng.ts'
 
 /** GAME_DESIGN §6: drills, outcomes, gains, praise and scold, rest, play and requests. */
 
-export type DrillOutcome = 'Great' | 'Success' | 'Cheat' | 'Fail' | 'Slacked'
-export const ROLLED_OUTCOMES = ['Great', 'Success', 'Cheat', 'Fail'] as const
+export { baseOutcome, isGoodOutcome, ROLLED_OUTCOMES, type BaseOutcome, type DrillOutcome, type RolledOutcome } from './outcomes.ts'
 
 /** Weights in thousandths of a percent point (see tuning OUTCOME). */
 export interface OutcomeWeights {
@@ -31,6 +31,9 @@ export interface OutcomeWeights {
   cheat: number
   fail: number
 }
+
+/** Every level's weight, after loyalty splits the great and success buckets (§6.2 step 3). */
+export type LevelWeights = Record<RolledOutcome, number>
 
 export interface TrainingSetting {
   trainingYard: boolean
@@ -86,8 +89,36 @@ export function outcomePercents(w: OutcomeWeights): OutcomeWeights {
   return { great: (w.great * 100) / total, success: (w.success * 100) / total, cheat: (w.cheat * 100) / total, fail: (w.fail * 100) / total }
 }
 
-export function rollOutcome(w: OutcomeWeights, rng: Rng): Exclude<DrillOutcome, 'Slacked'> {
-  return rng.weightedPick(ROLLED_OUTCOMES, (o) => (o === 'Great' ? w.great : o === 'Success' ? w.success : o === 'Cheat' ? w.cheat : w.fail))
+/** §6.2 step 3: the share (thousandths) of its bucket that goes to Perfect, Superb and Good at this loyalty. */
+export function levelShares(loyalty: number): { perfect: number; superb: number; good: number } {
+  const v = OUTCOME.levels
+  const from = (min: number, per: number, max: number): number => (loyalty >= min ? Math.min(max, (loyalty - min + 1) * per) : 0)
+  return {
+    perfect: from(v.perfect.minLoyalty, v.perfect.per, v.perfect.max),
+    superb: from(v.superb.minLoyalty, v.superb.per, v.superb.max),
+    good: Math.min(v.good.max, Math.max(0, (loyalty - v.good.loyaltyOver) * v.good.per)),
+  }
+}
+
+/** Splits the four buckets into the seven levels. Integer weights that add up to the buckets' total. */
+export function levelWeights(w: OutcomeWeights, loyalty: number): LevelWeights {
+  const s = levelShares(loyalty)
+  const perfect = divRound(w.great * s.perfect, 1000)
+  const superb = divRound(w.great * s.superb, 1000)
+  const good = divRound(w.success * s.good, 1000)
+  return { Perfect: perfect, Superb: superb, Great: w.great - perfect - superb, Good: good, Success: w.success - good, Cheat: w.cheat, Fail: w.fail }
+}
+
+/** Normalized level percentages (floats, for display and tests). */
+export function levelPercents(w: LevelWeights): LevelWeights {
+  const total = ROLLED_OUTCOMES.reduce((sum, o) => sum + w[o], 0)
+  const out = {} as LevelWeights
+  for (const o of ROLLED_OUTCOMES) out[o] = (w[o] * 100) / total
+  return out
+}
+
+export function rollOutcome(w: LevelWeights, rng: Rng): RolledOutcome {
+  return rng.weightedPick(ROLLED_OUTCOMES, (o) => w[o])
 }
 
 /** §6.2 step 1: only possible at fatigue ≥ 70. */
@@ -143,7 +174,8 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
     }
   }
 
-  const outcome = rollOutcome(outcomeWeights(m, drillId, setting), rng)
+  const outcome = rollOutcome(levelWeights(outcomeWeights(m, drillId, setting), loyaltyOf(m)), rng)
+  const level = outcome === 'Good' || outcome === 'Great' || outcome === 'Superb' || outcome === 'Perfect' ? DRILL.levels[outcome] : null
   const heavy = drill.kind === 'heavy'
   const costs = heavy ? DRILL.heavy : DRILL.light
   const g = DRILL.gains
@@ -154,17 +186,24 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
     let main = scaledGain(heavy ? g.heavyBase : g.lightBase, m.grades[drill.main], stage, rng.nextInt(g.noise.min, g.noise.max), heavy ? g.heavyMin : g.lightMin, mainMax)
     let second = 0
     if (drill.secondary) second = scaledGain(g.secondBase, m.grades[drill.secondary], stage, rng.nextInt(g.noise.min, g.noise.max), g.secondMin, g.secondMax)
-    if (outcome === 'Great') {
-      main = Math.min(mainMax, main + g.greatMainBonus)
-      if (drill.secondary) second = Math.min(g.secondMax, second + g.greatSecondBonus)
+    // The level's bonus comes after the caps, so a capped gain still gets all of it.
+    if (level) {
+      main += level.main
+      if (drill.secondary) second += level.second
     }
     if (outcome === 'Cheat') {
       main = Math.max(1, Math.floor(main / g.cheatMainDivisor))
       if (drill.secondary) second = rng.nextInt(g.cheatSecond.min, g.cheatSecond.max)
     }
-    if (outcome === 'Success' || outcome === 'Great') {
+    if (isGoodOutcome(outcome)) {
       if (BREED_BY_ID[m.mainBreed].bonusDrill === drillId) main += g.breedBonusDrill
       if ((m.status.tonics[drill.main] ?? 0) > 0) main += g.tonicBonus
+    }
+    // The bond boost (a Bond week: ×1.75, then 0.25 less each week) multiplies the whole gain, last.
+    const boost = m.status.bondPct
+    if (boost > 100) {
+      main = divRound(main * boost, 100)
+      second = divRound(second * boost, 100)
     }
     const before = m.stats[drill.main]
     m.stats[drill.main] = addStat(before, main)
@@ -183,7 +222,7 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
   }
 
   let fatigue: number = costs.fatigue
-  if (outcome === 'Great') fatigue -= DRILL.greatFatigueRelief
+  if (level) fatigue -= level.fatigueRelief
   if (outcome === 'Cheat') fatigue -= DRILL.cheatFatigueRelief
   if (trait === 'clockwork') fatigue = divRound(fatigue * TRAIT_EFFECTS.clockworkDrillFatiguePct, 100)
   const stress = costs.stress
@@ -193,9 +232,9 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
   m.form = addForm(m.form, form)
 
   let pay = 0
-  if (outcome === 'Success' || outcome === 'Great') {
+  if (isGoodOutcome(outcome)) {
     pay = costs.pay
-    if (outcome === 'Great') pay = divRound(pay * (100 + DRILL.greatPayBonusPct), 100)
+    if (level) pay = divRound(pay * (100 + level.payPct), 100)
     if (trait === 'gilded') pay *= TRAIT_EFFECTS.gildedChorePayMul
   }
 
@@ -207,7 +246,7 @@ export type Reaction = 'praise' | 'scold' | 'skip'
 /** §6.4 praise / scold / skip after a drill (or truancy). Cheerful halves the stress from scolding. */
 export function applyReaction(input: Monster, outcome: DrillOutcome, reaction: Reaction): Monster {
   const m = structuredClone(input)
-  const table = REACTIONS[outcome]
+  const table = REACTIONS[baseOutcome(outcome)]
   if (reaction === 'scold') {
     const r = table.scold
     let stress: number = m.nature < 0 ? r.stressBad : r.stress

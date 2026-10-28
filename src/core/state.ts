@@ -1,6 +1,6 @@
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { DIFFICULTY, ECONOMY } from '../data/tuning.ts'
-import type { BreedId, Difficulty, DrillId, ExpeditionSiteId, Family, FoodId, Habit, JourneySiteId, MailKind, Personality, Stats, TournamentGrade, UnlockChain, Weather } from '../data/types.ts'
+import type { BondActivity, BreedId, Difficulty, DrillId, ExpeditionSiteId, Family, FoodId, Habit, JourneySiteId, KeepsakeId, MailKind, Personality, Stats, TournamentGrade, UnlockChain, Weather } from '../data/types.ts'
 import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
@@ -20,7 +20,19 @@ export interface Upgrades {
 export interface GameSettings {
   /** The optional "one item per week" rule (on by default only in Classic). */
   onePerWeek: boolean
+  /** §6.10 Vacation mode: the away check is off (your monster won't miss you). */
+  vacation: boolean
 }
+
+/** §6.10 the away clock (real time, ms): when it started, and the last time the monster said hello. */
+export interface AwayClock {
+  /** Null until the clock is armed (a save's first launch of v1.9, a new game, an import, vacation ending). */
+  armedAt: number | null
+  lastGreetAt: number | null
+}
+
+/** How the active monster's life ended: old age, retirement (Gentle), or left alone too long (§6.10). */
+export type LifeEnd = 'passed' | 'retired' | 'neglected' | 'wandered'
 
 export interface Breeder {
   name: string
@@ -34,6 +46,8 @@ export type WeekAction =
   | { kind: 'drill'; drill: DrillId }
   | { kind: 'rest' }
   | { kind: 'play' }
+  /** §6.9 a Bond week: the game's score (0–5; a shopping trip counts as 3) and the keepsake bought, if any. */
+  | { kind: 'bondWeek'; activity: BondActivity; score: number; buy: KeepsakeId | null }
   | { kind: 'journey'; site: JourneySiteId }
   /** §17: the trip starts; the map is played at once and weeks 2–4 pass as away weeks. */
   | { kind: 'expedition'; site: ExpeditionSiteId }
@@ -179,7 +193,7 @@ export interface MailItem {
 
 /* ---------- legacy (§14.1, §15, §16) ---------- */
 
-export type MemorialCause = 'passed' | 'retired' | 'fused'
+export type MemorialCause = 'passed' | 'retired' | 'fused' | 'neglected' | 'wandered'
 
 export interface MemorialEntry {
   /** The monster as it was at the end; its id stays the monster's id (the family tree points at it). */
@@ -318,8 +332,8 @@ export interface GameState {
   weather: Weather
   itemsUsedThisWeek: number
   journey: JourneyProgress | null
-  /** Set by the end-of-week tick when the active monster's life ended. */
-  ended: 'passed' | 'retired' | null
+  /** Set by the end-of-week tick (old age) or the away check (§6.10) when the active monster's life ended. */
+  ended: LifeEnd | null
   breeder: Breeder
   weekPhase: WeekPhase
   /** The request the monster made at the start of this week, until the player answers it. */
@@ -373,6 +387,10 @@ export interface GameState {
   /** The week index of the last paid Meadow Dash run, and the most heats won in one run (practice counts). */
   dashWeek: number | null
   dashBest: number
+  /** §6.9 keepsakes bought on Bond weeks' shopping trips; they stay on the ranch. */
+  keepsakes: KeepsakeId[]
+  /** §6.10 the away clock. */
+  away: AwayClock
   /** §3 the calendar's ★ reminders: `${weekIndex}:${eventId or expeditionSiteId}`. Past ones are dropped at each week's end. */
   calendarPins: string[]
   /** The absolute month the Lantern Garden was last visited (once a month). */
@@ -416,7 +434,7 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     week: 0,
     money: ECONOMY.startMoney,
     difficulty,
-    settings: { onePerWeek: DIFFICULTY[difficulty].onePerWeekDefault },
+    settings: { onePerWeek: DIFFICULTY[difficulty].onePerWeekDefault, vacation: false },
     monster: opts.monster ?? null,
     inventory: {},
     songbook: [],
@@ -460,6 +478,8 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     echoStonesBest: 0,
     dashWeek: null,
     dashBest: 0,
+    keepsakes: [],
+    away: { armedAt: null, lastGreetAt: null },
     calendarPins: [],
     memorialVisitMonth: null,
     planner: emptyPlanner(),

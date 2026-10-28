@@ -1,6 +1,7 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { EXPEDITION_SITE_BY_ID } from '../data/expeditions.ts'
 import { FOOD_BY_ID } from '../data/foods.ts'
+import { KEEPSAKE_BY_ID } from '../data/keepsakes.ts'
 import { JOURNEY_SITE_BY_ID } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
@@ -75,8 +76,14 @@ export function pinLines(state: GameState): WrenLine[] {
 /** Wren's one line about a drill result (the banner's caption). */
 export function drillLine(m: Monster, result: DrillResult): WrenLine {
   switch (result.outcome) {
+    case 'Perfect':
+      return say('perfectDrill', WREN.perfectDrill, m)
+    case 'Superb':
+      return say('superbDrill', WREN.superbDrill, m)
     case 'Great':
       return say('greatDrill', WREN.greatDrill, m)
+    case 'Good':
+      return say('goodDrill', WREN.goodDrill, m)
     case 'Success':
       return say('successDrill', WREN.successDrill, m)
     case 'Cheat':
@@ -141,6 +148,16 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
         break
       case 'play':
         lines.push(say('played', WREN.played, m))
+        break
+      case 'bondWeek':
+        if (e.activity === 'fetch') lines.push(say('bondFetch', WREN.bondFetch, m, { n: e.score }))
+        else if (e.activity === 'hide') lines.push(say('bondHide', WREN.bondHide, m, { n: e.score }))
+        else lines.push(say('bondShop', WREN.bondShop, m))
+        if (e.bought) lines.push(say('bondBought', WREN.bondBought, m, { item: KEEPSAKE_BY_ID[e.bought].name }))
+        lines.push(say('bondBoost', WREN.bondBoost, m))
+        break
+      case 'keepsakes':
+        lines.push(say('keepsakesCalm', WREN.keepsakesCalm, m))
         break
       case 'requestDenied':
         lines.push(say('denied', WREN.denied, m))

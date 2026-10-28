@@ -149,7 +149,7 @@ test('Echo Stones: the Moon stone wakes at round 11 and the game goes on', async
   await expect(page.locator('.echo__grid--open')).toBeVisible({ timeout: 30_000 })
   await page.locator(`.stone:not(.stone--${first})`).first().click()
   await expect(page.getByText('Rounds cleared: 12')).toBeVisible({ timeout: 10_000 })
-  await expect(page.locator('.card p.heading')).toContainText('180')
+  await expect(page.locator('.card p.heading')).toContainText('183')
   await page.screenshot({ path: info.outputPath('7-echo-done.png') })
   expect(errors).toEqual([])
 })
@@ -169,10 +169,16 @@ test('Meadow Dash: tapping wins heat 1, standing still loses heat 2, and the hea
 
   // Tap the pad about 8 times a second, like a quick thumb.
   await page.evaluate(() => {
-    const w = window as unknown as { tapBot: number }
+    const w = window as unknown as { tapBot: number; sawLocked: boolean }
+    w.sawLocked = false
+    let tick = 0
     w.tapBot = window.setInterval(() => {
-      document.querySelector('.dash__pad')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', isPrimary: true }))
-    }, 120)
+      // A tap every third tick (120 ms, about 8 a second); the lock check every tick.
+      if (tick++ % 3 === 0) document.querySelector('.dash__pad')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', isPrimary: true }))
+      // The result buttons must arrive locked (a thumb still tapping can't hit them); note it the moment they show.
+      const next = [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Next heat')
+      if (next?.disabled) w.sawLocked = true
+    }, 40)
   })
   await page.waitForTimeout(4_500)
   await noSidewaysScroll(page)
@@ -181,7 +187,7 @@ test('Meadow Dash: tapping wins heat 1, standing still loses heat 2, and the hea
   await page.evaluate(() => clearInterval((window as unknown as { tapBot: number }).tapBot))
   await page.screenshot({ path: info.outputPath('11-heat-won.png') })
   const next = page.getByRole('button', { name: 'Next heat' })
-  await expect(next).toBeDisabled()
+  expect(await page.evaluate(() => (window as unknown as { sawLocked: boolean }).sawLocked)).toBe(true)
   await expect(next).toBeEnabled({ timeout: 3_000 })
   await next.click()
   await expect(page.locator('.chute__score')).toContainText('Heat 2')

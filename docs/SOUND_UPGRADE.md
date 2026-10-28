@@ -1275,7 +1275,8 @@ Every id in §7.6, every piece and every bed belongs to exactly one stage. Anyth
 - events use `cup` in their season palette;
 - moments use `cupWin`, `promotion` or `matchLoss`;
 - places use the Town stems or the ranch song;
-- beds use the nearest written bed, or none.
+- beds use the nearest written bed, or none;
+- the Bonds update's arrival scenes (GAME_DESIGN §6.10) use stingers until S3 writes their own: the hello plays `jackpotDouble`, a day or two away `matchLoss`, the note on the gate `cupOut`; a pat is `jackpotHeal`, a treat `itemGet`. The Bond games use the same soft effects (`dashStep` for a throw, `jackpotHeal` for a catch or a find, `buy` at the stall). Training's Good shares Fine's drill stinger, and Superb and Perfect share Great's.
 
 ### S1: Calm engine and first songs (v1.6.0, commit `Sound S1: calm engine and first songs`)
 

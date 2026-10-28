@@ -51,9 +51,11 @@ export function echoMelody(seed: number, length: number): Stone[] {
   return out
 }
 
-/** 15G per round cleared, with no cap. */
+/** 15G per round cleared; after round 10 each round pays 1G more than the last (16G, 17G…). No cap. */
 export function echoPay(roundsCleared: number): number {
-  return Number.isFinite(roundsCleared) ? Math.max(0, Math.floor(roundsCleared)) * ECHO_STONES.payPerRound : 0
+  const n = Number.isFinite(roundsCleared) ? Math.max(0, Math.floor(roundsCleared)) : 0
+  const late = Math.max(0, n - ECHO_STONES.payRiseAfter)
+  return n * ECHO_STONES.payPerRound + (late * (late + 1)) / 2
 }
 
 /**

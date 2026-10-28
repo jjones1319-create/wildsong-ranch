@@ -425,6 +425,21 @@
   color: var(--accent);
 }
 
+/* The two loyal-only levels shine brighter than Great. */
+.banner--Superb {
+  background: rgb(242 181 68 / 0.38);
+  color: #ffd27a;
+  box-shadow: 0 0 0 2px rgb(242 181 68 / 0.5);
+}
+
+.banner--Perfect {
+  background: linear-gradient(120deg, rgb(242 181 68 / 0.55), rgb(185 150 255 / 0.45), rgb(127 175 90 / 0.45));
+  color: #fff7e0;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 0 2px rgb(255 214 110 / 0.8), 0 0 24px rgb(255 214 110 / 0.55);
+}
+
+.banner--Good,
 .banner--Success {
   background: rgb(127 175 90 / 0.22);
   color: var(--moss);

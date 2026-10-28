@@ -30,3 +30,6 @@ playwright-report
 # Sound 2.0 (SOUND_UPGRADE §5.3, §14.4)
 tools/audio/.cache
 audio-review
+
+# Blender scratch frames and contact sheets (tools/blender/ranch_scenes.py); the encoded clips live in public/baked/scenes/
+tools/blender/out/

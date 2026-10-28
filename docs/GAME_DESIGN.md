@@ -21,7 +21,8 @@ Version 1.0 · the rules of the game. Content (names, monsters, techniques, item
 2. **One life, fully lived.** A finite, readable lifespan. Every week is a trade-off between growth, rest and glory.
 3. **Care is the gameplay.** Mood, fatigue, stress and loyalty drive results. You coach and the monster acts.
 4. **Legacy over loss.** Death hurts but pays forward through the Freezer, Fusion, Heartstones, the Memorial and the Hall of Fame.
-5. **Legible depth, respectful pacing.** Hidden systems show up through cues, with an optional exact view. Sessions fit on a phone. Nothing is permanently missable. No energy timers, ads or paywalls.
+5. **Legible depth, respectful pacing.** Hidden systems show up through cues, with an optional exact view. Sessions fit on a phone. No energy timers, ads or paywalls.
+6. **Your monster needs you (v1.9, the owner's rule).** The in-game weeks wait for you, but your monster notices real days: a day away it is sad, two days the ranch looks abandoned, four days and it is gone (§6.10). **Vacation mode** in Settings pauses this. *(Replaced v1.0's "nothing is permanently missable".)*
 
 ### Best-of-series decisions (summary; reasons in `RESEARCH_NOTES.md`)
 
@@ -83,12 +84,12 @@ Shrine / Market ─► NEW MONSTER
    - In week 1: monthly food prompt (defaults to last month's choice), passive charm effects, ranch-upgrade offer (May week 4 only).
    - Deliver mail: event notices, invitations, rumors, sale notices.
 2. **Request check** (§6.7).
-3. **The player picks ONE action:** Light drill, Heavy drill, Rest, Journey (takes 4 weeks), Tournament (if one is held this week and the monster is eligible), or Expedition (if invited).
+3. **The player picks ONE action:** Light drill, Heavy drill, **Bond** (fetch, hide-and-seek or a shopping trip; §6.9), Rest, Journey (takes 4 weeks), Tournament (if one is held this week and the monster is eligible), or Expedition (if invited).
 4. **Resolve the action.** Drills trigger the praise/scold prompt.
 5. **Items.** Use **as many items as you like**, any time during the week (a free action). The optional **One item per week** rule (in Settings; on by default only in Classic difficulty) restores the old-school limit.
 6. **End of week.** Aging tick (§7), illness and breakdown checks (§6.6), weather roll for next week, **autosave**.
 
-**Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, and Odd Jobs (each job pays once per week; §9).
+**Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, Odd Jobs (each job pays once per week; §9), and petting your monster or giving it a treat when it says hello (§6.10).
 
 **Planner** (SHOULD):
 - Queue up to 8 weeks of actions (drills and rests). Queued drills get no praise or scold, and a month start keeps last month's food.
@@ -229,7 +230,7 @@ E 0.58 · D 0.79 · C 1.00 · B 1.32 · A 1.55
 
 - There is deliberately no heavy drill with SKI as its main stat. Accuracy has to be bought with light drills, which forces real build choices.
 - **Stars (difficulty):** 1★ if the main stat is under 300, 2★ for 300–599, 3★ for 600 and up.
-- **Chore pay:** drills are jobs around the vale. A Success or Great pays 30G (light) or 50G (heavy). Great pays +50%.
+- **Chore pay:** drills are jobs around the vale. Fine (Success) and up pays 30G (light) or 50G (heavy). Great pays +50%, Superb +75%, Perfect +100%.
 
 ### 6.2 Resolving a drill (MUST, tested)
 
@@ -241,23 +242,31 @@ Let `F` = fatigue, `S` = stress, `Sp` = spoil, `Fe` = fear, `N` = nature, `L` = 
 
 **Step 2: outcome weights.**
 ```
-great = 10 + max(0, L − 40)·0.15 + max(0, N)/10 − max(0, F − 40)·0.2 + (stage ∈ {5,6} ? 3 : 0) + (liked drill ? 6 : 0)
+great = 10 + max(0, L − 40)·0.2 + max(0, N)/10 − max(0, F − 40)·0.2 + (stage ∈ {5,6} ? 3 : 0) + (liked drill ? 6 : 0)
 cheat = 8 + max(0, S − 20)·0.45·(N < 0 ? 1.5 : 1) + Sp·0.05 − max(0, L − 50)·0.1 + max(0, −N)/10 + (disliked drill ? 6 : 0)
 fail  = 7 + 6·(stars − 1) + max(0, F − 30)·0.6 − Fe·0.06 + (stage ∈ {1,10} ? 4 : 0)
 great ≥ 1, cheat ≥ 1, fail ≥ 2;  success = max(20, 100 − great − cheat − fail);  normalize all four to 100%.
 ```
 The trait and Training Yard modifiers in CONTENT add to `great`. Apply them before normalizing.
 
-**Reference outcomes** (Great / Success / Cheat / Fail %; unit-test these):
+**Reference outcomes** (the four buckets, Great-and-up / Fine-and-Good / Cheat / Fail %; unit-test these):
 
 | State | G | S | C | F |
 |---|---|---|---|---|
 | Fresh baby, stage 1, 1★, F0 S0 Sp30 Fe30 N0 | 10 | 71 | 10 | 9 |
-| Prime, happy and loyal, 2★, F20 S10 Sp60 Fe50 N+30 | 18 | 61 | 10 | 10 |
-| Prime but tired, 2★, F60 S20 Sp50 Fe50 N0 | 10 | 51 | 10 | 28 |
-| Prime, stressed and spoiled, 2★, F30 S60 Sp90 Fe20 N−30 | 15 | 31 | 42 | 12 |
-| Old, 3★, F30 S20 Sp60 Fe60 N+10 | 14 | 61 | 10 | 15 |
+| Prime, happy and loyal, 2★, F20 S10 Sp60 Fe50 N+30 | 19 | 60.5 | 10.5 | 10 |
+| Prime but tired, 2★, F60 S20 Sp50 Fe50 N0 | 11 | 50.5 | 10.5 | 28 |
+| Prime, stressed and spoiled, 2★, F30 S60 Sp90 Fe20 N−30 | 16 | 30 | 42 | 12 |
+| Old, 3★, F30 S20 Sp60 Fe60 N+10 | 15 | 59.6 | 10 | 15.4 |
 | Neglected, stage 3, 1★, F75 S70 Sp20 Fe20 N−10 | 3 | 20 | 44 | 33 |
+
+**Step 3: the result levels (v1.9, the owner's request).** Loyalty splits the great bucket into **Perfect**, **Superb** and **Great**, and the success bucket into **Good** and **Fine**. Perfect is impossible below loyalty 70 and Superb below 50; the more loyal, the more of both.
+```
+perfect share of the great bucket = L ≥ 70 ? min(45%, (L − 69) · 1%)   : 0
+superb  share of the great bucket = L ≥ 50 ? min(30%, (L − 49) · 0.6%) : 0      great = the rest
+good    share of the success bucket = clamp((L − 20) · 0.3%, 0, 25%)            fine  = the rest
+```
+Reference: a devoted prime monster (loyalty 80, F20 S10 N+30, 2★) rolls Perfect 2.6 %, Superb 4.5 %, Great 16.9 %, Good 10.6 %, Fine 48.2 %, Cheat 9 %, Fail 8.2 %; at loyalty 100, Perfect 8.7 % and Superb 8.4 %.
 
 ### 6.3 Gains (MUST, tested)
 
@@ -265,12 +274,15 @@ The trait and Training Yard modifiers in CONTENT add to `great`. Apply them befo
 light  = clamp(round(10 · gf(stat) · sf) + rnd(−1..+1), 1, 15)
 heavy  = clamp(round(16 · gf(main) · sf) + rnd(−1..+1), 3, 20)
 second = clamp(round( 7 · gf(sec)  · sf) + rnd(−1..+1), 1, 10)
-lowered stat: −rnd(2..3) on Success/Great, −rnd(1..4) on Cheat, nothing on Fail; never below 1
-Great:  main +3 (still capped at 15 / 20), secondary +1 (cap 10), and the drill costs 3 less fatigue
+lowered stat: −rnd(2..3) from Fine up, −rnd(1..4) on Cheat, nothing on Fail; never below 1
+Levels (added after the caps above, so a capped gain still gets all of it):
+  Fine (Success) +0 · Good +2 · Great +4 (secondary +1) · Superb +5 (secondary +1) · Perfect +7 (secondary +2)
+  fatigue saved: Good 1 · Great 3 · Superb 4 · Perfect 6
 Cheat:  main = max(1, floor(main / 2)), secondary = rnd(0..1), and the drill costs 5 less fatigue
 Fail:   no gains
-Breed bonus drill (CONTENT §2): +1 to the main gain on Success/Great
-Active tonic for that stat: +3 to the main gain on Success/Great
+Breed bonus drill (CONTENT §2): +1 to the main gain from Fine up
+Active tonic for that stat: +3 to the main gain from Fine up
+Bond boost (§6.9): the whole main and secondary gain × 1.75 / 1.5 / 1.25 in the weeks after a Bond week, last
 ```
 
 **Light gain by grade and stage** (no noise; unit-test):
@@ -307,8 +319,8 @@ After every drill (and after truancy) the player reacts with one of:
 
 | Result | Praise | Scold | Skip |
 |---|---|---|---|
-| Great | Sp +4, S −5 | Fe +3, S +8, Sp −2 ("That's not fair!") | S +5 (wanted recognition) |
-| Success | Sp +2, S −3 | Fe +3, S +6, Sp −1 | — |
+| Great, Superb, Perfect | Sp +4, S −5 | Fe +3, S +8, Sp −2 ("That's not fair!") | S +5 (wanted recognition) |
+| Fine (Success), Good | Sp +2, S −3 | Fe +3, S +6, Sp −1 | — |
 | Cheat | Sp +5, N −2, S −3 (rewarding bad behavior) | Fe +4, N +1, S +4 (good nature) / +10 (bad nature) | Sp +2, N −1 |
 | Fail | Sp +3, S −2 (encouragement) | Fe +3, S +2 (good) / +5 (bad) | — |
 | Slacked off | Sp +4, N −2 | Fe +5, N +1, S +4 | Sp +2, N −1 |
@@ -378,6 +390,32 @@ The monster's **expression** also reflects its state:
   - About 1 in 10 requests is a Treat instead: the monster wants its favorite toy or liked food item. This only happens if you own one.
 - **Accept:** Rest or Play uses the week. A Treat uses one item.
 - **Deny:** stress +8 and spoil −2, then continue with the chosen action.
+
+### 6.9 Bond weeks and keepsakes (v1.9; numbers in `tuning.ts` `BOND`, tested)
+
+- **Bond** is a week's action (Train → Bond 💞), like a drill, but not in the planner (its game has to be played). Three activities:
+  - **Fetch:** five throws; hold to wind up and let go in the green zone; a throw in the green is a catch.
+  - **Hide-and-seek:** five rounds; the monster hides behind one of four haystacks (seeded from the game's RNG), one rustles, you pick.
+  - **Shopping trip:** a stroll down Market Lane; the monster finds a **keepsake** it loves (seeded; one the ranch doesn't own yet). Buy it or not.
+- **Effect:** stress −(8 + 2 × score), spoil +(2 + score), fatigue +4 (play is still play); shopping counts as a score of 3, +3 spoil if you buy. The score is 0–5.
+- **Bond boost:** a Bond week sets the monster's training boost to ×1.75. Every later week that isn't a Bond week takes 0.25 off, back to ×1 (×1.75, ×1.5, ×1.25 on the next three weeks' drills). It multiplies the whole drill gain after every other bonus (§6.3); bonding again resets it to ×1.75 (no stacking). The ranch shows "💞 ×1.75".
+- **Keepsakes** (CONTENT §4.2): bought once, they stay on the ranch for good (even after the monster leaves), drawn beside the monster (four at a time) and listed on the Monster Card. Each takes 1 stress off at the end of every week, up to 4 in all.
+
+### 6.10 Arriving at the ranch (v1.9; numbers in `tuning.ts` `ARRIVAL`, tested)
+
+Real time is measured in the UI (core never reads the clock): the save is written on every change and whenever the app goes to the background, so its time is "the last time the game was on screen".
+
+| Away | What happens |
+|---|---|
+| 2 h or more (at most once every 12 h) | **Hello:** the monster comes to greet you, by loyalty: ≥ 50 it runs up happy, 25–49 it trots over curious, below 25 it stays put and glances over. **Pet** (free): spoil +1, stress −2. **Treat** (20G): spoil +3, stress −3. |
+| 24 h | **Sad:** stress +15, spoil −10, fear −5, the bond boost gone. |
+| 48 h | **Abandoned:** stress +30, spoil −20, fear −10, lifespan −2 weeks, sick for 1 week (rest only). |
+| 96 h | **Gone:** a note on the gate, then the life ends: `ended` = 'neglected' ("Left alone" on the Memorial). On Gentle, where monsters never die, it goes back to the wild instead ('wandered'). The Farewell follows as usual (Memorial, Heartstone); neither ending counts for Gentle Heart. |
+
+- **Vacation mode** (Settings → This ranch) turns the away check off; turning it off restarts the clock.
+- **The clock starts fresh** on a save's first launch of v1.9 (Wren explains the rule first: the `awayRule` tip), for a new game, after an import, and after Vacation mode. An old save is never punished on its first launch, and a clock that runs backwards counts as no time.
+- It applies only to the active monster on the ranch (frozen monsters sleep). A return during a battle is checked when the ranch shows again. The consequences apply before the scene plays, so closing the app mid-scene changes nothing.
+- **Scenes:** Blender-rendered scenery clips (`tools/blender/`, `public/baked/scenes/`) with the monster drawn over them in code; tap to skip; with Reduce motion, or offline before a clip is cached, a still picture. Settings → Sandbox → *Preview arrival scenes* plays each one with nothing changed.
 
 ### 6.8 Transparency setting (MUST)
 
@@ -1371,10 +1409,10 @@ These come from the pre-build simulations (§27). Implement them as Vitest "sim 
 
 **Stat totals with Good care:**
 - A Steady breed with mostly C grades: about 700 at year 1, 1,450 at year 3, 2,350 at year 5.
-- A Late bloomer with A/B grades: about 2,550 at year 5 and 2,950 at year 6.
+- A Late bloomer with A/B grades: about 2,700 at year 5 and 3,200 at year 6 (v1.9: the result levels add their bonus above the gain caps, so loyal A/B monsters grow past the old 2,550 / 2,950).
 - Good care should reach grade S (about 2,450–2,900) by years 5–7 for strong breeds, and grade A for average ones.
 
-**Drill outcome rates over a Good-care life:** Great 17–23%, Success 55–65%, Cheat 7–12%, Fail 8–14%.
+**Drill outcome rates over a Good-care life:** Great and up 17–25% (Perfect 2–8%), Fine and Good 52–65%, Cheat 7–12%, Fail 8–14%.
 
 **Battle** (AI 2.0 Expert vs Expert since M10, with stats from the NPC generator, alternating sides, at least 200 seeds per cell):
 

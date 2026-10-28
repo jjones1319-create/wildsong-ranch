@@ -2,6 +2,67 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## The Bonds update (2026-10-28) · v1.9.0
+
+**Live:** your monster now notices you. Open the game after a couple of hours and it comes to say hello (running up if it's loyal); pet it or give it a treat. Stay away a day and it's sad; two days and the ranch looks abandoned and it falls ill; four days and you find a note on the gate, and it has passed away (on Gentle it goes back to the wild). **Vacation mode** in Settings turns this off. The scenes are Blender-rendered scenery with your own monster drawn over it. There's a new weekly action, **Bond 💞** (fetch, hide-and-seek, or a shopping trip where your monster finds a keepsake to buy for the ranch), which boosts the next weeks' training ×1.75, ×1.5, ×1.25. Training has more levels: Fine +0, Good +2, Great +4, Superb +5 (loyalty 50+), Perfect +7 (loyalty 70+), and loyalty raises the odds of the top ones. Echo Stones pays 1G more each round after round 10.
+
+**Done**
+- **Echo Stones:** 15G a round through round 10, then 16G, 17G… (`ECHO_STONES.payRiseAfter`); 20 rounds pay 355G.
+- **Training levels** (`core/outcomes.ts`, `core/training.ts`; numbers in `OUTCOME.levels`, `DRILL.levels`):
+  - The §6.2 buckets stay, and loyalty now counts a little more toward Great (0.2 a point over 40, was 0.15).
+  - Loyalty splits the great bucket into Perfect (from 70), Superb (from 50) and Great, and the success bucket into Good and Fine.
+  - Bonuses go on after the gain caps, so a capped stat still gets them.
+  - Chore pay: Great +50 %, Superb +75 %, Perfect +100 %.
+  - The drill sounds and reactions follow the level's bucket.
+  - The expert view shows the Superb and Perfect odds.
+- **Bond weeks** (`core/bond.ts`, `screens/ranch/bond/`):
+  - The Train sheet has a Bond tab.
+  - **Fetch:** hold to wind up, let go in the green.
+  - **Hide-and-seek:** four haystacks, a rustle, seeded from the game's RNG.
+  - **Shopping trip:** a keepsake the ranch doesn't own yet; buy it, or "Not today".
+  - The week calms the monster and builds its affection.
+  - The bond boost lives on the monster (`status.bondPct`) and fades a quarter each week after.
+- **Keepsakes** (`data/keepsakes.ts`, `art/keepsakes.ts`): ten original things, drawn in code beside the monster (four at a time) and listed on the Monster Card; −1 stress each per week, up to −4.
+- **Arriving** (`core/arrival.ts`, `ArrivalScene.tsx`, `SceneClip.tsx`):
+  - **Last visit:** the save's time; it's written on every change and when the app hides.
+  - **When it's checked:** at launch, and on returning to the app. A return during a battle waits for the ranch.
+  - **Consequences:** they apply before the scene plays.
+  - **Arming the clock:** it arms on a save's first launch of this version (Wren's new `awayRule` tip explains it), for a new game, after an import, and when Vacation mode is turned off. Bad clock values in a save count as unarmed.
+  - **Endings:** the new endings 'neglected' and 'wandered' go through the usual Farewell (Memorial "Left alone" / "Went back to the wild", Heartstone) and never count for Gentle Heart.
+  - **Sandbox previews:** Settings → Sandbox → Preview arrival scenes plays each scene with nothing changed.
+- **Blender scenes** (`tools/blender/ranch_scenes.py`, `tools/blender/encode.ts`, `public/baked/scenes/`):
+  - **What they are:** four procedural clips rendered with EEVEE in Blender 5.2.2: the ranch at golden hour, under grey cloud, abandoned in the rain, and the note on the gate.
+  - **Format:** each is 720×960, 7–8 s, H.264 under 0.9 MB, with a WebP still.
+  - **How your monster is placed:** the camera is static, so the code places your monster in % of the frame.
+  - **When the still shows:** with Reduce motion, offline (the clips aren't cached by the service worker; the stills are precached), or if a clip fails. Failing that, the ranch is drawn in code.
+  - **Credits:** logged in CREDITS as our own renders. The 527 MB of scratch frames (`tools/blender/out/`) are gitignored.
+- **Schema v12** with a migration and tests: `settings.vacation`, `away`, `keepsakes`, `status.bondPct`, the new endings and Memorial causes, and the new levels in the planner log.
+- **Tests:** 899 Vitest tests, up from 878. New: the result levels and their reference table, the bonus after the caps, the bond boost on gains and its weekly fade, Bond effects, the seeded shop find and purchase, keepsake stress, every arrival stage at its exact boundary, vacation and arming, a clock that runs backwards, the consequences, the endings and Gentle Heart, greetings, pet and treat, the v11 → v12 migration with garbage clamped, and the new tip order. The §26 sims were updated for the levels. Playwright: the new `e2e/bonds.spec.ts` (the hello with pet and treat, a day away, two days away, the note and the neglect Farewell, Vacation mode, a Fetch week and a shopping trip that buys a keepsake) and `e2e/oddjobs.spec.ts` (Echo Stones now expects 183G for 12 rounds; the Meadow Dash lock check now records the lock as it happens): 9 passed at 360 px, no page errors.
+- **Docs:** GAME_DESIGN §1 (principle 5's "nothing is permanently missable" replaced by principle 6, the owner's away rule), §3, §6.1–§6.4, new §6.9 and §6.10, and §26 (the A/B target and the outcome rates); CONTENT §4 (levels, Bond weeks, keepsakes) and §13; SOUND_UPGRADE (the stand-ins); BUILD_PLAN; CREDITS.
+
+**Decisions worth knowing**
+- **The owner's choices:**
+  - Training levels Fine +0, Good +2, Great +4, Perfect +7, with Superb +5 added between.
+  - Perfect only from loyalty 70.
+  - Consequences for not opening the game, with Vacation mode to pause them.
+  - Blender for the scenes.
+- **Away consequences** (my decision, the owner asked for real ones):
+  - **A day away:** stress +15, affection −10, respect −5, the bond boost gone.
+  - **Two days:** stress +30, affection −20, respect −10, two weeks of lifespan, a week sick.
+  - **Four days:** the life ends.
+- **Balance:**
+  - **Where the bonuses land:** going on above the caps is what makes Perfect feel good, but it lifts strong A/B monsters about 8 %. The §26 Late-bloomer target moved from 2,550 / 2,950 to 2,700 / 3,200 at years 5 / 6.
+  - **Typical C-grade monsters** stay inside their original targets.
+  - **Good-care rates:** Perfect about 5 %, Superb 5 %, Great 11 %, Good 12 %, Fine 47 %.
+- **Bond weeks and the boost:** bonding every fourth week nets roughly +12 % growth, because the boost covers the three drill weeks after it. Bonding costs a little fatigue, so it doesn't replace rest.
+
+**Known issues**
+- The arrival scenes use stand-in sounds until S3 (the match-loss phrase for sad, the cup-exit fall for the note).
+- The abandoned clip needed stronger compression to fit 1 MB, so its puddle ripples are soft.
+- The away clock follows the save on this phone: a Safari tab and the installed Home Screen app keep separate saves and separate clocks.
+
+**Next:** the owner's phone pass. Then S3 (the owner's S2 listening notes first).
+
 ## Odd Jobs 2: endless jobs and Meadow Dash (2026-10-27) · v1.8.0
 
 **Live:** Basil's Odd Jobs have no pay limit any more, and every job keeps going for a skilled player.

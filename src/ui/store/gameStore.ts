@@ -1,4 +1,5 @@
 import { computed, signal } from '@preact/signals'
+import { screen, type Screen } from '../router.ts'
 import type { AgingEvent } from '../../core/aging.ts'
 import { buyItem, type BuyRefusal } from '../../core/economy.ts'
 import {
@@ -40,6 +41,8 @@ import { answerEvent as answerEventCore } from '../../core/game.ts'
 import { sellItem as sellItemCore, type SellRefusal } from '../../core/economy.ts'
 import { detour as detourCore, moveTo as moveToCore, retreat as retreatCore, turnBack as turnBackCore, type MoveRefusal } from '../../core/expedition.ts'
 import { applyEchoStones as applyEchoStonesCore, type EchoResult } from '../../core/echoStones.ts'
+import { applyAway, armAway, arrivalFor, giveTreat, greetMoodOf, noteGreeting, petMonster, setVacation as setVacationCore, type AwayResult, type GreetMood } from '../../core/arrival.ts'
+import { shopFind } from '../../core/bond.ts'
 import { applyDash as applyDashCore, type DashResult } from '../../core/meadowDash.ts'
 import { applyOddJob as applyOddJobCore, type TurnipResult } from '../../core/oddJobs.ts'
 import { clearQueue, queueStep, removeStep, runPlannedWeek, startRun } from '../../core/planner.ts'
@@ -59,10 +62,10 @@ import { markTipSeen, nextTip, type TipContext, type TipId } from '../../core/on
 import { drillLine, eventLines, growsUpAtPrime, type WrenLine } from '../../core/report.ts'
 import { createRng, type Rng } from '../../core/rng.ts'
 import type { LearnStatus } from '../../core/songbook.ts'
-import { createGameState, type GameState, type NewGameOptions, type WeekAction } from '../../core/state.ts'
+import { createGameState, type GameState, type LifeEnd, type NewGameOptions, type WeekAction } from '../../core/state.ts'
 import type { DrillResult, Reaction } from '../../core/training.ts'
 import type { WeekEvent } from '../../core/week.ts'
-import type { Difficulty, FoodId, StatKey } from '../../data/types.ts'
+import type { BondActivity, Difficulty, FoodId, KeepsakeId, StatKey } from '../../data/types.ts'
 import { loadLatestSave, persistAutosave, type LoadSource } from '../../save/db.ts'
 import { makeSave, type SaveFile } from '../../save/schema.ts'
 import { now } from '../lib/clock.ts'
@@ -97,10 +100,20 @@ export interface SummaryFlow {
   aging: AgingEvent[]
   fees: number
   grewUp: boolean
-  ended: 'passed' | 'retired' | null
+  ended: LifeEnd | null
 }
 
-export type Flow = { kind: 'idle' } | { kind: 'train' } | ResultFlow | SummaryFlow
+/** §6.9 a Bond week's game is being played (the shopping trip carries what it found). */
+export interface BondFlow {
+  kind: 'bond'
+  activity: BondActivity
+  /** The game's seed (hide-and-seek's hiding spots), from the game's RNG. */
+  seed: number
+  /** The keepsake the shopping trip finds (null for the games, or once the ranch has them all). */
+  find: KeepsakeId | null
+}
+
+export type Flow = { kind: 'idle' } | { kind: 'train' } | BondFlow | ResultFlow | SummaryFlow
 
 export const flow = signal<Flow>({ kind: 'idle' })
 
@@ -118,10 +131,17 @@ export function rngState(): number {
 export async function bootGame(): Promise<void> {
   const r = await loadLatestSave(kv(), ls())
   saveSource.value = r.source
-  if (r.save) loadSaveFile(r.save)
+  if (r.save) {
+    loadSaveFile(r.save)
+    // §6.10 how long since the game was last on screen (the save is written on every change and when the app hides).
+    checkArrival(r.save.meta.savedAt > 0 ? r.save.meta.savedAt : null, now())
+  }
 }
 
 onBoot(bootGame)
+
+/** §6.10 the last time the game was on screen: the latest save's time, then every save after it. */
+let lastSeenAt: number | null = null
 
 export function loadSaveFile(save: SaveFile): void {
   rng = createRng(0)
@@ -129,6 +149,15 @@ export function loadSaveFile(save: SaveFile): void {
   game.value = save.game
   flow.value = { kind: 'idle' }
   weekNews.value = []
+  arrival.value = null
+  lastSeenAt = save.meta.savedAt > 0 ? save.meta.savedAt : null
+}
+
+/** An imported save starts its away clock fresh (the file's time is when it was exported, not a visit). */
+export function loadImportedSave(save: SaveFile): void {
+  loadSaveFile(save)
+  const g = game.value
+  if (g) commit(armAway(g, now()))
 }
 
 export function currentSave(): SaveFile | null {
@@ -139,6 +168,7 @@ export function currentSave(): SaveFile | null {
 async function persist(): Promise<void> {
   const save = currentSave()
   if (!save) return
+  lastSeenAt = save.meta.savedAt
   const ok = await persistAutosave(kv(), ls(), save)
   if (!ok) showToast(UI_TEXT.errors.saveFailed)
   void askPersistence()
@@ -150,11 +180,130 @@ export function commit(next: GameState): void {
   void persist()
 }
 
-/** §20: autosave when the app goes to the background. */
+/** §20: autosave when the app goes to the background; §6.10 check the time away when it comes back. */
 export function installAutosaveOnHide(doc: Document): void {
   doc.addEventListener('visibilitychange', () => {
     if (doc.visibilityState === 'hidden' && game.value) void persist()
+    if (doc.visibilityState === 'visible' && game.value) onReturn(lastSeenAt, now())
   })
+}
+
+/* ---------- §6.10 arriving at the ranch ---------- */
+
+export type ArrivalView =
+  | { kind: 'greet'; mood: GreetMood; petted: boolean; treated: boolean; preview: boolean }
+  | { kind: 'sad' | 'abandoned'; changes: AwayResult['changes']; preview: boolean }
+  | { kind: 'gone'; wandered: boolean; preview: boolean }
+
+/** The scene waiting to play on the ranch (a hello, or what happened while you were away). */
+export const arrival = signal<ArrivalView | null>(null)
+
+/** Screens where a live battle or map is running: a check on return waits until the player is back at the ranch. */
+const BUSY_SCREENS: readonly Screen[] = ['battle', 'tournamentPlay', 'tournamentResults', 'expedition', 'labVersus', 'labBattleLab']
+let deferredReturn: { seenAt: number | null; at: number } | null = null
+
+function onReturn(seenAt: number | null, at: number): void {
+  if (BUSY_SCREENS.includes(screen.value)) deferredReturn = { seenAt, at }
+  else checkArrival(seenAt, at)
+}
+
+/** Runs a check that waited for the player to leave a battle (called when the ranch shows). */
+export function runDeferredArrival(): void {
+  const d = deferredReturn
+  deferredReturn = null
+  if (d) checkArrival(d.seenAt, d.at)
+}
+
+/**
+ * Looks at the time away and acts on it at once (so closing the app during the scene changes nothing): arms the
+ * clock on a save's first launch of this version, applies a day's, two days' or four days' consequences, or lets
+ * the monster say hello. The scene then plays on the ranch.
+ */
+export function checkArrival(seenAt: number | null, at: number): void {
+  const g = game.value
+  if (!g || !g.monster || g.ended) return
+  if (g.away.armedAt === null) {
+    commit(armAway(g, at))
+    return
+  }
+  const kind = arrivalFor(g, seenAt, at)
+  if (kind === 'none') return
+  if (kind === 'greet') {
+    const mood = greetMoodOf(g)
+    commit(noteGreeting(g, at))
+    arrival.value = { kind: 'greet', mood, petted: false, treated: false, preview: false }
+    return
+  }
+  const r = applyAway(g, kind, at)
+  commit(r.state)
+  arrival.value = kind === 'gone' ? { kind: 'gone', wandered: r.state.ended === 'wandered', preview: false } : { kind, changes: r.changes, preview: false }
+}
+
+/** Settings → Sandbox: plays a scene with nothing applied (no waiting days to see them). */
+export function previewArrival(kind: ArrivalView['kind']): void {
+  const g = game.value
+  if (!g || !g.monster) return
+  const zero = { stress: 0, spoil: 0, fear: 0, lifespanWeeks: 0, sickWeeks: 0 }
+  if (kind === 'greet') arrival.value = { kind, mood: greetMoodOf(g), petted: false, treated: false, preview: true }
+  else if (kind === 'gone') arrival.value = { kind, wandered: g.difficulty === 'Gentle', preview: true }
+  else arrival.value = { kind, changes: zero, preview: true }
+}
+
+export function closeArrival(): void {
+  arrival.value = null
+}
+
+/** A pat on the head during the hello (free, once). */
+export function petArrival(): void {
+  const a = arrival.value
+  const g = game.value
+  if (!a || a.kind !== 'greet' || a.petted || !g) return
+  if (!a.preview) commit(petMonster(g))
+  arrival.value = { ...a, petted: true }
+}
+
+/** A treat during the hello (20G, once). Returns false when the purse is too light. */
+export function treatArrival(): boolean {
+  const a = arrival.value
+  const g = game.value
+  if (!a || a.kind !== 'greet' || a.treated || !g) return false
+  if (!a.preview) {
+    const r = giveTreat(g)
+    if (r.refused) return false
+    commit(r.state)
+  }
+  arrival.value = { ...a, treated: true }
+  return true
+}
+
+/** Settings → This ranch: Vacation mode. Turning it off restarts the away clock. */
+export function setVacation(on: boolean): void {
+  const g = game.value
+  if (g) commit(setVacationCore(g, on, now()))
+}
+
+/* ---------- §6.9 Bond weeks ---------- */
+
+/** Starts a Bond week's game (the shopping trip finds its keepsake from the game's RNG). */
+export function startBond(activity: BondActivity): void {
+  const g = game.value
+  if (!g || (flow.value.kind !== 'idle' && flow.value.kind !== 'train')) return
+  const seed = rng.nextU32()
+  const find = activity === 'shop' ? shopFind(seed, g.keepsakes) : null
+  void persist()
+  flow.value = { kind: 'bond', activity, seed, find }
+}
+
+/** Ends the Bond week's game: its score and the keepsake bought (if any) become the week's action. */
+export function finishBond(score: number, buy: KeepsakeId | null): void {
+  const f = flow.value
+  if (f.kind !== 'bond') return
+  flow.value = { kind: 'idle' }
+  takeAction({ kind: 'bondWeek', activity: f.activity, score, buy })
+}
+
+export function cancelBond(): void {
+  if (flow.value.kind === 'bond') flow.value = { kind: 'idle' }
 }
 
 /* ---------- new game ---------- */
@@ -172,9 +321,11 @@ function freshSeed(): number {
 
 export function startNewGame(opts: NewGameOptions): GameState {
   rng = createRng(freshSeed())
-  const state = createGameState(opts)
+  // §6.10 a new ranch's away clock starts now (Wren explains it on the first visit).
+  const state = armAway(createGameState(opts), now())
   flow.value = { kind: 'idle' }
   weekNews.value = []
+  arrival.value = null
   commit(state)
   return state
 }

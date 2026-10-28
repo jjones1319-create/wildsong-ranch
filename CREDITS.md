@@ -28,4 +28,6 @@ The logo (`public/logo.svg`) and every icon generated from it were drawn for thi
 - **Kenney Impact Sounds** by Kenney (kenney.nl), CC0 1.0. `https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip`, SHA-256 `029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8`. Used: footsteps on grass, wood and stone; wood, soft, plank, mining and punch impacts.
 - **Kenney RPG Audio** by Kenney (kenney.nl), CC0 1.0. `https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip`, SHA-256 `6dbeaf8544da958d8f2adcb4a4a4b76c1ade34a05f8ab9edccd327da7375f38b`. Used: cloth, creaks, coins, page flips.
 
+**Our own renders.** The arrival scenes' scenery clips and stills in `public/baked/scenes/` (the ranch at golden hour, under grey cloud, abandoned in the rain, and the note on the gate) were built and rendered for this project in Blender 5.2 by `tools/blender/ranch_scenes.py` (procedural geometry and materials, no downloaded assets) and encoded by `tools/blender/encode.ts` with `ffmpeg-static`.
+
 Every external asset added later must be CC0 and listed here with its source and license.

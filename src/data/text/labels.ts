@@ -31,8 +31,11 @@ export const WEATHER_LABELS = { Sunny: 'Sunny', Cloudy: 'Cloudy', Rain: 'Rain', 
 export const WEATHER_GLYPHS = { Sunny: '☀', Cloudy: '☁', Rain: '☂', Storm: '⚡', Snow: '❄' } as const
 
 export const OUTCOME_BANNERS = {
+  Perfect: 'PERFECT!',
+  Superb: 'Superb!',
   Great: 'Great!',
-  Success: 'Success',
+  Good: 'Good',
+  Success: 'Fine',
   Cheat: 'Cheated…',
   Fail: 'Failed',
   Slacked: 'Slacked off',

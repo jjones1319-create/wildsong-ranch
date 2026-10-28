@@ -243,7 +243,7 @@ export function concludeLife(input: GameState, epitaph: string): ConcludeResult 
   if (!input.monster || !input.ended) return null
   const state = structuredClone(input)
   const m = state.monster!
-  const cause: MemorialCause = state.ended === 'retired' ? 'retired' : 'passed'
+  const cause: MemorialCause = state.ended!
   state.memorial.unshift({ monster: structuredClone(m), cause, epitaph: epitaph.trim().slice(0, 80), week: state.week })
   if (cause === 'retired') state.elderGrove.push(structuredClone(m))
   let heartstone: Heartstone | null = null

@@ -1,8 +1,31 @@
 import { describe, expect, it } from 'vitest'
+import { DRILL } from '../data/tuning.ts'
 import { GRADES } from '../data/types.ts'
+import { loyaltyOf } from './monster.ts'
 import { createRng } from './rng.ts'
 import { makeMonster } from './test-helpers.ts'
-import { applyReaction, baseHeavyGain, baseLightGain, baseSecondaryGain, denyRequest, outcomePercents, outcomeWeights, playAmounts, requestChancePct, resolveDrill, restAmounts, restMonster, rollRequest, truancyChancePct } from './training.ts'
+import {
+  applyReaction,
+  baseHeavyGain,
+  baseLightGain,
+  baseOutcome,
+  baseSecondaryGain,
+  denyRequest,
+  isGoodOutcome,
+  levelPercents,
+  levelShares,
+  levelWeights,
+  outcomePercents,
+  outcomeWeights,
+  playAmounts,
+  requestChancePct,
+  resolveDrill,
+  restAmounts,
+  restMonster,
+  rollRequest,
+  truancyChancePct,
+  type DrillOutcome,
+} from './training.ts'
 
 const near = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThanOrEqual(1.01)
 
@@ -18,10 +41,10 @@ describe('outcome weights (§6.2 reference rows)', () => {
     })
 
   row('fresh baby, stage 1, 1★', { agePct: 0, fatigue: 0, stress: 0, spoil: 30, fear: 30, nature: 0 }, 70, [10, 71, 10, 9])
-  row('prime, happy and loyal, 2★', { agePct: 50, fatigue: 20, stress: 10, spoil: 60, fear: 50, nature: 30 }, 300, [18, 61, 10, 10])
-  row('prime but tired, 2★', { agePct: 50, fatigue: 60, stress: 20, spoil: 50, fear: 50, nature: 0 }, 300, [10, 51, 10, 28])
-  row('prime, stressed and spoiled, 2★', { agePct: 50, fatigue: 30, stress: 60, spoil: 90, fear: 20, nature: -30 }, 300, [15, 31, 42, 12])
-  row('old, 3★', { agePct: 78, fatigue: 30, stress: 20, spoil: 60, fear: 60, nature: 10 }, 600, [14, 61, 10, 15])
+  row('prime, happy and loyal, 2★', { agePct: 50, fatigue: 20, stress: 10, spoil: 60, fear: 50, nature: 30 }, 300, [19, 60.5, 10.5, 10])
+  row('prime but tired, 2★', { agePct: 50, fatigue: 60, stress: 20, spoil: 50, fear: 50, nature: 0 }, 300, [11, 50.5, 10.5, 28])
+  row('prime, stressed and spoiled, 2★', { agePct: 50, fatigue: 30, stress: 60, spoil: 90, fear: 20, nature: -30 }, 300, [16, 30, 42, 12])
+  row('old, 3★', { agePct: 78, fatigue: 30, stress: 20, spoil: 60, fear: 60, nature: 10 }, 600, [15, 59.6, 10, 15.4])
   row('neglected, stage 3, 1★', { agePct: 25, fatigue: 75, stress: 70, spoil: 20, fear: 20, nature: -10 }, 70, [3, 20, 44, 33])
 
   it('adds the liked-drill, disliked-drill and Training Yard bonuses to the raw weights', () => {
@@ -30,6 +53,54 @@ describe('outcome weights (§6.2 reference rows)', () => {
     expect(outcomeWeights(m, 'puzzle-stones').great - base.great).toBe(6000)
     expect(outcomeWeights(m, 'acorn-shower').cheat - base.cheat).toBe(6000)
     expect(outcomeWeights(m, 'log-toss', { trainingYard: true }).great - base.great).toBe(5000)
+  })
+})
+
+describe('result levels (§6.2 step 3)', () => {
+  it('splits the great bucket into Perfect, Superb and Great, and the success bucket into Good and Fine, by loyalty', () => {
+    expect(levelShares(49)).toEqual({ perfect: 0, superb: 0, good: 87 })
+    expect(levelShares(50)).toEqual({ perfect: 0, superb: 6, good: 90 })
+    expect(levelShares(69)).toEqual({ perfect: 0, superb: 120, good: 147 })
+    expect(levelShares(70)).toEqual({ perfect: 10, superb: 126, good: 150 })
+    expect(levelShares(100)).toEqual({ perfect: 310, superb: 300, good: 240 })
+    expect(levelShares(20)).toEqual({ perfect: 0, superb: 0, good: 0 })
+  })
+
+  it('never rolls Superb under loyalty 50 or Perfect under 70, and gives more of both as loyalty rises', () => {
+    const at = (spoil: number, fear: number) => {
+      const m = makeMonster({ agePct: 50, fatigue: 20, stress: 10, spoil, fear, nature: 30, stats: { POW: 300 } })
+      return levelPercents(levelWeights(outcomeWeights(m, 'log-toss'), loyaltyOf(m)))
+    }
+    const l40 = at(40, 40)
+    expect(l40.Superb).toBe(0)
+    expect(l40.Perfect).toBe(0)
+    const l60 = at(60, 60)
+    expect(l60.Superb).toBeGreaterThan(0)
+    expect(l60.Perfect).toBe(0)
+    const l80 = at(80, 80)
+    const l100 = at(100, 100)
+    expect(l80.Perfect).toBeGreaterThan(0)
+    expect(l100.Perfect).toBeGreaterThan(l80.Perfect)
+    expect(l100.Perfect + l100.Superb + l100.Great).toBeGreaterThan(l60.Perfect + l60.Superb + l60.Great)
+    // Reference: a devoted prime monster (loyalty 80): Perfect 2.6 %, Superb 4.5 %, Great 16.9 %, Good 10.6 %, Fine 48.2 %.
+    expect(l80.Perfect).toBeCloseTo(2.6, 0)
+    expect(l80.Superb).toBeCloseTo(4.5, 0)
+    expect(l80.Good).toBeCloseTo(10.6, 0)
+    // The split keeps the buckets: Perfect + Superb + Great is the great bucket, Good + Fine the success bucket.
+    const m = makeMonster({ agePct: 50, spoil: 90, fear: 90 })
+    const w = outcomeWeights(m, 'log-toss')
+    const lw = levelWeights(w, loyaltyOf(m))
+    expect(lw.Perfect + lw.Superb + lw.Great).toBe(w.great)
+    expect(lw.Good + lw.Success).toBe(w.success)
+  })
+
+  it('maps every level to its bucket and says which ones train in full', () => {
+    expect(baseOutcome('Perfect')).toBe('Great')
+    expect(baseOutcome('Superb')).toBe('Great')
+    expect(baseOutcome('Good')).toBe('Success')
+    expect(baseOutcome('Cheat')).toBe('Cheat')
+    expect((['Perfect', 'Superb', 'Great', 'Good', 'Success'] as DrillOutcome[]).every(isGoodOutcome)).toBe(true)
+    expect((['Cheat', 'Fail', 'Slacked'] as DrillOutcome[]).some(isGoodOutcome)).toBe(false)
   })
 })
 
@@ -74,24 +145,26 @@ describe('resolveDrill', () => {
         expect(v).toBeLessThanOrEqual(999)
       }
       if (r.result.outcome === 'Fail') expect(r.result.gains).toEqual({})
-      if (r.result.outcome === 'Success' || r.result.outcome === 'Great') {
+      if (isGoodOutcome(r.result.outcome)) {
         expect(r.result.gains.POW).toBeGreaterThan(0)
         expect(r.result.gains.LIF).toBeGreaterThan(0)
         expect(r.result.gains.SPD).toBeLessThan(0)
-        expect(r.result.pay).toBe(r.result.outcome === 'Great' ? 75 : 50)
+        const o = r.result.outcome
+        const pct = o === 'Good' || o === 'Great' || o === 'Superb' || o === 'Perfect' ? DRILL.levels[o].payPct : 0
+        expect(r.result.pay).toBe(Math.round((50 * (100 + pct)) / 100))
       }
       if (r.result.outcome === 'Cheat') expect(r.result.pay).toBe(0)
     }
   })
 
-  it('charges light drills +10 fatigue / +4 stress and heavy +15 / +9, less on Great and Cheat', () => {
+  it('charges light drills +10 fatigue / +4 stress and heavy +15 / +9, less from Good up and on Cheat', () => {
     const m = makeMonster({ agePct: 50, fatigue: 0, stress: 0, spoil: 60, fear: 60 })
     const seen = new Set<string>()
     for (let seed = 0; seed < 300; seed++) {
       const light = resolveDrill(m, 'hill-sprints', createRng(seed))
       const heavy = resolveDrill(m, 'wind-chase', createRng(seed))
       seen.add(light.result.outcome)
-      const relief = (o: string) => (o === 'Great' ? 3 : o === 'Cheat' ? 5 : 0)
+      const relief = (o: DrillOutcome) => (o === 'Good' || o === 'Great' || o === 'Superb' || o === 'Perfect' ? DRILL.levels[o].fatigueRelief : o === 'Cheat' ? 5 : 0)
       expect(light.result.fatigue).toBe(10 - relief(light.result.outcome))
       expect(light.result.stress).toBe(4)
       expect(heavy.result.fatigue).toBe(15 - relief(heavy.result.outcome))
@@ -119,14 +192,45 @@ describe('resolveDrill', () => {
     for (let seed = 0; seed < 100; seed++) expect(resolveDrill(fresh, 'hill-sprints', createRng(seed)).result.outcome).not.toBe('Slacked')
   })
 
-  it('adds the breed bonus drill +1 and an active tonic +3 on Success and Great', () => {
+  it('adds each level\'s bonus after the cap, so Perfect is +7 on top of a capped gain', () => {
+    // A prime A-grade light drill sits at the cap (15, or 14 with −1 noise), so each bonus shows in full above it.
+    const m = makeMonster({ agePct: 50, fatigue: 0, stress: 0, spoil: 100, fear: 100, nature: 50 })
+    m.grades.POW = 'A'
+    const bonus: Record<string, number> = { Success: 0, Good: 2, Great: 4, Superb: 5, Perfect: 7 }
+    const seen = new Set<DrillOutcome>()
+    for (let seed = 0; seed < 800; seed++) {
+      const r = resolveDrill(m, 'log-toss', createRng(seed))
+      if (!isGoodOutcome(r.result.outcome)) continue
+      seen.add(r.result.outcome)
+      const base = r.result.gains.POW! - bonus[r.result.outcome]!
+      expect(base === 14 || base === 15).toBe(true)
+    }
+    expect([...seen].sort()).toEqual(['Good', 'Great', 'Perfect', 'Success', 'Superb'])
+  })
+
+  it('multiplies the whole gain by the bond boost, last', () => {
+    const m = makeMonster({ agePct: 50, fatigue: 0, stress: 0, spoil: 30, fear: 30 })
+    const bonded = structuredClone(m)
+    bonded.status.bondPct = 175
+    for (let seed = 0; seed < 60; seed++) {
+      const a = resolveDrill(m, 'plow-pull', createRng(seed))
+      const b = resolveDrill(bonded, 'plow-pull', createRng(seed))
+      expect(b.result.outcome).toBe(a.result.outcome)
+      if (a.result.outcome === 'Fail') continue
+      expect(b.result.gains.POW).toBe(Math.round((a.result.gains.POW! * 175) / 100))
+      // The lowered stat is not boosted.
+      expect(b.result.gains.SPD).toBe(a.result.gains.SPD)
+    }
+  })
+
+  it('adds the breed bonus drill +1 and an active tonic +3 from Fine up', () => {
     const m = makeMonster({ agePct: 50, fatigue: 0, stress: 0, spoil: 80, fear: 80 })
     const tonic = structuredClone(m)
     tonic.status.tonics.SKI = 4
     for (let seed = 0; seed < 100; seed++) {
       const plain = resolveDrill(m, 'target-toss', createRng(seed))
       const boosted = resolveDrill(tonic, 'target-toss', createRng(seed))
-      if (plain.result.outcome === 'Success' || plain.result.outcome === 'Great') {
+      if (isGoodOutcome(plain.result.outcome)) {
         expect(boosted.result.gains.SKI).toBe(plain.result.gains.SKI! + 3)
         // Puddlepup's bonus drill is Target Toss: at least base + 1
         expect(plain.result.gains.SKI).toBeGreaterThanOrEqual(baseLightGain('B', 5) - 1 + 1)

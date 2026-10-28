@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { ranchBackground } from '../../../art/backgrounds.ts'
+import { keepsakeSvg } from '../../../art/keepsakes.ts'
+import { KEEPSAKE_BY_ID } from '../../../data/keepsakes.ts'
+import { BONDS_TEXT } from '../../../data/text/bonds.ts'
+import { BOND } from '../../../data/tuning.ts'
+import { ArrivalScene } from './ArrivalScene.tsx'
+import { BondGame } from './bond/BondGame.tsx'
 import { dateOf, seasonOf } from '../../../core/calendar.ts'
 import { emoteFor } from '../../../core/emotes.ts'
 import { PLANNER_MAX } from '../../../core/planner.ts'
@@ -21,7 +27,7 @@ import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { CalendarStrip, ConditionBars, TipCard } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
-import { dismissTip, flow, game, menu, openTrain, plannerRunning, plannerStop, plannerView, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
+import { arrival, dismissTip, flow, game, menu, openTrain, plannerRunning, plannerStop, plannerView, runDeferredArrival, settle, takeAction, tipFor, weekNews } from '../../store/gameStore.ts'
 import { lite } from '../../store/perf.ts'
 import { PlannerSheet, PlannerSummary } from './Planner.tsx'
 import { eventsForWeek } from '../../../core/tournament.ts'
@@ -44,10 +50,16 @@ export function RanchScreen() {
   const t = UI_TEXT.ranch
   const mode = settings.value.transparency
 
+  const a = arrival.value
+
   useEffect(() => {
     if (!g) navigate('title')
-    else if (g.ended) navigate('farewell')
-  }, [g === null, g?.ended])
+    // §6.10 a monster that left while you were away has its note to show first.
+    else if (g.ended && !a) navigate('farewell')
+  }, [g === null, g?.ended, a === null])
+
+  // §6.10 a return that came during a battle is checked once the ranch shows again.
+  useEffect(() => runDeferredArrival(), [])
 
   useEffect(() => {
     settle()
@@ -62,11 +74,13 @@ export function RanchScreen() {
   const bgSeed = g ? g.week + 1 : 1
   const bg = useMemo(() => ranchBackground({ season: seasonName, weather, lite: liteMode, seed: bgSeed }), [seasonName, weather, liteMode, bgSeed])
 
-  if (!g || g.ended) return null
+  if (!g) return null
+  if (g.ended) return g.monster && a ? <ArrivalScene a={a} m={g.monster} /> : null
   if (!g.monster) return <EmptyRanch g={g} />
   const m = g.monster
   const mn = menu.value!
-  const quiet = f.kind === 'idle' && !running && !summaryOpen
+  const arrivalOpen = a !== null && f.kind === 'idle' && !running
+  const quiet = f.kind === 'idle' && !running && !summaryOpen && !arrivalOpen
   const ranchTip = quiet ? tipFor({ screen: 'ranch' }) : null
   const showFood = needsFoodChoice(g) && !ranchTip && quiet
   const showRequest = g.pendingRequest !== null && quiet && !showFood
@@ -94,10 +108,27 @@ export function RanchScreen() {
 
       <button type="button" class={`stage stage--${season} stage--${weather.toLowerCase()}`} onClick={() => navigate('ranchCard')} aria-label={fill(t.tapHint, { name: m.name })}>
         <div class="stage__bg" dangerouslySetInnerHTML={{ __html: bg }} />
+        {g.keepsakes.length > 0 && (
+          <div class="stage__keepsakes" aria-hidden="true">
+            {g.keepsakes.slice(-BOND.keepsakesShown).map((id, i) => (
+              <span key={id} class={`keepsake keepsake--${i}`} dangerouslySetInnerHTML={{ __html: keepsakeSvg(id, KEEPSAKE_BY_ID[id].name) }} />
+            ))}
+          </div>
+        )}
         <div class="stage__art">
           <MonsterPortrait monster={m} size={200} />
           <Emote key={emote ?? 'none'} kind={emote} name={m.name} />
         </div>
+        {(m.status.bondPct > 100 || g.settings.vacation) && (
+          <p class="stage__chips">
+            {m.status.bondPct > 100 && (
+              <span class="chip chip--bond" aria-label={fill(BONDS_TEXT.bond.chipLabel, { x: (m.status.bondPct / 100).toFixed(2) })}>
+                {fill(BONDS_TEXT.bond.chip, { x: (m.status.bondPct / 100).toFixed(2) })}
+              </span>
+            )}
+            {g.settings.vacation && <span class="chip">{BONDS_TEXT.settings.vacationOn}</span>}
+          </p>
+        )}
         <p class="stage__caption">{fill(t.stage, { stage: STAGE_NAMES[stageOf(m) - 1], name: m.name })}</p>
         <p class="stage__hint">{fill(t.tapHint, { name: m.name })}</p>
       </button>
@@ -204,6 +235,8 @@ export function RanchScreen() {
       <PlannerSheet open={planOpen && canPlan} onClose={() => setPlanOpen(false)} />
       {summaryOpen && <PlannerSummary />}
       <TrainSheet open={f.kind === 'train'} />
+      {f.kind === 'bond' && <BondGame f={f} m={m} money={g.money} />}
+      {arrivalOpen && <ArrivalScene a={a!} m={m} />}
       {f.kind === 'result' && <DrillResult f={f} />}
       {f.kind === 'summary' && <WeekSummary f={f} />}
     </main>

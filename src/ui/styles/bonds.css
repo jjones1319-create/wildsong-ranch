@@ -1,0 +1,433 @@
+/* The Bonds update: arrival scenes (§6.10), Bond-week games and keepsakes (§6.9). */
+
+/* ---------- a scene: the Blender clip with the monster drawn over it ---------- */
+.clip {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 62dvh;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #1d2a22;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.clip__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clip__media--drawn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.clip__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.clip__mon {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+/* Abandoned: the monster looks washed out and small in the rain. */
+.clip__mon--dim {
+  filter: saturate(0.45) brightness(0.8);
+}
+
+.clip__skip {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  color: #f3ead8;
+  font-size: 0.8em;
+}
+
+/* The monster close up after the welcome: tap it to pet (hearts float up from here). */
+.clip__pet {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 46%;
+  height: 34%;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.clip__pet .emote {
+  position: absolute;
+  left: 50%;
+  top: 0;
+}
+
+.arrival__title {
+  margin: 0;
+  font-size: 1.25em;
+  text-align: center;
+}
+
+.arrival__changes {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.arrival__plea {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.arrival__note {
+  background: #efe3c6;
+  color: #3b2a22;
+  font-family: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive, var(--font);
+  transform: rotate(-1.2deg);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+}
+
+.arrival__note p {
+  margin: 0 0 10px;
+}
+
+.arrival__gone {
+  text-align: center;
+  font-weight: 700;
+}
+
+/* ---------- the ranch stage: keepsakes and the chips ---------- */
+.stage__keepsakes {
+  position: absolute;
+  inset: auto 0 48px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.keepsake {
+  position: absolute;
+  bottom: 0;
+  width: 56px;
+  height: 56px;
+}
+
+.keepsake svg {
+  width: 100%;
+  height: 100%;
+}
+
+.keepsake--0 {
+  left: 6%;
+}
+
+.keepsake--1 {
+  right: 6%;
+}
+
+.keepsake--2 {
+  left: 18%;
+  bottom: 34px;
+  transform: scale(0.8);
+}
+
+.keepsake--3 {
+  right: 18%;
+  bottom: 34px;
+  transform: scale(0.8);
+}
+
+/* The bond boost and Vacation chips sit in the stage's top corner, out of the monster's and the caption's way. */
+.stage__chips {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 6px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.chip--bond {
+  border-color: #e88aa8;
+  color: #ffc2d4;
+}
+
+/* ---------- Bond-week games ---------- */
+.bondgame {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bond__cancel {
+  align-self: center;
+}
+
+/* Fetch: the field, the ball's arc and the monster's run, then the power bar and the hold button. */
+.fetch {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #8fc0e4 0 34%, #7faf5a 34% 100%);
+}
+
+.fetch__mon {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+}
+
+.fetch__mon--out {
+  animation: ws-fetch-run 1100ms ease-in forwards;
+}
+
+.fetch__mon--back {
+  animation: ws-fetch-back 900ms ease-out forwards;
+}
+
+@keyframes ws-fetch-run {
+  to {
+    transform: translate(-50%, var(--fetch-y, -120px)) scale(0.55);
+  }
+}
+
+@keyframes ws-fetch-back {
+  from {
+    transform: translate(-50%, var(--fetch-y, -120px)) scale(0.55);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.fetch__ball {
+  position: absolute;
+  left: calc(50% - 9px);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f6f0a0, #c9c23c);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.3);
+  animation: ws-ball-fly 700ms ease-out both;
+}
+
+.fetch__ball--back {
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+@keyframes ws-ball-fly {
+  from {
+    transform: translateY(200px) scale(1.4);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.fetch__bar {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--line);
+}
+
+.fetch__zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgb(127 175 90 / 0.75);
+}
+
+.fetch__fill {
+  position: absolute;
+  inset: 0;
+  background: rgb(242 181 68 / 0.85);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.fetch__throw {
+  min-height: 72px;
+  font-size: 1.15em;
+  touch-action: none;
+  -webkit-touch-callout: none;
+}
+
+/* Hide-and-seek: four haystacks; the one the monster is behind rustles. */
+.hide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.hide__stack {
+  position: relative;
+  aspect-ratio: 8 / 7;
+  padding: 6px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #8fc0e4 0 40%, #7faf5a 40% 100%);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.hide__stack svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hide__stack[disabled] {
+  cursor: default;
+}
+
+.hide__stack--rustle {
+  animation: ws-rustle 140ms ease-in-out 3;
+  border-color: var(--accent);
+}
+
+.hide__stack--picked {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(242 181 68 / 0.5);
+}
+
+@keyframes ws-rustle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  33% {
+    transform: rotate(-4deg);
+  }
+  66% {
+    transform: rotate(4deg);
+  }
+}
+
+.hide__peek {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+}
+
+/* The shopping trip: stalls slide by while the monster strolls, then it stops at the find. */
+.shop {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #e8c99a 0 55%, #b5916a 55% 100%);
+}
+
+.shop__stalls {
+  position: absolute;
+  inset: 12px 0 auto;
+  display: flex;
+  gap: 18px;
+  padding-left: 12px;
+}
+
+.shop--stroll .shop__stalls {
+  animation: ws-stroll 1800ms linear both;
+}
+
+@keyframes ws-stroll {
+  from {
+    transform: translateX(60%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.shop__stall {
+  width: 92px;
+  height: 104px;
+  border-radius: 10px 10px 4px 4px;
+  background: repeating-linear-gradient(90deg, #c55b4a 0 14px, #f3ead8 14px 28px) top / 100% 28px no-repeat, #8a6440;
+  box-shadow: inset 0 -40px 0 #6b4a32;
+}
+
+.shop__stall--b {
+  background: repeating-linear-gradient(90deg, #3f7fc4 0 14px, #f3ead8 14px 28px) top / 100% 28px no-repeat, #8a6440;
+}
+
+.shop__stall--c {
+  background: repeating-linear-gradient(90deg, #7faf5a 0 14px, #f3ead8 14px 28px) top / 100% 28px no-repeat, #8a6440;
+}
+
+.shop__mon {
+  position: absolute;
+  left: 22%;
+  bottom: 6px;
+}
+
+.shop__item {
+  position: absolute;
+  right: 14%;
+  bottom: 20px;
+  width: 96px;
+  height: 96px;
+  animation: ws-pop 320ms ease-out both;
+}
+
+.shop__item svg {
+  width: 100%;
+  height: 100%;
+}
+
+.shop__card .heading {
+  margin-top: 0;
+}
+
+/* The Monster Card's list of ranch keepsakes. */
+.keepsakes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.keepsakes__row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.keepsakes__art {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+
+.keepsakes__art svg {
+  width: 100%;
+  height: 100%;
+}

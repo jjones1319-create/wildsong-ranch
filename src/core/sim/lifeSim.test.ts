@@ -62,19 +62,21 @@ describe('stat totals with Good care (§26)', () => {
     between(y5!, 2350 * 0.8, 2350 * 1.2)
   })
 
-  it('a Late bloomer with A/B grades reaches about 2,550 at year 5 and 2,950 at year 6', () => {
+  it('a Late bloomer with A/B grades reaches about 2,700 at year 5 and 3,200 at year 6', () => {
     const avg = averageReports(runMany('Good', 'cobblemaw', { LIF: 'B', POW: 'A', INT: 'B', SKI: 'A', SPD: 'B', DEF: 'A' }))
     // "A/B grades" is a hypothetical monster; ours is all A/B, so it runs a little hot. ±25% keeps the shape honest.
-    between(avg.totalsByYear[4]!, 2550 * 0.75, 2550 * 1.25)
-    between(avg.totalsByYear[5]!, 2950 * 0.75, 2950 * 1.25)
+    // The result levels (v1.9) add their bonus above the gain caps, so loyal A/B monsters grow past the old 2,550 / 2,950.
+    between(avg.totalsByYear[4]!, 2700 * 0.75, 2700 * 1.25)
+    between(avg.totalsByYear[5]!, 3200 * 0.75, 3200 * 1.25)
   })
 })
 
 describe('drill outcome rates over a Good-care life (§26)', () => {
-  it('Great 17–23%, Success 55–65%, Cheat 7–12%, Fail 8–14%', () => {
+  it('Great and up 17–25% (Perfect 2–8%), Fine and Good 52–65%, Cheat 7–12%, Fail 8–14%', () => {
     const o = averageReports(runMany('Good')).outcomesPct
-    between(o.Great, 17, 23)
-    between(o.Success, 55, 65)
+    between(o.Perfect + o.Superb + o.Great, 17, 25)
+    between(o.Perfect, 2, 8)
+    between(o.Good + o.Success, 52, 65)
     between(o.Cheat, 7, 12)
     between(o.Fail, 8, 14)
   })

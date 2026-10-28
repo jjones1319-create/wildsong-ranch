@@ -14,6 +14,10 @@ describe('onboarding tips (§21)', () => {
     expect(tipText(state, 'welcome')).toContain('Hillside')
     expect(tipText(state, 'welcome')).toContain('Jo')
     state = markTipSeen(state, 'welcome')
+    // §6.10 the away rule comes next, at once (before it could ever bite), and mentions Vacation mode.
+    expect(nextTip({ ...state, weekPhase: 'start' }, { screen: 'ranch' })).toBe('awayRule')
+    expect(tipText(state, 'awayRule')).toContain('Vacation mode')
+    state = markTipSeen(state, 'awayRule')
     // Before the week begins (the food prompt is still to come) no other ranch tip shows.
     expect(nextTip({ ...state, weekPhase: 'start' }, { screen: 'ranch' })).toBeNull()
     expect(nextTip(state, { screen: 'ranch' })).toBe('firstDrill')

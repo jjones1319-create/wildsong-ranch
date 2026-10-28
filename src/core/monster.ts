@@ -60,6 +60,8 @@ export interface MonsterStatus {
   warnedQuarterLife: boolean
   warned48: boolean
   warned10: boolean
+  /** §6.9 the bond boost on drill gains, percent: 175 after a Bond week, 25 less each week after, 100 = none. */
+  bondPct: number
 }
 
 export interface MonsterDiet {
@@ -343,6 +345,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
       warnedQuarterLife: false,
       warned48: false,
       warned10: false,
+      bondPct: 100,
     },
     diet: { lastFood: null, sameFoodStreak: 0, puddingCount: 0, monthsFed: 0 },
     records: { wins: 0, losses: 0, draws: 0, kos: 0, cupsWon: 0, titles: [], earnings: 0, highestGrade: 'E', crownsWon: 0, fromSweets: zeroStats() },

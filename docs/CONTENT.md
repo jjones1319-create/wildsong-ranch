@@ -741,6 +741,33 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Heavy | **Waterfall Stand** | DEF++ LIF+ INT− | Bracing under the little waterfall |
 | Heavy | **Quarry Haul** (needs the Training Yard) | LIF++ DEF+ SKI− | Hauling stones from the old quarry |
 
+**Result levels** (GAME_DESIGN §6.2–§6.3): Fail · Cheat · **Fine** +0 · **Good** +2 · **Great** +4 · **Superb** +5 (loyalty 50+) · **Perfect** +7 (loyalty 70+).
+
+### 4.1 Bond weeks (GAME_DESIGN §6.9)
+
+| Activity | How it plays | Score |
+|---|---|---|
+| **Play fetch** 🎾 | Hold to wind up, let go in the green; the monster races after the ball and trots back. Five throws. | catches, 0–5 |
+| **Hide-and-seek** 🌾 | The monster hides behind one of four haystacks; one rustles; tap the right one. Five rounds. | finds, 0–5 |
+| **Shopping trip** 🛍️ | A stroll down Market Lane; the monster stops at a stall, excited, having found a keepsake it loves. Buy it, or "Not today". | counts as 3 |
+
+### 4.2 Keepsakes (bought on shopping trips; they stay on the ranch)
+
+| Keepsake | Price | Line |
+|---|---|---|
+| Kick Ball | 400G | A big soft ball for kicking around the yard. |
+| Pinwheel | 450G | Spins and whirs in the slightest breeze. |
+| Star Plush | 500G | A soft star to cuddle at night. |
+| Wind Chime | 600G | Shell and wood chimes that sing in the wind. |
+| Puzzle Board | 800G | Wooden pegs and sliding blocks to fiddle with. |
+| Hay Hammock | 900G | A swinging bed of sweet hay between two posts. |
+| Climbing Stump | 1,000G | A gnarled old stump, perfect for clambering. |
+| Splash Tub | 1,100G | A wide wooden tub of cool water for paddling. |
+| Kite Post | 1,300G | A tall post with a bright kite tied to the top. |
+| Story Blocks | 1,500G | Painted blocks that stack into little towers and towns. |
+
+Each keepsake takes 1 stress off at the end of every week (up to 4 in all). They are drawn in code beside the monster on the ranch (`src/art/keepsakes.ts`).
+
 ---
 
 ## 5. Monthly food
@@ -981,7 +1008,7 @@ Town → Odd Jobs is Basil's board. It lists every job with its status, its pay 
 - The stones play a melody and you repeat it by tapping. Each round adds one note (never three of the same stone in a row). Rounds 1–10 use the first four stones; round 11's new note is always the Moon, and later notes use all five. The tempo quickens by 12 % every 4 rounds up to round 10, then by just 1 % every 2 rounds, down to a floor. There is no last round: memory is the limit.
 - One mistake ends the game, but you get **one free retry** of the current round per game.
 - Your monster sits beside the stones and reacts: it hums along while the stones play, is pleased when you get a round right, and jumps when you slip.
-- Rewards (numbers in `tuning.ts` `ECHO_STONES`): 15G per round cleared, no cap; reaching round 8 also lowers the monster's stress by 5 (paid plays); the best round is saved, and reaching round 15 earns the title **Perfect Pitch**.
+- Rewards (numbers in `tuning.ts` `ECHO_STONES`): 15G per round cleared through round 10, then each round pays 1G more than the last (round 11 = 16G, 12 = 17G…), no cap; reaching round 8 also lowers the monster's stress by 5 (paid plays); the best round is saved, and reaching round 15 earns the title **Perfect Pitch**.
 - Phone and accessibility: big stones (≥ 44 px, most of the width), shapes as well as colours, each stone labelled for screen readers, haptic ticks on Android, and Reduce motion stops the glow transitions.
 
 **Meadow Dash** (a tap-to-run race; numbers in `tuning.ts` `DASH`):

@@ -63,7 +63,7 @@ export function missingTitles(state: GameState): TitleId[] {
   if (!has('Lineage Keeper') && all.some((m) => m.generation >= TITLES.lineageGeneration)) out.push('Lineage Keeper')
   if (!has('Encyclopedist') && state.encyclopedia.breeds.length >= TITLES.encyclopedistBreeds) out.push('Encyclopedist')
   if (!has('Collector') && state.encyclopedia.combos.length >= TITLES.collectorVariants) out.push('Collector')
-  if (!has('Gentle Heart') && state.memorial.some((e) => e.cause !== 'fused' && livedNominalPct(e.monster) >= TITLES.gentleHeartPct)) out.push('Gentle Heart')
+  if (!has('Gentle Heart') && state.memorial.some((e) => (e.cause === 'passed' || e.cause === 'retired') && livedNominalPct(e.monster) >= TITLES.gentleHeartPct)) out.push('Gentle Heart')
   if (!has('Sleeper Awakened') && state.records.stonesWoken >= TITLES.sleeperStones) out.push('Sleeper Awakened')
   if (!has('Songbook Scholar') && UNIVERSAL_TECHNIQUES.every((t) => state.songbook.includes(t.id))) out.push('Songbook Scholar')
   if (!has('Sweet Tooth') && state.counters.sweetsEaten >= TITLES.sweetTooth) out.push('Sweet Tooth')

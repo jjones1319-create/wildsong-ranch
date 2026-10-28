@@ -4,7 +4,7 @@ import { WEEKS_PER_YEAR } from '../calendar.ts'
 import { addItems } from '../items.ts'
 import { createMonster, loyaltyOf, rollLikes, totalStats, type Likes, type Monster } from '../monster.ts'
 import { createRng } from '../rng.ts'
-import { createGameState, type GameState } from '../state.ts'
+import { createGameState, type GameState, type LifeEnd } from '../state.ts'
 import type { DrillOutcome } from '../training.ts'
 import { allowedActions, runWeek, useItemInGame, type WeekAction, type WeekEvent, type WeekPolicy } from '../week.ts'
 
@@ -82,7 +82,7 @@ export interface LifeReport {
   weeksLived: number
   /** Weeks lived as a percentage of the lifespan at birth. */
   lifeLivedPct: number
-  endedBy: 'passed' | 'retired' | 'limit'
+  endedBy: LifeEnd | 'limit'
   birthStats: Stats
   finalStats: Stats
   finalTotal: number
@@ -101,7 +101,7 @@ export interface LifeReport {
   lines: string[]
 }
 
-const emptyOutcomes = (): Record<DrillOutcome, number> => ({ Great: 0, Success: 0, Cheat: 0, Fail: 0, Slacked: 0 })
+const emptyOutcomes = (): Record<DrillOutcome, number> => ({ Perfect: 0, Superb: 0, Great: 0, Good: 0, Success: 0, Cheat: 0, Fail: 0, Slacked: 0 })
 
 function neutralFoodFor(m: Monster): FoodId {
   return FOOD_IDS.find((f) => f !== m.likes.food && f !== m.likes.dislikedFood && f !== 'turnips') ?? 'river-fish'

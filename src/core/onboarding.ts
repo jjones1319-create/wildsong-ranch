@@ -10,7 +10,7 @@ import type { GameState } from './state.ts'
  * the Monster Card), then one-time contextual tips. Each tip is shown once per save (`tipsSeen`).
  */
 
-export const TIP_IDS = ['welcome', 'firstFood', 'firstDrill', 'praiseScold', 'firstRest', 'openCard', 'firstRequest', 'bag', 'songbook', 'repeat', 'prime', 'breakdown'] as const
+export const TIP_IDS = ['welcome', 'awayRule', 'firstFood', 'firstDrill', 'praiseScold', 'firstRest', 'openCard', 'firstRequest', 'bag', 'songbook', 'repeat', 'prime', 'breakdown'] as const
 export type TipId = (typeof TIP_IDS)[number]
 
 export type TipContext =
@@ -46,6 +46,8 @@ export function nextTip(state: GameState, ctx: TipContext): TipId | null {
     case 'ranch': {
       if (state.pendingRequest) return null
       if (!seen('welcome')) return 'welcome'
+      // §6.10 the away rule is explained before it can ever bite (the clock starts on this save's first launch).
+      if (!seen('awayRule')) return 'awayRule'
       // Every other ranch tip waits for the week to begin, so the monthly food prompt is never hidden behind a tip.
       if (state.weekPhase !== 'action') return null
       if (!seen('firstDrill') && c.drillsDone === 0) return 'firstDrill'

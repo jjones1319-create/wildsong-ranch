@@ -7,7 +7,7 @@
  */
 import { AUDIO } from '../data/tuning.ts'
 import type { DrillId, Weather } from '../data/types.ts'
-import type { DrillOutcome } from '../core/training.ts'
+import { baseOutcome, type DrillOutcome } from '../core/outcomes.ts'
 import type { FxEvent } from '../fx/bus.ts'
 import type { Request, SongRequest } from './director.ts'
 import type { Engine } from './engine/index.ts'
@@ -266,7 +266,7 @@ let cue: ActiveCue | null = null
 function playOutcome(engine: Engine, c: ActiveCue, at: number, gainDb = 0): void {
   if (c.stingerPlayed) return
   c.stingerPlayed = true
-  const stinger = c.recipe.stingers[c.outcome]
+  const stinger = c.recipe.stingers[baseOutcome(c.outcome)]
   const now = engine.ctx.currentTime
   const when = Math.max(now, at)
   if (c.outcome === 'Slacked' && c.bed) {
@@ -308,7 +308,7 @@ export function startDrillCue(engine: Engine, drill: DrillId, outcome: DrillOutc
   if (o.instant) {
     // Instant speed, or the planner running several weeks: the stinger only, at −6 dB, over whatever plays.
     const c: ActiveCue = { recipe, outcome, resultAt: now, stingerPlayed: false, foleyTimer: null, bed: null }
-    const stinger = recipe.stingers[outcome]
+    const stinger = recipe.stingers[baseOutcome(outcome)]
     engine.music.interrupt(stinger, { transpose: 0, fadeInAfterSec: AUDIO.stingerFadeInAfterDrillSec, gainDb: AUDIO.drill.instantStingerDb })
     void c
     return now

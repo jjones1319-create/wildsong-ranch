@@ -455,6 +455,18 @@ The owner asked for no pay cap on Odd Jobs, endless play past the old 150G mark,
 - [x] 4. Sound: `echo5`, `dashStep`, `dashGo`; the director's Meadow Dash row (a stand-in until S3).
 - [x] 5. Tests, docs (CONTENT §13, GAME_DESIGN §3 and §9, SOUND_UPGRADE §10.4 and §11), `npm run verify`, `audio:check` on the new effects, a headless run of all three jobs, PROGRESS, commit, deploy, phone checklist.
 
+## The Bonds update (v1.9.0)
+
+The owner asked (2026-10-28) for: Echo Stones pay that rises by 1G a round after round 10; consequences for not opening the game (a day: sad, two days: abandoned, four days: gone; Vacation mode turns it off) shown as Blender-made scenes; a welcome where the monster greets you and you can pet it or give it a treat; a weekly Bond action (fetch, hide-and-seek, a shopping trip that can buy a keepsake for the ranch) that boosts training ×1.75 then 0.25 less a week; and more training levels with loyalty deciding the best ones (Fine +0, Good +2, Great +4, Superb +5, Perfect +7; Perfect from loyalty 70). Spec: GAME_DESIGN §1, §6.2–§6.3, §6.9, §6.10; CONTENT §4, §13.
+
+- [x] 1. Echo Stones rising pay.
+- [x] 2. Training levels (`core/outcomes.ts`, `core/training.ts`, `OUTCOME.levels`, `DRILL.levels`), retuned so the §26 targets hold (the A/B target moved, see GAME_DESIGN §26).
+- [x] 3. Bond weeks (`core/bond.ts`, `data/keepsakes.ts`, the Train sheet's Bond tab, `screens/ranch/bond/`), keepsakes on the ranch and the Monster Card.
+- [x] 4. Arrival (`core/arrival.ts`, the store's clock and checks, `ArrivalScene.tsx`, `SceneClip.tsx`), Vacation mode, Sandbox previews, the `awayRule` tip, the neglect and wandered Farewells.
+- [x] 5. Blender scenery clips (`tools/blender/`, `public/baked/scenes/`).
+- [x] 6. Save schema v12 with its migration and test.
+- [x] 7. Tests, docs, `npm run verify`, the e2e specs, PROGRESS, commit, deploy, phone checklist.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.
