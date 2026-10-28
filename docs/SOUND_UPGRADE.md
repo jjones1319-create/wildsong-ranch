@@ -693,7 +693,7 @@ Ambience ids are from §9.2.
 | `tournament` (entry) | the `cup` lobby in this season's palette | `arena-out` |
 | `tournamentPlay` · `tournamentResults` | the event's lobby layer | `arena`, with the event's crowd |
 | `battle` | the battle for its origin (§7.5) | `arena` (none in Trials and the Lab) |
-| Turnip Sort · Echo Stones | **Turnip Sort** · the **Echo Stones** drone | `barn` · `shrine` |
+| Turnip Sort · Echo Stones · Meadow Dash | **Turnip Sort** · the **Echo Stones** drone · **Meadow Dash** (S3; until then the Town fair stem) | `barn` · `shrine` · `meadow` |
 | `settings` · `calendar` | keep whatever is playing | |
 
 Sheets and overlays never change the music: the food prompt, request card, Train sheet, planner, week summary, item sheets and the pause sheet (beyond its lowpass, §4.7).
@@ -1083,7 +1083,7 @@ The levels below are starting points, in dBFS, for each layer alone at default s
 - **Drills:** the Foley in §8.
 - **The Shrine:** the stone hum (a bowed-vibes and organ swell with chimes); `birth` is §7.6.
 - **Echo Stones:**
-  - Each of the four stones plays an ocarina plus hand-chime note in the Wildsong key, with four clearly different pitches.
+  - Each of the five stones plays an ocarina plus hand-chime note in the Wildsong key, with five clearly different pitches (D5 F#5 A5 C#6, and the Moon's B4 below them: no two share a note name).
   - A cleared sequence plays back as a harp phrase ending on the motif.
   - A wrong stone plays a soft low "thup".
   - The game's rules don't change.
@@ -1092,6 +1092,10 @@ The levels below are starting points, in dBFS, for each layer alone at default s
   - A wrong answer plays a muted thud.
   - The round ends with a small jingle.
   - The music's tempo follows the game's speed ramp.
+- **Meadow Dash:**
+  - The countdown ticks on the woodblock (`timerTick`); "Go!" is a frame-drum hit with a glock note (`dashGo`).
+  - Each tap is one soft grass footstep (`dashStep`, throttled to 70 ms, so fast tapping stays a patter).
+  - A heat won plays the music-box arpeggio (`jackpotDouble`); a heat lost the drooping kalimba (`jackpotFizzle`).
 - **Expeditions:** a chest creak, and soft pass and fail sounds for obstacles.
 
 ### 10.5 Compatibility

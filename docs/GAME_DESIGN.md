@@ -88,7 +88,7 @@ Shrine / Market ─► NEW MONSTER
 5. **Items.** Use **as many items as you like**, any time during the week (a free action). The optional **One item per week** rule (in Settings; on by default only in Classic difficulty) restores the old-school limit.
 6. **End of week.** Aging tick (§7), illness and breakdown checks (§6.6), weather roll for next week, **autosave**.
 
-**Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, and one Odd Job per week (§9).
+**Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, and Odd Jobs (each job pays once per week; §9).
 
 **Planner** (SHOULD):
 - Queue up to 8 weeks of actions (drills and rests). Queued drills get no praise or scold, and a month start keeps last month's food.
@@ -458,7 +458,7 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 
 - **Start:** 3,000G. The first monster is free: a Guild gift from the Market, or a Shrine creation.
 - **Income:** tournament purses (§13), chore pay (§6.1), Journey trial bonuses, selling expedition loot, and Odd Jobs.
-- **Odd Jobs** (SHOULD): Basil's board of short mini-games (Turnip Sort, Echo Stones), each paying once per in-game week as a free action, 0–150G by score; a free Practice mode replays any job without pay (CONTENT §13).
+- **Odd Jobs** (SHOULD): Basil's board of short mini-games (Turnip Sort, Echo Stones, Meadow Dash), each paying once per in-game week as a free action, by score with **no cap**: past the old 150G mark each job turns endless and harder (overtime, the fifth stone, faster heats). A free Practice mode replays any job without pay (CONTENT §13).
 - **Expenses:** food, items (including Stat Sweets and Songsheets), Journeys (2,000G; 1,000G in sale months), Fusion fee (1,000G), Encyclopedia re-creation (500G), ranch upgrades, breakdown fees.
 - **Money is the only limit on items**, so purses matter. Officials still pay little; regular cups and item prizes are where the rewards are.
 - **No game over for money.** If money would go below 0 the Guild Loan covers it, up to 5,000G with a 10% fee. While in debt, 50% of every prize goes to repayment and only food and Recovery items can be bought.

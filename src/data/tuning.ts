@@ -829,45 +829,92 @@ export const UNLOCKS = {
   lootlidSeed: 7_421_200,
 } as const
 
-/** CONTENT §13 Odd Jobs: Turnip Sort. */
+/** CONTENT §13 Odd Jobs: Turnip Sort. No pay cap. */
 export const ODD_JOBS = {
   seconds: 30,
   payPerCorrect: 5,
   payPerWrong: 5,
-  cap: 150,
   /** How long an item stays in reach at the start and at the end of the round (milliseconds): the ramp. */
   slideMs: { start: 1900, end: 850 },
   /** The pause between items, start → end. */
   gapMs: { start: 450, end: 180 },
   /** Chance an item is a turnip (percent); rocks are the rest. */
   turnipPct: 60,
-  /** Items prepared per round (more than a round can show). */
-  items: 80,
+  /**
+   * Overtime: reaching `atPay` inside the 30 seconds banks it, stops the clock and brings in weeds (Compost).
+   * Each item's window starts at `windowMs.start` and shrinks by `step` per item down to `floor`; a missed item
+   * or the `strikes`-th mix-up ends the job. `introMs` is the pause before the first weed; `salt` seeds the
+   * overtime stream apart from the first phase's.
+   */
+  overtime: {
+    atPay: 150,
+    mixPct: { turnip: 40, rock: 30 },
+    windowMs: { start: 1300, step: 12, floor: 350 },
+    gapMs: 180,
+    strikes: 2,
+    introMs: 1500,
+    salt: 0x5eed0b1e,
+  },
 } as const
 
-/** CONTENT §13 Odd Jobs: Echo Stones (the memory game). Times are milliseconds. */
+/** CONTENT §13 Odd Jobs: Echo Stones (the memory game). Times are milliseconds. No pay cap and no last round. */
 export const ECHO_STONES = {
-  stones: 4,
+  /** Stones before `moonRound`, and from it on: the Moon stone joins, and that round's new note is always the Moon. */
+  firstStones: 4,
+  stones: 5,
+  moonRound: 11,
   payPerRound: 15,
-  cap: 150,
   /** Reaching this round takes this much stress off the monster (paid plays only). */
   stressRound: 8,
   stressRelief: 5,
   /** One free retry of the current round per game. */
   retries: 1,
-  /** The melody prepared per game; reaching the end wins the game. */
-  maxRounds: 40,
+  /** Notes prepared at a time; the melody grows by this much whenever a game needs more. */
+  melodyChunk: 40,
   /**
-   * How long a stone glows and the pause after it in round 1; every `speedUpEvery` rounds both shrink by
-   * `speedUpPct`, never under the minimums. Relaxed stretches both by `relaxedPct`.
+   * How long a stone glows and the pause after it in round 1. Up to round `speedUpUntil`, both shrink by
+   * `speedUpPct` every `speedUpEvery` rounds; after it, by `latePct` every `lateEvery` rounds (very slowly).
+   * Never under the minimums. Relaxed stretches both by `relaxedPct`.
    */
-  tempo: { noteMs: 520, gapMs: 200, speedUpEvery: 4, speedUpPct: 12, minNoteMs: 240, minGapMs: 90, relaxedPct: 150 },
+  tempo: { noteMs: 520, gapMs: 200, speedUpEvery: 4, speedUpPct: 12, speedUpUntil: 10, lateEvery: 2, latePct: 1, minNoteMs: 240, minGapMs: 90, relaxedPct: 150 },
   /** The pause before the melody plays, and before the next round starts. */
   leadMs: 650,
   /** How long a tapped stone glows. */
   tapMs: 220,
-  /** The four stones' notes (Hz): C4 E4 G4 C5. */
-  noteHz: [262, 330, 392, 523] as readonly number[],
+} as const
+
+/**
+ * CONTENT §13 Odd Jobs: Meadow Dash (the tap-to-run race). Distances and speeds are hundredths of a millimetre
+ * (per tick); a tick is 1/50 s. Each tap adds `tapBoost` × (100 + SPD bonus) / 100 to the player's speed, which
+ * loses `dragPct` % a tick, so steady tapping at f taps a second settles at f × boost × 100 / (50 × dragPct).
+ * Rivals run like steady tapping at `rivalRateX10` (taps per ten seconds), approaching it at the same rate.
+ */
+export const DASH = {
+  ticksPerSecond: 50,
+  track: 4_000_000,
+  tapBoost: 3_800,
+  dragPct: 4,
+  /** The player's top speed (about 21 taps a second). Rivals have none, so every run ends. */
+  vMax: 40_000,
+  /** SPD 999 adds this much to each tap (percent), in proportion. */
+  spdBonusMaxPct: 25,
+  payPerHeat: 25,
+  /** The lead rival's pace: start + perHeat × (heat − 1); the three rivals run at `rivalPct` of it. */
+  rivalRateX10: { start: 35, perHeat: 6 },
+  rivalPct: [100, 88, 76] as readonly number[],
+  /** Each rival's pace moves by up to ± pct every `everyTicks`, in pairs that cancel out. */
+  wobble: { pct: 6, everyTicks: 25 },
+  /** Relaxed slows every rival to this share of its pace (pay is the same). */
+  relaxedPct: 80,
+  /** A safety stop: at this tick the furthest runner wins. */
+  maxTicks: 3_000,
+  /** UI timing (ms): each countdown step, how long "Go!" shows, the longest frame the loop catches up on, the result lock, the click/tap dedupe window and the haptic throttle. */
+  countdownStepMs: 700,
+  goMs: 500,
+  maxFrameMs: 100,
+  resultLockMs: 800,
+  clickDedupeMs: 400,
+  hapticEveryMs: 80,
 } as const
 
 /** CONTENT §14 title thresholds that are not tournament placings. */

@@ -2,6 +2,63 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Odd Jobs 2: endless jobs and Meadow Dash (2026-10-27) · v1.8.0
+
+**Live:** Basil's Odd Jobs have no pay limit any more, and every job keeps going for a skilled player.
+- **Turnip Sort:** reaching 150G inside the 30 seconds starts overtime. The clock stops, weeds join (Compost, the middle bin or a swipe down), and each item comes a little faster. A missed item or the second mix-up ends the job.
+- **Echo Stones:** the Moon stone (violet, crescent) wakes at round 11, the tempo then quickens only 1% every two rounds, and there's no last round.
+- **Meadow Dash** (new): tap the Run pad and your monster races three rivals down the meadow. Win a heat to run a faster one; the run ends at the first heat you don't win. SPD adds up to 25% to each tap.
+
+**Done**
+- **Rules:**
+  - `core/oddJobs.ts`: no cap; overtime with an endless seeded dealer (the first phase deals exactly as before, overtime has its own stream and starts with a weed) and a window that shrinks 12 ms an item to a 0.35 s floor. Overtime mix-ups are strikes, not pay, so the 150G stays banked. Turnip Sort keeps a best.
+  - `core/echoStones.ts`: five stones; the melody is extendable and identical to before through round 10; the late tempo; no cap.
+  - New `core/meadowDash.ts`: the race in fixed 1/50 s ticks with integer distances (hundredths of a millimetre, so rounding never stalls a runner).
+    - Rivals ease to a pace that rises every heat, with paired wobbles. Rivals have no top speed and the player does, so every run ends.
+    - A close finish goes to whoever crossed first within the tick, and a dead heat goes to the player.
+    - Pay is 25G a heat. Numbers are in `ODD_JOBS`, `ECHO_STONES` and the new `DASH`.
+- **Schema v11** (`turnipBest`, `dashWeek`, `dashBest`) with a migration and a test; bad values are clamped.
+- **Screens:**
+  - The board has three cards, each with its own pay line and best.
+  - Turnip Sort: the clock moved into `useTurnipRun.ts`; adds the overtime banner (tap Ready to skip), three bins that fit at 360 px, swipe down, and mix-ups left.
+  - Echo Stones: the Moon on its own row, rising in, and the "A fifth stone wakes" line.
+  - Meadow Dash:
+    - One animation-frame loop runs the countdown and the race, and the runners are drawn between ticks without re-rendering.
+    - The Run pad is full width at the bottom. Two thumbs, keyboard and screen readers all work.
+    - The heat buttons stay locked for 0.8 s after a heat, the race pauses when the phone switches away, and leaving mid-run still pays the heats won.
+  - The stones and the Run pad no longer play the UI tap sound on top of their own.
+- **Sound:**
+  - `echo5`: the Moon's B4, below the other four, because the ocarina stops at the Star's C#6. No two stones share a note name.
+  - `dashStep`: one soft grass footstep per tap, throttled to 70 ms.
+  - `dashGo`: a frame drum with a glock note.
+  - The countdown ticks on the woodblock; a heat won plays the music-box arpeggio, a heat lost the drooping kalimba.
+  - Meadow Dash plays the Town fair stem over the meadow bed, a stand-in until S3.
+  - `audio:check` passes on all three new effects (echo5 −28, dashGo −29, dashStep −42 LUFS momentary max).
+- **Tests:** 878 Vitest tests, up from 859.
+  - New: the Meadow Dash suite (calibration, top speed, rivals, ties, purity, the whole heat ladder, settling), overtime and the dealer, the Moon melody and late tempo, the v11 migration, the director's Dash row, and the five stone pitches.
+  - A new Playwright spec, `e2e/oddjobs.spec.ts`, at 360 × 780. In-page bots play each game: Turnip Sort into overtime until an item slides off, Echo Stones to round 13 with the Moon, Meadow Dash winning heat 1 by tapping and losing heat 2. 3 passed, no page errors, no sideways scroll.
+- **Docs:** CONTENT §13 (all three jobs; the stone notes corrected to what they actually play), GAME_DESIGN §3 and §9, SOUND_UPGRADE §10.4 and §11, BUILD_PLAN.
+
+**Decisions worth knowing**
+- **The owner's choices:** the Moon at the 150G mark (round 11); Turnip Sort's mix-ups count toward the two only after 150G; Meadow Dash is heats until you lose; SPD helps a little.
+- **Meadow Dash heats won** (simulated, steady tapping):
+
+  | Tapping | SPD 1 | SPD 999 |
+  |---|---|---|
+  | 5 taps a second | 3 | 5 |
+  | 6 taps a second | 5 (125G) | 8 |
+  | 8 taps a second | 9 | 12 |
+  | 12 taps a second, two thumbs | 16 | 21 (525G) |
+
+  Heat 1's lead rival takes 12.5 s; heat 10's takes 5.2 s.
+- **Money:** a very good player can now earn roughly 1,000G a week from Odd Jobs (a Stat Sweet is 400G). The Relaxed option (one setting for Echo Stones and Meadow Dash) makes both easier at the same pay.
+
+**Known issues**
+- Listen for the footstep patter's level on the phone (`dashStep`); it was set by measurement only.
+- The 🏁 on the board shows as a plain checkered square in desktop Chrome on Windows; phones draw the flag.
+
+**Next:** the owner's phone pass. Then S3 (the owner's S2 listening notes first).
+
 ## Sound S2: a theme for every event (2026-10-27) · v1.7.0
 
 **Live:** every event in the calendar now plays its own music. The regular cups keep the cup theme in their season's colours; the sixteen big events each have a new composition, with a lobby for the cup screens, a match that builds from base to drive to tension, a crowd of the right size, and their own stingers at the results.

@@ -73,9 +73,15 @@ describe('the effect recipes (§10)', () => {
     expect(degreeToMidi(3, 5, { tonic: 7, mode: 'mixolydian' })).toBe(83)
   })
 
-  it('the Echo Stones play four clearly different pitches and the clear phrase ends on the motif', () => {
-    const notes = ['echo1', 'echo2', 'echo3', 'echo4'].map((id) => (WORLD_SFX[id as 'echo1'].layers[0] as { degree: number }).degree)
-    expect(new Set(notes).size).toBe(4)
+  it('the Echo Stones play five clearly different pitches inside the ocarina and the clear phrase ends on the motif', () => {
+    const notes = (['echo1', 'echo2', 'echo3', 'echo4', 'echo5'] as const).map((id) => {
+      const l = WORLD_SFX[id].layers[0] as { degree: number; octave: number }
+      return degreeToMidi(l.degree, l.octave, DEFAULT_KEY)
+    })
+    expect(notes.every(Number.isFinite)).toBe(true)
+    expect(new Set(notes.map((n) => n % 12)).size).toBe(5)
+    const [lo, hi] = INSTRUMENTS.ocarina.melody!
+    for (const n of notes) expect(n >= lo && n <= hi).toBe(true)
     const clear = WORLD_SFX.echoClear.layers.filter((l) => l.kind === 'note' && l.inst === 'harp').map((l) => degreeToMidi((l as { degree: number }).degree, 5, DEFAULT_KEY))
     expect(clear.slice(1).map((p, i) => p - clear[i]!)).toEqual([2, 5, -1, -2, -2])
   })

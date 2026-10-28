@@ -485,3 +485,6 @@ export interface JourneySite {
   gradeMin: TournamentGrade | null
   trialBreeds: readonly [BreedId, BreedId]
 }
+
+/** CONTENT §13 Basil's Odd Jobs. */
+export type OddJobId = 'turnip' | 'echo' | 'dash'

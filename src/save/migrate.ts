@@ -23,8 +23,9 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   rounds go up to 30 so a pre-v9 round robin (one round per match, up to 15) keeps its stored schedule. Nothing
  *   to rewrite: older results simply have no length, and `tournament.mode` keeps its meaning (the cup's default).
  * - v10 (Calendar): the calendar's ★ reminders (`calendarPins`, keys `${week}:${id}`), empty for older saves.
+ * - v11 (Odd Jobs 2): Turnip Sort's best (`turnipBest`) and Meadow Dash's week and best heats (`dashWeek`, `dashBest`).
  */
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 type RawSave = Record<string, unknown>
 
@@ -133,6 +134,11 @@ const MIGRATIONS: Record<number, Migration> = {
   9: (raw) => {
     const next: RawSave = { ...raw, schemaVersion: 10 }
     if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { calendarPins: [], ...raw.game }
+    return next
+  },
+  10: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 11 }
+    if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { turnipBest: 0, dashWeek: null, dashBest: 0, ...raw.game }
     return next
   },
 }

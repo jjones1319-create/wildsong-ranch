@@ -40,7 +40,8 @@ import { answerEvent as answerEventCore } from '../../core/game.ts'
 import { sellItem as sellItemCore, type SellRefusal } from '../../core/economy.ts'
 import { detour as detourCore, moveTo as moveToCore, retreat as retreatCore, turnBack as turnBackCore, type MoveRefusal } from '../../core/expedition.ts'
 import { applyEchoStones as applyEchoStonesCore, type EchoResult } from '../../core/echoStones.ts'
-import { applyOddJob as applyOddJobCore } from '../../core/oddJobs.ts'
+import { applyDash as applyDashCore, type DashResult } from '../../core/meadowDash.ts'
+import { applyOddJob as applyOddJobCore, type TurnipResult } from '../../core/oddJobs.ts'
 import { clearQueue, queueStep, removeStep, runPlannedWeek, startRun } from '../../core/planner.ts'
 import type { PlannerStep } from '../../core/state.ts'
 import { PLANNER } from '../../data/tuning.ts'
@@ -709,19 +710,29 @@ export function sell(itemId: string, qty: number): { gold: number; refused: Sell
   return { gold: r.gold, refused: r.refused }
 }
 
-/** The Turnip Sort round's seed comes from the game's RNG, so the chute is part of the save's story. */
+/** An Odd Job's seed (the chute, the melody, the race) comes from the game's RNG, so each game is part of the save's story. */
 export function oddJobSeed(): number {
   const seed = rng.nextU32()
   void persist()
   return seed
 }
 
-export function finishOddJob(correct: number, wrong: number): number {
+/** Settles a Turnip Sort round (CONTENT §13): pay and the week (paid plays), and the best. */
+export function finishOddJob(correct: number, wrong: number, practice: boolean): TurnipResult | null {
   const g = game.value
-  if (!g) return 0
-  const r = applyOddJobCore(g, correct, wrong)
+  if (!g) return null
+  const r = applyOddJobCore(g, correct, wrong, practice)
   if (!r.refused) commit(r.state)
-  return r.pay
+  return r
+}
+
+/** Settles a Meadow Dash run (CONTENT §13): pay per heat won and the week (paid plays), and the best. */
+export function finishMeadowDash(heatsWon: number, practice: boolean): DashResult | null {
+  const g = game.value
+  if (!g) return null
+  const r = applyDashCore(g, heatsWon, practice)
+  if (!r.refused) commit(r.state)
+  return r
 }
 
 /** Settles an Echo Stones game (CONTENT §13): pay, the week, stress relief, the best round and the title. */

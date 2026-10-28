@@ -63,20 +63,30 @@ export const UI_SFX: Record<UiSfxId, SfxDef> = {
 
 /* ---------- the world (§10.4) ---------- */
 
-export const WORLD_SFX_IDS = ['stoneHum', 'echo1', 'echo2', 'echo3', 'echo4', 'echoClear', 'echoWrong', 'timerTick', 'stun', 'reflect', 'recoil', 'jackpotDouble', 'jackpotHeal', 'jackpotFizzle', 'traitDragonheart', 'pause'] as const
+export const WORLD_SFX_IDS = ['stoneHum', 'echo1', 'echo2', 'echo3', 'echo4', 'echo5', 'echoClear', 'echoWrong', 'timerTick', 'dashStep', 'dashGo', 'stun', 'reflect', 'recoil', 'jackpotDouble', 'jackpotHeal', 'jackpotFizzle', 'traitDragonheart', 'pause'] as const
 export type WorldSfxId = (typeof WORLD_SFX_IDS)[number]
 
-const ECHO_DEGREES = [1, 3, 5, 7] as const
+/**
+ * Ember, Leaf, Tide, Star (D5 F#5 A5 C#6), then the Moon: B4, a third under Ember and a note none of the others
+ * plays in any octave (the ocarina's samples stop at the Star's C#6, so the Moon sits below).
+ */
+export const ECHO_NOTES = [
+  { degree: 1, octave: 5 },
+  { degree: 3, octave: 5 },
+  { degree: 5, octave: 5 },
+  { degree: 7, octave: 5 },
+  { degree: 6, octave: 4 },
+] as const
 
 function echoNote(i: number): SfxDef {
-  // The four stones: ocarina plus a hand chime, in the Wildsong key (D Lydian), four clearly different pitches.
-  const degree = ECHO_DEGREES[i]!
+  // The five stones: ocarina plus a hand chime, in the Wildsong key (D Lydian), five clearly different pitches.
+  const { degree, octave } = ECHO_NOTES[i]!
   return {
     bus: 'sfx',
     throttleMs: 80,
     layers: [
-      { kind: 'note', inst: 'ocarina', art: 'sus', degree, octave: 5, dur: 0.45, vel: 0.55, gainDb: -4 },
-      { kind: 'note', inst: 'hand-chimes', degree, octave: 5, dur: 0.8, vel: 0.4, gainDb: -10 },
+      { kind: 'note', inst: 'ocarina', art: 'sus', degree, octave, dur: 0.45, vel: 0.55, gainDb: -4 },
+      { kind: 'note', inst: 'hand-chimes', degree, octave, dur: 0.8, vel: 0.4, gainDb: -10 },
     ],
   }
 }
@@ -96,6 +106,7 @@ export const WORLD_SFX: Record<WorldSfxId, SfxDef> = {
   echo2: echoNote(1),
   echo3: echoNote(2),
   echo4: echoNote(3),
+  echo5: echoNote(4),
   echoClear: {
     bus: 'sfx',
     throttleMs: 200,
@@ -112,6 +123,16 @@ export const WORLD_SFX: Record<WorldSfxId, SfxDef> = {
   },
   echoWrong: { bus: 'sfx', throttleMs: 80, layers: [{ kind: 'noise', color: 'brown', filter: { type: 'lowpass', hz: 220, q: 0.7 }, a: 3, d: ms(70), gainDb: -12 }] },
   timerTick: { bus: 'sfx', throttleMs: 200, layers: [{ kind: 'sample', inst: 'woodblock', vel: 0.5, gainDb: 4, lowpassHz: 3000 }] },
+  // Meadow Dash: one soft stride per tap (throttled, so fast tapping stays a patter), and a drum and bell at "Go!".
+  dashStep: { bus: 'sfx', throttleMs: 70, layers: [{ kind: 'sample', inst: 'foley', art: 'footstep_grass', vel: 0.6, gainDb: 18, lowpassHz: 5000 }] },
+  dashGo: {
+    bus: 'sfx',
+    throttleMs: 300,
+    layers: [
+      { kind: 'sample', inst: 'frame-drum', art: 'hit', vel: 0.6, gainDb: -4 },
+      { kind: 'note', inst: 'glock', degree: 5, octave: 6, dur: 0.6, vel: 0.35, gainDb: -12, delay: 0.02 },
+    ],
+  },
   stun: {
     bus: 'sfx',
     throttleMs: 150,

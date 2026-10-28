@@ -8,7 +8,7 @@
 import type { Screen } from '../ui/router.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import type { StingerId } from './music/stingers.ts'
-import type { Season, Weather, DrillId, JourneySiteId, ExpeditionSiteId } from '../data/types.ts'
+import type { Season, Weather, DrillId, JourneySiteId, ExpeditionSiteId, OddJobId } from '../data/types.ts'
 import { corinRow, EVENT_ARRANGEMENT_BY_ID, PRACTICE_ARRANGEMENT, THEME_IDS, TRIAL_ARRANGEMENT, TRIAL_ARRANGEMENTS, type EventArrangement } from './recipes/events.ts'
 import type { BedId, CrowdSize } from './recipes/ambience.ts'
 import type { ReverbPreset } from './engine/reverb.ts'
@@ -43,7 +43,7 @@ export interface Scene {
   drill: DrillId | null
   journeySite: JourneySiteId | null
   expeditionSite: ExpeditionSiteId | null
-  oddJob: 'turnip' | 'echo' | null
+  oddJob: OddJobId | null
 }
 
 export interface SongRequest {
@@ -170,6 +170,7 @@ export function decide(scene: Scene): Request {
     case 'oddJobs':
       if (scene.oddJob === 'echo') return { ...base, song: null, bed: 'guild', reverb: 'cave', standIn: 'TODO_S3' }
       if (scene.oddJob === 'turnip') return { ...base, song: song('town', { stem: 'oddJobs' }), bed: 'market', reverb: 'room', standIn: 'TODO_S3' }
+      if (scene.oddJob === 'dash') return { ...base, song: song('town', { stem: 'oddJobs' }), bed: 'meadow', reverb: 'outdoor', standIn: 'TODO_S3' }
       return town('oddJobs')
     case 'shop':
     case 'market':
@@ -270,5 +271,6 @@ export const STAND_INS: readonly { what: string; uses: string; stage: 'TODO_S3' 
   { what: 'the Farewell', uses: 'the ranch song of the season', stage: 'TODO_S3' },
   { what: 'Turnip Sort', uses: 'the Town fair stem with the market bed', stage: 'TODO_S3' },
   { what: 'Echo Stones', uses: 'no music (the stones sing), the guild bed', stage: 'TODO_S3' },
+  { what: 'Meadow Dash', uses: 'the Town fair stem with the meadow bed', stage: 'TODO_S3' },
   { what: 'the other ten drills', uses: 'the generic cue and its outcome stingers', stage: 'TODO_S3' },
 ]

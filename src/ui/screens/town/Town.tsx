@@ -1,4 +1,5 @@
 import { canPlayEchoStones } from '../../../core/echoStones.ts'
+import { canPlayDash } from '../../../core/meadowDash.ts'
 import { canPlayOddJob } from '../../../core/oddJobs.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
@@ -31,7 +32,7 @@ export function TownScreen() {
     { icon: '🐾', name: t.market, hint: t.marketHint, go: () => navigate('market') },
     { icon: '🪨', name: t.shrine, hint: t.shrineHint, go: () => navigate('shrine') },
     { icon: '🧊', name: t.pell, hint: t.pellHint, go: () => navigate('pell') },
-    { icon: '🥕', name: t.jobs, hint: g && (canPlayOddJob(g).ok || canPlayEchoStones(g).ok) ? t.jobsHint : t.jobsPlayed, go: g ? () => navigate('oddJobs') : undefined },
+    { icon: '🥕', name: t.jobs, hint: g && (canPlayOddJob(g).ok || canPlayEchoStones(g).ok || canPlayDash(g).ok) ? t.jobsHint : t.jobsPlayed, go: g ? () => navigate('oddJobs') : undefined },
   ]
   return (
     <main class="screen">

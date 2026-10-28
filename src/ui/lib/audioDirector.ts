@@ -4,6 +4,7 @@ import { applyRequest, drillCueActive } from '../../audio/player.ts'
 import { dateOf, seasonOf } from '../../core/calendar.ts'
 import { nextPlayerMatch, opponentOf } from '../../core/tournament.ts'
 import { AUDIO, BATTLE } from '../../data/tuning.ts'
+import type { OddJobId } from '../../data/types.ts'
 import { screen } from '../router.ts'
 import { paused as battlePaused, setup as battleSetup, speed as battleSpeed, view as battleView } from '../store/battleStore.ts'
 import { game } from '../store/gameStore.ts'
@@ -15,7 +16,7 @@ import { game } from '../store/gameStore.ts'
  * the music. The odd-job screen tells it which job is open.
  */
 
-export const oddJobMode = signal<'turnip' | 'echo' | null>(null)
+export const oddJobMode = signal<OddJobId | null>(null)
 
 let timer: ReturnType<typeof setTimeout> | null = null
 let lastKey = ''

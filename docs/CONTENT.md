@@ -968,21 +968,28 @@ Store these as hashes of the normalized phrase. A secret variant gets a unique p
 
 ## 13. Odd Jobs (weekly mini-games, free actions)
 
-Town → Odd Jobs is Basil's board. It lists every job with its status. **Each job pays once per in-game week**, independently of the others, and a free **Practice** mode replays any job for fun with no pay (and no stress relief); best scores count either way.
+Town → Odd Jobs is Basil's board. It lists every job with its status, its pay and your best. **Each job pays once per in-game week**, independently of the others, with **no cap on pay**: each job turns endless and harder past the old 150G mark. A free **Practice** mode replays any job for fun with no pay (and no stress relief); best scores count either way. A **Relaxed** option (remembered in Settings) slows Echo Stones' tempo and Meadow Dash's rivals; pay is the same.
 
 **Turnip Sort:**
-- Produce slides down a chute for 30 seconds. Swipe turnips into the left basket and rocks into the right.
-- Scoring: +5G per correct item, −5G per wrong one, capped at 150G per week.
-- Difficulty ramps up. One paid play per in-game week.
-- **Big buttons, no fail state.**
+- Produce slides down a chute for 30 seconds. Swipe turnips into the left basket and rocks into the right (or tap the big buttons). The window for each item shortens over the 30 seconds.
+- Scoring: +5G per correct item, −5G per wrong one. Missed items score nothing, and the first phase has no fail state.
+- **Overtime:** reaching 150G inside the 30 seconds banks it and stops the clock. After a short "Here come the weeds!" pause (tap Ready to skip), **weeds** join (🌿, onto the **Compost** heap: the middle button or a swipe down); the first one is always a weed. The mix is 40 % turnips, 30 % rocks, 30 % weeds. Each item's window starts at 1.3 s and shrinks by 12 ms an item down to 0.35 s. Every correct item still pays +5G; a mix-up costs nothing but is a strike. **A missed item, or the second mix-up, ends the job.**
+- The best is the most items sorted in one round. One paid play per in-game week.
 
 **Echo Stones** (a memory game):
-- Four glowing echo stones in a 2 × 2 grid, each with its own colour, shape and note: Ember (red, circle, C4), Leaf (green, square, E4), Tide (blue, triangle, G4), Star (gold, diamond, C5). They flash as they play, so it works with the sound off.
-- The stones play a melody and you repeat it by tapping. Each round adds one note (never three of the same stone in a row), and the tempo quickens by 12 % every 4 rounds, down to a floor. A **Relaxed speed** option (remembered in Settings) stretches the tempo by half; pay is the same.
+- Glowing echo stones, each with its own colour, shape and note in the Wildsong key: Ember (red, circle, D5), Leaf (green, square, F#5), Tide (blue, triangle, A5), Star (gold, diamond, C#6), in a 2 × 2 grid; and from round 11 the **Moon** (violet, crescent, B4, the deepest), which rises in on its own row below. They flash as they play, so it works with the sound off.
+- The stones play a melody and you repeat it by tapping. Each round adds one note (never three of the same stone in a row). Rounds 1–10 use the first four stones; round 11's new note is always the Moon, and later notes use all five. The tempo quickens by 12 % every 4 rounds up to round 10, then by just 1 % every 2 rounds, down to a floor. There is no last round: memory is the limit.
 - One mistake ends the game, but you get **one free retry** of the current round per game.
 - Your monster sits beside the stones and reacts: it hums along while the stones play, is pleased when you get a round right, and jumps when you slip.
-- Rewards (numbers in `tuning.ts` `ECHO_STONES`): 15G per round cleared, up to 150G a week; reaching round 8 also lowers the monster's stress by 5 (paid plays); the best round is saved, and reaching round 15 earns the title **Perfect Pitch**.
+- Rewards (numbers in `tuning.ts` `ECHO_STONES`): 15G per round cleared, no cap; reaching round 8 also lowers the monster's stress by 5 (paid plays); the best round is saved, and reaching round 15 earns the title **Perfect Pitch**.
 - Phone and accessibility: big stones (≥ 44 px, most of the width), shapes as well as colours, each stone labelled for screen readers, haptic ticks on Android, and Reduce motion stops the glow transitions.
+
+**Meadow Dash** (a tap-to-run race; numbers in `tuning.ts` `DASH`):
+- Your monster races three rival monsters (drawn from the breeds you have unlocked, never your own) down four lanes; you run in the bottom lane, next to the big **Run!** pad. After a 3-2-1-Go countdown, every tap is a stride: the faster you tap, the faster it runs (two thumbs work too).
+- Each tap adds speed and the speed fades between taps; **SPD adds up to 25 %** to each tap (in proportion, 25 % at SPD 999). The lead rival runs like steady tapping at 3.5 taps a second in heat 1, plus 0.6 a heat; the other two at 88 % and 76 % of that, each with a small wobble so leads change. Rivals have no top speed, so every run ends.
+- **Heats until you lose:** win a heat (first across the line) and choose **Next heat** or **Stop here**; the run ends at the first heat you don't win. A loss keeps everything already won, and leaving mid-run still pays the heats won. The buttons stay locked for 0.8 s after a heat so a tapping thumb can't hit them; if the phone switches away mid-heat, the race pauses and resumes with a countdown.
+- Rewards: 25G per heat won, no cap; the best is the most heats won in one run.
+- Phone and accessibility: the pad is full width and 128 px tall at the bottom; Enter or Space taps too, and a screen reader's activation counts; haptic ticks on Android; Reduce motion stops the runners' bob.
 
 ---
 

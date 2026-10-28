@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { playSfx, unlockAudio } from '../../../audio/player.ts'
-import { canPlayEchoStones, echoMelody, echoTempo, type EchoResult, type Stone } from '../../../core/echoStones.ts'
+import { canPlayEchoStones, echoMelody, echoPay, echoStoneCount, echoTempo, type EchoResult, type Stone } from '../../../core/echoStones.ts'
 import type { Emote as EmoteKind } from '../../../core/emotes.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
@@ -14,13 +14,13 @@ import { settings, updateSettings } from '../../store/appStore.ts'
 import { finishEchoStones, game, oddJobSeed } from '../../store/gameStore.ts'
 
 const t = UI_TEXT.oddJobs
-const NOTE_SFX = ['echo1', 'echo2', 'echo3', 'echo4'] as const
-const STONES: Stone[] = [0, 1, 2, 3]
+const NOTE_SFX = ['echo1', 'echo2', 'echo3', 'echo4', 'echo5'] as const
+const STONES: Stone[] = [0, 1, 2, 3, 4]
 
 type Phase = 'intro' | 'listen' | 'input' | 'retry' | 'done'
 type Mood = 'neutral' | 'hum' | 'pleased' | 'startled'
 
-/** The four stones' shape symbols, drawn in code: circle, square, triangle, diamond. */
+/** The stones' shape symbols, drawn in code: circle, square, triangle, diamond, and the Moon's crescent. */
 function Shape({ stone }: { stone: Stone }) {
   switch (stone) {
     case 0:
@@ -29,16 +29,19 @@ function Shape({ stone }: { stone: Stone }) {
       return <rect x="31" y="31" width="38" height="38" rx="5" />
     case 2:
       return <polygon points="50,28 72,70 28,70" />
-    default:
+    case 3:
       return <polygon points="50,26 74,50 50,74 26,50" />
+    default:
+      return <path d="M49 28 A22 22 0 1 0 71 56.4 A18 18 0 1 1 49 28 Z" />
   }
 }
 
 /**
- * CONTENT §13 Echo Stones: four glowing stones play a melody that grows by one note each round; tap it back.
- * The melody and the tempo are rules in core (seeded from the game's RNG); this component only runs the clock,
- * the glow, the notes and the monster beside the stones. The stones flash as well as sound, so it works with the
- * sound off; each has a shape as well as a colour, and a label for screen readers.
+ * CONTENT §13 Echo Stones: glowing stones play a melody that grows by one note each round; tap it back. Four
+ * stones to start; the Moon stone wakes at round 11, and the game goes on until a slip. The melody and the tempo
+ * are rules in core (seeded from the game's RNG); this component only runs the clock, the glow, the notes and the
+ * monster beside the stones. The stones flash as well as sound, so it works with the sound off; each has a shape
+ * as well as a colour, and a label for screen readers.
  */
 export function EchoStones({ practice, onDone }: { practice: boolean; onDone: () => void }) {
   const g = game.value
@@ -50,8 +53,7 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
   const [mood, setMood] = useState<Mood>('neutral')
   const [emote, setEmote] = useState<{ kind: EmoteKind; key: number } | null>(null)
   const [result, setResult] = useState<EchoResult | null>(null)
-  const [won, setWon] = useState(false)
-  const run = useRef<{ melody: Stone[]; round: number; index: number; retries: number; cleared: number; timers: ReturnType<typeof setTimeout>[]; stop: boolean } | null>(null)
+  const run = useRef<{ seed: number; melody: Stone[]; round: number; index: number; retries: number; cleared: number; timers: ReturnType<typeof setTimeout>[]; stop: boolean } | null>(null)
   const relaxed = settings.value.oddJobsRelaxed
 
   useEffect(() => () => stopAll(), [])
@@ -88,6 +90,8 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
     if (!r) return
     r.round = n
     r.index = 0
+    // There is no last round: the melody grows whenever a game reaches its end.
+    if (r.melody.length < n) r.melody = echoMelody(r.seed, r.melody.length + ECHO_STONES.melodyChunk)
     setRound(n)
     setPhase('listen')
     setMood('hum')
@@ -113,25 +117,24 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
     if (!can.ok) return
     void unlockAudio()
     stopAll()
-    run.current = { melody: echoMelody(oddJobSeed()), round: 1, index: 0, retries: ECHO_STONES.retries, cleared: 0, timers: [], stop: false }
+    const seed = oddJobSeed()
+    run.current = { seed, melody: echoMelody(seed, ECHO_STONES.melodyChunk), round: 1, index: 0, retries: ECHO_STONES.retries, cleared: 0, timers: [], stop: false }
     setCleared(0)
     setRetriesLeft(ECHO_STONES.retries)
     setResult(null)
-    setWon(false)
     setEmote(null)
     listen(1)
   }
 
-  function finish(wonAll: boolean): void {
+  function finish(): void {
     const r = run.current
     if (!r) return
     stopAll()
     const res = finishEchoStones(r.cleared, practice)
     run.current = null
-    setWon(wonAll)
     setResult(res)
     setPhase('done')
-    setMood(wonAll ? 'pleased' : 'neutral')
+    setMood('neutral')
   }
 
   function tap(s: Stone): void {
@@ -150,10 +153,6 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
       setMood('pleased')
       pop('heart')
       playSfx('echoClear')
-      if (r.round >= ECHO_STONES.maxRounds) {
-        later(ECHO_STONES.leadMs, () => finish(true))
-        return
-      }
       setPhase('listen')
       later(ECHO_STONES.leadMs, () => listen(r.round + 1))
       return
@@ -168,12 +167,12 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
       setPhase('retry')
       return
     }
-    later(ECHO_STONES.leadMs, () => finish(false))
+    later(ECHO_STONES.leadMs, finish)
     setPhase('listen')
   }
 
   const moodLine = mood === 'hum' ? fill(t.humming, { name: monster.name }) : mood === 'pleased' ? fill(t.pleased, { name: monster.name }) : mood === 'startled' ? fill(t.startled, { name: monster.name }) : ''
-  const statusLine = phase === 'listen' ? t.echoListen : phase === 'input' ? t.echoYourTurn : phase === 'retry' ? t.echoRetry : ''
+  const statusLine = phase === 'listen' ? (round === ECHO_STONES.moonRound ? t.echoMoonWakes : t.echoListen) : phase === 'input' ? t.echoYourTurn : phase === 'retry' ? t.echoRetry : ''
 
   return (
     <main class="screen">
@@ -201,7 +200,7 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
         <>
           <div class="chute__score">
             <span>{fill(t.echoRound, { n: round })}</span>
-            <span>{practice ? t.practiceOnly : fill(t.result, { n: gold(Math.min(ECHO_STONES.cap, cleared * ECHO_STONES.payPerRound)) })}</span>
+            <span>{practice ? t.practiceOnly : fill(t.result, { n: gold(echoPay(cleared)) })}</span>
           </div>
           <div class="echo">
             <div class="echo__monster">
@@ -214,10 +213,11 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
               )}
             </div>
             <div class={`echo__grid ${phase === 'input' ? 'echo__grid--open' : ''}`} role="group" aria-label={t.echoStones}>
-              {STONES.map((s) => (
+              {STONES.slice(0, echoStoneCount(round)).map((s) => (
                 <button
                   key={s}
                   type="button"
+                  data-silent
                   class={`stone stone--${s} ${lit === s ? 'stone--lit' : ''}`}
                   aria-label={fill(t.stoneLabel, { name: t.stoneNames[s]!, note: t.stoneNotes[s]! })}
                   aria-pressed={lit === s}
@@ -251,10 +251,10 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
       {phase === 'done' && result && (
         <>
           <SpeakerCard speaker={UI_TEXT.basil}>
-            <p>{won ? t.echoWon : fill(t.echoCleared, { n: cleared })}</p>
+            <p>{fill(t.echoCleared, { n: cleared })}</p>
             <p class="heading">{practice ? t.practiceResult : fill(t.result, { n: gold(result.pay) })}</p>
             {result.stressRelief > 0 && <p>{fill(t.echoCalm, { name: monster.name, n: result.stressRelief })}</p>}
-            {result.newBest && <p>{t.echoNewBest}</p>}
+            {result.newBest && <p>{t.newBest}</p>}
             {result.titles.map((title) => (
               <p key={title}>{fill(t.echoTitle, { title })}</p>
             ))}

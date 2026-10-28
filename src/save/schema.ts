@@ -478,8 +478,11 @@ export const GameStateSchema = v.object({
   unlocks: UnlocksSchema,
   records: JournalRecordsSchema,
   oddJobWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  turnipBest: int(0, 100_000, 0),
   echoStonesWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
   echoStonesBest: int(0, 10_000, 0),
+  dashWeek: v.fallback(v.nullable(int(0, 1_000_000, 0)), null),
+  dashBest: int(0, 10_000, 0),
   calendarPins: v.fallback(
     v.pipe(
       v.array(v.fallback(v.pipe(v.string(), v.regex(/^\d{1,6}:[a-z0-9-]{1,40}$/)), '')),
@@ -686,7 +689,7 @@ export interface AppSettings {
   backupSnoozedAt: number
   /** When the app first ran on this phone: the day rule counts from here until the first backup. */
   backupBaselineAt: number
-  /** CONTENT §13 Echo Stones: the Relaxed speed option. */
+  /** CONTENT §13 Odd Jobs: the Relaxed option (Echo Stones' tempo, Meadow Dash's rivals). */
   oddJobsRelaxed: boolean
 }
 

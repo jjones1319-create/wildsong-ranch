@@ -441,9 +441,19 @@ Decided at the start of the stage (Oct 27, 2026, approved with the plan): the ho
 
 ### S3: Places, trainings and moments
 
-The Shrine, the Labs, Journey and Expedition pieces, Turnip Sort, the Echo Stones drone, the farewell loop; the S3 stingers; the other 10 drills in full; the remaining beds; monster songs. Spec: `docs/SOUND_UPGRADE.md` §15 S3.
+The Shrine, the Labs, Journey and Expedition pieces, Turnip Sort, the Echo Stones drone, Meadow Dash, the farewell loop; the S3 stingers; the other 10 drills in full; the remaining beds; monster songs. Spec: `docs/SOUND_UPGRADE.md` §15 S3.
 
 - [ ] Plan in plan mode at the start of the stage, after the owner's S2 listening notes.
+
+## Odd Jobs 2: endless jobs and Meadow Dash (v1.8.0)
+
+The owner asked for no pay cap on Odd Jobs, endless play past the old 150G mark, and a third job that uses the monster. Their choices (2026-10-27): the fifth Echo stone joins at the 150G mark (round 11); Turnip Sort's mix-ups count toward the two that end it only after 150G; Meadow Dash is heats until you lose; SPD helps a little. Spec: CONTENT §13.
+
+- [x] 1. Rules: `core/echoStones.ts` (five stones, an extendable melody, the slow late tempo, no cap), `core/oddJobs.ts` (no cap, overtime with weeds and a shrinking window, an endless seeded dealer, the best), new `core/meadowDash.ts` (the race in fixed ticks with integer distances, rivals, SPD bonus, crossing-time finishes, pay and the best); numbers in `ODD_JOBS`, `ECHO_STONES`, `DASH`.
+- [x] 2. Save schema v11 (`turnipBest`, `dashWeek`, `dashBest`) with a migration and a test.
+- [x] 3. Screens: the board (three cards with pay and best lines), Echo Stones (the Moon stone on its own row), Turnip Sort (`useTurnipRun`: the clock, the overtime intro, three bins, swipe down), Meadow Dash (one frame loop, the Run pad, pause on hide, the heat card).
+- [x] 4. Sound: `echo5`, `dashStep`, `dashGo`; the director's Meadow Dash row (a stand-in until S3).
+- [x] 5. Tests, docs (CONTENT §13, GAME_DESIGN §3 and §9, SOUND_UPGRADE §10.4 and §11), `npm run verify`, `audio:check` on the new effects, a headless run of all three jobs, PROGRESS, commit, deploy, phone checklist.
 
 ## LATER (after v1.0)
 

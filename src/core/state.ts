@@ -364,11 +364,15 @@ export interface GameState {
   pendingEvent: PendingEvent | null
   unlocks: UnlockProgress
   records: JournalRecords
-  /** The week index of the last paid Turnip Sort (one per in-game week). */
+  /** The week index of the last paid Turnip Sort (one per in-game week), and the most items sorted in one round (practice counts). */
   oddJobWeek: number | null
+  turnipBest: number
   /** The week index of the last paid Echo Stones game, and the best round reached (practice counts). */
   echoStonesWeek: number | null
   echoStonesBest: number
+  /** The week index of the last paid Meadow Dash run, and the most heats won in one run (practice counts). */
+  dashWeek: number | null
+  dashBest: number
   /** §3 the calendar's ★ reminders: `${weekIndex}:${eventId or expeditionSiteId}`. Past ones are dropped at each week's end. */
   calendarPins: string[]
   /** The absolute month the Lantern Garden was last visited (once a month). */
@@ -451,8 +455,11 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     unlocks: emptyUnlocks(),
     records: zeroRecords(),
     oddJobWeek: null,
+    turnipBest: 0,
     echoStonesWeek: null,
     echoStonesBest: 0,
+    dashWeek: null,
+    dashBest: 0,
     calendarPins: [],
     memorialVisitMonth: null,
     planner: emptyPlanner(),

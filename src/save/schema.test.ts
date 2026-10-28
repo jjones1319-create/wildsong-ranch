@@ -264,3 +264,32 @@ describe('schema version 7 (M8)', () => {
     expect(r2.save.game.planner.lastStop).toBeNull()
   })
 })
+
+describe('schema version 11 (Odd Jobs 2)', () => {
+  it('migrates a version-10 save by adding the Turnip Sort best and the Meadow Dash week and best', () => {
+    const game = structuredClone(createGameState({ monster: makeMonster() })) as unknown as Record<string, unknown>
+    delete game.turnipBest
+    delete game.dashWeek
+    delete game.dashBest
+    const v10 = { schemaVersion: 10, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.7.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v10))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    expect(up.game).toMatchObject({ turnipBest: 0, dashWeek: null, dashBest: 0 })
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game).toEqual(createGameState({ monster: r.save.game.monster }))
+    // Garbage is clamped, never fatal.
+    const bad = JSON.parse(JSON.stringify(up)) as { game: Record<string, unknown> }
+    bad.game.turnipBest = -4
+    bad.game.dashWeek = 'monday'
+    bad.game.dashBest = 1e9
+    const r2 = validateSave(bad)
+    expect(r2.ok).toBe(true)
+    if (r2.ok) {
+      expect(r2.save.game.turnipBest).toBe(0)
+      expect(r2.save.game.dashWeek).toBe(0)
+      expect(r2.save.game.dashBest).toBe(10_000)
+    }
+  })
+})
