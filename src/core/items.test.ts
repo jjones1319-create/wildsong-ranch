@@ -16,12 +16,19 @@ describe('items (§8): unlimited use', () => {
     expect(m.stats.POW).toBe(70) // input untouched
   })
 
-  it('caps stats at 999 and only counts the points actually added', () => {
-    const m = makeMonster({ stats: { INT: 990 } })
+  it('sweets go past the grade cap (v1.11); only the 9,999 bound stops them, and then they are not eaten', () => {
+    const m = makeMonster({ stats: { INT: 1195 } }) // INT grade D: cap 1100, already above it
     const r = useItem(m, bag({ 'grand-cookie': 3 }), 'grand-cookie', 3)
-    expect(r.monster.stats.INT).toBe(999)
-    expect(r.monster.records.fromSweets.INT).toBe(9)
+    expect(r.monster.stats.INT).toBe(1240)
+    expect(r.monster.records.fromSweets.INT).toBe(45)
     expect(r.used).toBe(3)
+    const top = makeMonster({ stats: { INT: 9990 } })
+    const t = useItem(top, bag({ 'grand-cookie': 3 }), 'grand-cookie', 3)
+    expect(t.monster.stats.INT).toBe(9999)
+    expect(t.monster.records.fromSweets.INT).toBe(9)
+    expect(t.used).toBe(1)
+    expect(t.inventory['grand-cookie']).toBe(2)
+    expect(useItem(t.monster, t.inventory, 'grand-cookie', 1).refused).toBe('alreadyMaxed')
   })
 
   it('a Wondercake adds +5 to all six stats', () => {
@@ -48,12 +55,12 @@ describe('items (§8): unlimited use', () => {
     expect(useItem(m, bag({ 'leanroot-tea': 1 }), 'leanroot-tea', 1).monster.form).toBe(-10)
   })
 
-  it('Potential Pearl steps a grade up to A and the Tempo Bell lowers the guts rate to 6', () => {
+  it('Potential Pearl steps a grade up to S and the Tempo Bell lowers the guts rate to 6', () => {
     const m = makeMonster() // INT grade D, guts 12
     const pearl = useItem(m, bag({ 'potential-pearl': 5 }), 'potential-pearl', 5, { stat: 'INT' })
-    expect(pearl.monster.grades.INT).toBe('A')
-    expect(pearl.used).toBe(3) // D → C → B → A
-    expect(pearl.inventory['potential-pearl']).toBe(2)
+    expect(pearl.monster.grades.INT).toBe('S')
+    expect(pearl.used).toBe(4) // D → C → B → A → S
+    expect(pearl.inventory['potential-pearl']).toBe(1)
     expect(useItem(pearl.monster, pearl.inventory, 'potential-pearl', 1, { stat: 'INT' }).refused).toBe('alreadyMaxed')
     expect(useItem(m, bag({ 'potential-pearl': 1 }), 'potential-pearl', 1).refused).toBe('needsStat')
     const bell = useItem(m, bag({ 'tempo-bell': 10 }), 'tempo-bell', 10)

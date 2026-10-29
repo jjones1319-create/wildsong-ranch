@@ -228,6 +228,7 @@ export const UI_TEXT = {
     debt: 'Strain debt',
     history: 'Edited {n} times',
     sweetsTotal: '{n} stat points from sweets',
+    capLine: 'cap {cap}',
   },
   /** The Bag (§8). */
   bag: {
@@ -321,7 +322,7 @@ export const UI_TEXT = {
       form: 'Form {n}',
       sweet: '{stat} +{n}, for good',
       sweetAll: 'Every stat +{n}, for good',
-      potentialGrade: 'One growth grade up a step (max A)',
+      potentialGrade: 'One growth grade up a step (max S), which also raises that stat’s cap',
       tempoBell: 'Guts recover faster (rate −1, min 6)',
       tonic: '4 weeks: +3 {stat} per good drill · −6 weeks of life',
       fruit: '+{n} weeks of life, once per monster',
@@ -416,9 +417,12 @@ export const UI_TEXT = {
       keepAll: 'Keep all techniques',
       total: 'Total',
       fromSweets: '{n} from sweets',
+      capOf: 'cap {n}',
+      inheritedTrait: 'Inherited trait',
+      noInheritedTrait: 'None',
       statButtons: { base: 'Breed base', max: 'Max all', scale: 'Scale to total…', randomize: 'Randomize' },
       scaleTitle: 'Scale to total',
-      scaleHint: 'Spreads the points by growth grade. From 6 to 5,994.',
+      scaleHint: 'Spreads the points by growth grade, up to each stat’s cap. From 6 to {max}.',
       apply: 'Apply',
       grades: 'Growth grades',
       growthType: 'Growth type',
@@ -493,6 +497,7 @@ export const UI_TEXT = {
     view: {
       title: 'Monster Card',
       trait: 'Trait',
+      inheritedTrait: 'Inherited trait',
       lifeLeft: '{n} weeks left',
       stats: 'Stats',
       condition: 'Condition',

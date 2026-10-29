@@ -7,15 +7,17 @@ import { SECRETS } from '../../../data/secrets.ts'
 import { fill } from '../../../data/text/format.ts'
 import { MONTH_NAMES } from '../../../data/text/labels.ts'
 import { SHRINE_TEASERS } from '../../../data/text/shrine.ts'
+import { STATS_GUIDE } from '../../../data/text/stats.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { TITLES } from '../../../data/tuning.ts'
 import { UNLOCK_CHAINS } from '../../../data/types.ts'
 import { Badge, Chips, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
+import { StatsGuide } from '../../components/StatsGuide.tsx'
 import { showToast } from '../../store/appStore.ts'
 import { game, wakeStone } from '../../store/gameStore.ts'
 
-type Page = 'encyclopedia' | 'stones' | 'rumors' | 'records' | 'titles' | 'hall'
+type Page = 'encyclopedia' | 'stones' | 'rumors' | 'records' | 'titles' | 'hall' | 'stats'
 
 /** The open page survives a trip elsewhere. */
 export const journalPage = signal<Page>('encyclopedia')
@@ -33,6 +35,7 @@ export function JournalScreen() {
     { value: 'records', label: t.pages.records },
     { value: 'titles', label: `${t.pages.titles} ${g.titles.length}/${titleRows(g).length}` },
     { value: 'hall', label: t.pages.hall },
+    { value: 'stats', label: STATS_GUIDE.journalPage },
   ]
   const page = journalPage.value
   return (
@@ -47,6 +50,7 @@ export function JournalScreen() {
       {page === 'records' && <RecordsPage />}
       {page === 'titles' && <TitlesPage />}
       {page === 'hall' && <HallPage />}
+      {page === 'stats' && <StatsGuide />}
     </main>
   )
 }

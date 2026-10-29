@@ -4,7 +4,7 @@ import { BREED_KINDS, FUSION_RULES } from '../data/fusionRecipes.ts'
 import { techniquesOfBreed, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { FUSION } from '../data/tuning.ts'
 import { BREED_IDS, STAT_KEYS, type BreedId } from '../data/types.ts'
-import { babyRanks, babyStatOffsets, catalystEffect, compatTier, compatibility, findKey, findRelative, fuse, fusionOutcomes, fusionSurprises, inheritedTechniques, makeBaby, pairKey, rarityK, type FusionOutcome } from './fusion.ts'
+import { babyRanks, babyStatOffsets, catalystEffect, compatTier, compatibility, findKey, findRelative, fuse, fusionOutcomes, fusionSurprises, inheritedGrades, inheritedTechniques, inheritedTraitFor, makeBaby, pairKey, rarityK, type FusionOutcome } from './fusion.ts'
 import { cyrb53 } from './hash.ts'
 import { divRound } from './mathx.ts'
 import { mixBreeds } from './monster.ts'
@@ -164,8 +164,18 @@ describe('compatibility and the baby’s stats (§15)', () => {
     const m = compatibility(p1, p2, 'puddlepup', 'puddlepup')
     const off = babyStatOffsets(p1, p2, m, 40, catalystEffect(null))
     const pPct = FUSION.pBasePct + FUSION.pPerMatchPct * m
-    expect(off.POW).toBe(divRound((2 * 300 + 150) * pPct * 50, 3 * 100 * 100))
+    // v1.11 (owner): never more than 10 % of the better parent's trained points in that stat.
+    const limit = Math.floor(((base.POW + 300) * FUSION.headStartMaxPct) / 100)
+    expect(off.POW).toBe(Math.min(divRound((2 * 300 + 150) * pPct * 50, 3 * 100 * 100), limit))
+    expect(off.POW).toBe(limit) // well-trained parents always hit the limit
     expect(off.INT).toBe(0) // never below zero
+    // Under the limit the old formula still decides; Stat Sweets never pass on.
+    const light1 = makeMonster({ stats: { POW: base.POW + 20 } })
+    const light2 = makeMonster({ stats: { POW: base.POW + 10 } })
+    expect(babyStatOffsets(light1, light2, m, 40, catalystEffect(null)).POW).toBe(divRound((2 * 20 + 10) * pPct * 50, 3 * 100 * 100))
+    const sweet = makeMonster({ stats: { POW: base.POW + 300 } })
+    sweet.records.fromSweets.POW = 300
+    expect(babyStatOffsets(sweet, sweet, m, 40, catalystEffect(null)).POW).toBe(0)
     const shard = babyStatOffsets(p1, p2, m, 40, catalystEffect('power-shard'))
     expect(shard.POW).toBe(off.POW + FUSION.shardStat)
     expect(catalystEffect('amber-charm')).toEqual({ stats: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }, lifespan: 20, lineageSeal: false })
@@ -235,6 +245,45 @@ describe('inheritance (§15)', () => {
     p1.techniques = [...p1.techniques, { id: universal.id, uses: 9, level: 2 }]
     const baby = makeBaby(p1, makeMonster({ id: 'p2', main: 'tumblefox' }), outcome('hearthwing', 20, 'surprise'), catalystEffect(null), 'baby', createRng(5)).baby
     expect(baby.techniques).toContainEqual({ id: universal.id, uses: 9, level: 2 })
+  })
+})
+
+describe('inheritance v1.11: a second trait, better grades, a 10 % head start (§15)', () => {
+  it('the second trait: the first parent’s breed trait, then the second’s, then their own inherited ones; never the baby’s own', () => {
+    const moat = makeMonster({ main: 'moatshell' }) // Fortified
+    const fox = makeMonster({ main: 'tumblefox' }) // Nimble
+    expect(inheritedTraitFor(moat, fox, 'puddlepup')).toBe('fortified')
+    expect(inheritedTraitFor(moat, fox, 'moatshell')).toBe('nimble')
+    const twin = makeMonster({ main: 'moatshell' })
+    expect(inheritedTraitFor(moat, twin, 'moatshell')).toBeNull()
+    twin.inheritedTrait = 'chill'
+    expect(inheritedTraitFor(moat, twin, 'moatshell')).toBe('chill')
+    // Hungry Grub's cocoon is Nibblegrub's alone: it is skipped.
+    expect(inheritedTraitFor(makeMonster({ main: 'nibblegrub' }), fox, 'puddlepup')).toBe('nimble')
+  })
+
+  it('better grades: one step up where the better parent beats the baby’s breed, never past that parent', () => {
+    const p1 = makeMonster() // Puddlepup C C D B C C
+    const p2 = makeMonster({ main: 'puddlepup' })
+    p2.grades.POW = 'S'
+    p2.grades.INT = 'C'
+    const g = inheritedGrades(p1, p2, 'puddlepup')
+    expect(g.POW).toBe('B') // C → B, one step only
+    expect(g.INT).toBe('C') // D → C, which is the parent's own
+    expect(g.SKI).toBe('B') // nobody beats B
+    expect(inheritedGrades(p1, p1, 'puddlepup')).toEqual(mixBreeds('puddlepup', 'puddlepup').grades)
+  })
+
+  it('makeBaby gives the trait, the grades and a head start of at most 10 % of the better parent’s trained points', () => {
+    const p1 = makeMonster({ id: 'p1', main: 'moatshell', stats: { POW: 900 } })
+    const p2 = makeMonster({ id: 'p2', main: 'tumblefox', stats: { POW: 600 } })
+    p2.grades.POW = 'A'
+    const r = makeBaby(p1, p2, outcome('puddlepup', 20, 'surprise'), catalystEffect(null), 'baby', createRng(9))
+    expect(r.baby.inheritedTrait).toBe('fortified')
+    expect(r.baby.grades.POW).toBe('B')
+    expect(r.headStart.POW).toBeLessThanOrEqual(90)
+    expect(r.baby.stats.POW).toBe(mixBreeds('puddlepup', 'puddlepup').base.POW + r.headStart.POW)
+    for (const k of STAT_KEYS) expect(r.headStart[k]).toBeLessThanOrEqual(Math.floor(Math.max(p1.stats[k], p2.stats[k]) / 10))
   })
 })
 

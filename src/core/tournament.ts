@@ -12,7 +12,7 @@ import { variantPrizePct } from './variants.ts'
 import { cyrb53 } from './hash.ts'
 import { addItems } from './items.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, addStat, loyaltyOf, totalStats, traitOf, type Monster } from './monster.ts'
+import { addCondition, addTrained, hasTrait, loyaltyOf, totalStats, type Monster } from './monster.ts'
 import { npcMonster, type NpcGrade } from './npc.ts'
 import { createRng, type Rng } from './rng.ts'
 import { addSheet, recordUse } from './songbook.ts'
@@ -183,7 +183,7 @@ export function cupSeed(week: number, eventId: string): number {
   return cyrb53(`${d.year}-${weekInYear(week)}-${eventId}`, 1)
 }
 
-const MAX_TOTAL = RANGES.stat.max * 6
+const MAX_TOTAL = NPC.statMax * 6
 
 /**
  * A total scaled from the player's (percent), never below the grade's band (M9: the special cups stay a
@@ -749,7 +749,7 @@ export interface TournamentOutcome {
 
 export function prizeMultiplier(state: GameState, m: Monster): number {
   let pct = DIFFICULTY[state.difficulty].prizeMulPct
-  if (traitOf(m) === 'gilded') pct = divRound(pct * TOURNAMENT.gildedPrizePct, 100)
+  if (hasTrait(m, 'gilded')) pct = divRound(pct * TOURNAMENT.gildedPrizePct, 100)
   pct = divRound(pct * variantPrizePct(m), 100)
   return pct
 }
@@ -882,7 +882,7 @@ export function finishTournament(input: GameState, rng: Rng): { state: GameState
     else if (event.kind === 'crown') fame += TOURNAMENT.fame.crownWin
     else if (event.kind === 'legend') fame += TOURNAMENT.fame.legendWin
     else fame += TOURNAMENT.fame.cupWin[grade]!
-    if (traitOf(m) === 'regal') fame += TOURNAMENT.fame.regalBonus
+    if (hasTrait(m, 'regal')) fame += TOURNAMENT.fame.regalBonus
   } else if (placing > 3) fame += TOURNAMENT.fame.noPodium
   const fameBefore = m.fame
   m.fame = clamp(m.fame + fame, RANGES.fame.min, RANGES.fame.max)
@@ -894,9 +894,7 @@ export function finishTournament(input: GameState, rng: Rng): { state: GameState
     const picks = rng.shuffle([...STAT_KEYS]).slice(0, TOURNAMENT.growth.stats)
     for (const k of picks) {
       const amount = Math.max(1, rng.nextInt(range[0], range[1]) + m.likes.battle * TOURNAMENT.growth.battleLike)
-      const before = m.stats[k]
-      m.stats[k] = addStat(before, amount)
-      outcome.growth[k] = m.stats[k] - before
+      outcome.growth[k] = addTrained(m, k, amount)
     }
   }
 

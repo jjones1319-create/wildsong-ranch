@@ -493,6 +493,31 @@ Spec: GAME_DESIGN §14.3 and §15; CONTENT §2, §2.3 and §6.
   - the right refusal lines.
 - [x] 5. Tests (odds, surprises, the pinned table, the spread, data mirror, schema v13), the e2e spec (`e2e/fusion.spec.ts`), docs, PROGRESS, commit, deploy, phone checklist.
 
+## Grades to S: stat caps, inherited traits and grades, stat bars, the stats guide (v1.11.0)
+
+The owner asked (2026-10-28) for:
+- growth grades up to S, with each grade also capping its stat (S 1,500, then 100 less a step);
+- Fusion babies that inherit a parent's trait and better grades, with a head start of at most 10% of the parents' best trained stats;
+- Monster Card bars that fill toward each stat's cap in its own colour, with Stat Sweets as a lighter segment that may pass the cap;
+- somewhere that explains what each stat does.
+
+Spec: GAME_DESIGN §4, §5.1–§5.2, §6.3, §8, §11, §12.3, §12.8, §14.3, §15, §16 and §19; CONTENT §6 and §11.
+
+- [x] 1. Golden records first: 30 fixed battles and 6 fixed lives, hashed on the commit before any change (`battle/golden.test.ts`, `sim/golden.test.ts`), plus a guard that no simulated stat reaches 1,000.
+- [x] 2. Grade S and the caps:
+  - `GRADES`, `GRADE_FACTOR_100.S`, `STAT_CAP_BY_GRADE`, the S gain ceilings;
+  - `addTrained` and `lowerStat` for training, Journeys, cups, Heartstones and the cocoon;
+  - sweets past the caps (refused only at 9,999);
+  - the Pearl to S; NPCs at 999; the walk-speed limit.
+- [x] 3. Two traits: `traitsOf` and `hasTrait`; the battle fighter's trait list with sum, multiply, any and first helpers.
+- [x] 4. Fusion: `inheritedTraitFor`, `inheritedGrades`, `headStartFrom` (10% limit, trained points only), the born screen lines.
+- [x] 5. Save schema v14 with its migration and test.
+- [x] 6. UI:
+  - the card's coloured stat rows (tap for the guide), the sweets segment and cap mark, the S pill, the inherited trait row;
+  - `StatsGuide` (a sheet and the Journal's Stats page);
+  - the editor's number box to 9,999, cap labels, "Max all" to the caps and the inherited-trait picker.
+- [x] 7. Tests, docs, the e2e card spec, `npm run verify`, PROGRESS, commit, deploy, phone checklist.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

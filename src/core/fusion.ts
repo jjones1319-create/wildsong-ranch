@@ -1,13 +1,14 @@
+import { BREED_BY_ID } from '../data/breeds.ts'
 import { BREED_KINDS, FUSION_RECIPES, FUSION_RULES } from '../data/fusionRecipes.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
 import { startersOf, techniquesOfBreed, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { FREEZER, FUSION, SONGBOOK } from '../data/tuning.ts'
-import { BREED_IDS, FAMILIES, STAT_KEYS, type BreedId, type Kind, type Stats } from '../data/types.ts'
+import { BREED_IDS, FAMILIES, STAT_KEYS, type BreedId, type Grades, type Kind, type Stats, type TraitId } from '../data/types.ts'
 import { cyrb53 } from './hash.ts'
 import { countOf } from './items.ts'
 import { findStored, placeOnRanch, ranchBusy, recordInEncyclopedia } from './legacy.ts'
 import { divRound } from './mathx.ts'
-import { createMonster, gradeIndex, mixBreeds, rollLikes, zeroStats, type Monster, type TechniqueSlot } from './monster.ts'
+import { createMonster, gradeIndex, mixBreeds, rollLikes, stepGrade, trainedOf, traitOf, zeroStats, type Monster, type TechniqueSlot } from './monster.ts'
 import type { Rng } from './rng.ts'
 import type { GameState } from './state.ts'
 import { variantNameOf } from './variants.ts'
@@ -164,12 +165,12 @@ export function rarityK(pct: number): number {
   return FUSION.rarityK[FUSION.rarityK.length - 1]![1]
 }
 
-/** The parents' trained gains (stat − that parent's breed base), blended 2:1 and never below 0; scaled ×div. */
+/** The parents' trained gains (trained points − that parent's breed base; sweets don't pass on), blended 2:1, never below 0; ×div. */
 function blendedOffsets3(p1: Monster, p2: Monster): Stats {
   const b1 = mixBreeds(p1.mainBreed, p1.subBreed).base
   const b2 = mixBreeds(p2.mainBreed, p2.subBreed).base
   const out = zeroStats()
-  for (const k of STAT_KEYS) out[k] = Math.max(0, FUSION.offset.p1 * (p1.stats[k] - b1[k]) + FUSION.offset.p2 * (p2.stats[k] - b2[k]))
+  for (const k of STAT_KEYS) out[k] = Math.max(0, FUSION.offset.p1 * (trainedOf(p1, k) - b1[k]) + FUSION.offset.p2 * (trainedOf(p2, k) - b2[k]))
   return out
 }
 
@@ -189,14 +190,48 @@ export function catalystEffect(itemId: string | null): CatalystEffect {
   return { stats, lifespan: item.effect.lifespan, lineageSeal: item.effect.lineageSeal }
 }
 
-/** The baby's stat offsets over its breed base: round(offset · P · K) + catalyst. */
-export function babyStatOffsets(p1: Monster, p2: Monster, m: number, outcomePct: number, catalyst: CatalystEffect): Stats {
+/**
+ * The head start from the parents: round(offset · P · K), but never more than 10 % (`FUSION.headStartMaxPct`) of
+ * the better parent's trained points in that stat (the owner's rule, v1.11).
+ */
+export function headStartFrom(p1: Monster, p2: Monster, m: number, outcomePct: number): Stats {
   const off3 = blendedOffsets3(p1, p2)
   const pPct = FUSION.pBasePct + FUSION.pPerMatchPct * m
   const kPct = rarityK(outcomePct)
   const out = zeroStats()
-  for (const k of STAT_KEYS) out[k] = divRound(off3[k] * pPct * kPct, FUSION.offset.div * 100 * 100) + catalyst.stats[k]
+  for (const k of STAT_KEYS) {
+    const limit = Math.floor((Math.max(trainedOf(p1, k), trainedOf(p2, k)) * FUSION.headStartMaxPct) / 100)
+    out[k] = Math.min(divRound(off3[k] * pPct * kPct, FUSION.offset.div * 100 * 100), limit)
+  }
   return out
+}
+
+/** The baby's stat offsets over its breed base: the parents' head start + catalyst. */
+export function babyStatOffsets(p1: Monster, p2: Monster, m: number, outcomePct: number, catalyst: CatalystEffect): Stats {
+  const head = headStartFrom(p1, p2, m, outcomePct)
+  const out = zeroStats()
+  for (const k of STAT_KEYS) out[k] = head[k] + catalyst.stats[k]
+  return out
+}
+
+/** §15 (v1.11): one step up in a stat when the better parent's grade there beats the baby breed's own, never past it. */
+export function inheritedGrades(p1: Pick<Monster, 'grades'>, p2: Pick<Monster, 'grades'>, breed: BreedId): Grades {
+  const grades = { ...mixBreeds(breed, breed).grades }
+  for (const k of STAT_KEYS) {
+    const best = Math.max(gradeIndex(p1.grades[k]), gradeIndex(p2.grades[k]))
+    if (best > gradeIndex(grades[k])) grades[k] = stepGrade(grades[k], 1)
+  }
+  return grades
+}
+
+/**
+ * §15 (v1.11): the second trait. The first of the first parent's breed trait, the second's, then their own inherited
+ * traits, that isn't the baby's own (Hungry Grub's cocoon is Nibblegrub's alone, so it never passes on).
+ */
+export function inheritedTraitFor(p1: Pick<Monster, 'mainBreed' | 'inheritedTrait'>, p2: Pick<Monster, 'mainBreed' | 'inheritedTrait'>, breed: BreedId): TraitId | null {
+  const own = BREED_BY_ID[breed].trait
+  const candidates = [traitOf(p1), traitOf(p2), p1.inheritedTrait, p2.inheritedTrait]
+  return candidates.find((t): t is TraitId => t !== null && t !== undefined && t !== own && !FUSION.notInherited.includes(t)) ?? null
 }
 
 /** §15 inheritance of techniques. The baby already knows its breed's starters. */
@@ -228,12 +263,15 @@ export interface FusionResult {
   tier: CompatTier
   /** A surprise this ranch had never bred from this pair before. */
   newFind: boolean
+  /** The stat points the parents gave as a head start (catalysts not included). */
+  headStart: Stats
 }
 
 /** Builds the baby for a chosen outcome (the roll itself happens in `fuse`). The baby is one whole breed. */
 export function makeBaby(p1: Monster, p2: Monster, outcome: FusionOutcome, catalyst: CatalystEffect, id: string, rng: Rng): FusionResult {
   const breed = outcome.breed
   const compat = compatibility(p1, p2, breed, breed)
+  const headStart = headStartFrom(p1, p2, compat, outcome.pct)
   const offsets = babyStatOffsets(p1, p2, compat, outcome.pct, catalyst)
   const likes = rollLikes(rng)
   const baby = createMonster({
@@ -247,10 +285,13 @@ export function makeBaby(p1: Monster, p2: Monster, outcome: FusionOutcome, catal
     name: variantNameOf({ mainBreed: breed, subBreed: breed, variantId: null }),
   })
   baby.form = divRound(FUSION.blend.p1 * p1.form + FUSION.blend.p2 * p2.form, FUSION.blend.div)
+  // v1.11: better grades and a second trait from the parents.
+  baby.grades = inheritedGrades(p1, p2, breed)
+  baby.inheritedTrait = inheritedTraitFor(p1, p2, breed)
   // Starters first (createMonster), then the inherited ones.
   const starters = new Set(startersOf(breed).map((t) => t.id))
   baby.techniques = [...baby.techniques.filter((t) => starters.has(t.id) || TECHNIQUE_BY_ID[t.id]?.subQuirk), ...inheritedTechniques(baby, p1, p2)]
-  return { baby, outcome, compat, tier: compatTier(compat), newFind: false }
+  return { baby, outcome, compat, tier: compatTier(compat), newFind: false, headStart }
 }
 
 export type FuseRefusal = 'notFound' | 'sameMonster' | 'money' | 'freezerFull' | 'busy' | 'noOutcome' | 'noCatalyst'

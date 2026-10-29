@@ -886,10 +886,10 @@ There's **no limit** on how many items you use or buy (GAME_DESIGN §8). Life fr
 | Mischief Charm | Mood | 120G | Nature −5 |
 | Honey Taffy | Form | 120G | Form +10 |
 | Leanroot Tea | Form | 120G | Form −10 |
-| Mighty Muffin · Clever Cookie · Steady Scone · Zippy Waffle · Sturdy Bun · Lively Pie | Stat Sweet | 400G | Permanently +5 POW · INT · SKI · SPD · DEF · LIF |
+| Mighty Muffin · Clever Cookie · Steady Scone · Zippy Waffle · Sturdy Bun · Lively Pie | Stat Sweet | 400G | Permanently +5 POW · INT · SKI · SPD · DEF · LIF (sweets go past the growth-grade caps, GAME_DESIGN §5.2) |
 | Grand Muffin · Grand Cookie · Grand Scone · Grand Waffle · Grand Bun · Grand Pie | Stat Sweet | 1,500G (stocked once you have a grade C monster) | Permanently +15 to that stat |
 | Wondercake | Stat Sweet | 2,500G (breeder rank 3+) | Permanently +5 to all six stats |
-| Potential Pearl | Potential | 8,000G (rank 5+) | One stat's growth grade +1 step (max A) |
+| Potential Pearl | Potential | 8,000G (rank 5+) | One stat's growth grade +1 step (max S), raising that stat's cap |
 | Tempo Bell | Potential | 6,000G (rank 4+) | Guts rate −1 (regenerates faster), minimum 6 |
 | Songsheets | Technique | 500–5,000G | Teach one technique; kept forever in the Songbook (GAME_DESIGN §10.5) |
 | Ironroot Tonic | Tonic | 1,500G | 4 weeks: +3 POW on each successful drill that raises POW · **−6 weeks life** |
@@ -1005,7 +1005,7 @@ None of these can be permanently missed. Each starts with a rumor, and the Journ
 1. **Velvesper (metamorphosis).**
    - Rumor (Basil, after you've owned a Nibblegrub for about a year): "Grubs that eat sweet pudding and live happy lives sometimes spin silk…"
    - Condition: in June week 4, a Nibblegrub aged 144–240 weeks with loyalty ≥ 70, fatigue ≤ 20 and stress ≤ 15, that has had Berry Pudding as its monthly food at least 12 times.
-   - Result: it spins a cocoon for 4 weeks (no actions; it still ages) and emerges as a Velvesper with the same sub-breed.
+   - Result: it spins a cocoon for 4 weeks (no actions; it still ages) and emerges as a Velvesper with the same sub-breed. It keeps 80% of its trained gains, all its Stat Sweets, and any grade steps a Pearl or Fusion had earned above Nibblegrub's grades (v1.11).
      - It keeps 80% of its trained gains.
      - Lifespan total +60 weeks.
      - Techniques are kept where Velvesper's kit has the same family; otherwise they become Velvesper's starters.

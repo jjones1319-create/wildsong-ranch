@@ -7,7 +7,8 @@ export const STAT_KEYS = ['LIF', 'POW', 'INT', 'SKI', 'SPD', 'DEF'] as const
 export type StatKey = (typeof STAT_KEYS)[number]
 export type Stats = Record<StatKey, number>
 
-export const GRADES = ['E', 'D', 'C', 'B', 'A'] as const
+/** §5.2 growth grades, worst to best. S is reached by mixing, Pearls, Fusion inheritance or edits (v1.11). */
+export const GRADES = ['E', 'D', 'C', 'B', 'A', 'S'] as const
 export type Grade = (typeof GRADES)[number]
 export type Grades = Record<StatKey, Grade>
 

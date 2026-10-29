@@ -8,8 +8,9 @@ export const TEST_LIKES: Likes = { food: 'honey-bread', dislikedFood: 'turnips',
 
 describe('grades and stages (§5)', () => {
   it('uses the §5.2 grade factors', () => {
-    expect(['E', 'D', 'C', 'B', 'A'].map((g) => gradeFactor100(g as 'E'))).toEqual([58, 79, 100, 132, 155])
-    expect(stepGrade('A', 1)).toBe('A')
+    expect(['E', 'D', 'C', 'B', 'A', 'S'].map((g) => gradeFactor100(g as 'E'))).toEqual([58, 79, 100, 132, 155, 180])
+    expect(stepGrade('A', 1)).toBe('S')
+    expect(stepGrade('S', 1)).toBe('S')
     expect(stepGrade('E', -1)).toBe('E')
     expect(stepGrade('C', 1)).toBe('B')
   })
@@ -77,10 +78,12 @@ describe('mixing (§14.3)', () => {
     expect(mix2.grades.INT).toBe('D')
   })
 
-  it('caps grade steps at A and E', () => {
-    // Wishlume sub (E E A C B E): best INT; Velvesper main INT is already A
-    expect(mixBreeds('velvesper', 'wishlume').grades.INT).toBe('A')
+  it('a sub can lift an A to S (v1.11), and steps stop at S and E', () => {
+    // Wishlume sub (E E A C B E): best INT; Velvesper main INT is already A, so it becomes S
+    expect(mixBreeds('velvesper', 'wishlume').grades.INT).toBe('S')
     expect(mixBreeds('velvesper', 'wishlume').grades.LIF).toBe('E')
+    // Nothing goes past S.
+    expect(mixBreeds('velvesper', 'velvesper').grades.INT).toBe('A')
   })
 })
 

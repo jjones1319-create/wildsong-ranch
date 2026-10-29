@@ -1,9 +1,8 @@
-import { BREED_BY_ID } from '../../data/breeds.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { AI, BATTLE, BATTLE_TRAITS, HEARTSTONE } from '../../data/tuning.ts'
 import { TOURNAMENT_GRADES, type AiTier, type Technique } from '../../data/types.ts'
 import { clamp, divRound } from '../mathx.ts'
-import { loyaltyOf, totalStats } from '../monster.ts'
+import { loyaltyOf, totalStats, traitsOf } from '../monster.ts'
 import { createRng, type Rng } from '../rng.ts'
 import { masteryBonuses } from '../songbook.ts'
 import { variantFarHit, variantWitherPlus } from '../variants.ts'
@@ -31,6 +30,10 @@ import {
   traitSpeedMul,
   traitTakenMul,
   traitWitherTakenMul,
+  traitsAny,
+  traitsFirst,
+  traitsMul,
+  traitsSum,
 } from './traits.ts'
 import type { BattleEvent, BattleInput, BattleOptions, BattleOutcome, BattleResult, BattleState, FighterSetup, FighterState, Side } from './types.ts'
 
@@ -77,7 +80,7 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
   return {
     side,
     name: m.name,
-    trait: BREED_BY_ID[m.mainBreed].trait,
+    traits: traitsOf(m),
     control: s.control,
     personality: s.personality,
     habit: s.habit ?? 'none',
@@ -218,10 +221,10 @@ export function previewHitTenths(state: BattleState, side: Side, techId: string)
   return hitTenths({
     techHit: tech.hit + ref.hitBonus,
     skiAtt: f.stats.SKI,
-    spdDef: opp.spdForm + nimbleBonus(traitNimble(opp.trait)),
+    spdDef: opp.spdForm + nimbleBonus(traitsAny(opp.traits, traitNimble)),
     gutsAtt: f.guts,
     gutsDef: opp.guts,
-    bonus: traitHitBonus(f.trait, tech.range, opp.total > f.total),
+    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, opp.total > f.total)),
     advantages: (opp.dawdleTicks > 0 ? 1 : 0) + (specialMods(opp.special).givesAdvantage ? 1 : 0),
     disadvantage: specialMods(opp.special).givesDisadvantage,
   })
@@ -296,7 +299,7 @@ function tickTimers(f: FighterState, state: BattleState, log: BattleEvent[]): vo
   if (f.dawdleTicks > 0) f.dawdleTicks -= 1
   if (f.aiCooldown > 0) f.aiCooldown -= 1
   tickSpecial(f)
-  if (traitBlessed(f.trait) && f.hp > 0) {
+  if (traitsAny(f.traits, traitBlessed) && f.hp > 0) {
     f.blessedAcc += 1
     if (f.blessedAcc >= BATTLE.blessedEveryTicks) {
       f.blessedAcc = 0
@@ -334,7 +337,7 @@ function towardSign(f: FighterState, opp: FighterState): 1 | -1 {
 /** Walking speed this tick in centi-units (traits, Chill and backing away included). */
 export function speedPerTick(f: FighterState, backing: boolean): number {
   let v = walkPerTick(f.stats.SPD)
-  v = divRound(v * traitSpeedMul(f.trait), 1000)
+  v = divRound(v * traitsMul(f.traits, traitSpeedMul), 1000)
   if (f.slowTicks > 0) v = divRound(v * BATTLE_TRAITS.chillPct, 100)
   if (backing) v = divRound(v * BATTLE.walk.backPct, 100)
   return v
@@ -353,13 +356,13 @@ function moveBy(f: FighterState, opp: FighterState, dx: number): void {
 function startDash(state: BattleState, f: FighterState, log: BattleEvent[]): void {
   const gap = gapUnits(state)
   if (f.dashCooldown > 0 || gap < BATTLE.dash.minGap) return
-  const free = traitFreeDash(f.trait)
+  const free = traitsAny(f.traits, traitFreeDash)
   if (!free && f.guts < BATTLE.dash.cost) return
   if (!free) f.guts -= BATTLE.dash.cost
   f.dashTicks = BATTLE.dash.maxTicks
   f.lunging = false
   f.dashCooldown = BATTLE.dash.cooldown
-  if (traitFreeDash(f.trait)) f.ramArmed = true
+  if (traitsAny(f.traits, traitFreeDash)) f.ramArmed = true
   log.push({ t: state.tick, kind: 'dash', side: f.side })
 }
 
@@ -368,7 +371,7 @@ function startPush(state: BattleState, f: FighterState, opp: FighterState, log: 
   f.pushTicks = BATTLE.push.ticks
   f.pushCooldown = BATTLE.push.cooldown
   f.pushes += 1
-  const blocked = traitImmovable(opp.trait)
+  const blocked = traitsAny(opp.traits, traitImmovable)
   if (!blocked) knockBack(opp, f)
   log.push({ t: state.tick, kind: 'push', side: f.side, target: opp.side, blocked })
 }
@@ -426,7 +429,7 @@ function slide(f: FighterState, opp: FighterState): void {
 
 function regen(f: FighterState): void {
   if (f.busyTicks > 0 || f.stunTicks > 0 || f.hp <= 0) return
-  let mul = traitRegenMul(f.trait, f.guts)
+  let mul = traitsMul(f.traits, (t) => traitRegenMul(t, f.guts))
   mul = divRound(mul * specialMods(f.special).regenPct, 100)
   f.gutsAcc += mul
   const per = f.gutsRate * GUTS_ACC
@@ -502,25 +505,25 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
 
   const e = tech.effect
   if (e?.kind === 'heal') {
-    heal(state, f, divRound(divRound(f.maxHp * e.pct, 100) * traitHealMul(f.trait), 1000), 'tech', log)
+    heal(state, f, divRound(divRound(f.maxHp * e.pct, 100) * traitsMul(f.traits, traitHealMul), 1000), 'tech', log)
   }
 
   const underdog = opp.total > f.total
   const myMods = specialMods(f.special)
   const theirMods = specialMods(opp.special)
-  const hits = tech.force > 0 ? (e?.kind === 'multi' ? e.hits + traitExtraHits(f.trait) : 1) : 0
+  const hits = tech.force > 0 ? (e?.kind === 'multi' ? e.hits + traitsSum(f.traits, traitExtraHits) : 1) : 0
   const hitChance = hitTenths({
     techHit: tech.hit + ref.hitBonus,
     skiAtt: f.stats.SKI,
-    spdDef: opp.spdForm + nimbleBonus(traitNimble(opp.trait)),
+    spdDef: opp.spdForm + nimbleBonus(traitsAny(opp.traits, traitNimble)),
     gutsAtt: gutsBefore,
     gutsDef: opp.guts,
-    bonus: traitHitBonus(f.trait, tech.range, underdog),
+    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, underdog)),
     advantages: (opp.dawdleTicks > 0 ? 1 : 0) + (theirMods.givesAdvantage ? 1 : 0),
     disadvantage: theirMods.givesDisadvantage,
   })
-  let critChance = critTenths({ sharp: tech.sharp, fame: f.fame, oppFame: opp.fame, nature: f.nature, stress: f.stress, fameCapBonus: traitFameCapBonus(f.trait), bonus: traitCritBonus(f.trait) })
-  critChance = divRound(critChance * traitCritTakenMul(opp.trait), 1000) * myMods.critMul
+  let critChance = critTenths({ sharp: tech.sharp, fame: f.fame, oppFame: opp.fame, nature: f.nature, stress: f.stress, fameCapBonus: traitsSum(f.traits, traitFameCapBonus), bonus: traitsSum(f.traits, traitCritBonus) })
+  critChance = divRound(critChance * traitsMul(opp.traits, traitCritTakenMul), 1000) * myMods.critMul
 
   for (let i = 1; i <= hits; i++) {
     if (opp.hp <= 0 || state.outcome) break
@@ -554,8 +557,10 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     })
     const mults: number[] = []
     if (crit) mults.push(BATTLE.damage.critMul * 10)
-    mults.push(traitDealtMul(f.trait, { family: tech.family, hpPct: hpPctTenths(f.hp, f.maxHp), underdog, ramArmed }))
-    mults.push(traitTakenMul(opp.trait, { techType: tech.type, still: opp.stillTicks >= BATTLE.statueTicks }))
+    const dealt = { family: tech.family, hpPct: hpPctTenths(f.hp, f.maxHp), underdog, ramArmed }
+    mults.push(traitsMul(f.traits, (t) => traitDealtMul(t, dealt)))
+    const taken = { techType: tech.type, still: opp.stillTicks >= BATTLE.statueTicks }
+    mults.push(traitsMul(opp.traits, (t) => traitTakenMul(t, taken)))
     mults.push(myMods.dealtPct * 10, theirMods.takenPct * 10)
     let jackpot: 'double' | 'heal' | 'fizzle' | null = null
     if (e?.kind === 'jackpot') {
@@ -569,7 +574,7 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     let wither = tech.wither + ref.witherBonus
     if (crit) wither = divRound(wither * BATTLE.damage.critMul, 100)
     wither = divRound(wither * myMods.witherDealtPct, 100)
-    wither = divRound(wither * traitWitherTakenMul(opp.trait), 1000)
+    wither = divRound(wither * traitsMul(opp.traits, traitWitherTakenMul), 1000)
     const withered = Math.min(opp.guts, wither)
     opp.guts -= withered
     if (e?.kind === 'gutsSteal') f.guts = Math.min(BATTLE.guts.cap, f.guts + withered)
@@ -581,36 +586,36 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     opp.hitsTakenRow += 1
     opp.lastHitTakenTick = state.tick
     // M10 Gilded: a landed hit pays guts.
-    const gilded = traitGutsOnHit(f.trait)
+    const gilded = traitsSum(f.traits, traitGutsOnHit)
     if (gilded > 0) f.guts = Math.min(BATTLE.guts.cap, f.guts + gilded)
     log.push({ t: state.tick, kind: 'hit', side: f.side, target: opp.side, tech: tech.id, damage, crit, wither: withered, hitNo: i, of: hits })
 
     if (jackpot === 'heal') heal(state, f, divRound(f.maxHp * 20, 100), 'jackpot', log)
-    if (e?.kind === 'drain' && damage > 0) heal(state, f, divRound(divRound(damage * e.pct, 100) * traitHealMul(f.trait), 1000), 'drain', log)
-    if (e?.kind === 'stun' && !traitImmovable(opp.trait)) {
+    if (e?.kind === 'drain' && damage > 0) heal(state, f, divRound(divRound(damage * e.pct, 100) * traitsMul(f.traits, traitHealMul), 1000), 'drain', log)
+    if (e?.kind === 'stun' && !traitsAny(opp.traits, traitImmovable)) {
       opp.stunTicks = Math.max(opp.stunTicks, e.ticks)
       opp.assistTech = null
       log.push({ t: state.tick, kind: 'stun', side: opp.side, ticks: e.ticks })
     }
-    if (e?.kind === 'push' && !traitImmovable(opp.trait)) {
+    if (e?.kind === 'push' && !traitsAny(opp.traits, traitImmovable)) {
       knockBack(opp, f)
       log.push({ t: state.tick, kind: 'push', side: f.side, target: opp.side, blocked: false })
     }
-    if (traitChills(f.trait)) opp.slowTicks = BATTLE.chillTicks
+    if (traitsAny(f.traits, traitChills)) opp.slowTicks = BATTLE.chillTicks
 
     const hpBefore = opp.hp
     const ko = hurt(state, opp, damage, rng, log)
-    if (traitDragonheart(opp.trait) && !opp.dragonheartUsed && opp.hp > 0 && opp.hp * 100 < opp.maxHp * BATTLE_TRAITS.dragonheart.hpPctBelow && hpBefore * 100 >= opp.maxHp * BATTLE_TRAITS.dragonheart.hpPctBelow) {
+    if (traitsAny(opp.traits, traitDragonheart) && !opp.dragonheartUsed && opp.hp > 0 && opp.hp * 100 < opp.maxHp * BATTLE_TRAITS.dragonheart.hpPctBelow && hpBefore * 100 >= opp.maxHp * BATTLE_TRAITS.dragonheart.hpPctBelow) {
       opp.dragonheartUsed = true
       opp.guts = Math.min(BATTLE.guts.cap, opp.guts + BATTLE_TRAITS.dragonheart.guts)
-      log.push({ t: state.tick, kind: 'trait', side: opp.side, trait: opp.trait })
+      log.push({ t: state.tick, kind: 'trait', side: opp.side, trait: 'dragonheart' })
     }
     if (ko) {
       finishKo(state, opp.side, log)
       return
     }
 
-    const reflect = traitReflect(opp.trait)
+    const reflect = traitsFirst(opp.traits, traitReflect)
     if (reflect && tech.type === 'INT' && damage > 0 && rng.chance(reflect.chancePct)) {
       const back = Math.max(1, divRound(damage * reflect.pct, 100))
       log.push({ t: state.tick, kind: 'reflect', side: opp.side, target: f.side, amount: back })

@@ -12,6 +12,13 @@
   --accent-ink: #2b1b10;
   --moss: #7faf5a;
   --danger: #e86a7c;
+  /* v1.11 one colour per stat (card bars, the stats guide). */
+  --stat-lif: #ec7088;
+  --stat-pow: #f2903f;
+  --stat-int: #a585f2;
+  --stat-ski: #62c47f;
+  --stat-spd: #53b8ec;
+  --stat-def: #9aaec2;
   --text-scale: 1;
   --tap: 48px;
   --radius: 14px;

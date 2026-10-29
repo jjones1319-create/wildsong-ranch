@@ -3,7 +3,7 @@ import { TECHNIQUE_BY_ID, techniquesOfBreed } from '../data/techniques.ts'
 import { JOURNEY, SIGNATURE, TRAIT_EFFECTS } from '../data/tuning.ts'
 import { TOURNAMENT_GRADES, type JourneySiteId, type Stats, type Technique } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, addStat, gradeFactor100, gradeIndex, isPure, loyaltyOf, stageFactor100, stageOf, traitOf, type Monster } from './monster.ts'
+import { addCondition, addTrained, gradeFactor100, gradeIndex, hasTrait, isPure, loyaltyOf, stageFactor100, stageOf, type Monster } from './monster.ts'
 import { npcMonster } from './npc.ts'
 import type { Rng } from './rng.ts'
 import { isFull } from './songbook.ts'
@@ -123,7 +123,7 @@ export function techniqueChancePct(m: Monster, tech: Technique, elderMentor = fa
   if (over < 0) return 0
   const t = JOURNEY.technique
   let pct = Math.min(t.capPct, t.basePct + Math.floor(over / t.perPointsOver) * t.pctPerStep)
-  if (traitOf(m) === 'quick-study') pct += TRAIT_EFFECTS.quickStudyJourneyPct
+  if (hasTrait(m, 'quick-study')) pct += TRAIT_EFFECTS.quickStudyJourneyPct
   if (elderMentor) pct += t.elderMentorPct
   return pct
 }
@@ -167,13 +167,13 @@ export function journeyWeek(input: Monster, progress: JourneyProgress, rng: Rng,
     const stage = stageOf(m)
     const sf = stageFactor100(stage)
     const g = JOURNEY.gains
-    const siteGain = clamp(divRound(g.siteBase * gradeFactor100(m.grades[site.stat]) * sf, 100 * 100) + rng.nextInt(-1, 1), g.siteMin, g.siteMax)
-    const lifGain = clamp(divRound(g.lifBase * gradeFactor100(m.grades.LIF) * sf, 100 * 100), g.lifMin, g.lifMax)
+    // An S stat has its own, higher ceiling (v1.11).
+    const siteGain = clamp(divRound(g.siteBase * gradeFactor100(m.grades[site.stat]) * sf, 100 * 100) + rng.nextInt(-1, 1), g.siteMin, m.grades[site.stat] === 'S' ? g.siteMaxS : g.siteMax)
+    const lifGain = clamp(divRound(g.lifBase * gradeFactor100(m.grades.LIF) * sf, 100 * 100), g.lifMin, m.grades.LIF === 'S' ? g.lifMaxS : g.lifMax)
     const applyGain = (k: keyof Stats, amount: number) => {
-      const before = m.stats[k]
-      m.stats[k] = addStat(before, amount)
-      gains[k] = (gains[k] ?? 0) + (m.stats[k] - before)
-      p.gains[k] += m.stats[k] - before
+      const added = addTrained(m, k, amount)
+      gains[k] = (gains[k] ?? 0) + added
+      p.gains[k] += added
     }
     applyGain(site.stat, siteGain)
     applyGain('LIF', lifGain)

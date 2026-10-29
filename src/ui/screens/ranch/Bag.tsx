@@ -6,7 +6,8 @@ import { ITEM_CATEGORY_LABELS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { WREN } from '../../../data/text/wren.ts'
 import { ITEMS as ITEM_RULES, LIFESPAN } from '../../../data/tuning.ts'
-import { ITEM_CATEGORIES, STAT_KEYS, type Item, type StatKey } from '../../../data/types.ts'
+import { ITEM_CATEGORIES, STAT_KEYS, type Grade, type Item, type StatKey } from '../../../data/types.ts'
+import { stepGrade } from '../../../core/monster.ts'
 import { Select, TopBar } from '../../components/Controls.tsx'
 import { QuantitySheet } from '../../components/RanchBits.tsx'
 import { itemEffectText } from '../../lib/itemText.ts'
@@ -123,7 +124,6 @@ export function BagScreen() {
   )
 }
 
-function nextGrade(g: string): string {
-  const order = ['E', 'D', 'C', 'B', 'A']
-  return order[Math.min(order.length - 1, order.indexOf(g) + 1)]!
+function nextGrade(g: Grade): Grade {
+  return stepGrade(g, 1)
 }

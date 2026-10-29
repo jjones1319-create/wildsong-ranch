@@ -90,15 +90,18 @@ export function useItem(input: Monster, inventory: Inventory, itemId: string, qt
       used = wanted
       break
     case 'sweet': {
+      // Sweets go past the grade caps (v1.11); only the 9,999 save bound stops them, and then they aren't eaten.
       const stats = e.stat === 'all' ? STAT_KEYS : [e.stat]
       for (let i = 0; i < wanted; i++) {
+        if (stats.every((k) => m.stats[k] >= RANGES.stat.max)) break
         for (const k of stats) {
           const before = m.stats[k]
           m.stats[k] = addStat(before, e.amount)
           m.records.fromSweets[k] += m.stats[k] - before
         }
+        used++
       }
-      used = wanted
+      if (used === 0) return fail('alreadyMaxed')
       break
     }
     case 'potentialGrade': {

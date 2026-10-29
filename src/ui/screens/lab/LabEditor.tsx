@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'preact/hooks'
 import { EXPRESSIONS, type Expression } from '../../../art/monster/expressions.ts'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../../core/aging.ts'
-import { addableTechniques, applyBreedChange, breedBaseStats, maxAllStats, randomizeStats, resetGrowthToBreed, scaleToTotal, techniquesOutsideKit } from '../../../core/lab.ts'
-import { loyaltyOf, mixBreeds, stageOf, styleBandOf, styleOf, totalStats, type Monster } from '../../../core/monster.ts'
+import { addableTechniques, applyBreedChange, breedBaseStats, maxAllStats, randomizeStats, resetGrowthToBreed, scaleMaxTotal, scaleToTotal, techniquesOutsideKit } from '../../../core/lab.ts'
+import { loyaltyOf, mixBreeds, stageOf, statCap, styleBandOf, styleOf, totalStats, traitOf, type Monster } from '../../../core/monster.ts'
 import { createRng } from '../../../core/rng.ts'
 import { masteryLevel } from '../../../core/songbook.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
@@ -10,10 +10,11 @@ import { DRILLS } from '../../../data/drills.ts'
 import { FOODS } from '../../../data/foods.ts'
 import { ITEM_BY_ID } from '../../../data/items.ts'
 import { TECHNIQUE_BY_ID } from '../../../data/techniques.ts'
+import { TRAITS } from '../../../data/traits.ts'
 import { fill } from '../../../data/text/format.ts'
 import { GROWTH_WORDS, STAGE_NAMES, STAT_NAMES, STYLE_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
-import { RANGES, SONGBOOK, STAGES } from '../../../data/tuning.ts'
+import { RANGES, SONGBOOK, STAGES, STAT_CAP_BY_GRADE } from '../../../data/tuning.ts'
 import { BREED_IDS, GRADES, GROWTH_TYPES, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, type BreedId, type Grade, type GrowthType, type StatKey, type Technique, type TournamentGrade } from '../../../data/types.ts'
 import { Confirm, Field, Section, Segmented, Select, Sheet, SliderRow, Stepper, Toggle, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
@@ -287,10 +288,11 @@ export function LabEditorScreen() {
             value={m.stats[k]}
             min={RANGES.stat.min}
             max={RANGES.stat.max}
+            sliderMax={STAT_CAP_BY_GRADE.S}
             onChange={(v) => patchMonster((x) => (x.stats[k] = v))}
             extra={
               <span class="muted small">
-                {m.grades[k]}
+                {m.grades[k]} · {fill(t.capOf, { n: statCap(m, k).toLocaleString('en-US') })}
                 {m.records.fromSweets[k] > 0 ? ` · ${fill(t.fromSweets, { n: m.records.fromSweets[k] })}` : ''}
               </span>
             }
@@ -300,7 +302,7 @@ export function LabEditorScreen() {
           <button type="button" class="btn" onClick={() => patchMonster((x) => (x.stats = breedBaseStats(x)))}>
             {t.statButtons.base}
           </button>
-          <button type="button" class="btn" onClick={() => patchMonster((x) => (x.stats = maxAllStats()))}>
+          <button type="button" class="btn" onClick={() => patchMonster((x) => (x.stats = maxAllStats(x)))}>
             {t.statButtons.max}
           </button>
           <button
@@ -327,6 +329,12 @@ export function LabEditorScreen() {
           ))}
         </div>
         <Select label={t.growthType} value={m.growthType} options={GROWTH_OPTIONS} onChange={(g: GrowthType) => patchMonster((x) => (x.growthType = g))} />
+        <Select
+          label={t.inheritedTrait}
+          value={m.inheritedTrait ?? 'none'}
+          options={[{ value: 'none', label: t.noInheritedTrait }, ...TRAITS.filter((tr) => tr.id !== traitOf(m)).map((tr) => ({ value: tr.id, label: tr.name }))]}
+          onChange={(v: string) => patchMonster((x) => (x.inheritedTrait = v === 'none' ? null : (v as Monster['inheritedTrait'])))}
+        />
         <Field label={t.gutsRate} hint={t.gutsHint}>
           <Stepper value={m.gutsRate} min={RANGES.gutsRate.min} max={RANGES.gutsRate.max} big={5} onChange={(v) => patchMonster((x) => (x.gutsRate = v))} label={t.gutsRate} />
         </Field>
@@ -475,8 +483,8 @@ export function LabEditorScreen() {
       />
       <AddTechniqueSheet d={d} open={addOpen} onClose={() => setAddOpen(false)} />
       <Sheet open={scaleOpen} title={t.scaleTitle} onClose={() => setScaleOpen(false)}>
-        <Field label={t.scaleTitle} hint={t.scaleHint}>
-          <Stepper value={scaleValue} min={RANGES.stat.min * STAT_KEYS.length} max={RANGES.stat.max * STAT_KEYS.length} big={100} onChange={setScaleValue} label={t.scaleTitle} />
+        <Field label={t.scaleTitle} hint={fill(t.scaleHint, { max: scaleMaxTotal(m.grades).toLocaleString('en-US') })}>
+          <Stepper value={scaleValue} min={RANGES.stat.min * STAT_KEYS.length} max={scaleMaxTotal(m.grades)} big={100} onChange={setScaleValue} label={t.scaleTitle} />
         </Field>
         <div class="sheet__actions">
           <button

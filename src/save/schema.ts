@@ -6,7 +6,7 @@ import { AUDIO, BOND, FREEZER, FUSION, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOO
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, KEEPSAKE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, KEEPSAKE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, TRAIT_IDS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -150,6 +150,8 @@ export const MonsterSchema = v.object({
   parents: v.fallback(v.union([v.tuple([v.string(), v.string()]), v.tuple([])]), []),
   seedPhrase: text('', 200),
   heirloom: v.fallback(v.nullable(v.picklist(FAMILIES)), null),
+  // v14: a second trait inherited at Fusion; an unknown id becomes none.
+  inheritedTrait: v.fallback(v.nullable(v.picklist(TRAIT_IDS)), null),
   stats: v.fallback(StatsSchema, { LIF: 1, POW: 1, INT: 1, SKI: 1, SPD: 1, DEF: 1 }),
   grades: v.fallback(GradesSchema, { LIF: 'C', POW: 'C', INT: 'C', SKI: 'C', SPD: 'C', DEF: 'C' }),
   growthType: oneOf(GROWTH_TYPES, 'Steady'),
@@ -378,8 +380,8 @@ const ExpeditionSchema = v.object({
   seed: int(0, 4_294_967_295, 0),
   startWeek: int(0, 1_000_000, 0),
   weekNo: int(1, EXPEDITION.weeks + 1, 1),
-  stamina: int(0, 1000, 0),
-  staminaMax: int(1, 1000, 1),
+  stamina: int(0, 10_000, 0),
+  staminaMax: int(1, 10_000, 1),
   at: int(0, 63, 0),
   visited: nodeList(),
   searched: nodeList(),
@@ -415,7 +417,7 @@ const UnlocksSchema = v.fallback(
 
 const JournalRecordsSchema = v.fallback(
   v.object({
-    bestTotal: int(0, 6000, 0),
+    bestTotal: int(0, RANGES.stat.max * 6, 0),
     bestTotalName: text('', RANGES.nameLength.max),
     oldestWeeks: int(0, RANGES.lifespan.max, 0),
     oldestName: text('', RANGES.nameLength.max),

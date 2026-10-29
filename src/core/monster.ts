@@ -1,6 +1,6 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { startersOf, subQuirkOf } from '../data/techniques.ts'
-import { BIRTH, GRADE_FACTOR_100, RANGES, STAGES, STAGE_END_PCT, STAGE_FACTOR_100, STYLE_BANDS, DRILL } from '../data/tuning.ts'
+import { BIRTH, GRADE_FACTOR_100, RANGES, STAGES, STAGE_END_PCT, STAGE_FACTOR_100, STAT_CAP_BY_GRADE, STYLE_BANDS, DRILL } from '../data/tuning.ts'
 import {
   DRILL_IDS,
   FOOD_IDS,
@@ -97,6 +97,8 @@ export interface Monster {
   seedPhrase: string
   /** §16 the Heirloom: +hit for this family's techniques, from a Heartstone's donor. */
   heirloom: Family | null
+  /** §15 (v1.11) a second trait inherited at Fusion; it works alongside the breed's own. Null for most monsters. */
+  inheritedTrait: TraitId | null
   stats: Stats
   grades: Grades
   growthType: GrowthType
@@ -204,8 +206,57 @@ export function starsFor(statValue: number): 1 | 2 | 3 {
   return 3
 }
 
-export function traitOf(m: Monster): TraitId {
+/** The breed's own trait (§12.8). */
+export function traitOf(m: Pick<Monster, 'mainBreed'>): TraitId {
   return BREED_BY_ID[m.mainBreed].trait
+}
+
+/** Every trait that works for this monster: the breed's own, then an inherited one (§15, v1.11). */
+export function traitsOf(m: Pick<Monster, 'mainBreed' | 'inheritedTrait'>): TraitId[] {
+  const own = traitOf(m)
+  return m.inheritedTrait && m.inheritedTrait !== own ? [own, m.inheritedTrait] : [own]
+}
+
+export function hasTrait(m: Pick<Monster, 'mainBreed' | 'inheritedTrait'>, id: TraitId): boolean {
+  return traitsOf(m).includes(id)
+}
+
+/* ---------- §5.2 stat caps (v1.11) ---------- */
+
+/** The most trained points a stat can hold, set by its growth grade. Stat Sweets go past it. */
+export function statCap(m: Pick<Monster, 'grades'>, k: StatKey): number {
+  return STAT_CAP_BY_GRADE[m.grades[k]]
+}
+
+/** A stat's Stat Sweets points, never more than the stat itself. */
+export function sweetsOf(m: Pick<Monster, 'stats' | 'records'>, k: StatKey): number {
+  return clamp(m.records.fromSweets[k], 0, m.stats[k])
+}
+
+/** A stat's trained points: everything except Stat Sweets. */
+export function trainedOf(m: Pick<Monster, 'stats' | 'records'>, k: StatKey): number {
+  return m.stats[k] - sweetsOf(m, k)
+}
+
+/**
+ * Adds trained points (drills, Journeys, cup growth, Heartstones) up to the stat's cap. It never lowers a stat
+ * that is already above its cap (after an edit or a grade drop). Mutates m and returns the points added.
+ */
+export function addTrained(m: Monster, k: StatKey, delta: number): number {
+  if (delta <= 0) return 0
+  const ceiling = Math.min(RANGES.stat.max, statCap(m, k) + sweetsOf(m, k))
+  const next = Math.max(m.stats[k], Math.min(m.stats[k] + delta, ceiling))
+  const added = next - m.stats[k]
+  m.stats[k] = next
+  return added
+}
+
+/** Lowers a stat (a drill's drop); the sweets record never ends up larger than the stat. Mutates m; returns the change. */
+export function lowerStat(m: Monster, k: StatKey, delta: number): number {
+  const before = m.stats[k]
+  m.stats[k] = addStat(before, -delta)
+  if (m.records.fromSweets[k] > m.stats[k]) m.records.fromSweets[k] = m.stats[k]
+  return m.stats[k] - before
 }
 
 export function isPure(m: Monster): boolean {
@@ -300,7 +351,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
   const mix = mixBreeds(input.mainBreed, input.subBreed)
   const offsets: BirthOffsets = { ...zeroOffsets(), ...input.offsets, stats: { ...zeroStats(), ...input.offsets?.stats } }
   const stats = zeroStats()
-  for (const k of STAT_KEYS) stats[k] = clamp(mix.base[k] + offsets.stats[k], RANGES.stat.min, RANGES.stat.max)
+  for (const k of STAT_KEYS) stats[k] = clamp(mix.base[k] + offsets.stats[k], RANGES.stat.min, STAT_CAP_BY_GRADE[mix.grades[k]])
   const main = BREED_BY_ID[input.mainBreed]
   const sub = BREED_BY_ID[input.subBreed]
   return {
@@ -313,6 +364,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
     parents: input.parents ?? [],
     seedPhrase: input.seedPhrase ?? '',
     heirloom: null,
+    inheritedTrait: null,
     stats,
     grades: mix.grades,
     growthType: main.growth,
@@ -379,7 +431,8 @@ export function rollOffsets(rng: Rng): BirthOffsets {
 export function clampMonsterMut(m: Monster): Monster {
   for (const k of STAT_KEYS) {
     m.stats[k] = clamp(Math.round(m.stats[k]), RANGES.stat.min, RANGES.stat.max)
-    m.records.fromSweets[k] = clamp(Math.round(m.records.fromSweets[k]), 0, RANGES.stat.max)
+    // The sweets record can never be larger than the stat it is part of (v1.11 caps count trained points).
+    m.records.fromSweets[k] = clamp(Math.round(m.records.fromSweets[k]), 0, m.stats[k])
   }
   m.gutsRate = clamp(Math.round(m.gutsRate), RANGES.gutsRate.min, RANGES.gutsRate.max)
   m.lifespanTotal = clamp(Math.round(m.lifespanTotal), RANGES.lifespan.min, RANGES.lifespan.max)

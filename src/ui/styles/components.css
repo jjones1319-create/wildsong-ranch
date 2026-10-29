@@ -671,15 +671,59 @@
   font-size: 0.8em;
 }
 
-/* Stat table on the card */
+/* The top growth grade (v1.11). */
+.pill--s {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 800;
+}
+
+/* Stat rows on the card (v1.11): each row is a button that opens the stats guide. */
 .stats {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 6px 10px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statrow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.statrow:active,
+.statrow:focus-visible {
+  background: var(--surface-2);
+}
+
+.statrow__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.statrow__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.statrow__num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .stats__bar {
+  position: relative;
+  display: flex;
   height: 10px;
   border-radius: 5px;
   background: var(--line);
@@ -687,13 +731,60 @@
 }
 
 .stats__fill {
+  display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--stat, var(--accent));
 }
 
-.stats__num {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+/* Stat Sweets: the same colour, lighter. They may run past the cap. */
+.stats__sweets {
+  display: block;
+  height: 100%;
+  background: color-mix(in srgb, var(--stat, var(--accent)) 50%, #ffffff);
+}
+
+.stats__capmark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+}
+
+/* The stats guide (sheet and Journal page). */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.guide__stat {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--stat, var(--line));
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.guide__stat--focus {
+  border-color: var(--stat);
+}
+
+.guide__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 1.05em;
+}
+
+.guide__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--stat);
 }
 
 .kv {

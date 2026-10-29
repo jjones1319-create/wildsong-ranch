@@ -64,7 +64,8 @@ export interface TechniqueRef {
 export interface FighterState {
   side: Side
   name: string
-  trait: TraitId
+  /** The fighter's traits: its breed's own, then an inherited one (v1.11). */
+  traits: readonly TraitId[]
   control: Control
   personality: Personality
   habit: Habit

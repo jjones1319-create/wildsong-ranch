@@ -25,20 +25,20 @@ function tournamentGradeOf(g: NpcGrade): TournamentGrade {
   return g === 'Crown' || g === 'Legend' ? 'S' : g
 }
 
-/** Spreads `total` over the six stats by integer weights, exactly, inside 1–999. */
+/** Spreads `total` over the six stats by integer weights, exactly, inside 1–999 (`NPC.statMax`). */
 export function distributeTotal(weights: Stats, total: number): Stats {
-  const target = clamp(total, RANGES.stat.min * 6, RANGES.stat.max * 6)
+  const target = clamp(total, RANGES.stat.min * 6, NPC.statMax * 6)
   const sumW = STAT_KEYS.reduce((s, k) => s + weights[k], 0)
   const out = zeroStats()
   let assigned = 0
   for (const k of STAT_KEYS) {
-    out[k] = clamp(Math.floor((target * weights[k]) / sumW), RANGES.stat.min, RANGES.stat.max)
+    out[k] = clamp(Math.floor((target * weights[k]) / sumW), RANGES.stat.min, NPC.statMax)
     assigned += out[k]
   }
   let rem = target - assigned
   for (let i = 0; rem !== 0 && i < 6000; i++) {
     const k = STAT_KEYS[i % STAT_KEYS.length]!
-    if (rem > 0 && out[k] < RANGES.stat.max) {
+    if (rem > 0 && out[k] < NPC.statMax) {
       out[k] += 1
       rem -= 1
     } else if (rem < 0 && out[k] > RANGES.stat.min) {

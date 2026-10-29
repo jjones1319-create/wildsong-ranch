@@ -29,8 +29,12 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   endings 'neglected' and 'wandered' (and their Memorial causes), and the new drill result levels in the
  *   planner log. Nothing to rewrite but the defaults.
  * - v13 (Fusion 2): the surprise recipes found at Dr. Pell's (`fusionFinds`, keys `a+b>c`), empty for older saves.
+ * - v14 (Grades to S): growth grade S, stats up to 9,999 (the grade caps live in the rules, not the save), a
+ *   monster's `inheritedTrait` (none for older monsters), the sweets record clamped to its stat, and wider bounds
+ *   for the best total and expedition stamina. Nothing to rewrite: the validator's defaults fill the rest, for saves,
+ *   monster files and Libraries alike.
  */
-export const SAVE_VERSION = 13
+export const SAVE_VERSION = 14
 
 type RawSave = Record<string, unknown>
 
@@ -160,6 +164,7 @@ const MIGRATIONS: Record<number, Migration> = {
     if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { fusionFinds: [], ...raw.game }
     return next
   },
+  13: (raw) => ({ ...raw, schemaVersion: 14 }),
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {

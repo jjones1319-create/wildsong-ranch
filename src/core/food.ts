@@ -2,7 +2,7 @@ import { FOOD_BY_ID } from '../data/foods.ts'
 import { FOOD, RANGES, TRAIT_EFFECTS } from '../data/tuning.ts'
 import type { FoodEffect, FoodId } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, addForm, traitOf, type Monster } from './monster.ts'
+import { addCondition, addForm, hasTrait, type Monster } from './monster.ts'
 import { likesEveryFood } from './variants.ts'
 
 /** GAME_DESIGN §8 monthly food (tables in CONTENT §5). */
@@ -32,15 +32,14 @@ export function monthlyFoodEffect(m: Monster, food: FoodId): FoodEffect {
     if (stress < 0) stress = divRound(stress, FOOD.boredomDivisor)
     if (spoil > 0) spoil = divRound(spoil, FOOD.boredomDivisor)
   }
-  const trait = traitOf(m)
-  if (trait === 'big-appetite') {
+  if (hasTrait(m, 'big-appetite')) {
     const { num, den } = TRAIT_EFFECTS.bigAppetite
     stress = divRound(stress * num, den)
     spoil = divRound(spoil * num, den)
     fear = divRound(fear * num, den)
     form = divRound(form * num, den)
   }
-  if (trait === 'hungry-grub') form = divRound(form * TRAIT_EFFECTS.hungryGrubForm.num, TRAIT_EFFECTS.hungryGrubForm.den)
+  if (hasTrait(m, 'hungry-grub')) form = divRound(form * TRAIT_EFFECTS.hungryGrubForm.num, TRAIT_EFFECTS.hungryGrubForm.den)
   return { stress, spoil, fear, form, life }
 }
 

@@ -2,6 +2,78 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Grades to S: stat caps, inherited traits and grades, stat bars, the stats guide (2026-10-28) · v1.11.0
+
+**Live:**
+- **Grade S:** growth grades now go up to S. Every grade sets how high training can take that stat: E 1,000 · D 1,100 · C 1,200 · B 1,300 · A 1,400 · S 1,500, up from a flat 999.
+- **Stat Sweets** always work, even past the cap.
+- **The Monster Card's stat bars** (they used to look empty) fill toward each stat's cap in its own color. Sweets are a lighter segment on top, and a thin line marks the cap when sweets push past it.
+- **The stats guide:** tap any stat, or "What do stats do?", to see what that stat does in a fight and elsewhere, which drills and Journeys grow it, and how grades, caps and sweets work. The same guide is the Journal's new **Stats** page.
+- **Fusion babies** now inherit:
+  - a second trait from a parent;
+  - one better grade step wherever a parent's grade beats their breed's;
+  - a head start of at most 10% of the parents' best trained stats.
+
+**Done**
+- **Grade S** (`GRADES`, `GRADE_FACTOR_100.S = 180`):
+  - An S stat grows ×1.80, with its own higher drill ceilings (light 18, heavy 24, secondary 12) and Journey ceilings (14 and 10), so it beats A even at Prime.
+  - **Where S comes from:** the Potential Pearl (now max S), the sub-breed's +1 step, Fusion inheritance and the Lab.
+  - An S stat scores 6 in the Journey check.
+- **Caps** (`STAT_CAP_BY_GRADE`; `addTrained` and `lowerStat` in `core/monster.ts`):
+  - Drills, Journeys, cup podium growth and Heartstones raise **trained points** (stat − sweets) only up to the cap.
+  - Nothing above a cap is ever taken away.
+  - Sweets go past the cap. Only the save bound of 9,999 stops them, and then the sweet isn't eaten.
+  - Opponents still generate with a 999 per-stat ceiling (`NPC.statMax`).
+  - Walking speed counts SPD up to 1,500.
+- **Two traits:**
+  - **Data and helpers:** `Monster.inheritedTrait`, plus `traitsOf` and `hasTrait` for every raising check.
+  - **Battle:** a fighter now carries a list of traits. Multipliers multiply, bonuses add, yes/no effects use "any", and Reflective takes the first.
+  - **Checked:** a fixed-seed log of 30 battles was hashed before the change and still matches, so one-trait fights are bit-for-bit as before.
+- **Fusion** (`core/fusion.ts`):
+  - **The second trait:** the first parent's breed trait, then the second's, then the parents' own inherited traits; never the baby's own, and never Hungry Grub.
+  - **Grades:** one step up wherever the better parent's grade beats the baby breed's, never past that parent.
+  - **Head start:** `min(old formula, 10% of the better parent's trained points)`. Sweets never pass on.
+  - **The "Meet" screen** names the inherited trait and the head start.
+- **Heartstones and the cocoon:**
+  - Heartstones pass on trained gains only, and the receiver's caps apply.
+  - The cocoon keeps sweets whole and keeps any grade steps a Pearl or Fusion had earned. Until now it wiped Pearls.
+- **The Lab:**
+  - each stat's slider runs to 1,500 and its number box to 9,999, and each row shows its cap;
+  - "Max all" fills to cap + sweets, and "Scale to total" stops at the caps;
+  - there's an inherited-trait picker.
+- **Card UI** (`MonsterSheet.tsx`, `StatsGuide.tsx`, `components.css`):
+  - six 44 px stat rows you can tap, colors per stat on `:root`, and a gold S pill;
+  - the empty bars are fixed (`.stats__fill` was an inline span with no `display`).
+- **Schema v14:**
+  - `inheritedTrait` (an unknown id becomes none) and grade S;
+  - stats up to 9,999, the sweets record clamped to its stat, wider bounds for best total and stamina.
+  - The migration only bumps the version, so saves, monster files and Libraries all upgrade.
+- **Tests:** 931 Vitest tests, up from 914.
+  - **Speed:** the battle trait helpers have a one-trait fast path, so battles run as fast as before (the 1,000-seed soak takes 37.6 s now vs 36.8 s before).
+  - **Time limit:** that soak got the same 120 s limit as the AI soaks, because the full parallel run pushes it past 60 s.
+  - **Golden records:** 30 battles and 6 lives, both hashed before the change. The sims' highest stat stays below 1,000, which proves the §26 targets didn't move.
+  - **S grade and caps:** the S gain rows, caps and sweets, the drill drop, clamps, the newborn cap, Heartstones, the cocoon, the walk-speed limit, and safe-integer damage at 9,999.
+  - **Traits:** two-trait helpers.
+  - **Fusion:** the inheritance order, grades and the 10% limit.
+  - **Saves:** the v13 → v14 migration, including a monster file.
+  - **Playwright:** the new `e2e/card.spec.ts` at 360 px checks the filled bars, the S pill, sweets past the cap, the inherited trait, the guide from a stat tap and the Journal Stats page.
+  - **Full Playwright run:** everything passes. Four older specs (bonds, cups, Turnip Sort, the Effects Lab) timed out mid-click while all four browsers ran at once on this busy PC; re-run with two workers, all 13 tests in those files passed.
+- **Docs:** GAME_DESIGN §4, §5.1–§5.2, §6.3, §8, §11, §12.3, §12.8, §14.3, §15, §16 and §19; CONTENT §6 and §11; BUILD_PLAN.
+
+**Decisions worth knowing**
+- **The owner's choices:** caps 100 apart (S 1,500 to E 1,000); babies inherit both a second trait and better grades; the head start is at most 10% of the parents' best trained stats; the light bar segment is Stat Sweets.
+- **S ceilings:** without its own drill and Journey ceilings S would do nothing at Prime, because A already hits the old ones.
+- **Two traits stack fully.** Fortified + Unshakable take 0.8 × 0.7 = 0.56 of the damage. That's a deliberate legacy reward, and ✏️ Edit can change it.
+- **Fusion feels flatter for strong parents:** the 10% limit almost always decides, so compatibility and rarity matter mostly for lightly trained parents.
+- **Shrine mixes can now roll S.** A main A plus a sub whose best stat is the same gives S, so the same phrase can make a stronger monster than before. Monsters already born keep what they have.
+- **Version mismatch:** a v14 save or share code can't be opened on a phone still running v1.10, so update both before moving saves.
+
+**Known issues**
+- Opponents still top out at 999 per stat, so a monster with several S stats past 1,000 will outclass most cups. That fits "power the player chose", but the late cups may want a look once real S monsters exist.
+- The Elder double Memorial entry from v1.10 is still open.
+
+**Next:** the owner's phone pass. Then the Blender monster work.
+
 ## Fusion 2: whole-breed babies and surprise recipes (2026-10-28) · v1.10.0
 
 **Live:** a Fusion baby at Dr. Pell's is now always one whole breed, never a mix. The board shows four rows:

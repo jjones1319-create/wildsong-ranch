@@ -24,10 +24,11 @@ export function formAdjusted(stats: Stats, form: number): { spd: number; def: nu
   return { spd: divRound(stats.SPD * (span - form), span), def: divRound(stats.DEF * (span + form), span) }
 }
 
-/** §12.3 walking speed per tick in centi-units: (70 + 50·SPD/999) units per second. */
+/** §12.3 walking speed per tick in centi-units: (70 + 50·SPD/999) units per second, SPD counted up to 1500 (v1.11). */
 export function walkPerTick(spd: number): number {
-  const unitsPerSecondX999 = BATTLE.walk.base * 999 + BATTLE.walk.perSpd * spd
-  return divRound(unitsPerSecondX999 * 100, 999 * BATTLE.ticksPerSecond)
+  const w = BATTLE.walk
+  const unitsPerSecondXScale = w.base * w.spdScale + w.perSpd * Math.min(spd, w.spdLimit)
+  return divRound(unitsPerSecondXScale * 100, w.spdScale * BATTLE.ticksPerSecond)
 }
 
 /** §12.1 bands from the gap in units: 1 Close … 4 Far, 5 out of range. */

@@ -11,6 +11,7 @@ import type { GameState, Heartstone, MemorialEntry } from '../../../core/state.t
 import { variantNameOf } from '../../../core/variants.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { ITEMS, ITEM_BY_ID } from '../../../data/items.ts'
+import { TRAIT_BY_ID } from '../../../data/traits.ts'
 import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
 import { fill } from '../../../data/text/format.ts'
 import { FAMILY_LABELS, STAT_NAMES } from '../../../data/text/labels.ts'
@@ -255,6 +256,8 @@ function FusionTab({ g }: { g: GameState }) {
     const baby = born.result.baby
     const [pair] = (born.result.outcome.key ?? '').split('>')
     const [a, b] = (pair ?? '').split('+') as [BreedId, BreedId]
+    const headStartTotal = STAT_KEYS.reduce((sum, k) => sum + born.result.headStart[k], 0)
+    const inheritedName = baby.inheritedTrait ? TRAIT_BY_ID[baby.inheritedTrait].name : null
     return (
       <>
         <h2 class="heading center">{fill(t.born, { name: baby.name })}</h2>
@@ -266,6 +269,8 @@ function FusionTab({ g }: { g: GameState }) {
           <p class="muted">
             {fill(t.compat, { m: born.result.compat })} · {t.comments[born.result.tier]}
           </p>
+          {headStartTotal > 0 && <p class="muted small">{fill(t.headStart, { n: headStartTotal })}</p>}
+          {inheritedName && <p class="muted small">{fill(t.inheritedTrait, { trait: inheritedName })}</p>}
           {born.result.newFind && <p class="notice">{fill(t.newRecipe, { a: BREED_BY_ID[a].name, b: BREED_BY_ID[b].name, breed: BREED_BY_ID[baby.mainBreed].name })}</p>}
           <p class="muted small">{fill(t.bornAt, { where: born.placed === 'ranch' ? t.bornRanch : t.bornFreezer })}</p>
         </SpeakerCard>

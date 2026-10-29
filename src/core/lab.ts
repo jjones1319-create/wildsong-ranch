@@ -1,9 +1,9 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { TECHNIQUES, TECHNIQUE_BY_ID } from '../data/techniques.ts'
-import { LAB, RANGES } from '../data/tuning.ts'
+import { LAB, RANGES, STAT_CAP_BY_GRADE } from '../data/tuning.ts'
 import { STAT_KEYS, type BreedId, type Grades, type Stats, type Technique } from '../data/types.ts'
 import { clamp } from './mathx.ts'
-import { createMonster, gradeFactor100, mixBreeds, zeroStats, type Likes, type Monster } from './monster.ts'
+import { createMonster, gradeFactor100, mixBreeds, sweetsOf, zeroStats, type Likes, type Monster } from './monster.ts'
 import type { Rng } from './rng.ts'
 import { canLearn } from './songbook.ts'
 
@@ -15,14 +15,20 @@ import { canLearn } from './songbook.ts'
 
 export const DEFAULT_LIKES: Likes = { food: 'honey-bread', dislikedFood: 'turnips', toy: 'rubber-ball', battle: 0, drill: 'target-toss', dislikedDrill: 'acorn-shower' }
 
+/** The most "Scale to total…" can reach: the sum of the six grade caps (§5.2, v1.11). */
+export function scaleMaxTotal(grades: Grades): number {
+  return STAT_KEYS.reduce((sum, k) => sum + STAT_CAP_BY_GRADE[grades[k]], 0)
+}
+
 /**
  * "Scale to total…": spreads `total` stat points across the six stats in proportion to the growth
  * grades (an A stat gets more than an E stat), with integer math, an exact total and every stat
- * inside 1–999. Any leftover point goes to the stats in LIF, POW, INT, SKI, SPD, DEF order.
+ * inside 1 and its grade's cap. Any leftover point goes to the stats in LIF, POW, INT, SKI, SPD, DEF order.
  */
 export function scaleToTotal(grades: Grades, total: number): Stats {
   const lo = RANGES.stat.min * STAT_KEYS.length
-  const hi = RANGES.stat.max * STAT_KEYS.length
+  const hi = scaleMaxTotal(grades)
+  const cap = (k: (typeof STAT_KEYS)[number]) => STAT_CAP_BY_GRADE[grades[k]]
   const target = clamp(Math.round(total), lo, hi)
   const weights = STAT_KEYS.map((k) => gradeFactor100(grades[k]))
   const weightSum = weights.reduce((a, b) => a + b, 0)
@@ -33,17 +39,17 @@ export function scaleToTotal(grades: Grades, total: number): Stats {
     assigned += out[k]
   })
   for (let i = 0, rem = target - assigned; rem > 0; i = (i + 1) % STAT_KEYS.length, rem--) out[STAT_KEYS[i]!] += 1
-  // Clamping to 1–999 can disturb the total; hand the difference to the stats that still have room.
+  // Clamping to 1–cap can disturb the total; hand the difference to the stats that still have room.
   for (let pass = 0; pass < 8; pass++) {
     let sum = 0
     for (const k of STAT_KEYS) {
-      out[k] = clamp(out[k], RANGES.stat.min, RANGES.stat.max)
+      out[k] = clamp(out[k], RANGES.stat.min, cap(k))
       sum += out[k]
     }
     const diff = target - sum
     if (diff === 0) break
     const step = diff > 0 ? 1 : -1
-    const movable = STAT_KEYS.filter((k) => (step > 0 ? out[k] < RANGES.stat.max : out[k] > RANGES.stat.min))
+    const movable = STAT_KEYS.filter((k) => (step > 0 ? out[k] < cap(k) : out[k] > RANGES.stat.min))
     if (movable.length === 0) break
     const each = Math.floor(Math.abs(diff) / movable.length)
     let rest = Math.abs(diff) - each * movable.length
@@ -60,9 +66,11 @@ export function breedBaseStats(m: Monster): Stats {
   return { ...mixBreeds(m.mainBreed, m.subBreed).base }
 }
 
-/** "Max all". */
-export function maxAllStats(): Stats {
-  return { LIF: RANGES.stat.max, POW: RANGES.stat.max, INT: RANGES.stat.max, SKI: RANGES.stat.max, SPD: RANGES.stat.max, DEF: RANGES.stat.max }
+/** "Max all": every stat at its grade's cap, plus the Stat Sweets it already has (v1.11). */
+export function maxAllStats(m: Pick<Monster, 'grades' | 'stats' | 'records'>): Stats {
+  const out = zeroStats()
+  for (const k of STAT_KEYS) out[k] = Math.min(RANGES.stat.max, STAT_CAP_BY_GRADE[m.grades[k]] + sweetsOf(m, k))
+  return out
 }
 
 /** "Randomize": every stat lands within ± LAB.randomizeSpreadPct of where it is now (seeded, so it is reproducible). */
@@ -180,6 +188,8 @@ export function isEditedChange(before: Monster, after: Monster): boolean {
 export function finishEdit(before: Monster, after: Monster): Monster {
   const m = structuredClone(after)
   if (before.flags.edited || isEditedChange(before, after)) m.flags.edited = true
+  // A stat edited below its Stat Sweets record takes the record down with it (the caps count the rest as trained).
+  for (const k of STAT_KEYS) m.records.fromSweets[k] = sweetsOf(m, k)
   return m
 }
 

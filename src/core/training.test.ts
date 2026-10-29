@@ -115,7 +115,7 @@ describe('truancy', () => {
 
 describe('gain tables (§6.3, no noise)', () => {
   it('light gain by grade and stage', () => {
-    const expected = { E: [3, 3, 4, 5, 6, 6, 5, 4, 3, 2], D: [4, 5, 6, 7, 8, 8, 7, 6, 4, 3], C: [4, 6, 8, 9, 10, 10, 8, 7, 6, 4], B: [6, 8, 10, 12, 13, 13, 11, 10, 7, 5], A: [7, 9, 12, 14, 15, 15, 13, 11, 9, 5] }
+    const expected = { E: [3, 3, 4, 5, 6, 6, 5, 4, 3, 2], D: [4, 5, 6, 7, 8, 8, 7, 6, 4, 3], C: [4, 6, 8, 9, 10, 10, 8, 7, 6, 4], B: [6, 8, 10, 12, 13, 13, 11, 10, 7, 5], A: [7, 9, 12, 14, 15, 15, 13, 11, 9, 5], S: [8, 11, 14, 16, 18, 17, 15, 13, 10, 6] }
     for (const g of GRADES) expect(Array.from({ length: 10 }, (_, i) => baseLightGain(g, i + 1))).toEqual(expected[g])
   })
 
@@ -123,11 +123,14 @@ describe('gain tables (§6.3, no noise)', () => {
     expect(Array.from({ length: 10 }, (_, i) => baseHeavyGain('E', i + 1))).toEqual([4, 6, 7, 8, 9, 9, 8, 7, 5, 3])
     expect(Array.from({ length: 10 }, (_, i) => baseHeavyGain('C', i + 1))).toEqual([7, 10, 12, 14, 16, 15, 14, 12, 9, 6])
     expect(Array.from({ length: 10 }, (_, i) => baseHeavyGain('A', i + 1))).toEqual([11, 15, 19, 20, 20, 20, 20, 18, 14, 9])
+    // v1.11: S has its own ceiling (24), so it still grows faster at Prime.
+    expect(Array.from({ length: 10 }, (_, i) => baseHeavyGain('S', i + 1))).toEqual([13, 17, 22, 24, 24, 24, 24, 21, 16, 10])
   })
 
   it('heavy secondary gain', () => {
     expect(Array.from({ length: 10 }, (_, i) => baseSecondaryGain('C', i + 1))).toEqual([3, 4, 5, 6, 7, 7, 6, 5, 4, 2])
     expect(Array.from({ length: 10 }, (_, i) => baseSecondaryGain('A', i + 1))).toEqual([5, 7, 8, 10, 10, 10, 9, 8, 6, 4])
+    expect(Array.from({ length: 10 }, (_, i) => baseSecondaryGain('S', i + 1))).toEqual([6, 8, 9, 11, 12, 12, 11, 9, 7, 4])
   })
 })
 

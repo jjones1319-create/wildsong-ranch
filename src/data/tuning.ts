@@ -4,7 +4,7 @@
  * Every value starts from docs/GAME_DESIGN.md (section numbers in the comments); balance changes happen here.
  * Fractions are stored as integers over a stated denominator so the core can stay in integer math.
  */
-import type { Difficulty, Grade, GrowthType, Season, TournamentGrade, Weather } from './types.ts'
+import type { Difficulty, Grade, GrowthType, Season, TournamentGrade, TraitId, Weather } from './types.ts'
 
 /** App-shell timings (milliseconds). */
 export const UI = {
@@ -60,7 +60,13 @@ export const SHOP = { quantities: [1, 5, 10] as readonly number[], maxPerPurchas
 export const ONBOARDING = { guidedWeeks: 4 } as const
 
 /** §5.2 grade factor gf, in hundredths. */
-export const GRADE_FACTOR_100: Record<Grade, number> = { E: 58, D: 79, C: 100, B: 132, A: 155 }
+export const GRADE_FACTOR_100: Record<Grade, number> = { E: 58, D: 79, C: 100, B: 132, A: 155, S: 180 }
+
+/**
+ * §5.2 (v1.11) each growth grade also caps its stat: training, Journeys, cup growth and Heartstones raise a stat's
+ * trained points (stat minus Stat Sweets) only up to here. Stat Sweets go past it. Every cap is above the old 999.
+ */
+export const STAT_CAP_BY_GRADE: Record<Grade, number> = { E: 1000, D: 1100, C: 1200, B: 1300, A: 1400, S: 1500 }
 
 /** §5.3 stage factor sf, in hundredths; index = stage − 1. */
 export const STAGE_FACTOR_100: readonly number[] = [45, 60, 75, 88, 100, 96, 85, 72, 55, 35]
@@ -83,7 +89,8 @@ export const STAGES = {
 } as const
 
 export const RANGES = {
-  stat: { min: 1, max: 999 },
+  /** The save-safety bound for a stat, Stat Sweets included; the training caps are STAT_CAP_BY_GRADE. */
+  stat: { min: 1, max: 9999 },
   condition: { min: 0, max: 100 },
   nature: { min: -100, max: 100 },
   form: { min: -100, max: 100 },
@@ -140,6 +147,10 @@ export const DRILL = {
     secondBase: 7,
     secondMin: 1,
     secondMax: 10,
+    /** v1.11: an S stat's higher ceilings (A already reaches the normal ones at Prime). */
+    lightMaxS: 18,
+    heavyMaxS: 24,
+    secondMaxS: 12,
     noise: { min: -1, max: 1 },
     cheatMainDivisor: 2,
     cheatSecond: { min: 0, max: 1 },
@@ -332,7 +343,7 @@ export const ITEMS = {
   tonicWeeks: 4,
   toyUses: 5,
   toy: { favoriteStress: -12, favoriteSpoil: 4, otherStress: -4 },
-  pearlMaxGrade: 'A' as Grade,
+  pearlMaxGrade: 'S' as Grade,
   tempoBellMin: RANGES.gutsRate.min,
 } as const
 
@@ -441,7 +452,7 @@ export const JOURNEY = {
   stressPerWeek: 7,
   thresholds: [10, 20, 30, 40] as readonly number[],
   score: { sitePerGrade: 3, lifPerGrade: 2, perStage: 4, fearDivisor: 5, fatigueDivisor: 5, roll: { min: 0, max: 29 } },
-  gains: { siteBase: 8, siteMin: 1, siteMax: 12, lifBase: 5, lifMin: 1, lifMax: 8 },
+  gains: { siteBase: 8, siteMin: 1, siteMax: 12, lifBase: 5, lifMin: 1, lifMax: 8, siteMaxS: 14, lifMaxS: 10 },
   technique: { basePct: 30, perPointsOver: 50, pctPerStep: 10, capPct: 90, elderMentorPct: 10 },
 } as const
 
@@ -488,7 +499,8 @@ export const BATTLE = {
   /** Gap at which each band ends: Close 0–159, Near 160–309, Mid 310–479, Far 480–679, out of range from 680. */
   bandEnds: [160, 310, 480, 680] as readonly number[],
   bandCentres: [90, 235, 395, 580] as readonly number[],
-  walk: { base: 70, perSpd: 50, backPct: 85 },
+  /** speed = base + perSpd·SPD/spdScale, with SPD counted up to spdLimit (the S cap, so sweets can't run away with it). */
+  walk: { base: 70, perSpd: 50, backPct: 85, spdScale: 999, spdLimit: 1500 },
   dash: { cost: 8, speedMul: 3, maxTicks: 18, cooldown: 60, minGap: 160 },
   push: { maxGap: 40, ticks: 15, distance: 250, cooldown: 90 },
   guts: { start: 50, cap: 99 },
@@ -701,6 +713,8 @@ export const NPC = {
   fame: { E: [5, 15], D: [10, 25], C: [20, 35], B: [30, 50], A: [45, 65], S: [60, 80], Crown: [75, 90], Legend: [100, 100] } as Record<string, readonly [number, number]>,
   /** Stat weight = weightBase/100 + gf. */
   weightBase: 90,
+  /** Generated opponents keep the old per-stat ceiling (v1.11 raised the players' caps, not theirs). */
+  statMax: 999,
   noisePct: 8,
   chainChancePct: 50,
   universalFrom: 'B' as const,
@@ -760,6 +774,10 @@ export const FUSION = {
   comment: { decent: 2, wonderful: 4, perfect: 6 },
   /** A stat shard catalyst adds this much to one stat (CONTENT §6). */
   shardStat: 40,
+  /** v1.11 (owner): the parents' head start is at most this % of the better parent's trained points in each stat. */
+  headStartMaxPct: 10,
+  /** Traits a Fusion baby never inherits (Hungry Grub's cocoon belongs to the Nibblegrub breed alone). */
+  notInherited: ['hungry-grub'] as readonly TraitId[],
 } as const
 
 /** §16 Heartstones and the Heirloom. */

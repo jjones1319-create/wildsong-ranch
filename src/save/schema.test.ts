@@ -33,7 +33,7 @@ describe('save validation (§20)', () => {
   it('clamps out-of-range values, fills missing fields and drops unknown ones', () => {
     const raw = JSON.parse(JSON.stringify(makeSave(createGameState({ monster: makeMonster() }), 1)))
     const m = raw.game.monster
-    m.stats.POW = 5000
+    m.stats.POW = 50_000
     m.stats.LIF = -3
     m.fatigue = 140
     m.stress = -20
@@ -52,7 +52,7 @@ describe('save validation (§20)', () => {
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const g = r.save.game
-    expect(g.monster!.stats.POW).toBe(999)
+    expect(g.monster!.stats.POW).toBe(9999)
     expect(g.monster!.stats.LIF).toBe(1)
     expect(g.monster!.fatigue).toBe(100)
     expect(g.monster!.stress).toBe(0)
@@ -358,5 +358,50 @@ describe('schema version 13 (Fusion 2)', () => {
     notList.game.fusionFinds = 'hearthwing'
     const r3 = validateSave(notList)
     expect(r3.ok && r3.save.game.fusionFinds).toEqual([])
+  })
+})
+
+describe('schema version 14 (Grades to S)', () => {
+  it('migrates a version-13 save and files: S grades, stats past 999, an inherited trait, sweets never above their stat', () => {
+    const m = makeMonster()
+    const game = structuredClone(createGameState({ monster: m })) as unknown as Record<string, unknown>
+    delete (game.monster as Record<string, unknown>).inheritedTrait
+    const v13 = { schemaVersion: 13, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.10.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v13))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.monster!.inheritedTrait).toBeNull()
+    expect(r.save.game).toEqual(createGameState({ monster: r.save.game.monster }))
+    // The new ranges survive; garbage is dropped or clamped, never fatal.
+    const fancy = JSON.parse(JSON.stringify(up)) as { game: { monster: Record<string, any>; freezer: unknown[]; memorial: unknown[]; records: Record<string, unknown> } }
+    fancy.game.monster.grades.POW = 'S'
+    fancy.game.monster.stats.POW = 1450
+    fancy.game.monster.stats.INT = 1700
+    fancy.game.monster.records.fromSweets.INT = 500
+    fancy.game.monster.records.fromSweets.DEF = 900 // more than the stat: clamped to it
+    fancy.game.monster.inheritedTrait = 'not-a-trait'
+    const frozen = structuredClone(fancy.game.monster)
+    frozen.id = 'frozen'
+    frozen.inheritedTrait = 'nimble'
+    fancy.game.freezer = [frozen]
+    fancy.game.memorial = [{ monster: { ...frozen, id: 'gone' }, cause: 'fused', epitaph: '', week: 3 }]
+    fancy.game.records.bestTotal = 7000
+    const r2 = validateSave(fancy)
+    expect(r2.ok).toBe(true)
+    if (!r2.ok) return
+    const g = r2.save.game
+    expect(g.monster!.grades.POW).toBe('S')
+    expect(g.monster!.stats.POW).toBe(1450)
+    expect(g.monster!.stats.INT).toBe(1700)
+    expect(g.monster!.records.fromSweets.INT).toBe(500)
+    expect(g.monster!.records.fromSweets.DEF).toBe(g.monster!.stats.DEF)
+    expect(g.monster!.inheritedTrait).toBeNull()
+    expect(g.freezer[0]!.inheritedTrait).toBe('nimble')
+    expect(g.memorial[0]!.monster.inheritedTrait).toBe('nimble')
+    expect(g.records.bestTotal).toBe(7000)
+    // A v13 monster file upgrades too (the step does not look at the file's kind).
+    expect((migrate({ schemaVersion: 13, kind: 'monster', monster: m }) as { schemaVersion: number }).schemaVersion).toBe(SAVE_VERSION)
   })
 })

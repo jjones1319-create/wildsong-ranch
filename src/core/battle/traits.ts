@@ -1,3 +1,4 @@
+import { divRound } from '../mathx.ts'
 import { BATTLE_TRAITS } from '../../data/tuning.ts'
 import type { Family, TechRange, TechType, TraitId } from '../../data/types.ts'
 
@@ -128,4 +129,39 @@ export function traitGutsOnHit(trait: TraitId): number {
 /** Nimble: +50 SPD when targeted. */
 export function traitNimble(trait: TraitId): boolean {
   return trait === 'nimble'
+}
+
+/* ---------- a fighter's traits (v1.11: the breed's own plus an inherited one) ---------- */
+
+type Traits = readonly TraitId[]
+
+/** Bonuses add up (from 0). One trait (the usual case) skips the loop: these run every tick. */
+export function traitsSum(traits: Traits, f: (t: TraitId) => number): number {
+  if (traits.length === 1) return f(traits[0]!)
+  let sum = 0
+  for (const t of traits) sum += f(t)
+  return sum
+}
+
+/** Multipliers in thousandths multiply (from ×1); one trait gives exactly its own value. */
+export function traitsMul(traits: Traits, f: (t: TraitId) => number): number {
+  if (traits.length === 1) return f(traits[0]!)
+  let acc = 1000
+  for (const t of traits) acc = divRound(acc * f(t), 1000)
+  return acc
+}
+
+/** A yes/no effect works if any trait has it. */
+export function traitsAny(traits: Traits, f: (t: TraitId) => boolean): boolean {
+  if (traits.length === 1) return f(traits[0]!)
+  return traits.some(f)
+}
+
+/** The first trait's answer that isn't null (Reflective). */
+export function traitsFirst<T>(traits: Traits, f: (t: TraitId) => T | null): T | null {
+  for (const t of traits) {
+    const v = f(t)
+    if (v !== null) return v
+  }
+  return null
 }

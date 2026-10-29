@@ -1,7 +1,8 @@
 import type { ComponentChildren } from 'preact'
+import { useState } from 'preact/hooks'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../core/aging.ts'
 import { findRelative } from '../../core/fusion.ts'
-import { isPure, loyaltyOf, stageOf, strainOf, styleBandOf, styleOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
+import { isPure, loyaltyOf, stageOf, statCap, strainOf, styleBandOf, styleOf, sweetsOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
 import { secretOf, variantNameOf } from '../../core/variants.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { DRILL_BY_ID } from '../../data/drills.ts'
@@ -11,18 +12,21 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
 import { FAMILY_LABELS, GROWTH_WORDS, RANGE_LABELS, STAGE_NAMES, STAT_NAMES, STYLE_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
-import { HEARTSTONE, RANGES } from '../../data/tuning.ts'
-import { STAT_KEYS, type TransparencyMode } from '../../data/types.ts'
+import { STATS_GUIDE } from '../../data/text/stats.ts'
+import { HEARTSTONE } from '../../data/tuning.ts'
+import { STAT_KEYS, type StatKey, type TransparencyMode } from '../../data/types.ts'
 import { TRAIT_BY_ID } from '../../data/traits.ts'
 import { LifeBar } from '../screens/lab/LabEditor.tsx'
 import { settings } from '../store/appStore.ts'
 import { game } from '../store/gameStore.ts'
-import { Badge } from './Controls.tsx'
+import { Badge, Sheet } from './Controls.tsx'
 import { MonsterPortrait } from './MonsterPortrait.tsx'
+import { StatsGuide } from './StatsGuide.tsx'
 
 /**
  * §21 Monster Card body, shared by the ranch (transparency-aware) and the Lab's view (always the Lens):
- * portrait, stats with grades and bars (plus "from sweets"), life bar, condition, techniques by range,
+ * portrait, stats with grades and bars (trained points to the grade's cap, Stat Sweets lighter on top, v1.11; a tap
+ * opens the stats guide), life bar, condition, techniques by range,
  * personality and records. The caller adds the buttons.
  */
 export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mode: TransparencyMode; editCount?: number; children?: ComponentChildren }) {
@@ -30,6 +34,8 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
   const c = UI_TEXT.card
   const stage = stageOf(m)
   const trait = TRAIT_BY_ID[traitOf(m)]
+  const inherited = m.inheritedTrait && m.inheritedTrait !== traitOf(m) ? TRAIT_BY_ID[m.inheritedTrait] : null
+  const [guide, setGuide] = useState<StatKey | 'all' | null>(null)
   const exact = mode === 'lens'
   const sweetsTotal = STAT_KEYS.reduce((s, k) => s + m.records.fromSweets[k], 0)
   const byRange = [1, 2, 3, 4].map((r) => ({ r, slots: m.techniques.filter((s) => TECHNIQUE_BY_ID[s.id]?.range === r) }))
@@ -58,23 +64,47 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
           {t.stats} · {UI_TEXT.lab.total} {totalStats(m.stats)}
         </p>
         <div class="stats">
-          {STAT_KEYS.map((k) => (
-            <>
-              <span key={`${k}-l`}>
-                {k} <span class="muted small">{STAT_NAMES[k]}</span> <span class="pill">{m.grades[k]}</span>
-              </span>
-              <span key={`${k}-b`} class="stats__bar">
-                <span class="stats__fill" style={{ width: `${(m.stats[k] / RANGES.stat.max) * 100}%` }} />
-              </span>
-              <span key={`${k}-n`} class="stats__num">
-                {m.stats[k]}
-                {m.records.fromSweets[k] > 0 && <span class="muted small"> (+{m.records.fromSweets[k]})</span>}
-              </span>
-            </>
-          ))}
+          {STAT_KEYS.map((k) => {
+            const cap = statCap(m, k)
+            const sweets = sweetsOf(m, k)
+            // The bar is the cap wide; past it (sweets, or trained points above a lowered cap) it stretches and marks the cap.
+            const scale = Math.max(cap, m.stats[k])
+            const pct = (n: number) => `${(n * 100) / scale}%`
+            return (
+              <button key={k} type="button" class="statrow" style={{ '--stat': `var(--stat-${k.toLowerCase()})` }} onClick={() => setGuide(k)} aria-label={`${STAT_NAMES[k]} ${m.stats[k]}, ${fill(c.capLine, { cap: cap.toLocaleString('en-US') })}`}>
+                <span class="statrow__head">
+                  <span class="statrow__name">
+                    {k} <span class="muted small">{STAT_NAMES[k]}</span>
+                  </span>
+                  <span class={`pill ${m.grades[k] === 'S' ? 'pill--s' : ''}`}>{m.grades[k]}</span>
+                  <span class="statrow__num">
+                    {m.stats[k]}
+                    {sweets > 0 && <span class="muted small"> (+{sweets})</span>}
+                    <span class="muted small"> · {fill(c.capLine, { cap: cap.toLocaleString('en-US') })}</span>
+                  </span>
+                </span>
+                <span class="stats__bar">
+                  <span class="stats__fill" style={{ width: pct(m.stats[k] - sweets) }} />
+                  {sweets > 0 && <span class="stats__sweets" style={{ width: pct(sweets) }} />}
+                  {scale > cap && <span class="stats__capmark" style={{ left: pct(cap) }} />}
+                </span>
+              </button>
+            )
+          })}
         </div>
         {sweetsTotal > 0 && <p class="muted small">{fill(c.sweetsTotal, { n: sweetsTotal })}</p>}
+        <button type="button" class="btn btn--small" onClick={() => setGuide('all')}>
+          ❓ {STATS_GUIDE.title}
+        </button>
       </section>
+      <Sheet open={guide !== null} title={STATS_GUIDE.title} onClose={() => setGuide(null)}>
+        <StatsGuide focus={guide === 'all' ? null : guide} />
+        <div class="sheet__actions">
+          <button type="button" class="btn btn--primary" onClick={() => setGuide(null)}>
+            {STATS_GUIDE.close}
+          </button>
+        </div>
+      </Sheet>
 
       <section class="card">
         <p class="field__label">
@@ -87,6 +117,14 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
           <dd>
             {trait.name} <span class="muted small">{trait.description}</span>
           </dd>
+          {inherited && (
+            <>
+              <dt>{t.inheritedTrait}</dt>
+              <dd>
+                {inherited.name} <span class="muted small">{inherited.description}</span>
+              </dd>
+            </>
+          )}
           <dt>{t.growth}</dt>
           <dd>{GROWTH_WORDS[m.growthType]}</dd>
           <dt>{t.age}</dt>

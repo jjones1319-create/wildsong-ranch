@@ -102,6 +102,8 @@ export const LEGACY_TEXT = {
     bornLine: 'The stones hummed, the lights dimmed, and out came {variant}, generation {gen}.',
     bornAt: '{where}.',
     newRecipe: 'A new recipe: {a} + {b} → {breed}! I’m writing that down.',
+    headStart: 'A head start from its parents: +{n} stat points.',
+    inheritedTrait: 'It inherited a second trait: {trait}.',
     bornRanch: 'Waiting on the ranch',
     bornFreezer: 'Tucked into the Freezer',
     done: 'Done',

@@ -140,8 +140,9 @@ Shrine / Market ─► NEW MONSTER
 | `generation` | int ≥ 1 | Fusion babies = max(parents) + 1 |
 | `parents` | [id, id] or [] | Lineage |
 | `seedPhrase` | string | Normalized phrase that created it (if any) |
-| `stats` | `{LIF, POW, INT, SKI, SPD, DEF}` 1–999 | Visible |
-| `grades` | `{…}` E–A each | Growth aptitude per stat |
+| `stats` | `{LIF, POW, INT, SKI, SPD, DEF}` 1–9,999 (training stops at each grade's cap, §5.2; Stat Sweets go past it) | Visible |
+| `grades` | `{…}` E–S each | Growth aptitude per stat; each grade also sets that stat's cap (§5.2) |
+| `inheritedTrait` | trait id or null | v1.11: a second trait inherited at Fusion (§15); works alongside the breed's own |
 | `growthType` | Early, Steady, Late, Evergreen | §5.3 |
 | `gutsRate` | 6–20 (ticks per +1 guts) | Lower is faster |
 | `lifespanTotal` | weeks | Shrinks with strain penalties, grows with fruits |
@@ -174,6 +175,8 @@ Shrine / Market ─► NEW MONSTER
 
 ### 5.1 What each stat does
 
+In the game, the **stats guide** explains this to the player. It opens from the Monster Card's "What do stats do?" button or a tap on any stat, and it is the Journal's Stats page. Its drill and Journey lines are read from the data.
+
 | Stat | Battle meaning | Other uses |
 |---|---|---|
 | LIF | Max HP | Expedition stamina |
@@ -185,7 +188,14 @@ Shrine / Market ─► NEW MONSTER
 
 ### 5.2 Growth grades → grade factor `gf` (tested)
 
-E 0.58 · D 0.79 · C 1.00 · B 1.32 · A 1.55
+E 0.58 · D 0.79 · C 1.00 · B 1.32 · A 1.55 · **S 1.80** (v1.11)
+
+**Stat caps (v1.11, owner):** E 1,000 · D 1,100 · C 1,200 · B 1,300 · A 1,400 · S 1,500.
+- **What the cap limits:** drills, Journeys, cup podium growth, Heartstones and the cocoon raise a stat's **trained points** (the stat minus its Stat Sweets points) only up to its grade's cap.
+- **Stat Sweets go past it.** The only limit left is the save bound of 9,999 per stat.
+- **Nothing above a cap is taken away.** After a grade drop (an edit, a breed change), those points stay; training just can't add more.
+- **Where S comes from:** no breed starts with S. It comes from the sub-breed's +1 step (§14.3), the Potential Pearl (§8), Fusion inheritance (§15) or the Lab.
+- **On the Monster Card**, each bar is that cap wide, in the stat's own colour. Trained points are solid and sweets are a lighter segment. When the total passes the cap, the bar stretches and a thin mark shows where the cap is.
 
 ### 5.3 Growth types and life stages (tested)
 
@@ -283,6 +293,8 @@ Fail:   no gains
 Breed bonus drill (CONTENT §2): +1 to the main gain from Fine up
 Active tonic for that stat: +3 to the main gain from Fine up
 Bond boost (§6.9): the whole main and secondary gain × 1.75 / 1.5 / 1.25 in the weeks after a Bond week, last
+S ceilings (v1.11): an S stat's light / heavy / secondary gains clamp at 18 / 24 / 12 instead of 15 / 20 / 10
+Every gain stops at the stat's grade cap (§5.2)
 ```
 
 **Light gain by grade and stage** (no noise; unit-test):
@@ -482,9 +494,9 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
   - The optional **One item per week** rule (Settings; on by default only in Classic difficulty).
 - **Categories:** Recovery, Mood, Form, **Stat Sweets** (permanent stat boosts), **Songsheets** (teach techniques, §10.5), **Potential items** (growth grade and guts rate), Tonics (4-week drill boosts that cost lifespan), Life Fruits (found only), Toys (favorite-toy bonus), Charms (passive), Fusion catalysts, Key items, Sellables.
 - **Stat Sweets** permanently add to one stat: regular +5, Grand +15, or a Wondercake for +5 to all six.
-  - Stats still cap at 999. Sweets cost no fatigue, stress or lifespan, and there are no diminishing returns.
+  - Sweets go past the growth-grade caps (§5.2). Only the save bound of 9,999 stops them, and a sweet that can't add anything is not eaten ("Already at the top"). Sweets cost no fatigue, stress or lifespan, and there are no diminishing returns.
   - The Monster Card shows how much of each stat came from sweets (e.g. "+120 from sweets"), so trained and bought stats are both visible.
-- **Potential items:** the Potential Pearl raises one stat's growth grade by one step (max A). The Tempo Bell makes guts regenerate faster (guts rate −1, minimum 6).
+- **Potential items:** the Potential Pearl raises one stat's growth grade by one step (max S), which also raises that stat's cap. The Tempo Bell makes guts regenerate faster (guts rate −1, minimum 6).
 - **Tonics:** different tonics can run at the same time. Using the same tonic again resets its 4 weeks and costs lifespan again.
 - **Use flow:** Bag → item → quantity (×1, ×5, ×10, Max) → confirm → a short, skippable eating or learning animation and the stat change.
 - **Charms** are passive and placed on the ranch. Within one category (Comfort, Bedding) only the best owned charm applies, so they don't stack.
@@ -592,7 +604,7 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 **Weekly success check (tested):**
 ```
 score = 3·gradeIndex(siteStat) + 2·gradeIndex(LIF) + 4·(stage − 1) + floor(fear/5) − floor(fatigue/5) + rnd(0..29)
-gradeIndex: E=1 … A=5. Week thresholds: 10, 20, 30, 40.  score ≥ threshold → success.
+gradeIndex: E=1 … A=5, S=6 (v1.11). Week thresholds: 10, 20, 30, 40.  score ≥ threshold → success.
 ```
 
 **Reference success %** (site C, LIF C, fear 30, starting fatigue 10; unit-test):
@@ -609,6 +621,7 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 **Each successful week:**
 - site stat + `clamp(round(8 · gf · sf) + rnd(−1..1), 1, 12)`
 - LIF + `clamp(round(5 · gf(LIF) · sf), 1, 8)`
+- An S stat clamps at 14 (site) and 10 (LIF) instead (v1.11), and every gain stops at the grade cap (§5.2).
 - one technique roll
 
 **Technique roll:**
@@ -650,7 +663,7 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 
 ### 12.3 Movement
 
-- **Walk speed:** `70 + 50 · SPD/999` units per second. Backing away is ×0.85.
+- **Walk speed:** `70 + 50 · SPD/999` units per second, with SPD counted up to 1,500 (the S cap, v1.11). Backing away is ×0.85.
 - **Dash:**
   - Costs 8 guts and is only allowed when the gap is 160 or more.
   - 3× speed toward the opponent for up to 18 ticks, or until the gap enters the next closer band.
@@ -742,7 +755,9 @@ Whenever the monster starts an action (AI decision or player tap), roll a distra
 
 ### 12.8 Breed traits
 
-Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Traits are never inherited from the sub-breed. M10 gave Gilded a battle side: it gains 7 guts each time it lands a hit (`BATTLE_TRAITS.gildedGutsOnHit`), besides its prize and chore bonuses.
+Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Traits are never inherited from the sub-breed. Since v1.11 a Fusion baby can also carry a second, **inherited trait** (§15).
+- **Both traits work.** Multipliers multiply (two −20% damage traits give ×0.64), bonuses add, and a yes/no effect works if either trait has it.
+- **One-trait monsters are unchanged.** A monster with one trait fights exactly as before; a pinned battle log checks it. M10 gave Gilded a battle side: it gains 7 guts each time it lands a hit (`BATTLE_TRAITS.gildedGutsOnHit`), besides its prize and chore bonuses.
 
 ### 12.9 Ending a match
 
@@ -1064,7 +1079,7 @@ So "Hello,  World!" equals "hello world".
 |---|---|
 | Body, kit, trait, growth type | Main breed |
 | Base stats | round(0.75·main + 0.25·sub) + shrine offsets |
-| Growth grades | Main's grades; then **+1 step** on the sub's best stat (cap A) and **−1 step** on the sub's worst stat (min E). Ties are broken in the order LIF, POW, INT, SKI, SPD, DEF |
+| Growth grades | Main's grades; then **+1 step** on the sub's best stat (up to S since v1.11) and **−1 step** on the sub's worst stat (min E). Ties are broken in the order LIF, POW, INT, SKI, SPD, DEF |
 | Guts rate | main + round((sub − main)/4), then the shrine offset |
 | Lifespan | §7 (60/40 blend, pure +10%) |
 | Palette | Sub's palette on the main body; the main's eyes and markings stay |
@@ -1121,12 +1136,22 @@ That gives 30 × 30 = 900 combinations, plus special variants. Mixes come from t
 offset_i  = max(0, (2·(P1_i − P1base_i) + (P2_i − P2base_i)) / 3)     (base = that parent's breed base at birth)
 P         = 0.20 + 0.09·M                                            (20%…74%)
 K (rarity of the chosen outcome) = ≤2% → 1.0 · ≤7% → 0.85 · ≤15% → 0.7 · ≤30% → 0.6 · ≤50% → 0.5 · >50% → 0.4
-baby_i    = babyBase_i + round(offset_i · P · K) + catalyst_i       → clamp 999
+head_i    = min(round(offset_i · P · K), floor(10% · max(P1 trained_i, P2 trained_i)))   (v1.11, owner)
+baby_i    = babyBase_i + head_i + catalyst_i                         → clamp to the grade cap
 ```
 With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the surprises (20% and 10%), and 0.85 for a Seal's 7% surprise. So a surprise carries more of the parents' gains. The ≤2% row can no longer happen; it stays for later rules.
 
 **Inheritance:**
-- Growth grades, guts rate, lifespan and trait always come from the baby's own breed (lineages raise starting stats, not growth).
+- **Trained points:** `offset` uses each parent's trained points (stat − Stat Sweets) less that parent's breed base. Bought points never pass on.
+- **The 10% limit decides for strong parents.** Well-trained parents almost always hit it, so compatibility (M) and rarity (K) matter mostly for lightly trained ones.
+- **Guts rate and lifespan** come from the baby's own breed.
+- **Growth grades (v1.11):** the baby's breed grades, then **+1 step** in any stat where the better parent's grade is higher, never past that parent's grade. Compatibility and Dr. Pell's preview use the breed grades.
+- **A second trait (v1.11):** the baby keeps its breed's trait and inherits the first of these that isn't its own:
+  1. the first parent's breed trait;
+  2. the second parent's breed trait;
+  3. the first parent's inherited trait;
+  4. the second parent's inherited trait.
+  Hungry Grub never passes on (its cocoon belongs to Nibblegrub). The born screen names the trait and the head start.
 - **Techniques:**
   - Same main breed as P1: inherit 2/3 of P1's learned non-Basic techniques (rounded down), with uses and levels.
   - Different main breed: up to one technique per family, taken from either parent's techniques that exist in the baby's breed kit.
@@ -1150,7 +1175,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 - **Heartstone:**
   - Created when a monster passes away or retires. At most 10 are stored (15 with the Lantern Garden).
   - It can be given to one monster aged under 48 weeks that has not received one.
-  - It grants +15% of the donor's trained gains (`stat − breedBase`) per stat, capped at +60 per stat.
+  - It grants +15% of the donor's trained gains (trained points − breed base; Stat Sweets don't count, v1.11) per stat, capped at +60 per stat and at the receiver's grade caps.
   - It also grants the **Heirloom**: +3 hit for techniques of the donor's most-used family.
 - **Hall of Fame:** Legend Cup winners, with portrait, lineage and date. Edited monsters show their badge.
 
@@ -1230,9 +1255,10 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 **Editor sections** (live SVG preview pinned at the top; every change re-renders):
 1. **Identity:** name, main, sub, variant (any; undiscovered ones ask for confirmation).
 2. **Stats:**
-   - Six sliders (1–999) with ±1 and ±10 steppers and a number field. The total is shown.
+   - Six sliders (1–1,500) with ±1 and ±10 steppers and a number field that goes to 9,999. The total is shown. Each row shows the grade and its cap.
+   - "Max all" sets every stat to its cap plus its sweets.
    - Buttons: Breed base · Max all · Scale to total… (distributes by growth grades) · Randomize (seeded).
-3. **Growth:** grades E–A per stat, growth type, guts rate (6–20), lifespan total and age in weeks, with a life-stage preview bar. "Reset to breed default" is available.
+3. **Growth:** grades E–S per stat, the inherited trait (none, or any trait but the breed's own), growth type, guts rate (6–20), lifespan total and age in weeks, with a life-stage preview bar. "Reset to breed default" is available.
 4. **Condition:** fatigue, stress, spoil, fear (loyalty and style shown live), nature, form, fame, injured/sick weeks.
 5. **Personality:** liked and disliked food, favorite toy, battle like, liked and disliked drill.
 6. **Techniques:**

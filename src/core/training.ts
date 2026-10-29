@@ -7,14 +7,15 @@ import {
   addCondition,
   addForm,
   addNature,
-  addStat,
+  addTrained,
   gradeFactor100,
+  hasTrait,
   isPrimeStage,
   loyaltyOf,
   stageFactor100,
   stageOf,
+  lowerStat,
   starsFor,
-  traitOf,
   type Monster,
 } from './monster.ts'
 import { isGoodOutcome, ROLLED_OUTCOMES, baseOutcome, type DrillOutcome, type RolledOutcome } from './outcomes.ts'
@@ -127,19 +128,20 @@ export function truancyChancePct(fatigue: number, loyalty: number): number {
   return ((fatigue - (DRILL.truancy.minFatigue - 1)) * DRILL.truancy.pctPerPointOver69 * (DRILL.truancy.loyaltyDivisor - loyalty)) / DRILL.truancy.loyaltyDivisor
 }
 
-function scaledGain(base: number, grade: Grade, stage: number, noise: number, min: number, max: number): number {
-  return clamp(divRound(base * gradeFactor100(grade) * stageFactor100(stage), 100 * 100) + noise, min, max)
+/** §6.3: an S stat has its own, higher ceiling (`maxS`); every other grade uses `max`. */
+function scaledGain(base: number, grade: Grade, stage: number, noise: number, min: number, max: number, maxS: number): number {
+  return clamp(divRound(base * gradeFactor100(grade) * stageFactor100(stage), 100 * 100) + noise, min, grade === 'S' ? maxS : max)
 }
 
 /** §6.3 table values (no noise). */
 export function baseLightGain(grade: Grade, stage: number): number {
-  return scaledGain(DRILL.gains.lightBase, grade, stage, 0, DRILL.gains.lightMin, DRILL.gains.lightMax)
+  return scaledGain(DRILL.gains.lightBase, grade, stage, 0, DRILL.gains.lightMin, DRILL.gains.lightMax, DRILL.gains.lightMaxS)
 }
 export function baseHeavyGain(grade: Grade, stage: number): number {
-  return scaledGain(DRILL.gains.heavyBase, grade, stage, 0, DRILL.gains.heavyMin, DRILL.gains.heavyMax)
+  return scaledGain(DRILL.gains.heavyBase, grade, stage, 0, DRILL.gains.heavyMin, DRILL.gains.heavyMax, DRILL.gains.heavyMaxS)
 }
 export function baseSecondaryGain(grade: Grade, stage: number): number {
-  return scaledGain(DRILL.gains.secondBase, grade, stage, 0, DRILL.gains.secondMin, DRILL.gains.secondMax)
+  return scaledGain(DRILL.gains.secondBase, grade, stage, 0, DRILL.gains.secondMin, DRILL.gains.secondMax, DRILL.gains.secondMaxS)
 }
 
 export interface DrillResult {
@@ -161,7 +163,6 @@ export interface DrillResult {
 export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting: TrainingSetting = DEFAULT_TRAINING): { monster: Monster; result: DrillResult } {
   const m = structuredClone(input)
   const drill = DRILL_BY_ID[drillId]
-  const trait = traitOf(m)
   const stage = stageOf(m)
   const stars = starsFor(m.stats[drill.main])
 
@@ -182,10 +183,9 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
   const gains: Partial<Stats> = {}
 
   if (outcome !== 'Fail') {
-    const mainMax = heavy ? g.heavyMax : g.lightMax
-    let main = scaledGain(heavy ? g.heavyBase : g.lightBase, m.grades[drill.main], stage, rng.nextInt(g.noise.min, g.noise.max), heavy ? g.heavyMin : g.lightMin, mainMax)
+    let main = scaledGain(heavy ? g.heavyBase : g.lightBase, m.grades[drill.main], stage, rng.nextInt(g.noise.min, g.noise.max), heavy ? g.heavyMin : g.lightMin, heavy ? g.heavyMax : g.lightMax, heavy ? g.heavyMaxS : g.lightMaxS)
     let second = 0
-    if (drill.secondary) second = scaledGain(g.secondBase, m.grades[drill.secondary], stage, rng.nextInt(g.noise.min, g.noise.max), g.secondMin, g.secondMax)
+    if (drill.secondary) second = scaledGain(g.secondBase, m.grades[drill.secondary], stage, rng.nextInt(g.noise.min, g.noise.max), g.secondMin, g.secondMax, g.secondMaxS)
     // The level's bonus comes after the caps, so a capped gain still gets all of it.
     if (level) {
       main += level.main
@@ -205,26 +205,19 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
       main = divRound(main * boost, 100)
       second = divRound(second * boost, 100)
     }
-    const before = m.stats[drill.main]
-    m.stats[drill.main] = addStat(before, main)
-    gains[drill.main] = m.stats[drill.main] - before
-    if (drill.secondary && second > 0) {
-      const b = m.stats[drill.secondary]
-      m.stats[drill.secondary] = addStat(b, second)
-      gains[drill.secondary] = m.stats[drill.secondary] - b
-    }
+    // §5.2 (v1.11): trained points stop at the stat's grade cap.
+    gains[drill.main] = addTrained(m, drill.main, main)
+    if (drill.secondary && second > 0) gains[drill.secondary] = addTrained(m, drill.secondary, second)
     if (drill.lowers) {
       const drop = outcome === 'Cheat' ? rng.nextInt(g.loweredOnCheat.min, g.loweredOnCheat.max) : rng.nextInt(g.loweredOnSuccess.min, g.loweredOnSuccess.max)
-      const b = m.stats[drill.lowers]
-      m.stats[drill.lowers] = addStat(b, -drop)
-      gains[drill.lowers] = m.stats[drill.lowers] - b
+      gains[drill.lowers] = lowerStat(m, drill.lowers, drop)
     }
   }
 
   let fatigue: number = costs.fatigue
   if (level) fatigue -= level.fatigueRelief
   if (outcome === 'Cheat') fatigue -= DRILL.cheatFatigueRelief
-  if (trait === 'clockwork') fatigue = divRound(fatigue * TRAIT_EFFECTS.clockworkDrillFatiguePct, 100)
+  if (hasTrait(m, 'clockwork')) fatigue = divRound(fatigue * TRAIT_EFFECTS.clockworkDrillFatiguePct, 100)
   const stress = costs.stress
   const form = costs.form
   m.fatigue = addCondition(m.fatigue, fatigue)
@@ -235,7 +228,7 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
   if (isGoodOutcome(outcome)) {
     pay = costs.pay
     if (level) pay = divRound(pay * (100 + level.payPct), 100)
-    if (trait === 'gilded') pay *= TRAIT_EFFECTS.gildedChorePayMul
+    if (hasTrait(m, 'gilded')) pay *= TRAIT_EFFECTS.gildedChorePayMul
   }
 
   return { monster: m, result: { drill: drillId, outcome, stars, gains, fatigue, stress, form, pay } }
@@ -250,7 +243,7 @@ export function applyReaction(input: Monster, outcome: DrillOutcome, reaction: R
   if (reaction === 'scold') {
     const r = table.scold
     let stress: number = m.nature < 0 ? r.stressBad : r.stress
-    if (traitOf(m) === 'cheerful') stress = divRound(stress * TRAIT_EFFECTS.cheerfulScoldStressPct, 100)
+    if (hasTrait(m, 'cheerful')) stress = divRound(stress * TRAIT_EFFECTS.cheerfulScoldStressPct, 100)
     m.fear = addCondition(m.fear, r.fear)
     m.stress = addCondition(m.stress, stress)
     m.spoil = addCondition(m.spoil, r.spoil)
@@ -284,7 +277,7 @@ export function restMonster(input: Monster, opts: RestOptions = { beddingBonus: 
   const m = structuredClone(input)
   const a = restAmounts(stageOf(m))
   let fatigue = a.fatigue + opts.beddingBonus
-  if (traitOf(m) === 'fluffy') fatigue += TRAIT_EFFECTS.fluffyRestBonus
+  if (hasTrait(m, 'fluffy')) fatigue += TRAIT_EFFECTS.fluffyRestBonus
   m.fatigue = addCondition(m.fatigue, -fatigue)
   m.stress = addCondition(m.stress, -a.stress)
   m.form = addForm(m.form, REST.form)

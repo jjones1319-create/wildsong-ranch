@@ -131,7 +131,8 @@ describe('the battle engine (§12)', () => {
     // eslint-disable-next-line no-console
     console.log(`1,000 battles in ${ms} ms (${(ms / 1000).toFixed(2)} ms each)`)
     expect(bothActed).toBeGreaterThan(990)
-  })
+    // About 37 s alone on the owner's PC; the whole suite runs in parallel workers, so it gets the same room as the AI soaks.
+  }, 120_000)
 
   it('replays a recorded player battle identically', () => {
     const m = makeMonster({ stats: { SKI: 300, POW: 300, LIF: 400 } })

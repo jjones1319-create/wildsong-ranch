@@ -5,7 +5,7 @@ import { divRound } from '../mathx.ts'
 import type { Rng } from '../rng.ts'
 import { currentBand, effectiveCost, gapUnits, previewDamage, previewHitTenths, speedPerTick } from './engine.ts'
 import { bandCentre, hpPctTenths } from './formulas.ts'
-import { traitFreeDash, traitImmovable } from './traits.ts'
+import { traitFreeDash, traitImmovable, traitsAny } from './traits.ts'
 import type { BattleEvent, BattleState, FighterState, TechniqueRef } from './types.ts'
 
 /**
@@ -188,7 +188,7 @@ function travelTicks(f: FighterState, opp: FighterState, sit: Situation, b: numb
   let diff = want - sit.gap
   if (Math.abs(diff) <= AI.deadZone) return 0
   if (diff < 0) return Math.min(AI.score.travelCapTicks, divRound(-diff * CENTI, Math.max(1, speedPerTick(f, false))))
-  const pushSoon = sit.touching && f.pushCooldown <= AI.stall.softTicks && !traitImmovable(opp.trait)
+  const pushSoon = sit.touching && f.pushCooldown <= AI.stall.softTicks && !traitsAny(opp.traits, traitImmovable)
   // Backing off needs room: the band is out of reach when even its near edge is past the wall behind me.
   const lo = b === 1 ? 0 : BATTLE.bandEnds[b - 2]!
   if (lo - sit.gap > sit.roomBehind && !pushSoon) return null
@@ -196,7 +196,7 @@ function travelTicks(f: FighterState, opp: FighterState, sit: Situation, b: numb
   let ticks = Math.min(AI.score.travelCapTicks, divRound(diff * CENTI, Math.max(1, speedPerTick(f, true))))
   // A chaser wants a closer band than this one (an AI), or has been walking in lately (a player on the pads).
   const chaser = opp.control === 'player' && !opp.auto ? sit.tick - opp.lastApproachTick <= AI.score.approachTicks : opp.prevTargetBand < b
-  if (chaser && !pushSoon && f.trait !== 'unshakable' && speedPerTick(f, true) <= speedPerTick(opp, false)) ticks += AI.score.unholdableTicks
+  if (chaser && !pushSoon && !f.traits.includes('unshakable') && speedPerTick(f, true) <= speedPerTick(opp, false)) ticks += AI.score.unholdableTicks
   return ticks
 }
 
@@ -216,7 +216,7 @@ function valueOf(state: BattleState, o: Option, f: FighterState, opp: FighterSta
     const low = f.hp * 100 <= f.maxHp * V.heal.hpPctMax
     const quiet = threatNow <= divRound(offenseMax * V.heal.threatPct, 100)
     if (low && quiet) v = t.effect.pct * 1000
-    if (f.trait === 'blessed' || f.trait === 'green-thumb') v = divRound(v * V.heal.traitPct, 100)
+    if (f.traits.some((t) => t === 'blessed' || t === 'green-thumb')) v = divRound(v * V.heal.traitPct, 100)
   }
   if (sit.tick - (f.aiTechUsed[t.id] ?? NEVER) > AI.score.windowTicks) v = divRound(v * V.varietyPct, 100)
   if (f.habit === 'spamsWither' && t.family === 'Wither') v = divRound(v * V.habitBias, 100)
@@ -385,7 +385,7 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
   for (const s of AI.clockMarks) if (tick === state.timerTicks - s * TPS) clockMark = true
   const event =
     f.hp < f.aiLastHp || opp.attacks !== f.aiLastOppAttacks || afford !== f.aiAfford || oppAfford !== f.aiOppAfford || (sit.touching && !f.aiLastTouching) || (sit.cornered && !f.aiLastCornered) || clockMark
-  if (f.trait === 'chill' && f.hits > f.aiLastHits) f.aiKiteUntil = tick + AI.situations.chillKiteTicks
+  if (f.traits.includes('chill') && f.hits > f.aiLastHits) f.aiKiteUntil = tick + AI.situations.chillKiteTicks
   f.aiLastHits = f.hits
   let safe = sit.aheadLate
   if (tick >= f.aiNextThink || event) {
@@ -417,7 +417,7 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
   let desired = f.aiSweet
   if (habit === 'walksClose') desired = sweetSpot(1, 0)
   if (opensFar) desired = sweetSpot(4, 0)
-  if (f.trait !== 'statue-pose') {
+  if (!f.traits.includes('statue-pose')) {
     if (tick >= f.aiFootsieNext) {
       f.aiFootsie = rng.nextInt(AI.footsie.amp.min, AI.footsie.amp.max) * (rng.chance(50) ? 1 : -1)
       f.aiFootsieNext = tick + rng.nextInt(AI.footsie.every.min, AI.footsie.every.max)
@@ -429,14 +429,14 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
   if (habit === 'backsAway' && opp.prevMoveDir === 1 && band <= 3) dir = -1
   if (habit === 'pushesWhenTouching' && band === 1 && sit.gap > AI.stall.touchGap && f.pushCooldown === 0) dir = 1
   // Statue Pose: it holds its ground whenever it has something to fire from here (two still seconds earn the trait).
-  if (f.trait === 'statue-pose' && inRange.length > 0) dir = 0
+  if (f.traits.includes('statue-pose') && inRange.length > 0) dir = 0
 
   // 2. Push: stuck together, the weaker Close fighter, or my back near the wall; anti-stall.
   let push = false
   let stallFire = false
   const canPush = sit.touching && f.pushCooldown === 0
-  const movable = !traitImmovable(opp.trait)
-  const wantsRoom = f.aiTargetBand >= 2 || f.aiWeakClose || (sit.cornered && f.trait !== 'unshakable')
+  const movable = !traitsAny(opp.traits, traitImmovable)
+  const wantsRoom = f.aiTargetBand >= 2 || f.aiWeakClose || (sit.cornered && !f.traits.includes('unshakable'))
   if (canPush && movable && wantsRoom) push = true
   if (habit === 'pushesWhenTouching' && canPush) push = true
   // Caught at Close with nothing to fire there (or cornered): step in to touch, then shove to make room.
@@ -456,7 +456,7 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
 
   // 3. Dash in with a reason (Battering Ram: freely).
   const goal = f.aiGoal ? TECHNIQUE_BY_ID[f.aiGoal] : undefined
-  const freeDash = traitFreeDash(f.trait)
+  const freeDash = traitsAny(f.traits, traitFreeDash)
   // Only dash when something can still be fired on arrival (the dash itself costs guts).
   let cheapestAtTarget = Infinity
   for (const ref of f.techniques) {

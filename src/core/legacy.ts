@@ -3,8 +3,8 @@ import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { CALENDAR, FREEZER, HEARTSTONE, RANGES } from '../data/tuning.ts'
 import { FAMILIES, STAT_KEYS, type Family, type JourneySiteId, type StatKey, type Stats } from '../data/types.ts'
 import { finishEdit } from './lab.ts'
-import { clamp, divRound } from './mathx.ts'
-import { mixBreeds, zeroStats, type Monster } from './monster.ts'
+import { divRound } from './mathx.ts'
+import { addTrained, mixBreeds, trainedOf, zeroStats, type Monster } from './monster.ts'
 import type { GameState, Heartstone, MemorialCause } from './state.ts'
 import { variantNameOf } from './variants.ts'
 
@@ -167,11 +167,11 @@ export function mostUsedFamily(m: Monster): Family {
   return best
 }
 
-/** Trained gains: stat − the breed base at birth, never below 0. */
+/** Trained gains: trained points (the stat without Stat Sweets) − the breed base at birth, never below 0. */
 export function trainedGains(m: Monster): Stats {
   const base = mixBreeds(m.mainBreed, m.subBreed).base
   const out = zeroStats()
-  for (const k of STAT_KEYS) out[k] = Math.max(0, m.stats[k] - base[k])
+  for (const k of STAT_KEYS) out[k] = Math.max(0, trainedOf(m, k) - base[k])
   return out
 }
 
@@ -216,8 +216,9 @@ export function giveHeartstone(input: GameState, stoneId: string, targetId?: str
   if (!can.ok) return { state: input, refused: can.reason, grant: null }
   const state = structuredClone(input)
   const found = targetId ? (findStored(state, targetId)?.monster ?? state.monster!) : state.monster!
+  // Heartstone points are trained points: they stop at each stat's grade cap (v1.11). The grant is what landed.
   const grant = heartstoneGrant(stone)
-  for (const k of STAT_KEYS) found.stats[k] = clamp(found.stats[k] + grant[k], RANGES.stat.min, RANGES.stat.max)
+  for (const k of STAT_KEYS) grant[k] = addTrained(found, k, grant[k])
   found.status.heartstoneReceived = true
   found.heirloom = stone.family
   state.heartstones = state.heartstones.filter((h) => h.id !== stoneId)

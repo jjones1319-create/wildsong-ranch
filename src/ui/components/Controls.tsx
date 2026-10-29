@@ -123,15 +123,19 @@ export function Stepper({ value, min, max, onChange, big = 10, label }: { value:
   )
 }
 
-/** A labelled slider with a stepper under it (the six stats, the condition values). */
-export function SliderRow({ label, value, min, max, onChange, big = 10, extra }: { label: string; value: number; min: number; max: number; onChange: (v: number) => void; big?: number; extra?: ComponentChildren }) {
+/**
+ * A labelled slider with a stepper under it (the six stats, the condition values). `sliderMax` lets the slider
+ * cover the useful range while the stepper's number box still reaches `max` (stats: slider to 1,500, box to 9,999).
+ */
+export function SliderRow({ label, value, min, max, sliderMax, onChange, big = 10, extra }: { label: string; value: number; min: number; max: number; sliderMax?: number; onChange: (v: number) => void; big?: number; extra?: ComponentChildren }) {
+  const top = Math.min(max, sliderMax ?? max)
   return (
     <div class="slider-row">
       <div class="slider-row__head">
         <span class="slider-row__label">{label}</span>
         {extra}
       </div>
-      <input class="range" type="range" min={min} max={max} value={value} aria-label={label} onInput={(e) => onChange(clampInt(Number((e.currentTarget as HTMLInputElement).value), min, max))} />
+      <input class="range" type="range" min={min} max={top} value={Math.min(value, top)} aria-label={label} onInput={(e) => onChange(clampInt(Number((e.currentTarget as HTMLInputElement).value), min, top))} />
       <Stepper value={value} min={min} max={max} onChange={onChange} big={big} label={label} />
     </div>
   )

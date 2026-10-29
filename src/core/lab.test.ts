@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LAB, RANGES, SONGBOOK } from '../data/tuning.ts'
+import { LAB, RANGES, SONGBOOK, STAT_CAP_BY_GRADE } from '../data/tuning.ts'
 import { STAT_KEYS, type Grades } from '../data/types.ts'
 import {
   addableTechniques,
@@ -45,7 +45,10 @@ describe('scaleToTotal (§19 Stats)', () => {
     expect(s.INT).toBeGreaterThan(s.POW)
     expect(s.INT).toBe(s.SKI)
     expect(totalStats(scaleToTotal(grades('C', 'C', 'C', 'C', 'C', 'C'), -50))).toBe(6)
-    expect(totalStats(scaleToTotal(grades('C', 'C', 'C', 'C', 'C', 'C'), 99_999))).toBe(5994)
+    // v1.11: each stat stops at its grade's cap (C 1,200 × 6), and better grades reach higher.
+    expect(totalStats(scaleToTotal(grades('C', 'C', 'C', 'C', 'C', 'C'), 99_999))).toBe(7200)
+    expect(totalStats(scaleToTotal(grades('S', 'S', 'S', 'S', 'S', 'S'), 99_999))).toBe(9000)
+    expect(scaleToTotal(grades('A', 'E', 'C', 'C', 'C', 'C'), 99_999)).toEqual({ LIF: 1400, POW: 1000, INT: 1200, SKI: 1200, SPD: 1200, DEF: 1200 })
   })
 })
 
@@ -53,7 +56,11 @@ describe('stat buttons', () => {
   it('breed base, max all and a seeded randomize', () => {
     const m = makeMonster({ main: 'cobblemaw', sub: 'wishlume' })
     expect(breedBaseStats(m)).toEqual(mixBreeds('cobblemaw', 'wishlume').base)
-    expect(Object.values(maxAllStats()).every((v) => v === RANGES.stat.max)).toBe(true)
+    // v1.11: "Max all" fills each stat to its grade's cap, keeping the Stat Sweets on top.
+    m.records.fromSweets.POW = 40
+    m.stats.POW = 200
+    const max = maxAllStats(m)
+    for (const k of STAT_KEYS) expect(max[k]).toBe(STAT_CAP_BY_GRADE[m.grades[k]] + (k === 'POW' ? 40 : 0))
     const a = randomizeStats(m.stats, createRng(5))
     const b = randomizeStats(m.stats, createRng(5))
     expect(a).toEqual(b)

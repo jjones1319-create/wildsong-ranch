@@ -1,14 +1,14 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { TECHNIQUE_BY_ID, techniquesOfBreed } from '../data/techniques.ts'
 import { RANGES, SONGBOOK, UNLOCKS } from '../data/tuning.ts'
-import { STAT_KEYS, TOURNAMENT_GRADES, type BreedId, type TournamentGrade, type UnlockChain } from '../data/types.ts'
+import { STAT_KEYS, TOURNAMENT_GRADES, type BreedId, type StatKey, type TournamentGrade, type UnlockChain } from '../data/types.ts'
 import { availability } from './aging.ts'
 import { dateOf } from './calendar.ts'
 import { placeNewMonster, type Placed } from './creation.ts'
 import { addItems, countOf } from './items.ts'
 import { trainedGains } from './legacy.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, createMonster, loyaltyOf, mixBreeds, rollLikes, type Monster, type TechniqueSlot } from './monster.ts'
+import { addCondition, createMonster, gradeIndex, loyaltyOf, mixBreeds, rollLikes, stepGrade, sweetsOf, type Monster, type TechniqueSlot } from './monster.ts'
 import { createRng } from './rng.ts'
 import type { GameState } from './state.ts'
 
@@ -119,16 +119,24 @@ export function startCocoon(input: GameState): GameState {
 
 /**
  * The metamorphosis: a new main breed with the same sub-breed, 80 % of the trained gains kept on top of the
- * new base, the new breed's grades, growth, guts rate and trait, +60 weeks of life, techniques carried over
- * where the new kit has the same family (same range when it can), otherwise the new starters.
+ * new base (Stat Sweets are kept whole), the new breed's grades plus any steps the old grades had earned above
+ * the old breed's (Pearls, inheritance), its growth, guts rate and trait, +60 weeks of life, techniques carried
+ * over where the new kit has the same family (same range when it can), otherwise the new starters.
  */
 export function metamorphose(input: Monster, into: BreedId): Monster {
   const m = structuredClone(input)
   const gains = trainedGains(m)
+  const oldGrades = mixBreeds(m.mainBreed, m.subBreed).grades
   const mix = mixBreeds(into, m.subBreed)
-  for (const k of STAT_KEYS) m.stats[k] = clamp(mix.base[k] + divRound(gains[k] * UNLOCKS.cocoon.keepGainsPct, 100), RANGES.stat.min, RANGES.stat.max)
+  for (const k of STAT_KEYS) {
+    const kept = mix.base[k] + divRound(gains[k] * UNLOCKS.cocoon.keepGainsPct, 100) + sweetsOf(m, k)
+    m.stats[k] = clamp(kept, RANGES.stat.min, RANGES.stat.max)
+  }
+  const earned = (k: StatKey) => Math.max(0, gradeIndex(m.grades[k]) - gradeIndex(oldGrades[k]))
+  const grades = { ...mix.grades }
+  for (const k of STAT_KEYS) grades[k] = stepGrade(mix.grades[k], earned(k))
   m.mainBreed = into
-  m.grades = mix.grades
+  m.grades = grades
   m.growthType = BREED_BY_ID[into].growth
   m.gutsRate = mix.gutsRate
   m.lifespanTotal = clamp(m.lifespanTotal + UNLOCKS.cocoon.lifespanBonus, RANGES.lifespan.min, RANGES.lifespan.max)
