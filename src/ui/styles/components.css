@@ -251,6 +251,47 @@
   height: 100%;
 }
 
+/* Art 2.0: a live 3D monster in the same box; the Classic drawing sits underneath until the model is ready. */
+.portrait--3d {
+  position: relative;
+}
+.portrait--3d .portrait__fallback {
+  position: absolute;
+  inset: 0;
+  transition: opacity 220ms ease;
+}
+.portrait--3d-ready .portrait__fallback {
+  opacity: 0;
+  pointer-events: none;
+}
+.portrait--3d .art3d-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.portrait--img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Monster Lab → Models */
+.modelslab__stage {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  touch-action: pan-y;
+  cursor: grab;
+  background: radial-gradient(ellipse at 50% 85%, rgb(255 255 255 / 0.08), transparent 60%);
+  border-radius: 16px;
+}
+.modelslab__stats {
+  text-align: center;
+  min-height: 1.2em;
+}
+
 /* Bottom sheet */
 .sheet-backdrop {
   position: fixed;

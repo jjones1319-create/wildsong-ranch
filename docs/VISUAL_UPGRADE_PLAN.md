@@ -11,7 +11,7 @@ Status: **decided** (Oct 24, 2026). The owner's decisions are in §0. Each miles
 | Cutaway length | Up to **5 seconds**, cinematic, with camera moves; always skippable; must be genuinely good, not padded. |
 | Outcome variants | **Four** per drill: Success / Great / Cheat / Fail. |
 | Order | **V1 Effects engine → V3 Monster animation 2.0 → V2 Visible attacks → V4 Cinematic drills → V5 World polish.** |
-| 3D pilot | **Skipped** for now. Make the 2D game as good as it can be first; revisit later if we want. |
+| 3D pilot | ~~Skipped for now.~~ **Done as Art 2.0 P1 (Oct 29, 2026):** Puddlepup is a Blender-built 3D model drawn live by three.js with a cel shader; every breed follows in P3–P9. See `docs/ART_2_PLAN.md`, which supersedes V3, V4 and V5 here. |
 | Painted backgrounds | **Yes.** The owner generates background layers in ChatGPT from prompts Claude writes (from V4 onward). Everything else stays code-drawn. |
 | Monster concept reference | **Yes.** For V3, the owner generates 2–3 concept images per breed in ChatGPT from the prompts in `docs/CONCEPT_PROMPTS.md`, saved under `concept/<breed-id>/`. Claude Code uses them as a mood board while rebuilding each rig. They are reference only: never shipped, traced or imported, and kept out of the public repo. |
 

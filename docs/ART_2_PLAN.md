@@ -233,7 +233,7 @@ Tests and `check:build` enforce these where they can.
 | Deform bones | ≤ 64 |
 | Face sheet | made in Blender, inside the `.glb`, ≤ 512×512 |
 | One effect flipbook | ≤ 250 KB WebP |
-| The art3d chunk (three, the loader, the decoder, our code) | ≤ 200 KB gzipped, lazy |
+| The art3d chunk (three, the loader, the decoder, our code) | ≤ 300 KB gzipped, lazy (a one-time download budget, not a performance one; raised from 200 with the owner on Oct 29, 2026, as P1 landed at ~230) |
 | One plate | ≤ 300 KB WebP |
 | One loop | ≤ 1 MB H.264 |
 | A scene's `props.glb` | ≤ 300 KB |

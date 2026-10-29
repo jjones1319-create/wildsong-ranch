@@ -46,7 +46,7 @@ export function ShopTrip({ m, find, money, owned, onDone }: { m: Monster; find: 
           <span class="shop__stall shop__stall--c" />
         </div>
         <div class="shop__mon">
-          <MonsterPortrait monster={m} size={110} expression="happy" animate={false} />
+          <MonsterPortrait monster={m} size={110} expression="happy" animate={false} live clip="walk" />
           {phase !== 'stroll' && k && <Emote kind="surprise" name={m.name} />}
         </div>
         {phase !== 'stroll' && k && <div class="shop__item" dangerouslySetInnerHTML={{ __html: keepsakeSvg(k.id, k.name) }} />}

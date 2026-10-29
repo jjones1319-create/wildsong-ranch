@@ -255,7 +255,7 @@ export function LabEditorScreen() {
         }
       />
       <div class="preview">
-        <MonsterPortrait monster={m} size={120} expression={previewExpression} stage={previewStageNum} />
+        <MonsterPortrait monster={m} size={120} expression={previewExpression} stage={previewStageNum} live />
         <div class="preview__info">
           <span class="preview__name">{m.name || BREED_BY_ID[m.mainBreed].name}</span>
           <span class="muted small">

@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { audioReady, testSound } from '../../audio/player.ts'
 import { canSwitchDifficulty } from '../../core/game.ts'
 import { fill } from '../../data/text/format.ts'
-import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, FX_INTENSITY_LABELS, FX_QUALITY_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
+import { AUTO_STYLE_LABELS, DIFFICULTY_LABELS, FX_INTENSITY_LABELS, FX_QUALITY_LABELS, MONSTER_MODE_LABELS, SPEED_LABELS, TRANSPARENCY_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { TEXT_SIZES, UI } from '../../data/tuning.ts'
-import { AUTO_STYLES, FX_INTENSITIES, FX_QUALITY_SETTINGS, LISTENING_SETTINGS, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
+import { AUTO_STYLES, FX_INTENSITIES, FX_QUALITY_SETTINGS, LISTENING_SETTINGS, MONSTER_MODES, SPEEDS, TRANSPARENCY_MODES, type Difficulty } from '../../data/types.ts'
 import { readImport } from '../../save/exportImport.ts'
 import type { AnyValidation, AppSettings } from '../../save/schema.ts'
 import { Confirm, Segmented, Sheet, Toggle, TopBar } from '../components/Controls.tsx'
@@ -17,6 +17,7 @@ import { isStandalone } from '../lib/platform.ts'
 import { goBack, navigate } from '../router.ts'
 import { librarySource, persisted, settings, showToast, updateSettings } from '../store/appStore.ts'
 import { currentTier, reduceMotionNow, setFxIntensity, setFxQuality } from '../store/fxStore.ts'
+import { art3dUnavailable } from '../store/artStore.ts'
 import { BONDS_TEXT } from '../../data/text/bonds.ts'
 import { game, loadImportedSave, previewArrival, sandboxAddMoney, saveSource, setDifficulty, setOnePerWeek, setVacation } from '../store/gameStore.ts'
 import { applyUpdate, checkForUpdate, lastCheck, needRefresh } from '../store/updateStore.ts'
@@ -122,6 +123,11 @@ export function SettingsScreen() {
 
       <section class="card">
         <p class="field__label">{t.sections.graphics}</p>
+        <p class="field__label small">{t.monsters}</p>
+        <Segmented options={MONSTER_MODES.map((m) => ({ value: m, label: MONSTER_MODE_LABELS[m].name }))} value={s.monsters} onChange={(v) => void updateSettings({ monsters: v })} label={t.monsters} />
+        <p class="field__hint">
+          {art3dUnavailable.value && s.monsters === '3d' ? t.monstersNoWebgl : MONSTER_MODE_LABELS[s.monsters].blurb} {t.monstersLabLink}
+        </p>
         <p class="field__label small">{t.fxQuality}</p>
         <Segmented options={FX_QUALITY_SETTINGS.map((q) => ({ value: q, label: FX_QUALITY_LABELS[q].name }))} value={s.fxQuality} onChange={setFxQuality} label={t.fxQuality} />
         <p class="field__hint">

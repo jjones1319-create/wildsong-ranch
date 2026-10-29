@@ -58,4 +58,29 @@ for (const f of files) {
 }
 if (engineBytes > ENGINE_LIMIT) fail(`the audio engine chunk is ${(engineBytes / 1024).toFixed(1)} KB gzipped, over ${ENGINE_LIMIT / 1024} KB`)
 if (songBytes > SONGS_LIMIT) fail(`the song chunks are ${(songBytes / 1024).toFixed(1)} KB gzipped, over ${SONGS_LIMIT / 1024} KB`)
+
+// 3. Art 2.0 (ART_2_PLAN §3.6, §3.7): the 3D runtime is one lazy chunk ≤ 300 KB gzipped (a download budget, raised
+// from 200 with the owner on 2026-10-29), the models stay out of the precache (they download on first use), the
+// breed portraits are precached, and the main entry never pulls the 3D chunk in statically.
+const ART3D_LIMIT = 300 * 1024
+const art3d = files.filter((f) => /^art3d-/.test(f))
+if (art3d.length === 0) fail('no art3d chunk in dist/assets (check vite.config.ts manualChunks)')
+const art3dBytes = art3d.reduce((s, f) => s + gz(f), 0)
+console.log(`art3d: ${(art3dBytes / 1024).toFixed(1)} KB gzipped (limit ${ART3D_LIMIT / 1024}) in ${art3d.join(', ')}`)
+if (art3dBytes > ART3D_LIMIT) fail(`the art3d chunk is ${(art3dBytes / 1024).toFixed(1)} KB gzipped, over ${ART3D_LIMIT / 1024} KB`)
+const precachedModels = [...precached].filter((u) => u.startsWith('models/'))
+if (precachedModels.length) fail(`models are precached (they must download on first use): ${precachedModels.slice(0, 3).join(', ')}`)
+const portraitDir = join('public', 'portraits')
+if (existsSync(portraitDir)) {
+  for (const f of readdirSync(portraitDir).filter((f) => f.endsWith('.webp'))) if (!precached.has(`portraits/${f}`)) fail(`portraits/${f} is not precached`)
+}
+const indexJs = files.filter((f) => /^index-/.test(f))
+for (const f of indexJs) {
+  const text = readFileSync(join(assets, f), 'utf8')
+  for (const chunk of art3d) if (text.includes(`"./${chunk}"`) || text.includes(`'./${chunk}'`)) {
+    // a static import of the art3d chunk from the entry would load three on every start
+    const isStatic = new RegExp(`import\\s*\\{[^}]*\\}\\s*from\\s*["']\\./${chunk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["']`).test(text)
+    if (isStatic) fail(`${f} imports the art3d chunk statically; the 3D runtime must stay lazy`)
+  }
+}
 console.log('check:build OK')

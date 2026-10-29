@@ -51,7 +51,7 @@ npm run audio:check                    # offline renders of every piece, gated (
 npm run audio:review                   # listening files and a report in audio-review/
 ```
 
-Built with Vite, TypeScript, Preact and @preact/signals; procedural SVG art; original music written in ABC notation and played live from CC0 instrument samples by our own Web Audio sequencer (see `CREDITS.md`); an installable, offline-capable web app on GitHub Pages. The core rules are pure, deterministic TypeScript with a seeded RNG, and every tuning number lives in `src/data/tuning.ts`.
+Built with Vite, TypeScript, Preact and @preact/signals; monsters built in Blender and drawn live by three.js with our own cel shader (Art 2.0, breed by breed), with procedural SVG art as the Classic look and fallback; original music written in ABC notation and played live from CC0 instrument samples by our own Web Audio sequencer (see `CREDITS.md`); an installable, offline-capable web app on GitHub Pages. The core rules are pure, deterministic TypeScript with a seeded RNG, and every tuning number lives in `src/data/tuning.ts`.
 
 The project docs are in `docs/`: the game design, the content tables, the build plan, the balance report and the research notes. `CLAUDE.md` holds the standing instructions for the AI coding assistant that builds it.
 

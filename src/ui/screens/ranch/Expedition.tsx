@@ -96,7 +96,7 @@ export function ExpeditionScreen() {
       <main class="screen">
         <TopBar title={fill(t.screen.summaryTitle, { site: site.name })} onBack={() => navigate('ranch')} />
         <div class="farewell__art">
-          <MonsterPortrait monster={m} size={160} expression={e.ended === 'exhausted' ? 'sleepy' : 'happy'} />
+          <MonsterPortrait monster={m} size={160} expression={e.ended === 'exhausted' ? 'sleepy' : 'happy'} live clip={e.ended === 'exhausted' ? 'sleep' : 'idle_happy'} />
         </div>
         <SpeakerCard speaker={t.tomas} tone="muted">
           <p>{tomasLine(lastLine, m.name)}</p>

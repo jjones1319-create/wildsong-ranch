@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type MutableRef } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
 import { sceneBackground } from '../../art/backgrounds.ts'
+import { lookFor } from '../../art/models.ts'
 import type { Expression } from '../../art/monster/expressions.ts'
-import type { Monster } from '../../core/monster.ts'
+import type { Arena3DLayer } from '../../art3d/arena3d.ts'
+import { stageOf, type Monster } from '../../core/monster.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { BATTLE, BATTLE_CAMERA } from '../../data/tuning.ts'
@@ -13,7 +15,8 @@ import { recipeFor } from '../../fx/recipes.ts'
 import { MonsterPortrait } from '../components/MonsterPortrait.tsx'
 import { settings } from '../store/appStore.ts'
 import type { FloatEffect } from '../store/battleStore.ts'
-import { currentBudget, currentProfile, fxStats, fxUnavailable, makeAutoSampler } from '../store/fxStore.ts'
+import { art3dUnavailable, lightPreset } from '../store/artStore.ts'
+import { currentBudget, currentProfile, currentTier, fxStats, fxUnavailable, makeAutoSampler, reduceMotionNow } from '../store/fxStore.ts'
 import { lite } from '../store/perf.ts'
 import { frameCamera, spriteScale, stepCamera, type Camera } from './camera.ts'
 
@@ -79,7 +82,14 @@ function Wall({ side }: { side: -1 | 1 }) {
  * (the world and the floats layers both read them) and handing the same numbers to the effects layer. No Preact
  * render happens per frame.
  */
-function useArenaCamera(arenaRef: MutableRef<HTMLElement | null>, posRef: MutableRef<[number, number]>, layerRef: MutableRef<FxLayer | null>, live: boolean): void {
+function useArenaCamera(
+  arenaRef: MutableRef<HTMLElement | null>,
+  posRef: MutableRef<[number, number]>,
+  layerRef: MutableRef<FxLayer | null>,
+  live: boolean,
+  layer3dRef: MutableRef<Arena3DLayer | null>,
+  fightersRef: MutableRef<[ArenaFighter, ArenaFighter]>,
+): void {
   useEffect(() => {
     if (!live || typeof requestAnimationFrame !== 'function') return
     let raf = 0
@@ -104,6 +114,13 @@ function useArenaCamera(arenaRef: MutableRef<HTMLElement | null>, posRef: Mutabl
         arena.style.setProperty('--cam-px', cam.pxPerUnit.toFixed(4))
         arena.style.setProperty('--cam-s', spriteScale(cam).toFixed(4))
         layerRef.current?.setCamera({ centre: cam.centre, pxPerUnit: cam.pxPerUnit, width, height, floorPx: FLOOR_PX })
+        layer3dRef.current?.setCamera({ centre: cam.centre, pxPerUnit: cam.pxPerUnit, width, height, floorPx: FLOOR_PX })
+      }
+      // The 3D monsters share this frame: positions and flags in, then one render.
+      const l3 = layer3dRef.current
+      if (l3) {
+        l3.update(fightersRef.current, dt)
+        l3.frame(time)
       }
       raf = requestAnimationFrame(tick)
     }
@@ -134,7 +151,61 @@ export function Arena(p: ArenaProps) {
   const fxIntensity = settings.value.fxIntensity
   const reduceMotion = settings.value.reduceMotion
 
-  useArenaCamera(arenaRef, posRef, layerRef, live)
+  // Art 2.0: fighters whose breed has a model are drawn by the 3D layer; the others stay Classic in the world layer.
+  const host3dRef = useRef<HTMLDivElement>(null)
+  const layer3dRef = useRef<Arena3DLayer | null>(null)
+  const fightersRef = useRef<[ArenaFighter, ArenaFighter]>(p.fighters)
+  fightersRef.current = p.fighters
+  const [ready3d, setReady3d] = useState<[boolean, boolean]>([false, false])
+  const has3d = p.fighters.map((f) => !!lookFor(f.monster.mainBreed, f.monster.variantId, stageOf(f.monster)))
+  const use3d = settings.value.monsters === '3d' && !art3dUnavailable.value && !reduceMotionNow() && has3d.some(Boolean)
+
+  useArenaCamera(arenaRef, posRef, layerRef, live, layer3dRef, fightersRef)
+
+  useEffect(() => {
+    const host = host3dRef.current
+    if (!use3d || !host || typeof window === 'undefined') return
+    let alive = true
+    let layer: Arena3DLayer | null = null
+    void import('../../art3d/art3d.ts').then(({ Stage3D, Arena3DLayer: Layer }) => {
+      if (!alive) return
+      const h = Stage3D.get().mount(host, {
+        quality: lite.value ? 'lite' : currentTier(),
+        manualClock: p.manualClock,
+        seed: 3,
+        onReady: (id) => {
+          if (alive) setReady3d((r) => (id === 'a' ? [true, r[1]] : [r[0], true]))
+        },
+        onLost: () => {
+          if (alive) setReady3d([false, false])
+        },
+        onRestored: () => {
+          if (alive) setReady3d([true, true])
+        },
+        onEvicted: () => {
+          if (alive) setReady3d([false, false])
+        },
+      })
+      if (!h) return
+      layer = new Layer(h)
+      layer3dRef.current = layer
+      h.setLight(lightPreset(p.season, p.weather))
+      const arena = arenaRef.current
+      if (arena) layer.setCamera({ centre: Number(arena.style.getPropertyValue('--cam-x')) || 0, pxPerUnit: Number(arena.style.getPropertyValue('--cam-px')) || 0.4865, width: arena.clientWidth, height: arena.clientHeight, floorPx: FLOOR_PX })
+      layer.update(fightersRef.current, 0)
+      if (!live) h.start()
+    })
+    return () => {
+      alive = false
+      layer3dRef.current = null
+      layer?.release()
+      setReady3d([false, false])
+    }
+  }, [use3d, live])
+
+  useEffect(() => {
+    layer3dRef.current?.handle.setLight(lightPreset(p.season, p.weather))
+  }, [p.season, p.weather])
 
   // The effects layer: created once per mount, destroyed on unmount. Loads the fx chunk lazily.
   useEffect(() => {
@@ -160,7 +231,10 @@ export function Arena(p: ArenaProps) {
             const s = stageRef.current
             if (s) s.style.transform = dx === 0 && dy === 0 ? '' : `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`
           },
-          hitstop: (on) => setHitstop(on),
+          hitstop: (on) => {
+            setHitstop(on)
+            layer3dRef.current?.setHitstop(on)
+          },
           impactFrame: (on, color) => setImpact(on ? color : null),
         },
       })
@@ -196,6 +270,7 @@ export function Arena(p: ArenaProps) {
   useEffect(() => {
     if (!live) return
     return subscribeFx((ev) => {
+      layer3dRef.current?.onEvent(ev)
       const layer = layerRef.current
       if (!layer) return
       layer.fireAll(recipeFor(ev, currentProfile()))
@@ -204,9 +279,11 @@ export function Arena(p: ArenaProps) {
 
   useEffect(() => {
     layerRef.current?.setTimeScale(p.speed ?? 1)
+    layer3dRef.current?.setTimeScale(p.speed ?? 1)
   }, [p.speed])
   useEffect(() => {
     layerRef.current?.setPaused(p.paused ?? false)
+    layer3dRef.current?.setPaused(p.paused ?? false)
   }, [p.paused])
   useEffect(() => {
     const layer = layerRef.current
@@ -233,13 +310,14 @@ export function Arena(p: ArenaProps) {
                   {t.thinking[f.plan].icon}
                 </span>
               )}
-              <div class="fighter__art">
+              <div class={`fighter__art ${use3d && has3d[i] && ready3d[i] ? 'fighter__art--3d' : ''}`}>
                 <MonsterPortrait monster={f.monster} size={BATTLE_CAMERA.basePx} mirror={i === 1} expression={f.expression} />
-                {f.hit && <span class="fighter__flash" aria-hidden="true" />}
+                {f.hit && !(use3d && has3d[i] && ready3d[i]) && <span class="fighter__flash" aria-hidden="true" />}
               </div>
             </div>
           ))}
         </div>
+        <div ref={host3dRef} class="arena__3d" aria-hidden="true" />
         <div ref={fxHostRef} class="arena__fx" aria-hidden="true" />
         <div class="arena__floats" aria-hidden="true">
           {floats.map((e, k) => (

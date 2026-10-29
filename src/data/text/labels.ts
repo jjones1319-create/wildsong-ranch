@@ -99,6 +99,12 @@ export const FX_INTENSITY_LABELS = {
   flashy: { name: 'Flashy', blurb: 'Big hits stop the world for a blink, shake the arena and flash.' },
 } as const
 
+/** Art 2.0: Settings → Graphics → Monsters. */
+export const MONSTER_MODE_LABELS = {
+  '3d': { name: '3D', blurb: 'The new living monsters, built in Blender. A breed that isn’t rebuilt yet still shows its Classic drawing.' },
+  classic: { name: 'Classic', blurb: 'The hand-drawn look everywhere. Lightest on the battery.' },
+} as const
+
 export const ELEMENT_LABELS = {
   Fire: 'Fire',
   Water: 'Water',

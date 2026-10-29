@@ -1,0 +1,808 @@
+{
+ "look": "puddlepup",
+ "plan": "quadruped",
+ "version": 1,
+ "heightUnits": 150,
+ "restHeight": 1.0028,
+ "bounds": {
+  "min": [
+   -0.4942,
+   -0.6826,
+   -0.0017
+  ],
+  "max": [
+   0.4948,
+   0.7538,
+   1.0028
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips"
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "spine",
+  "socket_mouth": "jaw",
+  "socket_paw_L": "foot.FL",
+  "socket_paw_R": "foot.FR",
+  "socket_tail": "tail.3"
+ },
+ "springs": [
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.L.1",
+    "ear.L.2"
+   ]
+  },
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.R.1",
+    "ear.R.2"
+   ]
+  },
+  {
+   "kind": "tail",
+   "chain": [
+    "tail.1",
+    "tail.2",
+    "tail.3"
+   ]
+  }
+ ],
+ "face": {
+  "sheet": 512,
+  "cells": {
+   "white": {
+    "open": [
+     0,
+     0,
+     128,
+     80
+    ],
+    "wide": [
+     128,
+     0,
+     128,
+     80
+    ],
+    "arc": [
+     256,
+     0,
+     128,
+     80
+    ],
+    "closed": [
+     384,
+     0,
+     128,
+     80
+    ],
+    "blink": [
+     0,
+     80,
+     128,
+     80
+    ],
+    "strain": [
+     128,
+     80,
+     128,
+     80
+    ],
+    "dizzy": [
+     256,
+     80,
+     128,
+     80
+    ],
+    "pupil": [
+     384,
+     80,
+     128,
+     80
+    ]
+   },
+   "lid": {
+    "none": [
+     0,
+     160,
+     128,
+     80
+    ],
+    "tired": [
+     128,
+     160,
+     128,
+     80
+    ],
+    "sad": [
+     256,
+     160,
+     128,
+     80
+    ],
+    "angry": [
+     384,
+     160,
+     128,
+     80
+    ],
+    "sick": [
+     0,
+     240,
+     128,
+     80
+    ],
+    "stressed": [
+     128,
+     240,
+     128,
+     80
+    ],
+    "half": [
+     256,
+     240,
+     128,
+     80
+    ],
+    "happy": [
+     384,
+     240,
+     128,
+     80
+    ]
+   },
+   "mouth": {
+    "smile": [
+     0,
+     320,
+     128,
+     48
+    ],
+    "grin": [
+     128,
+     320,
+     128,
+     48
+    ],
+    "flat": [
+     256,
+     320,
+     128,
+     48
+    ],
+    "worried": [
+     384,
+     320,
+     128,
+     48
+    ],
+    "frown": [
+     0,
+     368,
+     128,
+     48
+    ],
+    "angry": [
+     128,
+     368,
+     128,
+     48
+    ],
+    "small_o": [
+     256,
+     368,
+     128,
+     48
+    ],
+    "wobble": [
+     384,
+     368,
+     128,
+     48
+    ],
+    "grit": [
+     0,
+     416,
+     128,
+     48
+    ],
+    "wavy": [
+     128,
+     416,
+     128,
+     48
+    ],
+    "big_o": [
+     256,
+     416,
+     128,
+     48
+    ],
+    "spare": [
+     384,
+     416,
+     128,
+     48
+    ]
+   },
+   "small": {
+    "sparkle": [
+     0,
+     464,
+     48,
+     48
+    ],
+    "sweat": [
+     48,
+     464,
+     48,
+     48
+    ]
+   }
+  },
+  "expressions": {
+   "neutral": {
+    "white": "open",
+    "lid": "none",
+    "mouth": "smile",
+    "pupil": true,
+    "pupilScale": 1
+   },
+   "happy": {
+    "white": "arc",
+    "lid": "happy",
+    "mouth": "grin",
+    "pupil": false,
+    "pupilScale": 1
+   },
+   "tired": {
+    "white": "open",
+    "lid": "tired",
+    "mouth": "flat",
+    "pupil": true,
+    "pupilScale": 1
+   },
+   "stressed": {
+    "white": "open",
+    "lid": "stressed",
+    "mouth": "worried",
+    "pupil": true,
+    "pupilScale": 0.8
+   },
+   "sad": {
+    "white": "open",
+    "lid": "sad",
+    "mouth": "frown",
+    "pupil": true,
+    "pupilScale": 1
+   },
+   "angry": {
+    "white": "open",
+    "lid": "angry",
+    "mouth": "angry",
+    "pupil": true,
+    "pupilScale": 0.9
+   },
+   "sleepy": {
+    "white": "closed",
+    "lid": "none",
+    "mouth": "small_o",
+    "pupil": false,
+    "pupilScale": 1
+   },
+   "sick": {
+    "white": "open",
+    "lid": "sick",
+    "mouth": "wobble",
+    "pupil": true,
+    "pupilScale": 0.9
+   },
+   "strain": {
+    "white": "strain",
+    "lid": "none",
+    "mouth": "grit",
+    "pupil": false,
+    "pupilScale": 1
+   },
+   "dizzy": {
+    "white": "dizzy",
+    "lid": "none",
+    "mouth": "wavy",
+    "pupil": false,
+    "pupilScale": 1
+   },
+   "surprised": {
+    "white": "wide",
+    "lid": "none",
+    "mouth": "big_o",
+    "pupil": true,
+    "pupilScale": 0.7
+   }
+  },
+  "layers": [
+   "white.L",
+   "pupil.L",
+   "lid.L",
+   "white.R",
+   "pupil.R",
+   "lid.R",
+   "mouth"
+  ],
+  "eyeColor": "#24323A"
+ },
+ "variants": {
+  "songheart-puddlepup": {
+   "texture": "puddlepup_songheart-puddlepup",
+   "eyeColor": "#24323A"
+  }
+ },
+ "palette": {
+  "body": "#3FB6A8",
+  "belly": "#F3E6C4",
+  "accent": "#F28FA8",
+  "eye": "#24323A"
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.2667,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    },
+    {
+     "name": "step",
+     "t": 0.7667
+    }
+   ],
+   "faces": []
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.8533,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": []
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2667,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": []
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2167,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": []
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.2,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": []
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  }
+ },
+ "budget": {
+  "bytes": 596460,
+  "triangles": 8705,
+  "vertices": 6058,
+  "joints": 26,
+  "textures": [
+   {
+    "name": "puddlepup_songheart-puddlepup",
+    "mime": "image/webp",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 104656
+   },
+   {
+    "name": "puddlepup_base",
+    "mime": "image/webp",
+    "width": 1024,
+    "height": 1024,
+    "bytes": 96874
+   },
+   {
+    "name": "puddlepup_face",
+    "mime": "image/webp",
+    "width": 512,
+    "height": 512,
+    "bytes": 25868
+   }
+  ],
+  "animationBytes": 163220
+ }
+}

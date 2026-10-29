@@ -2,6 +2,33 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Art P1: Puddlepup pilot (2026-10-29) · v1.13.0
+
+**Live:**
+- **Puddlepup is a real 3D monster.** Blender builds it from numbers (`tools/blender/monsters/breeds/puddlepup.py`): a round, chunky puppy-amphibian with a big head, floppy fin ears with pink membranes and rib stripes, webbed paws with pink pads, a flat paddle tail, a cream belly and muzzle, darker-teal dapples on its back and a soft blush. Its face is anime-style: big glossy white eyes with a dark iris, a pupil and two highlights, drawn from a Blender-made face sheet, with blinks every few seconds and pupils that glance toward your taps.
+- **Every face reads at a glance:** neutral, happy (arc eyes, blush, open grin), tired (heavy lids), stressed (raised brow, wobble), sad (outer lids down, frown), angry (inner lids down, teeth), sleepy (closed), sick (half lids, squiggle), strain (>< eyes, gritted teeth), dizzy (spirals) and surprised (wide eyes, round mouth).
+- **27 moves** built in Blender for the quadruped rig: the ranch idles (plain, happy, tired, sad, sick), sleep, eat, pet, look around, hop, celebrate; walk and run (feet planted, no sliding); sit down, sit, dizzy; battle idle, step forward and back, dash, strike, cast, shove, hit, heavy hit, knockout and win. Ears and tail swing on springs after the body.
+- **Where you see it:** live on the ranch (it looks around and hops now and then), the Monster Card, the Lab editor, the Shrine's result, Pell's Meet, the Farewell, the week summary, drill results, expeditions, Echo Stones and the Bond games; as a picture in every list and picker; and in battles (Versus, cups, the Effects Lab), where it steps, dashes, strikes, casts, shoves, flinches, topples and celebrates by the fight's flags. A Classic opponent stays its drawing.
+- **Songheart Puddlepup** (the `wildsong` secret) has its own texture set: rainbow fin ribs on the ears and tail.
+- **Monster Lab → Models:** any breed (the ones without a model show their Classic drawing and say so), variant, life stage, face and move; drag to turn it or let it turn on its own; an fps counter with triangle and draw counts.
+- **Settings → Graphics → Monsters: 3D / Classic.** 3D is the default; the Classic drawings show without WebGL, while a model loads, with Reduce motion (as a still), and for every breed not rebuilt yet.
+
+**Done**
+- **Pipeline** (`tools/blender/lib/`, `monsters/plans/quadruped.py`, `monsters/breeds/puddlepup.py`, `monsters/build.py`): primitives merged by voxel remesh into one smooth body (8,200 tris), smart UVs, a 26-bone rig with automatic weights, sockets, a face sheet rendered from filled 2D curves (whites, lids, pupil masks, mouths), textures painted procedurally in object space and baked with Cycles (1024², plus the variant set), clips authored as keys in world-aligned axes and pushed to NLA tracks, glTF export with WebP textures, review sheets (turnaround, faces, textures, variant, clip strips). `tools/art/optimize.ts` dedups, prunes, resamples, quantises and meshopt-compresses into `public/models/monsters/puddlepup.glb` (583 KB; the budget is 700) and writes the sidecar `.json` (clip metadata, markers, face cues, sockets, springs, face cells, variants, budget report).
+- **Runtime** (`src/art3d/`): one shared `WebGLRenderer` (`Stage3D`) that hosts mount and release, with eviction (newest wins), context-loss fallback, visibility pause, a 30 fps cap on Lite, and off-screen portrait rendering; the `Actor` (toon + outline + face materials, the mixer with cross-fades, markers and face cues, blink/glance/drift clocks, ear and tail springs, stage sizes, the old fade and sick tint); the arena camera (a long lens at a fixed distance, fov per frame) that reproduces the arena's pixel mapping exactly on the floor plane; the battle clip map; the arena layer. The chunk is lazy (`import('../art3d/art3d.ts')`, 176 KB gzipped; `check:build` enforces ≤ 300 KB and that the entry never imports it statically).
+- **Game:** `MonsterPortrait` gained `live`, `clip`, `light`, `idleActs`; the cached pictures live in IndexedDB under `wildsong/portrait/…` (`src/save/portraitCache.ts`); the `monsters` setting (per-field fallback, no save bump); `#lab/models` with `window.__art3d` for the scripts; `npm run art:monster`, `art:optimize`, `art:review` (in-game sheets in `art-review/`, gitignored), `art:portraits` (precached base pictures in `public/portraits/`).
+- **Tests:** `models`, `faceCells`, `springs`, `arenaCamera` (feet on the floor line across every phone size and zoom), `battleClips`, `manifest` (the shipped files against the budgets and the clip contract), `portraitCache`; e2e `models.spec.ts` (live on the ranch, card and Lab with one canvas; WebGL off; model missing; the setting; context lost and restored).
+- **Docs:** CLAUDE.md, README, CREDITS, GAME_DESIGN §22, VISUAL_UPGRADE_PLAN §0, BUILD_PLAN (P1), CONCEPT_PROMPTS (the new style text), ART_2_PLAN §3.6 (chunk budget 300 KB), `.gitignore`, `.gitattributes`.
+
+**What it should look like (for the phone check):** a soft teal pup with a big head and pink fin ears; the shading splits into a lit side and a cooler shadow side with a thin darker outline; the eyes are large and glossy and follow your taps; on the ranch it breathes, looks around and hops; in a battle its ears flap back on a dash and it flinches on a hit.
+
+**Known issues**
+- The arena's 3D fighter always paints over a Classic opponent at Close range (P11 rebuilds the arena with both in 3D).
+- The textures are painted with soft noise edges; up close on a big phone the dapples look a little blurry. P3 can raise the base texture's detail if the owner wants.
+- Headless Chrome renders the sheets through SwiftShader: the phone's GPU looks slightly cleaner.
+
+**Next:** the owner's phone notes on Puddlepup, then P2 (Waterfall Stand with Puddlepup).
+
 ## Art P0: one breed per monster (2026-10-28) · v1.12.0
 
 **Live:**

@@ -42,7 +42,7 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
   return (
     <>
       <div class="preview">
-        <MonsterPortrait monster={m} size={140} />
+        <MonsterPortrait monster={m} size={140} live />
         <div class="preview__info">
           <span class="preview__name">{m.name}</span>
           <span class="muted small">{variantNameOf(m)}</span>

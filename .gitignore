@@ -33,3 +33,7 @@ audio-review
 
 # Blender scratch frames and contact sheets (tools/blender/ranch_scenes.py); the encoded clips live in public/baked/scenes/
 tools/blender/out/
+
+# Art 2.0 (docs/ART_2_PLAN.md): the owner's concept pictures (reference only, never shipped) and the in-game review sheets
+concept/
+art-review/

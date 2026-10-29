@@ -6,7 +6,7 @@ import { AUDIO, BOND, FREEZER, FUSION, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOO
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
-import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, KEEPSAKE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, TRAIT_IDS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting } from '../data/types.ts'
+import { AUTO_STYLES, BREED_IDS, DIFFICULTIES, DRILL_IDS, EXPEDITION_SITE_IDS, FAMILIES, FOOD_IDS, GRADES, GROWTH_TYPES, HABITS, JOURNEY_SITE_IDS, KEEPSAKE_IDS, MAIL_KINDS, PERSONALITIES, SPEEDS, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, TRANSPARENCY_MODES, UNLOCK_CHAINS, WEATHERS, type AutoStyle, type Speed, type TransparencyMode, type UnlockChain, FX_INTENSITIES, FX_QUALITY_SETTINGS, FX_TIERS, TRAIT_IDS, type FxIntensity, type FxQualitySetting, type FxTier, LISTENING_SETTINGS, type ListeningSetting, MONSTER_MODES, type MonsterMode } from '../data/types.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
@@ -596,6 +596,7 @@ const SETTINGS_DEFAULTS = {
   fxQuality: 'auto' as FxQualitySetting,
   fxIntensity: 'standard' as FxIntensity,
   fxAutoTier: null as FxTier | null,
+  monsters: '3d' as MonsterMode,
 }
 
 /** App settings that live outside any save slot. Never fails validation: garbage becomes the defaults. */
@@ -633,6 +634,7 @@ export const SettingsSchema = v.fallback(
     fxQuality: oneOf(FX_QUALITY_SETTINGS, 'auto'),
     fxIntensity: oneOf(FX_INTENSITIES, 'standard'),
     fxAutoTier: v.fallback(v.nullable(v.picklist(FX_TIERS)), null),
+    monsters: oneOf(MONSTER_MODES, '3d'),
   }),
   SETTINGS_DEFAULTS,
 )
@@ -715,6 +717,8 @@ export interface AppSettings {
   fxQuality: FxQualitySetting
   fxIntensity: FxIntensity
   fxAutoTier: FxTier | null
+  /** Art 2.0: live 3D monsters where a breed has a model, or the Classic drawings everywhere. */
+  monsters: MonsterMode
   /** When "Later" was tapped on the install-help card (0 = never). */
   installHelpDismissedAt: number
   /** §20 backup reminders: the last export (real time and in-game week) and the last snooze. */

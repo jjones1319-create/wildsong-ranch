@@ -99,7 +99,7 @@ export function Fetch({ m, onDone }: { m: Monster; onDone: (score: number) => vo
       <div class="fetch">
         {ball !== null && <span class={`fetch__ball fetch__ball--${run}`} style={{ bottom: `${30 + ball * 0.55}%` }} aria-hidden="true" />}
         <div class={`fetch__mon fetch__mon--${run}`} style={run !== 'idle' && ball !== null ? { '--fetch-y': `${-ball * 2.2}px` } : undefined}>
-          <MonsterPortrait monster={m} size={110} expression="happy" animate={false} />
+          <MonsterPortrait monster={m} size={110} expression="happy" animate={false} live clip="run" />
         </div>
       </div>
       <div class="fetch__bar" aria-hidden="true">

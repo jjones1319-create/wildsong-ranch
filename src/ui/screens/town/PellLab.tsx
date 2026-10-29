@@ -262,7 +262,7 @@ function FusionTab({ g }: { g: GameState }) {
       <>
         <h2 class="heading center">{fill(t.born, { name: baby.name })}</h2>
         <div class="farewell__art">
-          <MonsterPortrait monster={baby} size={200} expression="happy" />
+          <MonsterPortrait monster={baby} size={200} expression="happy" live clip="idle_happy" />
         </div>
         <SpeakerCard speaker={UI_TEXT.pell}>
           <p>{fill(t.bornLine, { variant: variantNameOf(baby), gen: baby.generation })}</p>

@@ -7,6 +7,7 @@ import { BOND } from '../../../data/tuning.ts'
 import { ArrivalScene } from './ArrivalScene.tsx'
 import { BondGame } from './bond/BondGame.tsx'
 import { dateOf, seasonOf } from '../../../core/calendar.ts'
+import { lightPreset } from '../../store/artStore.ts'
 import { emoteFor } from '../../../core/emotes.ts'
 import { PLANNER_MAX } from '../../../core/planner.ts'
 import { sitesOpenAt } from '../../../core/expedition.ts'
@@ -116,7 +117,7 @@ export function RanchScreen() {
           </div>
         )}
         <div class="stage__art">
-          <MonsterPortrait monster={m} size={200} />
+          <MonsterPortrait monster={m} size={200} live idleActs light={lightPreset(seasonName, weather)} />
           <Emote key={emote ?? 'none'} kind={emote} name={m.name} />
         </div>
         {(m.status.bondPct > 100 || g.settings.vacation) && (

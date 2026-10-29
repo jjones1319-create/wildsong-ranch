@@ -538,6 +538,16 @@ Spec: GAME_DESIGN §4, §5.2, §7, §10, §12.8, §13, §14.1, §14.3, §15, §1
 - [x] 6. Screens: one Breed picker in Create and ✏️ Edit, no Colours choice, no Pure badge; names and Library filters by breed.
 - [x] 7. Tests, docs, `npm run verify`, e2e, PROGRESS, commit, deploy, phone checklist.
 
+### P1: Pilot monster, Puddlepup in 3D (v1.13.0)
+
+Spec: ART_2_PLAN §2 (the look), §3.1 (pipeline), §3.2 (runtime), §3.3 (where monsters appear), §3.6 (budgets), §5 (the ★ clips), §6 (the review loop), §8 (P1). Done when the owner loves it on the phone; the owner's notes decide what P1 still changes before P2.
+
+- [x] 1. Pipeline: `tools/blender/lib/` (node builder, mesh primitives and merge, rig and skinning, clip authoring, paint bakes, the face sheet, review renders, glTF export), the quadruped plan with the 27 ★ clips, Puddlepup's recipe with its painted textures and the Songheart texture set, `tools/blender/monsters/build.py`, `tools/art/optimize.ts` (glTF-Transform + meshopt, budget report), `npm run art:monster`.
+- [x] 2. Runtime `src/art3d/`: Stage3D (one shared renderer, hosts come and go, context loss, portraits off-screen), the actor (cel shader with outline, face sheet cells with blinks and glances, springs on ears and tail, clips with markers and face cues, stage sizes, the old fade, the sick tint), the arena camera that keeps feet on the floor line (tested), the battle clip map (tested), lazy chunk ≤ 300 KB gzipped (check:build).
+- [x] 3. In the game: Settings → Graphics → Monsters (3D / Classic), `MonsterPortrait`'s three modes (live, cached picture, Classic), Puddlepup live on the ranch, the Monster Card, the Lab editor, the Shrine, Pell's Meet, the Farewell, the week summary, drill results, expeditions, Echo Stones and the Bond games; pictures in lists (precached base portrait + on-phone cache in IndexedDB); the arena layer (Versus, cups, the Effects Lab) with a Classic opponent still SVG; Monster Lab → Models.
+- [x] 4. Review loop: Blender sheets in `tools/blender/out/puddlepup/review/`, in-game sheets by `npm run art:review` in `art-review/puddlepup/`, fresh-eyes review (two passes: the first found the shading too soft, the outline hidden and the hop leaving the frame; all fixed), budgets (583 KB, 8,705 tris, 26 joints).
+- [x] 5. Tests (`models`, `faceCells`, `springs`, `arenaCamera`, `battleClips`, `manifest`, `portraitCache`), e2e `models.spec.ts` (WebGL off, model 404, the setting, context loss, one canvas), docs, verify, commit, deploy, phone checklist.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

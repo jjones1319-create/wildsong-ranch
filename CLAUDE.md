@@ -39,15 +39,16 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 ## Tech stack (keep it; ask before adding dependencies)
 - **Build and language:** Vite (current major) + TypeScript (the version the `preact-ts` template installs) + **Preact 10** + `@preact/signals`.
 - **Battle rendering:** SVG/DOM with the Web Animations API (transforms and opacity only).
-- **Libraries:** `idb-keyval` (saves), `valibot` (validation), `vite-plugin-pwa` (`registerType: 'prompt'`), `qrcode`, `pixi.js` + `pixi-filters` (the effects layer). Sound has **no runtime dependency**: our own engine on Web Audio (`src/audio/`). Dev only: `ffmpeg-static` (encodes the samples).
+- **Libraries:** `idb-keyval` (saves), `valibot` (validation), `vite-plugin-pwa` (`registerType: 'prompt'`), `qrcode`, `pixi.js` + `pixi-filters` (the effects layer), `three` (the 3D monsters, in one lazy chunk; Art 2.0). Sound has **no runtime dependency**: our own engine on Web Audio (`src/audio/`). Dev only: `ffmpeg-static` (encodes the samples), `@gltf-transform/cli` (shrinks the models).
+- **3D monsters (Art 2.0, `docs/ART_2_PLAN.md`):** Blender builds each breed's model, rig, clips and face sheet (`tools/blender/monsters/`); the game only displays them (`src/art3d/`, loaded with `import('../art3d/art3d.ts')` so the main chunk never imports three). Only `src/art3d/` imports `three`. The Classic SVG monsters stay as the fallback and as Settings → Graphics → Monsters: Classic.
 - **Tests:** Vitest. Playwright only in M9, and only if the machine supports it.
 - **Node:** 24 LTS or newer; npm ≥ 11, so the lockfile works on GitHub's Linux runners.
 
 ## Tools on the owner's PC
 - **Blender is installed** (Windows). Use it **headless only**: `blender -b --python <script.py>` (find the exe under `C:\Program Files\Blender Foundation\Blender <ver>\blender.exe`; check `blender --version` first and pin scripts to that API). Never ask the owner to click around inside Blender.
 - Good uses: baking fire / smoke / water flipbooks (Mantaflow) to sprite sheets when a shader isn't enough; rendering stylized props, rocks and scene pieces to PNG with alpha; mask passes for recoloring. Keep baked assets small (WebP/AVIF, ≤ 1 MB each, lazy-loaded) and log them in `CREDITS.md` as our own renders.
-- Not for now: 3D monsters (the 3D pilot is skipped per `docs/VISUAL_UPGRADE_PLAN.md` §0). Code-drawn SVG monsters stay the source of truth.
-- Scripts live in `tools/blender/`; outputs go to `public/baked/`. Always render a contact-sheet PNG and look at it before using a bake.
+- **3D monsters are built here** (Art 2.0, from P1): `npm run art:monster -- <breed>` runs `tools/blender/monsters/build.py` headless (recipes in `breeds/`, rigs and clips in `plans/`, shared helpers in `tools/blender/lib/`), then `tools/art/optimize.ts` writes `public/models/monsters/<look>.glb` + `.json` within the §3.6 budgets. Always look at the Blender sheets in `tools/blender/out/<look>/review/` and the in-game sheets from `npm run art:review -- <look>` (in `art-review/`, gitignored) before calling a monster done; Claude can't see the phone, so the sheets and the owner's notes decide.
+- Scripts live in `tools/blender/`; scene bakes go to `public/baked/`, models to `public/models/`. Always render a contact-sheet PNG and look at it before using a bake. Long Blender runs go in the background with a log file.
 
 ## Audio (Sound 2.0; spec `docs/SOUND_UPGRADE.md`)
 - **Originality applies to music too:** every melody, chord progression and rhythm is written for this game. Never quote or paraphrase another work, and never name another game or its music in code or docs; describe a style only in musical words (instruments, modes, tempos). The reference games' names must not appear in any committed file (a Vitest lint checks).
@@ -64,6 +65,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - `npm run e2e`: the Playwright specs against the built app in the installed Chrome (kill any leftover preview on port 4173 first).
 - `npm run sim:life -- <breed> <policy>`: prints a simulated life (dev tool, from M1).
 - Sound (see the Audio section): `npm run audio:samples` · `npm run audio:analyze` · `npm run audio:check [-- --quick | --calibrate]` · `npm run audio:review`.
+- Art 2.0: `npm run art:monster -- <breed> [--quick] [--stages model,clips,export,review]` (Blender build + optimise) · `npm run art:optimize -- <look>` · `npm run art:review -- <look> [--no-build]` (in-game sheets in `art-review/`) · `npm run art:portraits` (the precached breed pictures in `public/portraits/`).
 
 ## Architecture
 ```
@@ -73,7 +75,9 @@ src/
   data/      tuning.ts (ALL numbers) · breeds · techniques · drills · foods · items · calendar ·
              journeys · expeditions · rivals · secrets (hashed) · text/ (all player-facing strings)
   save/      db (idb-keyval) · schema (valibot) · migrate · exportImport · shareCode
-  art/       monster/ (bodyPlans, parts, palettes, expressions, render) · backgrounds · icons
+  art/       monster/ (bodyPlans, parts, palettes, expressions, render) · backgrounds · icons · models (which breeds have a 3D look)
+  art3d/     the 3D monsters (Art 2.0): Stage3D (one renderer, hosts come and go) · actor · materials (cel shader,
+             outline, face) · loader · faceCells · springs · arenaCamera · battleClips · arena3d; only this folder imports three
   audio/     player (the UI's API) · director (what plays where, pure) · runtime · engine/ (Web Audio: the only
              place that touches it) · music/ (ABC parser, generators, song model, checker, motifs, songs/)
              · recipes/ (instruments, kits, ambience, effects, drills, events, packs) · analysis/ (loudness…)

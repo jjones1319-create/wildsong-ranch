@@ -90,7 +90,7 @@ export function DrillResult({ f }: { f: ResultFlow }) {
           <h2 class="heading">{drill.name}</h2>
           <div class="vignette__scene" data-vignette={drill.id}>
             <div class="vignette__mon">
-              <MonsterPortrait monster={f.before} size={170} expression="neutral" />
+              <MonsterPortrait monster={f.before} size={170} expression="neutral" live />
             </div>
             <div class="vignette__prop" dangerouslySetInnerHTML={{ __html: propSvg(drill.id) }} />
           </div>
@@ -121,7 +121,7 @@ export function DrillResult({ f }: { f: ResultFlow }) {
             start.current = null
           }}
         >
-          <MonsterPortrait monster={m} size={180} expression={face.expression} mischief={face.mischief} />
+          <MonsterPortrait monster={m} size={180} expression={face.expression} mischief={face.mischief} live clip={face.expression === 'happy' ? 'celebrate' : face.expression === 'sad' ? 'idle_sad' : face.expression === 'sleepy' ? 'sleep' : undefined} />
           {f.reaction && <Emote key={f.reaction} kind={emoteForReaction(f.reaction)} name={m.name} />}
           {!f.reaction && <p class="pet__hint">{fill(t.petHint, { name: m.name })}</p>}
         </div>

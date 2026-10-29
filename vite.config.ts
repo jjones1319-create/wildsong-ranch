@@ -44,9 +44,19 @@ export default defineConfig({
       workbox: {
         // Sound 2.0 §5.4: the audio manifest and every sample are precached, so the game sounds right offline.
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json,ogg}'],
+        // Art 2.0 §3.7: models download on first use and are kept by the runtime cache below; the breed portraits
+        // (public/portraits) stay precached as the offline fallback pictures.
+        globIgnores: ['**/models/**'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: `${BASE}index.html`,
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/models/') || url.pathname.includes('/baked/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'wildsong-art', expiration: { maxEntries: 120 }, cacheableResponse: { statuses: [0, 200] } },
+          },
+        ],
       },
     }),
   ],
@@ -57,6 +67,9 @@ export default defineConfig({
         // lazy chunk that loads with its place.
         manualChunks(id) {
           const n = id.replace(/\\/g, '/')
+          // Art 2.0 §3.6: three and the 3D runtime form their own lazy chunk (art3d-*.js, ≤ 300 KB gzipped, checked by
+          // check:build) through the dynamic import of src/art3d/art3d.ts; a manual rule here would pull shared app
+          // modules into it and make the entry import it statically.
           if (n.includes('/src/audio/music/songs/') && !n.endsWith('/index.ts')) return `song-${n.split('/').pop()!.replace(/\.ts$/, '')}`
           if (n.includes('/src/audio/recipes/') || n.includes('/src/audio/music/stingers.ts') || n.includes('/src/audio/music/effects.ts')) return 'audio-recipes'
           // The checker and the motif detector only serve the Sound Lab and the tools, never the game at play.

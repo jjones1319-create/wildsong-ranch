@@ -14,7 +14,14 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   // A missing control fails in seconds rather than waiting out the whole test.
-  use: { baseURL: BASE, actionTimeout: 10_000, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
+  use: {
+    baseURL: BASE,
+    actionTimeout: 10_000,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    // Art 2.0: headless Chrome blocks WebGL unless software rendering is allowed; the 3D monsters need it.
+    launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] },
+  },
   projects: [
     { name: 'pixel-7', use: { ...devices['Pixel 7'], channel: 'chrome' } },
     { name: 'iphone-14', use: { ...devices['iPhone 14'], browserName: 'chromium', channel: 'chrome' } },

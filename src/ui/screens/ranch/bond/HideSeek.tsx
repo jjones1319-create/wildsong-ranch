@@ -95,7 +95,7 @@ export function HideSeek({ m, seed, onDone }: { m: Monster; seed: number; onDone
             </svg>
             {phase === 'reveal' && i === spot && (
               <span class="hide__peek">
-                <MonsterPortrait monster={m} size={64} expression="happy" animate={false} />
+                <MonsterPortrait monster={m} size={64} expression="happy" animate={false} live clip="idle_happy" />
               </span>
             )}
           </button>

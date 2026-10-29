@@ -130,7 +130,7 @@ export function ShrineScreen() {
             <>
               <h2 class="heading center">{fill(t.born, { name: result.monster.name })}</h2>
               <div class="farewell__art">
-                <MonsterPortrait monster={result.monster} size={200} expression="happy" />
+                <MonsterPortrait monster={result.monster} size={200} expression="happy" live clip="idle_happy" />
               </div>
               <p class="center muted">{variantNameOf(result.monster)}</p>
               <SpeakerCard speaker={t.mara} tone="muted">

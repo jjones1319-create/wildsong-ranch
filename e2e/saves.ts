@@ -1,6 +1,6 @@
 import { weekIndexOf } from '../src/core/calendar.ts'
 import { TIP_IDS } from '../src/core/onboarding.ts'
-import { makePreset } from '../src/core/presets.ts'
+import { makePreset, type PresetTier } from '../src/core/presets.ts'
 import { createGameState, type GameState } from '../src/core/state.ts'
 import type { BreedId, TournamentGrade } from '../src/data/types.ts'
 import { makeSave } from '../src/save/schema.ts'
@@ -22,7 +22,8 @@ export interface SaveAt {
 
 export function saveJsonAt(o: SaveAt): string {
   const grade = o.grade ?? 'E'
-  const m = makePreset(o.breed ?? 'tumblefox', grade)
+  // The presets come in E/C/A/S (and baby); a D or B grade lands on the preset the tier table gives it, as before.
+  const m = makePreset(o.breed ?? 'tumblefox', grade as unknown as PresetTier)
   m.name = 'Pip'
   m.fatigue = 0
   m.stress = 0

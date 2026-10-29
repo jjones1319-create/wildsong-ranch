@@ -119,11 +119,33 @@
   will-change: transform;
 }
 
+/* The 3D monsters (Art 2.0): above the walls, below the effects; a Classic opponent stays in the world layer. */
+.arena__3d {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.arena__3d canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* A fighter drawn in 3D keeps its div (floats and flags anchor to it) but its Classic drawing fades out. */
+.fighter__art--3d .portrait {
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
 /* The effects canvas (V1): above the monsters, below the floats and the HUD; never catches taps. */
 .arena__fx {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -138,7 +160,7 @@
 .arena__floats {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
 }
 
@@ -151,7 +173,7 @@
 .arena__impact {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 5;
   background: var(--impact-color, #fff);
   mix-blend-mode: difference;
   opacity: 0.85;

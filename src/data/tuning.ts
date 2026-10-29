@@ -1066,6 +1066,116 @@ export const BATTLE_CAMERA = {
 /** §22 battle effect timings (milliseconds). */
 export const BATTLE_FX = { lungeMs: 260, projectileMs: 300, hitFlashMs: 160, knockbackMs: 240, sparkleMs: 650, koMs: 800, hopMs: 900 } as const
 
+/**
+ * Art 2.0 (ART_2_PLAN §3.2, §3.6): every number the 3D monster runtime uses. Arena units are the battle's
+ * (x −600…600, the floor at y = 0); the models themselves are in metres and the look registry says how many
+ * arena units one metre is. Times are milliseconds unless the name says otherwise.
+ */
+export const ART = {
+  /** The 3D camera that reproduces the arena camera exactly on the floor plane: a long lens at a fixed distance, zoom by fov. */
+  arena: {
+    cameraDistance: 2500,
+    /** Near/far reach around the floor plane. */
+    depth: 600,
+    /** A fighter faces its opponent at this yaw off the camera axis, so the ¾ view reads. */
+    facingYawDeg: 62,
+    /** Cross-fade time by the kind of clip being entered. */
+    fadeMs: { hit: 60, action: 90, move: 120, idle: 200 },
+    /** Frames of x history the velocity is smoothed over. */
+    velocitySmoothFrames: 3,
+    /** Arena units per second below which a monster counts as standing. */
+    standingSpeed: 6,
+    /** A moving monster plays `dash` above this share of the engine's dash speed. */
+    dashShare: 0.8,
+  },
+  /** The portrait camera (the ranch, the Monster Card, the Lab and the cached list pictures): the same numbers on a square host. */
+  portrait: {
+    px: 256,
+    yawDeg: 28,
+    pitchDeg: 9,
+    /** The body fills this share of the box (headroom for hops); the feet sit this far up from the bottom. */
+    bodyFrac: 0.7,
+    floorFrac: 0.09,
+    /** Bump when the art changes, so every cached portrait is redrawn. */
+    version: 1,
+    cacheMaxEntries: 120,
+  },
+  stage: {
+    /** The renderer and model cache are freed this long after the last host leaves. */
+    idleReleaseMs: 30_000,
+    liteFpsCap: 30,
+    /** The soft contact shadow under a monster: width and depth relative to its height, and its darkness. */
+    shadow: { widthFrac: 0.62, depthFrac: 0.4, alpha: 0.28 },
+    /** A model load is retried after this long, and given up after the timeout. */
+    retryMs: 15_000,
+    loadTimeoutMs: 30_000,
+    /** Babies lean chibi (§2.1): the head bone's scale for the small and medium size bands. */
+    headScale: { small: 1.18, medium: 1.08 },
+  },
+  /** What each Quality tier draws (Auto resolves to one of these through the effects' tier). */
+  quality: {
+    ultra: { dprCap: 2, antialias: true, outline: true, springs: true, shadowMap: true, outlinePx: 3.0 },
+    high: { dprCap: 1.5, antialias: true, outline: true, springs: true, shadowMap: false, outlinePx: 2.4 },
+    lite: { dprCap: 1, antialias: false, outline: false, springs: false, shadowMap: false, outlinePx: 0 },
+  },
+  /** The toon shader (§2.1): where the lit/shadow split falls, its softness, the shadow tint (cooler and darker, never grey), rim. */
+  toon: {
+    terminator: 0.2,
+    softness: 0.04,
+    shadowMul: [0.62, 0.65, 0.74] as const,
+    rimPower: 3.6,
+    rimStrength: 0.08,
+    fillStrength: 0.06,
+    /** The sick tint and the old fade (from STAGES.visiblyOld). */
+    sickTint: [0.74, 0.96, 0.76] as const,
+    sickMix: 0.35,
+    oldDesaturate: 0.3,
+    oldMix: 0.32,
+    /** The outline is this much darker than the colour beneath it, and a touch cooler. */
+    outlineMul: [0.5, 0.56, 0.68] as const,
+  },
+  /** Secondary motion on ears, tails and so on: a damped spring per bone, driven by the parent's motion. */
+  spring: {
+    ear: { stiffness: 150, damping: 11, gain: 2.4, maxDeg: 34 },
+    tail: { stiffness: 110, damping: 9, gain: 3.0, maxDeg: 30 },
+    default: { stiffness: 120, damping: 10, gain: 2.0, maxDeg: 25 },
+  },
+  /** Blinks, glances and the idle eye drift (ART_2_PLAN §3.2 face controller). */
+  face: {
+    blinkMinMs: 2200,
+    blinkMaxMs: 5600,
+    blinkCloseMs: 110,
+    doubleBlinkChance: 0.18,
+    /** The pupil slide as a share of the eye cell, the head turn (degrees) toward a tap, and how long it holds. */
+    glanceMax: 0.14,
+    headTurnDeg: 9,
+    holdMs: 1600,
+    settleMs: 280,
+    driftMax: 0.05,
+    driftMinMs: 1500,
+    driftMaxMs: 4000,
+    sparkleCycleMs: 1400,
+  },
+  /** Clip playback: the ranch's idle variety and how locomotion follows the real speed. */
+  anim: {
+    idleActMinMs: 6000,
+    idleActMaxMs: 14000,
+    actWeights: { look_around: 4, hop: 2, celebrate: 1 },
+    crossFadeMs: 220,
+    rateMin: 0.6,
+    rateMax: 1.8,
+  },
+  /** Key, fill and rim light per ranch mood; a scene gives its own from P2 (ART_2_PLAN §3.5). Directions are in three's Y-up space. */
+  light: {
+    day: { key: '#fff8f0', fill: '#cfe3ff', rim: '#ffe8d0', dir: [0.7, 0.55, 0.45] as const },
+    goldenHour: { key: '#ffd9a0', fill: '#b9c8ff', rim: '#ffb070', dir: [0.7, 0.4, 0.5] as const },
+    overcast: { key: '#dfe6ee', fill: '#aebdd0', rim: '#f0f4ff', dir: [0.2, 0.9, 0.3] as const },
+    rain: { key: '#cfd8e8', fill: '#9fb0c8', rim: '#e8f0ff', dir: [0.2, 0.9, 0.3] as const },
+    snow: { key: '#f0f6ff', fill: '#d0e0ff', rim: '#ffffff', dir: [0.4, 0.85, 0.4] as const },
+    night: { key: '#9fb4ff', fill: '#3a4a7a', rim: '#cfd8ff', dir: [-0.3, 0.8, 0.4] as const },
+  },
+} as const
+
 /** §22 backgrounds and weather overlays. */
 export const BACKGROUND = {
   /** Lightning: one flash per cycle (seconds), far under §24's 3 Hz limit. */

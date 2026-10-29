@@ -191,6 +191,7 @@ export function decide(scene: Scene): Request {
     case 'labExport':
     case 'labEffects':
     case 'labBattleLab':
+    case 'labModels':
       return { ...base, song: song('town', { stem: 'shop' }), bed: null, reverb: 'room', standIn: 'TODO_S3' }
     case 'labVersus':
       return { ...base, song: song('town', { stem: 'shop' }), bed: null, reverb: 'room', standIn: 'TODO_S3' }

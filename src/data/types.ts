@@ -77,6 +77,10 @@ export type FxTier = (typeof FX_TIERS)[number]
 export const FX_INTENSITIES = ['cozy', 'standard', 'flashy'] as const
 export type FxIntensity = (typeof FX_INTENSITIES)[number]
 
+/** Art 2.0: Settings → Graphics → Monsters. 3D shows the Blender-built models where a breed has one. */
+export const MONSTER_MODES = ['3d', 'classic'] as const
+export type MonsterMode = (typeof MONSTER_MODES)[number]
+
 /** §12.11 "Show battle thinking": what a monster's plan icon can say. */
 export const PLAN_MODES = ['distance', 'saving', 'pressing', 'pushing', 'punish', 'safe', 'cornered'] as const
 export type PlanMode = (typeof PLAN_MODES)[number]

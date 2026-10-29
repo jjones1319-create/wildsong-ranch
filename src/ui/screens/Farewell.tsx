@@ -93,7 +93,7 @@ export function FarewellScreen() {
     <main class="screen">
       <TopBar title={fill(retired ? t.retired : wild ? t.wandered : t.passed, { name: m.name })} />
       <div class="farewell__art dusk">
-        <MonsterPortrait monster={m} size={200} expression={retired ? 'happy' : wild ? 'sad' : 'sleepy'} />
+        <MonsterPortrait monster={m} size={200} expression={retired ? 'happy' : wild ? 'sad' : 'sleepy'} live clip={retired ? 'idle_happy' : wild ? 'idle_sad' : 'sleep'} />
       </div>
       <SpeakerCard speaker={UI_TEXT.wren}>
         <p>{pronounLine}</p>

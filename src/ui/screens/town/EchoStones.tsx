@@ -204,7 +204,7 @@ export function EchoStones({ practice, onDone }: { practice: boolean; onDone: ()
           </div>
           <div class="echo">
             <div class="echo__monster">
-              <MonsterPortrait monster={monster} size={96} expression={mood === 'pleased' ? 'happy' : mood === 'startled' ? 'stressed' : undefined} />
+              <MonsterPortrait monster={monster} size={96} expression={mood === 'pleased' ? 'happy' : mood === 'startled' ? 'stressed' : undefined} live clip={mood === 'pleased' ? 'idle_happy' : 'sit'} />
               <Emote key={emote?.key ?? 0} kind={emote?.kind ?? null} name={monster.name} />
               {mood === 'hum' && (
                 <span class="echo__hum" aria-hidden="true">

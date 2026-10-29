@@ -30,7 +30,7 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
         <h2 class="heading center">{title}</h2>
         <div class="farewell__art">
           <div class={`stage__art ${f.grewUp ? 'stage__art--glow' : ''}`}>
-            <MonsterPortrait monster={m} size={180} expression={breakdown ? 'sad' : f.grewUp ? 'happy' : undefined} />
+            <MonsterPortrait monster={m} size={180} expression={breakdown ? 'sad' : f.grewUp ? 'happy' : undefined} live clip={breakdown ? 'idle_sad' : f.grewUp ? 'celebrate' : undefined} />
           </div>
         </div>
         <section class="card">
