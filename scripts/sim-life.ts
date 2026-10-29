@@ -25,7 +25,7 @@ if (!BREED_IDS.includes(breed) || !policy || !Number.isFinite(seed)) {
 const r = simulateLife({ breed, policy, seed, weekly })
 const stats = (s: Record<string, number>) => `${s.LIF}/${s.POW}/${s.INT}/${s.SKI}/${s.SPD}/${s.DEF}`
 
-console.log(`Wildsong Ranch life sim: ${r.breed}${r.sub === r.breed ? ' (pure)' : ` / ${r.sub}`} · policy ${r.policy} · seed ${r.seed}`)
+console.log(`Wildsong Ranch life sim: ${r.breed} · policy ${r.policy} · seed ${r.seed}`)
 console.log(`Born with a ${r.lifespanAtBirth}-week lifespan. Stats ${stats(r.birthStats)} (total ${Object.values(r.birthStats).reduce((a, b) => a + b, 0)}).`)
 console.log('')
 if (weekly) {

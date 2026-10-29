@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { TITLES } from '../data/tuning.ts'
-import { mixBreeds } from './monster.ts'
+import { breedBirth } from './monster.ts'
 import { createGameState, type GameState } from './state.ts'
 import { makeMonster } from './test-helpers.ts'
 import { awardTitles, livedNominalPct, missingTitles, TITLE_IDS } from './titles.ts'
@@ -41,7 +41,7 @@ describe('titles (CONTENT §14)', () => {
   it('Gentle Heart: a monster that lived 95 % of its nominal lifespan, passed or retired, never fused', () => {
     const g = fresh()
     const long = makeMonster({ id: 'long' })
-    long.ageWeeks = Math.ceil((mixBreeds('puddlepup', 'puddlepup').lifespan * TITLES.gentleHeartPct) / 100)
+    long.ageWeeks = Math.ceil((breedBirth('puddlepup').lifespan * TITLES.gentleHeartPct) / 100)
     expect(livedNominalPct(long)).toBeGreaterThanOrEqual(TITLES.gentleHeartPct)
     g.memorial.push({ monster: long, cause: 'fused', epitaph: '', week: 1 })
     expect(missingTitles(g)).toEqual([])

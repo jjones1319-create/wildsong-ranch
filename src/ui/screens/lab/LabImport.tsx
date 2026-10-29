@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { mixBreeds, totalStats, type Monster } from '../../../core/monster.ts'
+import { totalStats, type Monster } from '../../../core/monster.ts'
+import { variantNameOf } from '../../../core/variants.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { UI } from '../../../data/tuning.ts'
@@ -105,7 +106,7 @@ export function LabImportScreen() {
                 <strong>{i.monster.name}</strong>
               </div>
               <div class="muted small">
-                {mixBreeds(i.monster.mainBreed, i.monster.subBreed).variantName} · {UI_TEXT.lab.total} {totalStats(i.monster.stats)} · {UI_TEXT.lab.grade} {i.monster.grade}
+                {variantNameOf(i.monster)} · {UI_TEXT.lab.total} {totalStats(i.monster.stats)} · {UI_TEXT.lab.grade} {i.monster.grade}
               </div>
             </div>
           </div>

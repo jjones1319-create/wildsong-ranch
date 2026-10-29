@@ -208,7 +208,6 @@ export interface Heartstone {
   donorId: string
   donorName: string
   donorBreed: BreedId
-  donorSub: BreedId
   donorVariant: string | null
   /** The donor's trained gains per stat (stat − breed base at birth, never below 0). */
   gains: Stats
@@ -223,7 +222,6 @@ export interface EncyclopediaPhrase {
   artist: string
   name: string
   mainBreed: BreedId
-  subBreed: BreedId
   variantId: string | null
 }
 

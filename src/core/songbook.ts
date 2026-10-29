@@ -1,7 +1,7 @@
 import { TECHNIQUE_BY_ID, TECHNIQUES } from '../data/techniques.ts'
 import { SONGBOOK } from '../data/tuning.ts'
 import { STAT_KEYS, type Technique } from '../data/types.ts'
-import { isPure, type Monster, type TechniqueSlot } from './monster.ts'
+import type { Monster, TechniqueSlot } from './monster.ts'
 
 /**
  * GAME_DESIGN §10.4–§10.5: learning, forgetting, mastery and Songsheets.
@@ -19,20 +19,15 @@ export function addSheet(songbook: Songbook, techId: string): string[] {
   return [...songbook, techId].sort()
 }
 
-export type LearnBlock = 'unknownTechnique' | 'known' | 'notInKit' | 'signatureNotPure'
+export type LearnBlock = 'unknownTechnique' | 'known' | 'notInKit'
 
-/** Who can learn what (§10.5): universal → anyone; breed kit; sub quirk; Signature → pure breed only. */
+/** Who can learn what (§10.5): universal → anyone; the breed's kit, its Signature included. */
 export function canLearn(m: Monster, techId: string): { ok: true } | { ok: false; reason: LearnBlock } {
   const tech = TECHNIQUE_BY_ID[techId]
   if (!tech) return { ok: false, reason: 'unknownTechnique' }
   if (m.techniques.some((t) => t.id === techId)) return { ok: false, reason: 'known' }
   if (tech.breed === 'universal') return { ok: true }
-  if (tech.family === 'Signature') {
-    if (tech.breed !== m.mainBreed) return { ok: false, reason: 'notInKit' }
-    return isPure(m) ? { ok: true } : { ok: false, reason: 'signatureNotPure' }
-  }
   if (tech.breed === m.mainBreed) return { ok: true }
-  if (tech.breed === m.subBreed && tech.subQuirk) return { ok: true }
   return { ok: false, reason: 'notInKit' }
 }
 

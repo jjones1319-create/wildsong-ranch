@@ -1,12 +1,10 @@
 import { cyrb53 } from '../../core/hash.ts'
-import type { Monster } from '../../core/monster.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import type { BreedId } from '../../data/types.ts'
 import { darken, lighten, luma } from './svg.ts'
 
 /**
- * GAME_DESIGN §22 palettes and the §14.3 rule: the sub breed's palette goes on the main body,
- * the main breed's eyes stay. A pure monster wears its classic palette.
+ * GAME_DESIGN §22 palettes: every monster wears its own breed's palette (a secret variant has its own, variants.ts).
  * With the high-end polish, the three palette colours are painted as top-left-lit gradients
  * (see defs.ts); `paint()` maps a flat colour to its gradient so parts never need to know.
  */
@@ -62,9 +60,3 @@ export function paletteOfBreed(id: BreedId, o: PaletteOptions = {}): Palette {
   return buildPalette(BREED_BY_ID[id].art.palette, undefined, o)
 }
 
-/** The palette a monster is drawn with: its appearance's palette breed (the sub by default) with the main breed's eyes. */
-export function paletteFor(m: Monster, o: PaletteOptions = {}): Palette {
-  const paletteBreed = BREED_BY_ID[m.appearance.paletteBreed] ?? BREED_BY_ID[m.subBreed]
-  const eye = BREED_BY_ID[m.mainBreed].art.palette.eye
-  return buildPalette(paletteBreed.art.palette, eye, o)
-}

@@ -19,7 +19,7 @@ import {
   sendToFreezer,
   trainedGains,
 } from './legacy.ts'
-import { mixBreeds } from './monster.ts'
+import { breedBirth } from './monster.ts'
 import { createGameState } from './state.ts'
 import { makeMonster } from './test-helpers.ts'
 
@@ -90,7 +90,7 @@ describe('the Freezer (§16)', () => {
 
 describe('Heartstones and the Heirloom (§16)', () => {
   it('records the trained gains, the most-used family, and grants 15 % capped at +60', () => {
-    const base = mixBreeds('puddlepup', 'puddlepup').base
+    const base = breedBirth('puddlepup').base
     const m = makeMonster({ stats: { POW: base.POW + 500, INT: base.INT + 100, LIF: base.LIF - 20 } })
     m.techniques = [
       { id: 'puddlepup.splash-nip', uses: 3, level: 1 },

@@ -5,7 +5,7 @@ import { circle, ellipse, g, path, rect, type Attrs } from './svg.ts'
 /**
  * GAME_DESIGN §22: nine paper-doll body plans. Every plan draws its silhouette on a 256×256 canvas
  * (ground line at y = 232, facing right) and reports its sockets: the points where the head, ears,
- * crown, back, tail, chin and front parts attach. Breed looks and sub-breed accent parts snap to those.
+ * crown, back, tail, chin and front parts attach. Breed looks snap to those.
  * Big shapes are painted through `pal.paint()` (a top-left-lit gradient), get a rim highlight and,
  * when the look asks for one, a subtle texture overlay.
  */

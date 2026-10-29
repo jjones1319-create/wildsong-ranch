@@ -108,15 +108,8 @@ export const BIRTH = {
   lifespanOffset: { min: -10, max: 30 },
   gutsOffset: { min: -1, max: 1 },
   nature: { min: -30, max: 30 },
-  /** Base stats = (3·main + 1·sub) / 4. */
-  mainStatWeight: 3,
-  subStatWeight: 1,
-  /** Lifespan = (6·main + 4·sub) / 10. */
-  mainLifeWeight: 6,
-  subLifeWeight: 4,
-  pureLifespanBonusPct: 10,
-  /** Guts rate = main + (sub − main) / 4. */
-  gutsBlendDivisor: 4,
+  /** §7 every monster is one whole breed and lives this much longer than its breed's listed lifespan. */
+  lifespanBonusPct: 10,
 } as const
 
 /** §6.1 drill costs and pay. */
@@ -998,7 +991,7 @@ export const ARRIVAL = {
 } as const
 
 /** CONTENT §14 title thresholds that are not tournament placings. */
-export const TITLES = { collectorVariants: 50, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30, perfectPitchRound: 15 } as const
+export const TITLES = { collectorVariants: 30, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30, perfectPitchRound: 15 } as const
 
 /** §23 audio. Volumes are percentages. */
 export const AUDIO = {

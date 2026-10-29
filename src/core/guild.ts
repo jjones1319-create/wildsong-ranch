@@ -46,10 +46,7 @@ export function sheetsForSale(state: GameState, unlocked: readonly BreedId[] = S
 }
 
 function learnableBy(m: NonNullable<GameState['monster']>, tech: Technique): boolean {
-  if (tech.breed === 'universal') return true
-  if (tech.family === 'Signature') return tech.breed === m.mainBreed && m.mainBreed === m.subBreed
-  if (tech.breed === m.mainBreed) return true
-  return tech.breed === m.subBreed && tech.subQuirk
+  return tech.breed === 'universal' || tech.breed === m.mainBreed
 }
 
 export type SheetRefusal = 'unknown' | 'notSold' | 'owned' | 'rank' | 'debt' | 'money'

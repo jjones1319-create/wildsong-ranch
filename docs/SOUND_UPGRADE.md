@@ -858,7 +858,7 @@ Until S2 and S3, moments without their own stinger use the nearest S1 one (§15)
 
 ### 7.7 Monster songs (`music/monsterSong.ts`)
 
-- **Made from:** the monster's `seedPhrase` plus its main and sub breed, hashed with `cyrb53` (the monster's `id` if the phrase is empty). The same monster always has the same song, and nothing is added to the save.
+- **Made from:** the monster's `seedPhrase` plus its breed (one whole breed since v1.12), hashed with `cyrb53` (the monster's `id` if the phrase is empty). The same monster always has the same song, and nothing is added to the save.
 - **Mode, from the main breed's default element (V1):**
 
   | Element | Mode |
@@ -871,7 +871,7 @@ Until S2 and S3, moments without their own stinger use the nearest S1 one (§15)
   | Sound | major pentatonic |
 
   For the breeds with a split INT/POW default, use the INT one.
-- **Key:** `cyrb53(subBreedId) mod 12`, placed so the song sits inside the ocarina's `range.melody`.
+- **Key:** `cyrb53(breedId) mod 12`, placed so the song sits inside the ocarina's `range.melody`.
 - **Shape:**
   - 6–8 notes over 2 bars of 3/4 or 4/4.
   - It starts on scale degree 1, 3 or 5 and ends on 1.

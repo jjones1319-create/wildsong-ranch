@@ -6,6 +6,7 @@ import { simulateLife, type LifeSimOptions } from './lifeSim.ts'
  * A golden record of six fixed-seed lives. v1.11 added growth grade S and per-grade stat caps (E 1000 … S 1500,
  * up from a flat 999); below the caps every gain must stay exactly what it was, so this hash was taken on the
  * commit before that change. The guard below shows why it holds: no simulated stat gets near 1000.
+ * v1.12 (Art P0) dropped the report's `sub` field; with it put back the lives hash to 5344971507563367 as before.
  */
 const LIVES: LifeSimOptions[] = [
   { breed: 'puddlepup', policy: 'Good', seed: 11 },
@@ -21,7 +22,7 @@ describe('raising golden record', () => {
     const reports = LIVES.map((o) => simulateLife(o))
     expect(reports[0]!.weeksLived).toBeGreaterThan(100)
     const withoutLines = reports.map((r) => ({ ...r, lines: [] }))
-    expect(cyrb53(JSON.stringify(withoutLines))).toBe(5344971507563367)
+    expect(cyrb53(JSON.stringify(withoutLines))).toBe(1290555306599871)
     for (const r of reports) for (const y of r.years) expect(Math.max(...Object.values(y.stats))).toBeLessThan(1000)
   })
 })

@@ -2,9 +2,10 @@ import { useEffect, useState } from 'preact/hooks'
 import { EXPRESSIONS, type Expression } from '../../../art/monster/expressions.ts'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../../core/aging.ts'
 import { addableTechniques, applyBreedChange, breedBaseStats, maxAllStats, randomizeStats, resetGrowthToBreed, scaleMaxTotal, scaleToTotal, techniquesOutsideKit } from '../../../core/lab.ts'
-import { loyaltyOf, mixBreeds, stageOf, statCap, styleBandOf, styleOf, totalStats, traitOf, type Monster } from '../../../core/monster.ts'
+import { loyaltyOf, stageOf, statCap, styleBandOf, styleOf, totalStats, traitOf, type Monster } from '../../../core/monster.ts'
 import { createRng } from '../../../core/rng.ts'
 import { masteryLevel } from '../../../core/songbook.ts'
+import { variantNameOf } from '../../../core/variants.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { DRILLS } from '../../../data/drills.ts'
 import { FOODS } from '../../../data/foods.ts'
@@ -16,7 +17,7 @@ import { GROWTH_WORDS, STAGE_NAMES, STAT_NAMES, STYLE_LABELS } from '../../../da
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { RANGES, SONGBOOK, STAGES, STAT_CAP_BY_GRADE } from '../../../data/tuning.ts'
 import { BREED_IDS, GRADES, GROWTH_TYPES, STAT_KEYS, TOURNAMENT_GRADES, TOY_IDS, type BreedId, type Grade, type GrowthType, type StatKey, type Technique, type TournamentGrade } from '../../../data/types.ts'
-import { Confirm, Field, Section, Segmented, Select, Sheet, SliderRow, Stepper, Toggle, TopBar } from '../../components/Controls.tsx'
+import { Confirm, Field, Section, Select, Sheet, SliderRow, Stepper, Toggle, TopBar } from '../../components/Controls.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { formatWhen } from '../../lib/clock.ts'
 import { goBack, navigate } from '../../router.ts'
@@ -133,9 +134,9 @@ function AddTechniqueSheet({ d, open, onClose }: { d: EditorDraft; open: boolean
   const full = m.techniques.length >= SONGBOOK.maxTechniques
   const list = addableTechniques(m, d.allowAny)
   const groups: { key: keyof typeof t.groups; items: Technique[] }[] = [
-    { key: 'kit', items: list.filter((x) => x.breed === m.mainBreed || (x.breed === m.subBreed && x.subQuirk)) },
+    { key: 'kit', items: list.filter((x) => x.breed === m.mainBreed) },
     { key: 'universal', items: list.filter((x) => x.breed === 'universal') },
-    { key: 'other', items: list.filter((x) => x.breed !== 'universal' && x.breed !== m.mainBreed && !(x.breed === m.subBreed && x.subQuirk)) },
+    { key: 'other', items: list.filter((x) => x.breed !== 'universal' && x.breed !== m.mainBreed) },
   ]
   const add = (id: string) => {
     patchMonster((x) => {
@@ -219,7 +220,7 @@ export function LabEditorScreen() {
     }
   }
 
-  const changeBreed = (main: BreedId, sub: BreedId) => patchDraft((x) => (x.monster = applyBreedChange(x.monster, main, sub, true).monster))
+  const changeBreed = (breed: BreedId) => patchDraft((x) => (x.monster = applyBreedChange(x.monster, breed, true).monster))
 
   const restore = (index: number) => {
     const entry = d.history[index]
@@ -258,7 +259,7 @@ export function LabEditorScreen() {
         <div class="preview__info">
           <span class="preview__name">{m.name || BREED_BY_ID[m.mainBreed].name}</span>
           <span class="muted small">
-            {mixBreeds(m.mainBreed, m.subBreed).variantName} · {t.total} {total}
+            {variantNameOf(m)} · {t.total} {total}
           </span>
           <span class="muted small">
             {STAGE_NAMES[stage - 1]} · {fatigueLabel(m.fatigue)} · {stressLabel(m.stress)}
@@ -270,14 +271,13 @@ export function LabEditorScreen() {
         <Field label={t.name} hint={t.nameHint}>
           <input class="input" value={m.name} maxLength={RANGES.nameLength.max} onInput={(e) => patchMonster((x) => (x.name = (e.currentTarget as HTMLInputElement).value.slice(0, RANGES.nameLength.max)))} />
         </Field>
-        <BreedSelect label={t.main} value={m.mainBreed} onPick={(id) => changeBreed(id, m.subBreed)} />
-        <BreedSelect label={t.sub} value={m.subBreed} onPick={(id) => changeBreed(m.mainBreed, id)} />
+        <BreedSelect label={t.breed} value={m.mainBreed} onPick={changeBreed} />
         {removals.length > 0 && (
           <p class="notice">
             {t.willRemove} {removals.map((id) => TECHNIQUE_BY_ID[id]?.name ?? id).join(', ')}
           </p>
         )}
-        {(m.mainBreed !== d.original.mainBreed || m.subBreed !== d.original.subBreed) && <Toggle label={t.keepAll} checked={d.keepAll} onChange={(v) => patchDraft((x) => (x.keepAll = v))} />}
+        {m.mainBreed !== d.original.mainBreed && <Toggle label={t.keepAll} checked={d.keepAll} onChange={(v) => patchDraft((x) => (x.keepAll = v))} />}
       </Section>
 
       <Section id="stats" title={t.sections.stats} open={open === 'stats'} onToggle={toggle} summary={`${t.total} ${total}`}>
@@ -418,16 +418,6 @@ export function LabEditorScreen() {
       </Section>
 
       <Section id="appearance" title={t.sections.appearance} open={open === 'appearance'} onToggle={toggle}>
-        <Field label={t.palette}>
-          <Segmented
-            options={[
-              { value: 'sub', label: `${t.paletteSub} (${BREED_BY_ID[m.subBreed].name})` },
-              { value: 'main', label: `${t.paletteMain} (${BREED_BY_ID[m.mainBreed].name})` },
-            ]}
-            value={m.appearance.paletteBreed === m.mainBreed && m.mainBreed !== m.subBreed ? 'main' : 'sub'}
-            onChange={(v) => patchMonster((x) => (x.appearance.paletteBreed = v === 'main' ? x.mainBreed : x.subBreed))}
-          />
-        </Field>
         <Select label={t.previewExpression} value={d.preview} options={EXPR_OPTIONS} onChange={(v) => patchDraft((x) => (x.preview = v))} />
         <Select label={t.previewStage} value={previewStage} options={STAGE_OPTIONS} onChange={setPreviewStage} />
       </Section>

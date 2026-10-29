@@ -3,7 +3,7 @@ import { TECHNIQUES, TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { LAB, RANGES, STAT_CAP_BY_GRADE } from '../data/tuning.ts'
 import { STAT_KEYS, type BreedId, type Grades, type Stats, type Technique } from '../data/types.ts'
 import { clamp } from './mathx.ts'
-import { createMonster, gradeFactor100, mixBreeds, sweetsOf, zeroStats, type Likes, type Monster } from './monster.ts'
+import { breedBirth, createMonster, gradeFactor100, sweetsOf, zeroStats, type Likes, type Monster } from './monster.ts'
 import type { Rng } from './rng.ts'
 import { canLearn } from './songbook.ts'
 
@@ -61,9 +61,9 @@ export function scaleToTotal(grades: Grades, total: number): Stats {
   return out
 }
 
-/** "Breed base": what the Shrine would give this main/sub pair with zero offsets. */
+/** "Breed base": what the Shrine would give this breed with zero offsets. */
 export function breedBaseStats(m: Monster): Stats {
-  return { ...mixBreeds(m.mainBreed, m.subBreed).base }
+  return { ...breedBirth(m.mainBreed).base }
 }
 
 /** "Max all": every stat at its grade's cap, plus the Stat Sweets it already has (v1.11). */
@@ -88,17 +88,17 @@ export function randomizeStats(current: Stats, rng: Rng): Stats {
 /** "Reset to breed default" for the Growth section: grades, growth type, guts rate and lifespan from the breeds. */
 export function resetGrowthToBreed(input: Monster): Monster {
   const m = structuredClone(input)
-  const mix = mixBreeds(m.mainBreed, m.subBreed)
-  m.grades = mix.grades
+  const birth = breedBirth(m.mainBreed)
+  m.grades = birth.grades
   m.growthType = BREED_BY_ID[m.mainBreed].growth
-  m.gutsRate = mix.gutsRate
-  m.lifespanTotal = mix.lifespan
+  m.gutsRate = birth.gutsRate
+  m.lifespanTotal = birth.lifespan
   return m
 }
 
 /** The blank template: a plain monster with flat C grades and round numbers, ready to be shaped. */
 export function blankMonster(id: string, name: string, breed: BreedId = 'puddlepup'): Monster {
-  const m = createMonster({ id, mainBreed: breed, subBreed: breed, likes: DEFAULT_LIKES, name })
+  const m = createMonster({ id, mainBreed: breed, likes: DEFAULT_LIKES, name })
   for (const k of STAT_KEYS) {
     m.stats[k] = LAB.blank.stat
     m.grades[k] = LAB.blank.grade
@@ -138,24 +138,19 @@ export function techniquesOutsideKit(m: Monster): string[] {
 
 export interface BreedChangeResult {
   monster: Monster
-  /** Technique ids that were removed because they are outside the new breeds' kits. */
+  /** Technique ids that were removed because they are outside the new breed's kit. */
   removed: string[]
 }
 
 /**
- * Changing the main or sub breed: body, trait, kit and growth type follow the new main; palette and
- * accent follow the new sub; techniques outside the new kits are removed unless `keepAll` is ticked.
- * Stats, grades and everything else the player typed stay as they are.
+ * Changing the breed: body, colours, trait, kit and growth type follow the new breed; techniques outside the
+ * new kit are removed unless `keepAll` is ticked. Stats, grades and everything else the player typed stay as they are.
  */
-export function applyBreedChange(input: Monster, mainBreed: BreedId, subBreed: BreedId, keepAll: boolean): BreedChangeResult {
+export function applyBreedChange(input: Monster, breed: BreedId, keepAll: boolean): BreedChangeResult {
   const m = structuredClone(input)
-  const changed = m.mainBreed !== mainBreed || m.subBreed !== subBreed
-  m.mainBreed = mainBreed
-  m.subBreed = subBreed
-  const pure = mainBreed === subBreed
-  m.flags.pure = pure
-  m.appearance = { paletteBreed: subBreed, accentPart: pure ? null : BREED_BY_ID[subBreed].art.accentPart }
-  if (changed) m.growthType = BREED_BY_ID[mainBreed].growth
+  const changed = m.mainBreed !== breed
+  m.mainBreed = breed
+  if (changed) m.growthType = BREED_BY_ID[breed].growth
   const outside = keepAll ? [] : techniquesOutsideKit(m)
   m.techniques = m.techniques.filter((t) => !outside.includes(t.id))
   return { monster: m, removed: outside }

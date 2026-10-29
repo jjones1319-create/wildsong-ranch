@@ -2,7 +2,7 @@ import type { ComponentChildren } from 'preact'
 import { useState } from 'preact/hooks'
 import { fatigueLabel, loyaltyLabel, stressLabel } from '../../core/aging.ts'
 import { findRelative } from '../../core/fusion.ts'
-import { isPure, loyaltyOf, stageOf, statCap, strainOf, styleBandOf, styleOf, sweetsOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
+import { loyaltyOf, stageOf, statCap, strainOf, styleBandOf, styleOf, sweetsOf, totalStats, traitOf, weeksLeft, type Monster } from '../../core/monster.ts'
 import { secretOf, variantNameOf } from '../../core/variants.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { DRILL_BY_ID } from '../../data/drills.ts'
@@ -48,7 +48,6 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
           <span class="muted small">{variantNameOf(m)}</span>
           <span class="row row--wrap small">
             {secretOf(m) && <Badge tone="preset">★ {UI_TEXT.lineage.variant}</Badge>}
-            {isPure(m) && <Badge tone="pure">✦ {UI_TEXT.lab.badges.pure}</Badge>}
             {settings.value.showEditedBadge && m.flags.edited && <Badge tone="edited">🔧 {UI_TEXT.lab.badges.edited}</Badge>}
             <Badge>
               {UI_TEXT.lab.grade} {m.grade}
@@ -244,7 +243,7 @@ export function MonsterSheet({ m, mode, editCount, children }: { m: Monster; mod
           <dd>{m.records.titles.length ? m.records.titles.join(', ') : t.none}</dd>
         </dl>
         <p class="muted small">
-          {BREED_BY_ID[m.mainBreed].name} / {BREED_BY_ID[m.subBreed].name}
+          {BREED_BY_ID[m.mainBreed].name}
           {m.seedPhrase ? ` · “${m.seedPhrase}”` : ''}
           {editCount ? ` · ${fill(c.history, { n: editCount })}` : ''}
         </p>

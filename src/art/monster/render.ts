@@ -4,7 +4,6 @@ import { sizePct, stageOf, type Monster } from '../../core/monster.ts'
 import { BREED_BY_ID } from '../../data/breeds.ts'
 import { STAGES } from '../../data/tuning.ts'
 import type { BreedId } from '../../data/types.ts'
-import { ACCENTS } from './accents.ts'
 import { drawPlan, groundShadow, type Sockets } from './bodyPlans.ts'
 import { buildDefs } from './defs.ts'
 import { expressionFromCues, faceFor, type Expression } from './expressions.ts'
@@ -25,12 +24,8 @@ export type Form = 'young' | 'grown'
 
 export interface RenderSpec {
   mainBreed: BreedId
-  /** Whose palette the body wears (the sub by default, §14.3). */
-  paletteBreed: BreedId
-  /** Whose accent part is attached (the sub when not pure). */
-  accentBreed: BreedId | null
   eyeColor: string
-  /** A secret variant's own colours (CONTENT §12); they replace the palette breed's. */
+  /** A secret variant's own colours (CONTENT §12); they replace the breed's. */
   palette?: VariantPalette | null
   /** Life stage 1–10: sets the size (§5.3), the "visibly old" look from stage 8, and the growth form. */
   stage: number
@@ -76,12 +71,9 @@ export function hasGrownForm(breed: BreedId): boolean {
 
 export function specFromMonster(m: Monster, o: SpecOverrides = {}): RenderSpec {
   const cues = expressionFromCues(expressionCues(m))
-  const paletteBreed = BREED_BY_ID[m.appearance.paletteBreed] ? m.appearance.paletteBreed : m.subBreed
   const animate = o.animate ?? true
   return {
     mainBreed: m.mainBreed,
-    paletteBreed,
-    accentBreed: m.mainBreed === m.subBreed ? null : m.subBreed,
     eyeColor: BREED_BY_ID[m.mainBreed].art.palette.eye,
     palette: variantPalette(m.variantId),
     stage: o.stage ?? stageOf(m),
@@ -95,13 +87,10 @@ export function specFromMonster(m: Monster, o: SpecOverrides = {}): RenderSpec {
 }
 
 /** A quick spec for a breed on its own (pickers, galleries). */
-export function specForBreed(breed: BreedId, o: SpecOverrides & { sub?: BreedId } = {}): RenderSpec {
-  const sub = o.sub ?? breed
+export function specForBreed(breed: BreedId, o: SpecOverrides = {}): RenderSpec {
   const animate = o.animate ?? true
   return {
     mainBreed: breed,
-    paletteBreed: sub,
-    accentBreed: sub === breed ? null : sub,
     eyeColor: BREED_BY_ID[breed].art.palette.eye,
     stage: o.stage ?? STAGES.prime[0]!,
     expression: o.expression ?? 'neutral',
@@ -122,23 +111,22 @@ export function renderMonsterSvg(spec: RenderSpec, o: RenderOptions = {}): strin
   const base = LOOKS[spec.mainBreed]
   const look: Look = formForStage(spec.mainBreed, spec.stage) === 'grown' && base.grown ? base.grown : base
   const polish = POLISH[spec.mainBreed]
-  const pal = buildPalette(spec.palette ?? BREED_BY_ID[spec.paletteBreed].art.palette, spec.palette ? spec.palette.eye : spec.eyeColor, { gradients: true, texture: polish.texture })
+  const pal = buildPalette(spec.palette ?? breed.art.palette, spec.palette ? spec.palette.eye : spec.eyeColor, { gradients: true, texture: polish.texture })
   const plan = drawPlan(breed.art.plan, pal, look.knobs)
   const s: Sockets = plan.sockets
   look.adjust?.(s)
   const happy = spec.expression === 'happy' || spec.sparkle
   const pieces = look.parts(s, pal, { happy })
-  const accent: PartPiece = spec.accentBreed ? ACCENTS[spec.accentBreed](s, BREED_BY_ID[spec.accentBreed].art.palette.accent, pal) : {}
   const face = faceFor(spec.expression, look.face.mouth ?? 'smile', spec.mischief)
   const eyeMood = look.face.eyes === 'lidded' && face.eyes === 'open' ? 'droopy' : face.eyes
   const skin = pal.body
 
-  const back = (accent.back ?? '') + collect(pieces, 'back') + plan.back
-  const over = collect(pieces, 'over') + (accent.over ?? '')
+  const back = collect(pieces, 'back') + plan.back
+  const over = collect(pieces, 'over')
   const mouth = face.mouth === null && look.mouthSvg ? look.mouthSvg(s, pal) : drawMouth(s, pal, face.mouth ?? look.face.mouth ?? 'smile', skin)
   const faceSvg = drawEyes(s, pal, eyeMood, look.face, skin) + mouth + (look.face.mouth === 'chew' ? '' : cheeks(s, pal.accent, 5))
-  const front = collect(pieces, 'front') + (accent.front ?? '')
-  const particles = spec.particles && !spec.lite && polish.particles ? drawParticles(polish.particles, s, cyrb53(spec.mainBreed + spec.paletteBreed)) : ''
+  const front = collect(pieces, 'front')
+  const particles = spec.particles && !spec.lite && polish.particles ? drawParticles(polish.particles, s, cyrb53(spec.mainBreed + spec.mainBreed)) : ''
   const overlays = (face.sick ? sickTint(s) : '') + (face.sweat ? sweatDrop(s, pal) : '') + (spec.sparkle ? sparkles(s) : '') + (look.happyExtra === 'rainbow' && spec.expression === 'happy' ? rainbow(s) : '')
 
   const k = sizePct(spec.stage) / 100

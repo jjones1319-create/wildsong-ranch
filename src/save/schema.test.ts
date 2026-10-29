@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import type { Monster } from '../core/monster.ts'
 import { createGameState } from '../core/state.ts'
 import { makeMonster } from '../core/test-helpers.ts'
+import { heartstoneFrom } from '../core/legacy.ts'
+import { legacyMixName } from './legacyMix.ts'
 import { migrate, SAVE_VERSION } from './migrate.ts'
-import { makeSave, validateMonster, validateSave } from './schema.ts'
+import { emptyLibrary, makeSave, validateAny, validateLibrary, validateMonster, validateSave } from './schema.ts'
 
 describe('save validation (§20)', () => {
   it('round-trips a real game state through JSON', () => {
@@ -403,5 +406,99 @@ describe('schema version 14 (Grades to S)', () => {
     expect(g.records.bestTotal).toBe(7000)
     // A v13 monster file upgrades too (the step does not look at the file's kind).
     expect((migrate({ schemaVersion: 13, kind: 'monster', monster: m }) as { schemaVersion: number }).schemaVersion).toBe(SAVE_VERSION)
+  })
+})
+
+describe('schema version 15 (Art P0: one breed per monster)', () => {
+  /** A whole-breed monster with trained numbers that no birth formula would give. */
+  const trained = (id: string, main: Monster['mainBreed'], name: string): Monster => {
+    const m = makeMonster({ id, main })
+    m.name = name
+    m.stats = { LIF: 301, POW: 455, INT: 92, SKI: 210, SPD: 388, DEF: 61 }
+    m.grades = { LIF: 'D', POW: 'C', INT: 'C', SKI: 'B', SPD: 'B', DEF: 'E' }
+    m.gutsRate = 11
+    m.lifespanTotal = 352
+    m.ageWeeks = 120
+    m.techniques.push({ id: 'cinderlynx.spark-pounce', uses: 7, level: 1 })
+    return m
+  }
+  /** The same monster as a v14 save wrote it: a sub breed, the pure flag and the appearance. */
+  const asV14 = (m: Monster, sub: Monster['mainBreed']) => {
+    const raw = JSON.parse(JSON.stringify(m)) as Record<string, any>
+    raw.subBreed = sub
+    raw.flags = { ...raw.flags, pure: sub === m.mainBreed }
+    raw.appearance = { paletteBreed: sub, accentPart: sub === m.mainBreed ? null : 'ember ear tufts' }
+    return raw
+  }
+
+  it('knows the old automatic mix names', () => {
+    expect(legacyMixName('tumblefox', 'cinderlynx')).toBe('Cinder Tumblefox')
+    expect(legacyMixName('puddlepup', 'puddlepup')).toBeNull()
+    expect(legacyMixName('puddlepup', 'nope')).toBeNull()
+    expect(legacyMixName(42, undefined)).toBeNull()
+  })
+
+  it('turns every mixed monster in a v14 save into its main breed, keeping its numbers; only untouched mix names change', () => {
+    const active = trained('a', 'tumblefox', 'Cinder Tumblefox')
+    const frozen = trained('f', 'coilfang', 'Noodle')
+    const gone = trained('g', 'puddlepup', 'Puddle Puddlepup') // pure in v14: "Puddle Puddlepup" was never a game name
+    const famed = trained('h', 'galeheron', 'Zappy Galeheron')
+    const game = JSON.parse(JSON.stringify(createGameState({ monster: active }))) as Record<string, any>
+    game.monster = asV14(active, 'cinderlynx')
+    game.monsterHistory = [{ monster: asV14({ ...active, name: 'Cinder Tumblefox' }, 'cinderlynx'), savedAt: 4 }]
+    game.freezer = [asV14(frozen, 'wishlume')]
+    game.memorial = [{ monster: asV14(gone, 'puddlepup'), cause: 'fused', epitaph: '', week: 3 }]
+    game.hallOfFame = [{ monster: asV14(famed, 'zipwisp'), week: 9 }]
+    game.heartstones = [{ ...heartstoneFrom({ ...frozen, name: 'Jade Coilfang' }, 7), donorSub: 'coilfang' }, { ...heartstoneFrom({ ...famed, name: 'Gale Coilfang' }, 8), donorBreed: 'coilfang', donorSub: 'galeheron' }]
+    game.encyclopedia.phrases = [{ phrase: 'river song', artist: '', name: 'River', mainBreed: 'tumblefox', subBreed: 'pluckrex', variantId: null }]
+    game.encyclopedia.combos = ['Cinder Tumblefox', 'Puddlepup']
+    const v14 = { schemaVersion: 14, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.11.0' } }
+    const up = migrate(JSON.parse(JSON.stringify(v14))) as { schemaVersion: number }
+    expect(up.schemaVersion).toBe(SAVE_VERSION)
+    const r = validateSave(up)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const g = r.save.game
+    expect(g.monster).toEqual({ ...active, name: 'Tumblefox' })
+    expect(g.monsterHistory[0]!.monster).toEqual({ ...active, name: 'Tumblefox' })
+    expect(g.freezer).toEqual([frozen])
+    expect(g.memorial[0]!.monster).toEqual(gone)
+    expect(g.hallOfFame[0]!.monster).toEqual({ ...famed, name: 'Galeheron' })
+    for (const m of [g.monster!, ...g.freezer, g.memorial[0]!.monster, g.hallOfFame[0]!.monster]) {
+      expect(Object.keys(m)).not.toContain('subBreed')
+      expect(Object.keys(m)).not.toContain('appearance')
+      expect(m.flags).toEqual({ edited: false, sandbox: false })
+    }
+    expect(g.heartstones.map((h) => h.donorName)).toEqual(['Jade Coilfang', 'Coilfang'])
+    expect(g.heartstones.every((h) => !('donorSub' in h))).toBe(true)
+    expect(g.encyclopedia.phrases).toEqual([{ phrase: 'river song', artist: '', name: 'River', mainBreed: 'tumblefox', variantId: null }])
+    // Looks already collected stay counted.
+    expect(g.encyclopedia.combos).toEqual(['Cinder Tumblefox', 'Puddlepup'])
+  })
+
+  it('upgrades old monster files, Libraries, share-code payloads and bare monsters the same way', () => {
+    const m = trained('x', 'tumblefox', 'Cinder Tumblefox')
+    const old = asV14(m, 'cinderlynx')
+    const file = validateAny({ schemaVersion: 14, kind: 'monster', monster: old, history: [{ monster: old, savedAt: 2 }] })
+    expect(file.ok && file.kind === 'monster' && file.file.monster).toEqual({ ...m, name: 'Tumblefox' })
+    expect(file.ok && file.kind === 'monster' && file.file.history[0]!.monster).toEqual({ ...m, name: 'Tumblefox' })
+    const bare = validateMonster(JSON.parse(JSON.stringify(old)))
+    expect(bare.ok && bare.monster).toEqual({ ...m, name: 'Tumblefox' })
+    const lib = { ...emptyLibrary(), schemaVersion: 14, entries: [{ monster: old, history: [], createdAt: 1, updatedAt: 1 }] }
+    const r = validateLibrary(JSON.parse(JSON.stringify(lib)))
+    expect(r.ok && r.library.entries[0]!.monster).toEqual({ ...m, name: 'Tumblefox' })
+  })
+
+  it('never fails a load over an old sub breed, however broken', () => {
+    const m = trained('x', 'tumblefox', 'Cinder Tumblefox')
+    for (const sub of ['nope', 42, null, { a: 1 }, undefined]) {
+      const raw = { ...asV14(m, 'cinderlynx'), subBreed: sub }
+      const r = validateMonster(raw)
+      expect(r.ok).toBe(true)
+      // Without a real sub breed the name is left alone.
+      expect(r.ok && r.monster.name).toBe('Cinder Tumblefox')
+    }
+    const hs = validateSave(migrate({ schemaVersion: 14, kind: 'save', game: { ...JSON.parse(JSON.stringify(createGameState({ monster: m }))), heartstones: [{ ...heartstoneFrom(m, 1), donorSub: 'nope' }] }, rng: 1 }))
+    expect(hs.ok && hs.save.game.heartstones).toHaveLength(1)
   })
 })

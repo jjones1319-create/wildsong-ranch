@@ -53,7 +53,7 @@ export function awaken(input: GameState, phrase: string, artist: string, id: str
   if (!placed.placed) return { kind: 'refused', state: input, reason: placed.refused!, roll }
   const state = placed.state
   if (!state.encyclopedia.phrases.some((p) => p.phrase === roll.seed.phrase && p.artist === roll.seed.artist)) {
-    state.encyclopedia.phrases.push({ phrase: roll.seed.phrase, artist: roll.seed.artist, name: monster.name, mainBreed: monster.mainBreed, subBreed: monster.subBreed, variantId: monster.variantId })
+    state.encyclopedia.phrases.push({ phrase: roll.seed.phrase, artist: roll.seed.artist, name: monster.name, mainBreed: monster.mainBreed, variantId: monster.variantId })
   }
   return { kind: 'born', state, monster, placed: placed.placed, roll }
 }
@@ -88,7 +88,7 @@ export function wakeStone(input: GameState, index: number, id: string): { state:
   state.sleepingStones.splice(index, 1)
   state.records.stonesWoken += 1
   if (!state.encyclopedia.phrases.some((p) => p.phrase === stone.phrase && p.artist === stone.artist)) {
-    state.encyclopedia.phrases.push({ phrase: stone.phrase, artist: stone.artist, name: monster.name, mainBreed: monster.mainBreed, subBreed: monster.subBreed, variantId: monster.variantId })
+    state.encyclopedia.phrases.push({ phrase: stone.phrase, artist: stone.artist, name: monster.name, mainBreed: monster.mainBreed, variantId: monster.variantId })
   }
   return { state, monster, placed: placed.placed, refused: null }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks'
 import { blankMonster, DEFAULT_LIKES } from '../../../core/lab.ts'
-import { createMonster, mixBreeds } from '../../../core/monster.ts'
+import { createMonster } from '../../../core/monster.ts'
 import { monsterFromRoll, rollShrine } from '../../../core/shrine.ts'
 import { BREED_BY_ID, STARTING_UNLOCKED } from '../../../data/breeds.ts'
 import { fill } from '../../../data/text/format.ts'
@@ -54,20 +54,19 @@ export function BreedTiles({ value, onChange, label }: { value: BreedId; onChang
   )
 }
 
-/** §19 Create: from a breed pair, from a song (the Shrine's own roll), or from the blank template. Opens the Editor. */
+/** §19 Create: from a breed, from a song (the Shrine's own roll), or from the blank template. Opens the Editor. */
 export function LabCreateScreen() {
   const t = UI_TEXT.lab.create_
   const [mode, setMode] = useState<Mode>('breed')
-  const [main, setMain] = useState<BreedId>('puddlepup')
-  const [sub, setSub] = useState<BreedId>('puddlepup')
+  const [breed, setBreed] = useState<BreedId>('puddlepup')
   const [phrase, setPhrase] = useState('')
   const [artist, setArtist] = useState('')
 
   const roll = useMemo(() => (phrase.trim() ? rollShrine(phrase, artist, BREED_IDS) : null), [phrase, artist])
-  const pairName = mixBreeds(main, sub).variantName
+  const breedInfo = BREED_BY_ID[breed]
 
   const begin = () => {
-    if (mode === 'breed') startNew(createMonster({ id: newId(), mainBreed: main, subBreed: sub, likes: DEFAULT_LIKES }))
+    if (mode === 'breed') startNew(createMonster({ id: newId(), mainBreed: breed, likes: DEFAULT_LIKES }))
     else if (mode === 'phrase' && roll) startNew(monsterFromRoll(roll, newId()))
     else if (mode === 'blank') startNew(blankMonster(newId(), t.blankName))
     else return
@@ -92,14 +91,13 @@ export function LabCreateScreen() {
       {mode === 'breed' && (
         <>
           <div class="preview">
-            <MonsterPortrait breed={main} sub={sub} size={120} label={pairName} />
+            <MonsterPortrait breed={breed} size={120} label={breedInfo.name} />
             <div class="preview__info">
-              <span class="preview__name">{pairName}</span>
-              <span class="muted small">{t.pairHint}</span>
+              <span class="preview__name">{breedInfo.name}</span>
+              <span class="muted small">{breedInfo.niche}</span>
             </div>
           </div>
-          <BreedTiles value={main} onChange={setMain} label={t.main} />
-          <BreedTiles value={sub} onChange={setSub} label={t.sub} />
+          <BreedTiles value={breed} onChange={setBreed} label={t.breed} />
         </>
       )}
 
@@ -113,7 +111,7 @@ export function LabCreateScreen() {
           </Field>
           {roll ? (
             <div class="preview">
-              <MonsterPortrait breed={roll.mainBreed} sub={roll.subBreed} size={120} label={roll.variantName} />
+              <MonsterPortrait breed={roll.mainBreed} size={120} label={roll.variantName} />
               <div class="preview__info">
                 <span class="preview__name">{roll.variantName}</span>
                 <span class="muted small">

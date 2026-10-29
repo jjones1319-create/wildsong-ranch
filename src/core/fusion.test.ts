@@ -7,7 +7,7 @@ import { BREED_IDS, STAT_KEYS, type BreedId } from '../data/types.ts'
 import { babyRanks, babyStatOffsets, catalystEffect, compatTier, compatibility, findKey, findRelative, fuse, fusionOutcomes, fusionSurprises, inheritedGrades, inheritedTechniques, inheritedTraitFor, makeBaby, pairKey, rarityK, type FusionOutcome } from './fusion.ts'
 import { cyrb53 } from './hash.ts'
 import { divRound } from './mathx.ts'
-import { mixBreeds } from './monster.ts'
+import { breedBirth } from './monster.ts'
 import { createRng } from './rng.ts'
 import { createGameState } from './state.ts'
 import { makeMonster } from './test-helpers.ts'
@@ -29,8 +29,6 @@ describe('Fusion odds (§15)', () => {
     expect(breeds(outs).slice(0, 2)).toEqual(['puddlepup', 'tumblefox'])
     expect(outs[2]!.key).toBe(`puddlepup+tumblefox>${outs[2]!.breed}`)
     expect(outs[0]!.key).toBeNull()
-    // The subs never matter: a mixed parent counts as its main breed.
-    expect(fusionOutcomes(makeMonster({ main: 'puddlepup', sub: 'cobblemaw' }), fox, STARTING_UNLOCKED)).toEqual(outs)
   })
 
   it('same-breed parents add up; the Lineage Seal doubles the first parent’s weight', () => {
@@ -142,11 +140,11 @@ describe('Fusion surprises (CONTENT §2.3)', () => {
 describe('compatibility and the baby’s stats (§15)', () => {
   it('ranks the baby by grade (ties by base) and counts the stats where a parent agrees', () => {
     // Puddlepup: SKI B first, then the C stats by base (LIF 120, then POW/SPD/DEF at 70 in order), INT D last.
-    expect(babyRanks('puddlepup', 'puddlepup')).toEqual({ SKI: 1, LIF: 2, POW: 3, SPD: 4, DEF: 5, INT: 6 })
+    expect(babyRanks('puddlepup')).toEqual({ SKI: 1, LIF: 2, POW: 3, SPD: 4, DEF: 5, INT: 6 })
     const perfect = makeMonster({ stats: { SKI: 600, LIF: 500, POW: 400, SPD: 300, DEF: 200, INT: 100 } })
     const reversed = makeMonster({ stats: { INT: 600, DEF: 500, SPD: 400, POW: 300, LIF: 200, SKI: 100 } })
-    expect(compatibility(perfect, reversed, 'puddlepup', 'puddlepup')).toBe(6)
-    expect(compatibility(reversed, reversed, 'puddlepup', 'puddlepup')).toBe(0)
+    expect(compatibility(perfect, reversed, 'puddlepup')).toBe(6)
+    expect(compatibility(reversed, reversed, 'puddlepup')).toBe(0)
     expect(compatTier(0)).toBe('low')
     expect(compatTier(2)).toBe('decent')
     expect(compatTier(4)).toBe('wonderful')
@@ -158,10 +156,10 @@ describe('compatibility and the baby’s stats (§15)', () => {
   })
 
   it('baby = base + round(offset · P · K) + catalyst, with offsets from the parents’ trained gains', () => {
-    const base = mixBreeds('puddlepup', 'puddlepup').base
+    const base = breedBirth('puddlepup').base
     const p1 = makeMonster({ stats: { POW: base.POW + 300 } })
     const p2 = makeMonster({ stats: { POW: base.POW + 150, INT: base.INT - 50 } })
-    const m = compatibility(p1, p2, 'puddlepup', 'puddlepup')
+    const m = compatibility(p1, p2, 'puddlepup')
     const off = babyStatOffsets(p1, p2, m, 40, catalystEffect(null))
     const pPct = FUSION.pBasePct + FUSION.pPerMatchPct * m
     // v1.11 (owner): never more than 10 % of the better parent's trained points in that stat.
@@ -224,16 +222,16 @@ describe('inheritance (§15)', () => {
     expect(r.baby.nature).toBe(10)
     expect(r.baby.form).toBe(10)
     expect(r.baby.generation).toBe(5)
-    const mix = mixBreeds('puddlepup', 'puddlepup')
-    expect(r.baby.grades).toEqual(mix.grades)
-    expect(r.baby.gutsRate).toBe(mix.gutsRate)
-    expect(r.baby.lifespanTotal).toBe(mix.lifespan + 20)
+    const birth = breedBirth('puddlepup')
+    expect(r.baby.grades).toEqual(birth.grades)
+    expect(r.baby.gutsRate).toBe(birth.gutsRate)
+    expect(r.baby.lifespanTotal).toBe(birth.lifespan + 20)
     expect(r.baby.ageWeeks).toBe(0)
   })
 
-  it('the baby is always one whole breed, with the pure lifespan bonus', () => {
+  it('the baby is always one whole breed, with the +10 % lifespan every monster gets', () => {
     const r = makeBaby(makeMonster({ id: 'p1' }), makeMonster({ id: 'p2', main: 'tumblefox' }), outcome('hearthwing', 20, 'surprise'), catalystEffect(null), 'baby', createRng(4))
-    expect([r.baby.mainBreed, r.baby.subBreed]).toEqual(['hearthwing', 'hearthwing'])
+    expect(r.baby.mainBreed).toBe('hearthwing')
     expect(r.baby.name).toBe('Hearthwing')
     expect(r.baby.lifespanTotal).toBeGreaterThan(BREED_BY_ID.hearthwing.lifespan)
     expect(r.newFind).toBe(false)
@@ -271,7 +269,7 @@ describe('inheritance v1.11: a second trait, better grades, a 10 % head start (�
     expect(g.POW).toBe('B') // C → B, one step only
     expect(g.INT).toBe('C') // D → C, which is the parent's own
     expect(g.SKI).toBe('B') // nobody beats B
-    expect(inheritedGrades(p1, p1, 'puddlepup')).toEqual(mixBreeds('puddlepup', 'puddlepup').grades)
+    expect(inheritedGrades(p1, p1, 'puddlepup')).toEqual(breedBirth('puddlepup').grades)
   })
 
   it('makeBaby gives the trait, the grades and a head start of at most 10 % of the better parent’s trained points', () => {
@@ -282,7 +280,7 @@ describe('inheritance v1.11: a second trait, better grades, a 10 % head start (�
     expect(r.baby.inheritedTrait).toBe('fortified')
     expect(r.baby.grades.POW).toBe('B')
     expect(r.headStart.POW).toBeLessThanOrEqual(90)
-    expect(r.baby.stats.POW).toBe(mixBreeds('puddlepup', 'puddlepup').base.POW + r.headStart.POW)
+    expect(r.baby.stats.POW).toBe(breedBirth('puddlepup').base.POW + r.headStart.POW)
     for (const k of STAT_KEYS) expect(r.headStart[k]).toBeLessThanOrEqual(Math.floor(Math.max(p1.stats[k], p2.stats[k]) / 10))
   })
 })
@@ -307,10 +305,9 @@ describe('fuse at Dr. Pell’s (§15)', () => {
     expect(r.state.memorial.map((e) => e.cause)).toEqual(['fused', 'fused'])
     expect(r.state.memorial.map((e) => e.monster.id).sort()).toEqual(['p1', 'p2'])
     expect(r.result!.baby.parents).toEqual(['p1', 'p2'])
-    expect(r.result!.baby.stats.POW).toBeGreaterThan(mixBreeds(r.result!.outcome.breed, r.result!.outcome.breed).base.POW)
+    expect(r.result!.baby.stats.POW).toBeGreaterThan(breedBirth(r.result!.outcome.breed).base.POW)
     expect(findRelative(r.state, 'p1')?.id).toBe('p1')
     expect(r.state.encyclopedia.breeds).toContain(r.result!.outcome.breed)
-    expect(r.result!.baby.subBreed).toBe(r.result!.baby.mainBreed)
     for (const k of STAT_KEYS) expect(r.result!.baby.stats[k]).toBeGreaterThan(0)
     // Deterministic for a seed.
     expect(fuse(state, 'p1', 'p2', 'power-shard', 'baby', createRng(7)).result!.baby).toEqual(r.result!.baby)

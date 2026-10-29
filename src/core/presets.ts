@@ -41,7 +41,7 @@ export function firstWeekOfStage(m: Monster, stage: number): number {
 
 export function makePreset(breed: BreedId, tier: PresetTier): Monster {
   const rng = createRng(cyrb53(`${PRESET_ID_PREFIX}${breed}.${tier}`))
-  const m = createMonster({ id: presetId(breed, tier), mainBreed: breed, subBreed: breed, likes: rollLikes(rng), name: BREED_BY_ID[breed].name })
+  const m = createMonster({ id: presetId(breed, tier), mainBreed: breed, likes: rollLikes(rng), name: BREED_BY_ID[breed].name })
   if (tier === 'baby') return m
   const t = PRESETS.tiers[tier]
   m.stats = scaleToTotal(m.grades, t.total)

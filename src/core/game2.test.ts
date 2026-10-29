@@ -91,7 +91,7 @@ describe('the controller and the Guild (M5)', () => {
     expect(letGo.monster!.techniques.some((t) => t.id === 'universal.beat-bump')).toBe(false)
   })
 
-  it('a pure breed entering Prime with loyalty ≥ 60 learns its Signature at the end of that week', () => {
+  it('a monster entering Prime with loyalty ≥ 60 learns its Signature at the end of that week', () => {
     const m = makeMonster({ spoil: 60, fear: 60 })
     m.ageWeeks = firstWeekOfStage(m, 5) - 1
     let state = createGameState({ monster: m })

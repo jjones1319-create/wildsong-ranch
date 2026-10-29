@@ -3,15 +3,15 @@ import type { SecretVariant } from '../data/secrets.ts'
 import { BIRTH, RANGES, SHRINE } from '../data/tuning.ts'
 import { STAT_KEYS, type BreedId } from '../data/types.ts'
 import { phraseSeed, type PhraseSeed } from './hash.ts'
-import { createMonster, mixBreeds, rollLikes, zeroStats, type BirthOffsets, type Likes, type Monster } from './monster.ts'
+import { createMonster, rollLikes, zeroStats, type BirthOffsets, type Likes, type Monster } from './monster.ts'
 import { createRng, type Rng } from './rng.ts'
-import { applyBirthPerkMut, secretForPhrase, variantStatBonus } from './variants.ts'
+import { applyBirthPerkMut, secretForPhrase, variantNameOf, variantStatBonus } from './variants.ts'
 
 /**
  * GAME_DESIGN §14.1: the Shrine of Echoes turns a phrase into a monster. The order of the rolls is
  * part of the contract (changing it changes every monster ever made), so it is spelled out step by
  * step here and pinned by snapshot tests. A secret phrase (CONTENT §12) skips the breed rolls: its
- * variant names the breed, and the monster is pure with the variant's colours and bonus.
+ * variant names the breed, and the monster gets the variant's colours and bonus.
  */
 
 export interface ShrineRoll {
@@ -19,7 +19,6 @@ export interface ShrineRoll {
   mainBreed: BreedId
   /** True when the main breed is not unlocked: in the game no monster is made (the stone hums). The Lab ignores this. */
   mainLocked: boolean
-  subBreed: BreedId
   offsets: BirthOffsets
   likes: Likes
   suggestedName: string
@@ -39,19 +38,10 @@ export function rollShrine(phrase: string, artist: string, unlocked: readonly Br
   const seed = phraseSeed(phrase, artist)
   const rng = createRng(seed.seed)
   const secret = secretForPhrase(seed.phrase)
-  let mainBreed: BreedId
-  let subBreed: BreedId
-  if (secret) {
-    // A secret phrase: the variant's breed, pure. No breed rolls, so the seed goes straight to the offsets.
-    mainBreed = secret.breed
-    subBreed = secret.breed
-  } else {
-    // 1. Main breed: weighted by commonness among ALL breeds (locked ones included).
-    mainBreed = rng.weightedPick(BREEDS, (b) => b.commonness).id
-    // 2. Sub breed: from h2, weighted by commonness among the unlocked breeds.
-    const pool = BREEDS.filter((b) => unlocked.includes(b.id))
-    subBreed = createRng(seed.h2).weightedPick(pool.length > 0 ? pool : BREEDS, (b) => b.commonness).id
-  }
+  // A secret phrase names the variant's breed: no breed roll, so the seed goes straight to the offsets.
+  // 1. Breed: weighted by commonness among ALL breeds (locked ones included).
+  // 2. (Retired in v1.12: the sub breed. It drew from its own h2 stream, so no other roll moved.)
+  const mainBreed: BreedId = secret ? secret.breed : rng.weightedPick(BREEDS, (b) => b.commonness).id
   const mainLocked = !unlocked.includes(mainBreed)
   // 3. Stat offsets.
   const stats = zeroStats()
@@ -63,12 +53,11 @@ export function rollShrine(phrase: string, artist: string, unlocked: readonly Br
   const likes = rollLikes(rng)
   const nature = rng.nextInt(BIRTH.nature.min, BIRTH.nature.max)
   // 8. Name suggestion.
-  const variantName = secret ? `${secret.adjective} ${BREED_BY_ID[secret.breed].name}` : mixBreeds(mainBreed, subBreed).variantName
+  const variantName = variantNameOf({ mainBreed, variantId: secret?.id ?? null })
   return {
     seed,
     mainBreed,
     mainLocked,
-    subBreed,
     offsets: { stats, lifespan, gutsRate, nature },
     likes,
     suggestedName: suggestName(seed.phrase, variantName),
@@ -88,7 +77,6 @@ export function monsterFromRoll(roll: ShrineRoll, id: string): Monster {
   const m = createMonster({
     id,
     mainBreed: roll.mainBreed,
-    subBreed: roll.subBreed,
     likes: roll.likes,
     offsets,
     seedPhrase: roll.seed.phrase,

@@ -2,6 +2,46 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Art P0: one breed per monster (2026-10-28) · v1.12.0
+
+**Live:**
+- **Every monster is one whole breed.** The main/sub mix is gone everywhere: the Shrine, the Market, Fusion, the Lab, the Library, share codes and the drawings. A breed now has one look, which is what lets Art 2.0 paint each breed individually in Blender.
+- **The old "pure" bonuses go to everyone** (the owner's choice): every monster gets the +10% lifespan and can earn its Signature (loyalty 60 at Prime, the Glacier Bastion trial or the Crown's sheet, as before). The ✦ Pure badge is gone.
+- **The Shrine still knows your phrases:** every phrase gives the same breed, personality and nature as before. A phrase that used to make a mix now makes that breed whole, with the breed's own stats, grades and lifespan.
+- **Your monsters keep everything:** a mixed monster becomes its main breed with the same stats, grades, techniques, age and lifespan, and now wears that breed's colours. If it still had the name the game gave it ("Cinder Tumblefox"), it's now called "Tumblefox"; a name you chose stays.
+- **Monster Lab:** Create and ✏️ Edit have one **Breed** picker; the Colours choice is gone.
+- **Collector** needs 30 looks now (breeds or secret variants), down from 50, because there are only 51 in the whole game. Looks already collected still count.
+
+**Done**
+- **Core** (`core/monster.ts`): `breedBirth(breed)` replaces `mixBreeds(main, sub)`. The monster loses `subBreed`, `flags.pure` and `appearance`. `BIRTH.lifespanBonusPct` (10) applies to everyone; the blend weights are gone from `tuning.ts`.
+- **Signature gates** lose their purity checks: Prime (`signatureAtPrime`), Glacier Bastion (`techniqueCandidates`), Songsheets (`canLearn`, no `signatureNotPure`), the Guild Library and bosses (`npcMonster`, no `sub` option).
+- **Shrine** (`core/shrine.ts`): the sub step is gone. It drew from its own `h2` stream, so no other roll moved. Checked against the old code over 3,000 phrases (with all breeds and with only the starting ones unlocked): breed, offsets, likes, nature and name are identical, and the 106 phrases that already made one breed give byte-identical monsters.
+- **Fusion, Lab, cocoon, Heartstones, titles:** one breed throughout. The cocoon makes a whole Velvesper (its base, grades and guts) instead of a Velvesper/Nibblegrub mix. Heartstones lose `donorSub`.
+- **Data:** no accent parts or sub adjectives in `breeds.ts`, no sub-quirk tag in `techniques.ts`; the Signature rows read "Auto at Prime (loyalty ≥ 60)". CONTENT §2.2 and §3 changed with them.
+- **Save v15** (`save/legacyMix.ts`, `schema.ts`, `migrate.ts`): the validator drops the old fields wherever a monster is stored (the ranch, edit history, cups, the Hall of Fame, the Freezer, the Elder Grove, the Memorial, monster files, the Library and bare imports, which never pass through `migrate()`), and renames an untouched mix name using a frozen table of the old adjectives. Heartstones and Encyclopedia phrases lose their sub. The migration step only bumps the version.
+- **Classic drawings:** every monster wears its own breed's palette (secret variants keep theirs); `art/monster/accents.ts` is deleted.
+- **Screens:** one Breed picker (Create, ✏️ Edit), no Colours control, no Pure badge, the Library's breed filter by breed, names via `variantNameOf`.
+- **Tests:** 935 Vitest tests, up from 931.
+  - **Birth:** every breed's newborn is its own base, grades and guts with 110% of its lifespan; the Puddlepup numbers are unchanged.
+  - **Shrine:** the five pinned phrases keep their breeds (Wildsong and Hello are unchanged to the digit); the 1,000-phrase hash is re-pinned after the old/new comparison above.
+  - **Saves:** a v14 save with mixed monsters in every place, Heartstones and phrases; old monster files, Libraries, bare monsters and an old share code; broken sub values never fail a load.
+  - **Signatures** for every breed; a former mix keeps the other breed's Basic it knew but can't relearn it once forgotten.
+  - **Balance:** the §26 sims pass unchanged, because every sim monster was already one breed with the +10%. The golden lives' hash was re-pinned only because the sim report lost its `sub` field; with it put back, the six lives hash to the old value exactly.
+- **Docs:** GAME_DESIGN §4, §5.2, §7, §10, §12.8, §13, §14.1, §14.3 (rewritten as "One breed per monster"), §15, §19, §22; CONTENT §2.2, §3, §11 and the titles table; BUILD_PLAN's new Art 2.0 section; SOUND_UPGRADE §7.7 (the monster song's key comes from its breed); notes in NEW_MONSTERS and VISUAL_UPGRADE_PLAN; the P1–P9 prompts in `ART_2_PROMPTS.md` no longer mention accent parts or mixes.
+
+**Decisions worth knowing**
+- **Old mixes keep their numbers.** Nothing is recalculated, so a former mix may have stats, grades or a lifespan its breed wouldn't be born with today. The Lab's "Reset to breed default" brings the grades, guts and lifespan to the breed's.
+- **A former mix's extra Basic** (its old sub-quirk) stays until it's forgotten; after that it can't be learned again.
+- **Heartstones and Fusion** measure a former mix's trained gains against its breed's base now, not the old blended base.
+- **Collector:** old mix looks stay in the Journal's count, so nobody loses progress.
+
+- **Playwright** (two workers): 21 passed, 18 skipped. The one failure is `e2e/sound.spec.ts` on Pixel 7: the Sound Lab's song reads as stopped half a second after the Effects buttons are tapped. It fails the same way on the v1.11.0 commit (built and run separately), so it isn't from this change.
+
+**Known issues**
+- `e2e/sound.spec.ts` fails at the Sound Lab check (`lab.song` is null after the Effects taps) on v1.11.0 too; to look at in a sound step.
+
+**Next:** Art P1, the Puddlepup pilot in 3D (Fable 5.1, high effort). It needs `three` and the glTF optimiser, which the owner approves by running P1.
+
 ## Grades to S: stat caps, inherited traits and grades, stat bars, the stats guide (2026-10-28) · v1.11.0
 
 **Live:**

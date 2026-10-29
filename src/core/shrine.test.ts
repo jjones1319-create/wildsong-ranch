@@ -6,7 +6,7 @@ import { SECRETS } from '../data/secrets.ts'
 import { cyrb53 } from './hash.ts'
 import { monsterFromRoll, randomPhrase, rollShrine, suggestName } from './shrine.ts'
 import { createRng } from './rng.ts'
-import { mixBreeds } from './monster.ts'
+import { breedBirth } from './monster.ts'
 
 const ALL = [...BREED_IDS]
 
@@ -17,14 +17,13 @@ describe('the Shrine of Echoes (§14.1)', () => {
     expect(a).toEqual(b)
     expect(a.seed.phrase).toBe('hello world')
     const c = rollShrine('hello world', 'someone', ALL)
-    expect(c.subBreed === a.subBreed && c.offsets.lifespan === a.offsets.lifespan && c.likes.food === a.likes.food).toBe(false)
+    expect(c.mainBreed === a.mainBreed && c.offsets.lifespan === a.offsets.lifespan && c.likes.food === a.likes.food).toBe(false)
   })
 
-  it('keeps every roll inside its range and the sub among the unlocked breeds', () => {
+  it('keeps every roll inside its range and flags a breed that is still asleep', () => {
     for (let i = 0; i < 200; i++) {
       const r = rollShrine(`song number ${i}`, i % 3 === 0 ? 'the band' : '', STARTING_UNLOCKED)
       expect(ALL).toContain(r.mainBreed)
-      expect(STARTING_UNLOCKED).toContain(r.subBreed)
       expect(r.mainLocked).toBe(!STARTING_UNLOCKED.includes(r.mainBreed))
       for (const k of STAT_KEYS) {
         expect(r.offsets.stats[k]).toBeGreaterThanOrEqual(BIRTH.statOffset.min)
@@ -38,7 +37,7 @@ describe('the Shrine of Echoes (§14.1)', () => {
     }
   })
 
-  it('reaches every breed as a main over many phrases', () => {
+  it('reaches every breed over many phrases', () => {
     const seen = new Set<string>()
     for (let i = 0; i < 2000 && seen.size < ALL.length; i++) seen.add(rollShrine(`phrase ${i}`, '', ALL).mainBreed)
     expect(seen.size).toBe(ALL.length)
@@ -61,11 +60,11 @@ describe('the Shrine of Echoes (§14.1)', () => {
     expect(m.nature).toBe(r.offsets.nature)
   })
 
-  it('pins five phrases forever (the contract: changing any roll order changes every monster; two of them are secret phrases since M6)', () => {
+  it('pins five phrases forever (the contract: changing any roll order changes every monster; two of them are secret phrases since M6, and since v1.12 each is one whole breed)', () => {
     const summary = (phrase: string, artist: string) => {
       const r = rollShrine(phrase, artist, ALL)
       const m = monsterFromRoll(r, 'x')
-      return `${r.mainBreed}/${r.subBreed} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} life ${m.lifespanTotal} guts ${m.gutsRate} nature ${m.nature} ${m.likes.food}`
+      return `${r.mainBreed} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} life ${m.lifespanTotal} guts ${m.gutsRate} nature ${m.nature} ${m.likes.food}`
     }
     expect([
       summary('wildsong', ''),
@@ -75,11 +74,11 @@ describe('the Shrine of Echoes (§14.1)', () => {
       summary('a', 'b'),
     ]).toMatchInlineSnapshot(`
       [
-        "puddlepup/puddlepup Wildsong 145/92/86/110/103/80 life 411 guts 12 nature 21 berry-pudding",
-        "grumblestone/petalphant Twinkle 177/92/55/58/36/137 life 463 guts 15 nature -26 river-fish",
-        "tumblefox/tumblefox Hello 100/68/94/78/163/23 life 387 guts 10 nature 16 herbal-pellets",
-        "tumblefox/pluckrex 夜明けの歌 113/74/79/75/90/50 life 357 guts 11 nature -27 berry-pudding",
-        "grumblestone/starhowl A 141/104/60/51/45/116 life 434 guts 14 nature -24 honey-bread",
+        "puddlepup Wildsong 145/92/86/110/103/80 life 411 guts 12 nature 21 berry-pudding",
+        "grumblestone Twinkle 172/100/43/56/31/152 life 501 guts 15 nature -26 river-fish",
+        "tumblefox Hello 100/68/94/78/163/23 life 387 guts 10 nature 16 herbal-pellets",
+        "tumblefox 夜明けの歌 108/64/87/73/95/42 life 393 guts 11 nature -27 berry-pudding",
+        "grumblestone A 159/104/52/36/17/138 life 520 guts 15 nature -24 honey-bread",
       ]
     `)
   })
@@ -91,7 +90,7 @@ const SECRET_PHRASES = [
 ]
 
 describe('secret phrases (CONTENT §12)', () => {
-  it('every secret phrase wakes its variant: pure, with its colours id, bonus and perk', () => {
+  it('every secret phrase wakes its variant: its breed, with its colours id, bonus and perk', () => {
     const seen = new Set<string>()
     for (const phrase of SECRET_PHRASES) {
       const r = rollShrine(phrase, '', ALL)
@@ -99,14 +98,12 @@ describe('secret phrases (CONTENT §12)', () => {
       const s = r.secret!
       seen.add(s.id)
       expect(r.mainBreed).toBe(s.breed)
-      expect(r.subBreed).toBe(s.breed)
-      expect(r.variantName).toBe(`${s.adjective} ${mixBreeds(s.breed, s.breed).variantName}`)
+      expect(r.variantName).toBe(`${s.adjective} ${breedBirth(s.breed).name}`)
       const m = monsterFromRoll(r, 'x')
       expect(m.variantId).toBe(s.id)
-      expect(m.flags.pure).toBe(true)
-      const base = mixBreeds(s.breed, s.breed).base
+      const base = breedBirth(s.breed).base
       for (const k of STAT_KEYS) expect(m.stats[k]).toBe(Math.min(999, Math.max(1, base[k] + r.offsets.stats[k] + (s.stats[k] ?? 0))))
-      expect(m.lifespanTotal).toBe(mixBreeds(s.breed, s.breed).lifespan + r.offsets.lifespan + s.lifespan)
+      expect(m.lifespanTotal).toBe(breedBirth(s.breed).lifespan + r.offsets.lifespan + s.lifespan)
       if (s.perk === 'lovesHoneyBread') expect(m.likes.food).toBe('honey-bread')
     }
     expect(seen.size).toBe(SECRETS.length)
@@ -139,8 +136,8 @@ describe('secret phrases (CONTENT §12)', () => {
     for (let i = 0; i < 1000; i++) {
       const r = rollShrine(`echo ${i} ${['dawn', 'dusk', 'rain'][i % 3]}`, i % 4 === 0 ? `voice ${i % 7}` : '', ALL)
       const m = monsterFromRoll(r, 'x')
-      lines.push(`${r.mainBreed}/${r.subBreed}/${m.variantId ?? '-'} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} ${m.lifespanTotal} ${m.gutsRate} ${m.nature} ${m.likes.food} ${m.likes.drill}`)
+      lines.push(`${r.mainBreed}/${m.variantId ?? '-'} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} ${m.lifespanTotal} ${m.gutsRate} ${m.nature} ${m.likes.food} ${m.likes.drill}`)
     }
-    expect(cyrb53(lines.join('\n'))).toBe(8145457784466491)
+    expect(cyrb53(lines.join('\n'))).toBe(1406725160479249)
   })
 })

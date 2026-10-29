@@ -3,7 +3,7 @@ import { TECHNIQUE_BY_ID, techniquesOfBreed } from '../data/techniques.ts'
 import { JOURNEY, SIGNATURE, TRAIT_EFFECTS } from '../data/tuning.ts'
 import { TOURNAMENT_GRADES, type JourneySiteId, type Stats, type Technique } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, addTrained, gradeFactor100, gradeIndex, hasTrait, isPure, loyaltyOf, stageFactor100, stageOf, type Monster } from './monster.ts'
+import { addCondition, addTrained, gradeFactor100, gradeIndex, hasTrait, loyaltyOf, stageFactor100, stageOf, type Monster } from './monster.ts'
 import { npcMonster } from './npc.ts'
 import type { Rng } from './rng.ts'
 import { isFull } from './songbook.ts'
@@ -87,7 +87,7 @@ export function techniqueCandidates(m: Monster, site: JourneySiteId): Technique[
     const learn = t.learn
     if (known.has(t.id)) continue
     if (learn.kind === 'signature') {
-      if (site === 'glacier-bastion' && isPure(m)) out.push(t)
+      if (site === 'glacier-bastion') out.push(t)
       continue
     }
     if (learn.kind !== 'journey' || learn.site !== site) continue
@@ -219,9 +219,9 @@ export function rollSaleMonths(rng: Rng): number[] {
   return months.slice(0, JOURNEY.saleMonthsPerYear).sort((a, b) => a - b)
 }
 
-/** §10.4: a pure breed entering Prime with loyalty ≥ 60 learns its Signature (null when it can't right now). */
+/** §10.4: a monster entering Prime with loyalty ≥ 60 learns its Signature (null when it can't right now). */
 export function signatureAtPrime(m: Monster): Technique | null {
-  if (!isPure(m) || loyaltyOf(m) < SIGNATURE.loyaltyMin) return null
+  if (loyaltyOf(m) < SIGNATURE.loyaltyMin) return null
   const sig = techniquesOfBreed(m.mainBreed).find((t) => t.family === 'Signature')
   if (!sig || m.techniques.some((t) => t.id === sig.id) || isFull(m)) return null
   return sig

@@ -217,7 +217,7 @@ function FusionTab({ g }: { g: GameState }) {
   const top = outcomes[0]
   // A 35/35 tie has no single most likely breed.
   const topRow = top && outcomes[1]?.pct !== top.pct ? 0 : -1
-  const compat = m1 && m2 && top ? compatibility(m1, m2, top.breed, top.breed) : null
+  const compat = m1 && m2 && top ? compatibility(m1, m2, top.breed) : null
   const known = (o: (typeof outcomes)[number]) => outcomeKnown(o, g.fusionFinds)
   const nameOf = (o: (typeof outcomes)[number]) => (known(o) ? BREED_BY_ID[o.breed].name : t.hidden)
   const sealWasted = seal && m1 !== null && !g.unlocked.includes(m1.mainBreed)
@@ -524,7 +524,7 @@ function HeartstonesTab({ g }: { g: GameState }) {
                 💎
               </span>
               <span class="stone__body">
-                <span class="stone__phrase">{fill(t.stoneFrom, { name: h.donorName, variant: variantNameOf({ mainBreed: h.donorBreed, subBreed: h.donorSub, variantId: h.donorVariant }) })}</span>
+                <span class="stone__phrase">{fill(t.stoneFrom, { name: h.donorName, variant: variantNameOf({ mainBreed: h.donorBreed, variantId: h.donorVariant }) })}</span>
                 <span class="muted small">{fill(t.stoneGives, { n: total, hit: HEARTSTONE.heirloomHit, family: FAMILY_LABELS[h.family] })}</span>
                 <span class="muted small">{STAT_KEYS.filter((k) => grant[k] > 0).map((k) => `${STAT_NAMES[k]} +${grant[k]}`).join(' · ')}</span>
               </span>

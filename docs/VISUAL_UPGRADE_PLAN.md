@@ -17,7 +17,7 @@ Status: **decided** (Oct 24, 2026). The owner's decisions are in §0. Each miles
 
 ## 1. Where the game is today
 
-- **Monsters** are "paper dolls" drawn in code (SVG): parametric parts on a body plan, flat fills plus one shading layer, CSS idle animation (breathe, bob, blink, wag), eight expressions, automatic recoloring for all 900 main/sub mixes. They look consistent and charming, but they're stiff: one standing pose, no real body language, and in battle they just slide and flash.
+- **Monsters** are "paper dolls" drawn in code (SVG): parametric parts on a body plan, flat fills plus one shading layer, CSS idle animation (breathe, bob, blink, wag), eight expressions, automatic recoloring for all 900 main/sub mixes (mixes were retired in Art P0, v1.12; every monster is one whole breed). They look consistent and charming, but they're stiff: one standing pose, no real body language, and in battle they just slide and flash.
 - **Attacks** all look the same: a lunge, or a small dot that flies across, then a flash. Flame breath, ice lance and tidal wave are only words on the technique card.
 - **Drill cutaways** are the monster standing beside a small prop picture (a 160×100 drawing) with the prop wiggling. The monster isn't *in* the scene: it doesn't sit under the waterfall, it stands next to a picture of one.
 

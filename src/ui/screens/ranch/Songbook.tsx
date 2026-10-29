@@ -2,7 +2,6 @@ import { playSfx } from '../../../audio/player.ts'
 import { useEffect, useState } from 'preact/hooks'
 import { forgotLine, learnedLine } from '../../../core/report.ts'
 import { canLearn, goodFit, isFull, learnableFromSongbook } from '../../../core/songbook.ts'
-import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { TECHNIQUE_BY_ID } from '../../../data/techniques.ts'
 import { fill } from '../../../data/text/format.ts'
 import { FAMILY_LABELS, RANGE_LABELS } from '../../../data/text/labels.ts'
@@ -46,10 +45,9 @@ export function SongbookScreen() {
     else if (status === 'full') setMakingRoomFor(tech)
   }
 
-  const reasonText = (why: ReturnType<typeof canLearn>, tech: Technique) => {
+  const reasonText = (why: ReturnType<typeof canLearn>) => {
     if (why.ok) return ''
     if (why.reason === 'known') return t.reasons.known
-    if (why.reason === 'signatureNotPure') return fill(t.reasons.signatureNotPure, { breed: tech.breed === 'universal' ? '' : BREED_BY_ID[tech.breed].name })
     return fill(t.reasons.notInKit, { name: m.name })
   }
 
@@ -108,7 +106,7 @@ export function SongbookScreen() {
               <span class="item__body">
                 <span class="item__name">{tech.name}</span>
                 <span class="item__meta">
-                  {techMeta(tech)} · {reasonText(why, tech)}
+                  {techMeta(tech)} · {reasonText(why)}
                 </span>
               </span>
             </div>

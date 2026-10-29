@@ -4,7 +4,7 @@ import { DRILLS, HEAVY_DRILLS, LIGHT_DRILLS } from './drills.ts'
 import { FOODS } from './foods.ts'
 import { ITEMS } from './items.ts'
 import { JOURNEY_SITES } from './journeys.ts'
-import { BREED_TECHNIQUES, TECHNIQUES, UNIVERSAL_TECHNIQUES, parseEffect, parseLearn, slugify, subQuirkOf, techniquesOfBreed } from './techniques.ts'
+import { BREED_TECHNIQUES, TECHNIQUES, UNIVERSAL_TECHNIQUES, parseEffect, parseLearn, slugify, techniquesOfBreed } from './techniques.ts'
 import { SECRETS, SECRET_BY_HASH } from './secrets.ts'
 import { VARIANT_PALETTES } from '../art/monster/variants.ts'
 import { TRAITS } from './traits.ts'
@@ -110,17 +110,15 @@ describe('techniques (CONTENT §3)', () => {
     expect(dupes).toEqual([])
   })
 
-  it('gives every breed 2 Basics, one of each other family, one sub-quirk Basic and at least 3 ranges', () => {
+  it('gives every breed 2 Basics (both starters), one of each other family and at least 3 ranges', () => {
     for (const breed of BREED_IDS) {
       const kit = techniquesOfBreed(breed)
       expect(kit).toHaveLength(9)
       const count = (f: Family) => kit.filter((t) => t.family === f).length
       expect(count('Basic')).toBe(2)
       for (const f of FAMILIES.filter((f) => f !== 'Basic')) expect(count(f)).toBe(1)
-      const quirks = kit.filter((t) => t.subQuirk)
-      expect(quirks).toHaveLength(1)
-      expect(quirks[0]!.family).toBe('Basic')
-      expect(subQuirkOf(breed).id).toBe(quirks[0]!.id)
+      expect(kit.filter((t) => t.learn.kind === 'starter').map((t) => t.family)).toEqual(['Basic', 'Basic'])
+      expect(kit.filter((t) => t.learn.kind === 'signature').map((t) => t.family)).toEqual(['Signature'])
       expect(new Set(kit.map((t) => t.range)).size).toBeGreaterThanOrEqual(3)
     }
   })
@@ -146,6 +144,8 @@ describe('techniques (CONTENT §3)', () => {
       gradeMin: null,
     })
     expect(parseLearn('Glacier Bastion: DEF+POW ≥ 820 · grade B+', 'cobblemaw')).toMatchObject({ stats: ['DEF', 'POW'], value: 820, gradeMin: 'B' })
+    expect(parseLearn('Auto at Prime (loyalty ≥ 60)', 'cobblemaw')).toEqual({ kind: 'signature' })
+    expect(parseLearn('Starter', 'cobblemaw')).toEqual({ kind: 'starter' })
     expect(parseEffect('3 hits')).toEqual({ kind: 'multi', hits: 3 })
     expect(parseEffect('miss: self-dmg 12% max HP')).toEqual({ kind: 'recoil', pct: 12 })
     expect(slugify("Will-o'-Blaze")).toBe('will-o-blaze')

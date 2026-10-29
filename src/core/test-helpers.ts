@@ -8,7 +8,6 @@ export const NEUTRAL_LIKES: Likes = { food: 'honey-bread', dislikedFood: 'turnip
 export interface MonsterOverrides {
   id?: string
   main?: BreedId
-  sub?: BreedId
   likes?: Likes
   /** Set lifespanTotal to 100 and ageWeeks to this percentage to pin a life stage. */
   agePct?: number
@@ -21,7 +20,7 @@ export interface MonsterOverrides {
 }
 
 export function makeMonster(o: MonsterOverrides = {}): Monster {
-  const m = createMonster({ id: o.id ?? 'test', mainBreed: o.main ?? 'puddlepup', subBreed: o.sub ?? o.main ?? 'puddlepup', likes: o.likes ?? NEUTRAL_LIKES })
+  const m = createMonster({ id: o.id ?? 'test', mainBreed: o.main ?? 'puddlepup', likes: o.likes ?? NEUTRAL_LIKES })
   if (o.agePct !== undefined) {
     m.lifespanTotal = 100
     m.ageWeeks = o.agePct

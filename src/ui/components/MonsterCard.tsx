@@ -1,4 +1,4 @@
-import { isPure, totalStats } from '../../core/monster.ts'
+import { totalStats } from '../../core/monster.ts'
 import { variantNameOf as coreVariantName } from '../../core/variants.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
 import { settings } from '../store/appStore.ts'
@@ -31,7 +31,6 @@ export function MonsterCard({ listed, onTap }: { listed: Listed; onTap: (l: List
           <span>
             {t.grade} {m.grade}
           </span>
-          {isPure(m) && <Badge tone="pure">✦ {t.badges.pure}</Badge>}
           {showEdited && <Badge tone="edited">🔧 {t.badges.edited}</Badge>}
           {listed.badge === 'elder' && <Badge>🌳 {UI_TEXT.pellLab.elderBadge}</Badge>}
           {listed.badge === 'frozen' && <Badge>❄️ {UI_TEXT.labSources.freezer}</Badge>}

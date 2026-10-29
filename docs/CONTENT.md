@@ -102,139 +102,109 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 
 ### 2.2 Art briefs (procedural SVG; see GAME_DESIGN §22)
 
-Each brief lists: body plan · signature features · palette (body / belly / accent / eye) · **accent part** (what this breed adds when it's the sub) · **sub adjective** (for variant names).
+Each brief lists: body plan · signature features · palette (body / belly / accent / eye). Every monster is one whole breed (Art P0), so a breed's look is its own; the accent parts and sub adjectives of the old mix system are retired.
 
 1. **Puddlepup**
    - Quadruped, stubby and round: a puppy-like amphibian with floppy fin-shaped ears, webbed paws, a wide happy grin and a tadpole-ish flat tail.
    - Palette: #3FB6A8 / #F3E6C4 / #F28FA8 / #24323A.
-   - Accent: floppy fin-ears · adjective: "Puddle".
 2. **Tumblefox**
    - Quadruped, small: a fox with an oversized curled tail bigger than its body, tall pointed ears, a dark mask band across the eyes and dark socks.
    - Palette: #D9733B / #F7F1E8 / #3B3240 / #2A1E22.
-   - Accent: curled tail · adjective: "Tumble".
 3. **Cobblemaw**
    - Quadruped, bulky and bear-like: cobblestone plates over shoulders and back with tufts of moss, a wide cave-like jaw with two short stubby tusks, small deep-set eyes.
    - Palette: #6E7486 / #8E94A4 / #7FAF5A / #F2B544.
-   - Accent: stone shoulder plates · adjective: "Cobble".
 4. **Moatshell**
    - Shelled tortoise: its shell is a tiny castle keep with crenellations, arrow slits and a pennant flag on top; stubby pillar legs, sleepy wise eyes.
    - Palette: #C9A66B / #E8D4A8 / #3AA6A1 (flag; brick details #9A5B3C) / #2B2B2B.
-   - Accent: crenellated rim · adjective: "Bastion".
 5. **Wishlume**
    - Floater: a paper sky-lantern creature. The warm flame "heart" glows through its paper body; two stubby paper arms, a dangling tassel tail, eyes painted on the paper.
    - Palette: #F6E3B4 / #FFF2D6 / #D94F4F (ribs and tassel; glow #FFB85C) / #3A2A2A.
-   - Accent: tassel tail · adjective: "Lantern".
 6. **Quillion**
    - Biped, small: a chestnut hedgehog fencer with a crest of back quills, one long silver tail-quill held like a blade, and a short crimson cape. Upright dueling stance.
    - Palette: #8C5A3C / #EED9C4 / #C0392B (quill #C9D3DD) / #1E1E1E.
-   - Accent: back quills · adjective: "Quilled".
 7. **Cinderlynx**
    - Quadruped, lean feline: ember-tipped ear tufts, a glowing ember pattern along the spine, smoke wisps curling from its paws, an ember tail-tip. No collar or mane.
    - Palette: #3A3236 / #5A4E52 / #FF7A2F / #FFD15C.
-   - Accent: ember ear tufts · adjective: "Cinder".
 8. **Bloatoad**
    - Squat blob-quadruped: a huge toad with an inflatable throat sac that balloons when happy, lazy half-lidded eyes, warty spots and little crown-like bumps on its head.
    - Palette: #7C9A3E / #F6C49B / #5E7A2E / #E9C46A.
-   - Accent: throat sac · adjective: "Bog".
 9. **Coilfang**
    - Serpent: a jade S-coil with a feathered golden crest, two neat fangs and a diamond scale pattern down its back.
    - Palette: #2FA37A / #DDF2D3 / #E8C14E / #1B3A2B.
-   - Accent: feathered crest · adjective: "Jade".
 10. **Nimbusheep**
     - Quadruped: a sheep whose wool is a soft raincloud that occasionally drizzles, with curled cream horns. A tiny rainbow appears over it when it's happy. No electricity.
     - Palette: #E9EEF6 / #8C97AD / rainbow (#F28F8F #F7D36B #8FD1A8 #8FB8F2) / #2E3440.
-    - Accent: cloud-wool tufts · adjective: "Nimbus".
 11. **Galeheron**
     - Avian, tall: a long-legged heron with a dagger beak, streaming crest plumes and wind-swirl markings on its wings.
     - Palette: #6FB7E9 / #F5F8FC / #2F5D8A / #F2C14E.
-    - Accent: crest plumes · adjective: "Gale".
 12. **Nibblegrub**
     - Insect: a chubby five-segment larva with tiny legs, big round cheeks always chewing, and stubby antenna nubs.
     - Palette: #F2D27A / #FFF0C2 / #D9A94F (cheeks #F29C8F) / #3B2F2F.
-    - Accent: antenna nubs · adjective: "Grub".
 13. **Velvesper**
     - Insect/avian moth: velvet dusk-colored wings with crescent-moon markings and two soft eyespots, feathery antennae.
     - Palette: #5B3F7A / #EDE3F5 / #F29E4C (eyespots #F7E7B5) / #1B1424.
-    - Accent: feathery antennae · adjective: "Dusk".
 14. **Ashwraith**
     - Floater: a tattered ash-grey shroud with no visible body, two ember eyes, wisps trailing like smoke, and tiny hands peeking out.
     - Palette: #A7A3A0 / #CFCAC6 / #FF6B3D / #FF6B3D.
-    - Accent: trailing wisps · adjective: "Ashen".
 15. **Zipwisp**
     - Floater, small: a fizzing ball of cyan static with two stubby spark-wings and a zigzag tail, always jittering. Keep the face simple and *not* like any existing electric mascot.
     - Palette: #6EF2FF / #FFFFFF / #FFE14D / #0E2A40.
-    - Accent: zigzag tail · adjective: "Zappy".
 16. **Mirrorkin**
     - Floater: a living vertical hand-mirror with an ornate gilded frame; the handle is its tail. Its face appears in the glass and changes expression. It wears a ribbon cloak and has two little floating gloved hands.
     - Palette: #CFD8E3 / #EEF3F8 / #6C5CE7 (frame #C9A04A) / #2B2B33.
-    - Accent: ribbon cloak · adjective: "Mirror".
 17. **Gearhoot**
     - Construct/avian: a clockwork owl of brass plates. One eye is a big monocle lens and one is normal; its wing feathers are little gears and a wind-up key turns on its back.
     - Palette: #C9A04A / #E9D7A6 / #5CC9C0 (copper #B86B3C) / #F7F3E3.
-    - Accent: gear wings · adjective: "Brass".
 18. **Reefclaw**
     - Shelled biped: a coral-pink crab knight with one oversized branching coral claw and one small claw, barnacle shoulder armor and visored eye-stalks.
     - Palette: #F07C6E / #FFD9CF / #BDE7E0 (shell #B85B4E) / #1F2A44.
-    - Accent: coral claw · adjective: "Coral".
 19. **Lootlid**
     - Construct: a treasure-chest creature on stubby legs. The lid is its mouth, with a long tongue and coins glinting inside, and a keyhole "nose".
     - Palette: #9C6B3F / #C99A6B / #F2C94C (tongue #E86A7C) / #2B1B10.
-    - Accent: gold-trim lid · adjective: "Gilded".
 20. **Aurelwyrm**
     - Serpent dragon: golden and serpentine, with long crimson ribbon fins, small branching antlers and whiskers. It floats without wings.
     - Palette: #F2C14E / #FFF4D6 / #D64545 / #6B2D0F.
-    - Accent: ribbon fins · adjective: "Golden".
 21. **Hearthwing**
     - **Quadruped dragon with two forms** (GAME_DESIGN §22, growth forms).
       - **Young** (stages 1–4): a round, stubby dragonet with tiny flappy wings, a short snout, nub horns and a faint glow in its chest.
       - **Grown** (stage 5+): a broad-winged dragon with a long neck and swept-back copper horns. The scales of its stocky chest part like a fireplace grate to show a molten glow. Ember-edged wing membranes and a spade-tipped tail.
     - Palette: #1F6F6A / #E9D8B4 / #FF8A3D (horns #B87333) / #FFD166.
-    - Accent: little wings · adjective "Hearth".
 22. **Grumblestone**
     - **Biped, hulking and hunched:** a boulder giant with a cracked granite shell. Violet crystals glow through the cracks like the inside of a geode.
     - Heavy stone-ledge eyebrows over small grumpy eyes, pillar arms with crystal knuckles, and short thick legs.
     - Palette: #7A7068 / #9C938A / #9B5DE5 / #F5E663.
-    - Accent: crystal-studded shoulders · adjective "Geode".
 23. **Pluckrex**
     - **Biped little dinosaur with two forms.**
       - **Young:** a big head, a wide toothy grin, stubby arms and a thick short tail. Its fan-shaped head crest glows sunflower-gold when it's fired up.
       - **Grown:** taller and sturdier, with a bigger crest, stone-plated forearm bracers and a tougher, scalier hide.
     - Palette: #4F6D8F slate blue / #F1E6CF / #F7C548 / #2B2D42.
-    - Accent: fan crest · adjective "Plucky".
 24. **Paladove**
     - **Avian (a stout dove) with two forms.** Not humanoid.
       - **Young:** a fluffy, round dove chick with a tiny feather crest and a little gold ring floating above its head.
       - **Grown:** a stately dove-knight in white-and-gold chest armor, with four broad wings, a glowing ring halo, and a round feather-emblem shield on one wing.
     - Palette: #F7F4EE / #FFFFFF / #E3B448 / #4A6FA5.
-    - Accent: halo ring · adjective "Haloed".
 25. **Starhowl**
     - **Quadruped wolf:** midnight-indigo fur speckled with tiny twinkling constellations, a flowing aurora mane (teal shading to rose), a star-cluster pattern across the brow, glowing pale eyes and a bushy star-tipped tail.
     - Palette: #2B2F6B / #4C5199 / #6EE7C8 (rose #F49AC1) / #E8F1FF.
-    - Accent: aurora mane · adjective "Starry".
 26. **Petalphant**
     - **Quadruped elephant calf:** round and sage-green, with huge blush-pink ears shaped like magnolia petals.
     - A flower bud at the tip of its trunk opens when it's happy. It has a leafy tail tuft and chubby legs.
     - Palette: #8FB996 / #DCEFD9 / #F4A7B9 / #3B3B3B.
-    - Accent: petal ears · adjective "Blossom".
 27. **Scrollopus**
     - **Blob octopus:** a plump violet octopus in round spectacles and a little tasseled scholar's cap.
     - Each tentacle curls around a scroll, a quill or a book. Ink-spot freckles.
     - Palette: #7D5BA6 / #CDB4E6 / #2E2A4F (cap #3A3A55, tassel #F2C94C) / #1E1E2E.
-    - Accent: scholar's cap · adjective "Inky".
 28. **Gloomgrin**
     - **Biped squat gargoyle imp:** charcoal-stone skin with faint violet rune lines, stubby horns, small bat wings and a curled tail.
     - A wide, cheeky grin of square teeth; amber eyes that glow at night. It crouches like a rooftop statue when idle.
     - Palette: #4B4F58 / #6B7079 / #8E7CC3 / #FFB347.
-    - Accent: bat wings · adjective "Gloomy".
 29. **Rammerjack**
     - **Quadruped mountain goat:** a stocky cream-and-chestnut goat with huge spiral horns banded with rope wraps, a shaggy beard, a red knitted scarf, sturdy hooves and determined eyebrows.
     - Palette: #EFE6D2 / #FFF8EA / #A0522D (scarf #D1495B) / #3A2E26.
-    - Accent: spiral horns · adjective "Rammy".
 30. **Frostlance**
     - **Floater narwhal:** pale blue-white, it swims through the air and leaves a trail of snowflakes.
     - A long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.
     - Palette: #D8EEF7 / #F5FBFE / #1F7A8C (tusk #BDE8F5) / #1B263B.
-    - Accent: ice tusk · adjective "Frosty".
 
 ### 2.3 Fusion kinds and recipes (GAME_DESIGN §15)
 
@@ -330,7 +300,6 @@ These rows were generated from the family bands in GAME_DESIGN §10.2.
 - **heal** techniques (force 0) always succeed.
 - **Requirements** are `stats + loyalty ≥ value` (GAME_DESIGN §11).
 - **Chains** need the base technique at Lv3.
-- **"Sub-quirk"** marks the technique a breed passes on when it is the sub-breed.
 - **Breed Songsheets** (GAME_DESIGN §10.5): every non-Basic technique below can also be learned from a sheet sold at the Guild Library once its breed is unlocked.
   - Prices: Hit 1,000G · Wither 1,500G · Sharp 1,500G · Heavy 2,500G · Special 4,000G · Chain 5,000G.
   - Rank gates: Wither and Sharp from breeder rank 2; Heavy, Special and Chain from rank 4.
@@ -360,34 +329,34 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Splash Nip | Basic | POW | Water | 1 Close | 10 | 12 | +7 | 7 | 8 | 24 | — | Starter |
-| Bubble Pop | Basic | INT | Water | 3 Mid | 10 | 12 | +6 | 5 | 7 | 24 | — | Starter · sub-quirk |
+| Bubble Pop | Basic | INT | Water | 3 Mid | 10 | 12 | +6 | 5 | 7 | 24 | — | Starter |
 | Frill Flick | Hit | POW | Water | 2 Near | 20 | 14 | +19 | 9 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Belly Flop | Heavy | POW | Water | 1 Close | 48 | 52 | -10 | 13 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Soggy Cloud | Wither | INT | Water | 3 Mid | 29 | 12 | -2 | 42 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Slipstream Spin | Sharp | POW | Wind | 2 Near | 25 | 22 | -4 | 9 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Geyser Burst | Special | INT | Water | 4 Far | 48 | 14 | -4 | 20 | 9 | 36 | 2 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Cannonball Flop | Chain | POW | Water | 1 Close | 54 | 70 | -4 | 16 | 11 | 42 | — | Iron Quarry: Belly Flop Lv3 + POW ≥ 520 |
-| Puddle Party | Signature | INT | Water | 3 Mid | 55 | 20 | +5 | 40 | 17 | 42 | heal 10% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Puddle Party | Signature | INT | Water | 3 Mid | 55 | 20 | +5 | 40 | 17 | 42 | heal 10% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Tumblefox
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Scamper Swipe | Basic | POW | Physical | 1 Close | 13 | 12 | +7 | 6 | 5 | 24 | — | Starter |
-| Foxfire Flicker | Basic | INT | Fire | 3 Mid | 13 | 12 | +7 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Foxfire Flicker | Basic | INT | Fire | 3 Mid | 13 | 12 | +7 | 7 | 8 | 24 | — | Starter |
 | Tail Twirl | Hit | POW | Fire | 2 Near | 19 | 15 | +17 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Will-o'-Blaze | Heavy | INT | Fire | 2 Near | 44 | 59 | -9 | 13 | 11 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Trickster's Hush | Wither | INT | Dark | 3 Mid | 26 | 15 | +2 | 42 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Mirage Dart | Sharp | INT | Fire | 4 Far | 27 | 26 | -3 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Fluffstorm | Special | INT | Fire | 2 Near | 48 | 33 | +1 | 20 | 12 | 36 | stun 30 ticks | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Foxfire Volley | Chain | INT | Fire | 3 Mid | 21 | 20 | +7 | 8 | 11 | 27 | — | Archer's Glade: Foxfire Flicker Lv3 + INT ≥ 520 |
-| Ninefold Feint | Signature | INT | Fire | 2 Near | 54 | 18 | +3 | 25 | 30 | 42 | 3 hits | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Ninefold Feint | Signature | INT | Fire | 2 Near | 54 | 18 | +3 | 25 | 30 | 42 | 3 hits | Auto at Prime (loyalty ≥ 60) |
 
 #### Cobblemaw
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Gravel Swipe | Basic | POW | Earth | 1 Close | 10 | 11 | +5 | 6 | 6 | 24 | — | Starter · sub-quirk |
+| Gravel Swipe | Basic | POW | Earth | 1 Close | 10 | 11 | +5 | 6 | 6 | 24 | — | Starter |
 | Shoulder Check | Basic | POW | Physical | 2 Near | 10 | 11 | +5 | 6 | 8 | 24 | — | Starter |
 | Crag Jab | Hit | POW | Earth | 1 Close | 16 | 15 | +18 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Landslide Maul | Heavy | POW | Earth | 1 Close | 47 | 64 | -10 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
@@ -395,27 +364,27 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Fault Line Claw | Sharp | POW | Physical | 2 Near | 26 | 24 | +0 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Boulder Heave | Special | POW | Earth | 3 Mid | 46 | 46 | -1 | 16 | 9 | 36 | miss: self-dmg 8% max HP | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Mountainfall | Chain | POW | Earth | 1 Close | 53 | 84 | -9 | 16 | 14 | 42 | — | Iron Quarry: Landslide Maul Lv3 + POW ≥ 520 |
-| Bedrock Roar | Signature | POW | Earth | 3 Mid | 55 | 30 | +2 | 50 | 16 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Bedrock Roar | Signature | POW | Earth | 3 Mid | 55 | 30 | +2 | 50 | 16 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Moatshell
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Shell Bump | Basic | POW | Physical | 1 Close | 14 | 13 | +5 | 5 | 7 | 24 | — | Starter |
-| Turret Toss | Basic | POW | Earth | 3 Mid | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Turret Toss | Basic | POW | Earth | 3 Mid | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter |
 | Drawbridge Snap | Hit | POW | Physical | 2 Near | 17 | 14 | +16 | 8 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Keep Slam | Heavy | POW | Physical | 1 Close | 44 | 64 | -6 | 12 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Moat Mire | Wither | POW | Water | 2 Near | 28 | 18 | +4 | 48 | 6 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Arrow Slit Shot | Sharp | POW | Earth | 3 Mid | 26 | 30 | +2 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Catapult Barrage | Special | POW | Earth | 4 Far | 48 | 13 | -2 | 19 | 10 | 36 | 3 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Siege Volley | Chain | POW | Earth | 3 Mid | 22 | 21 | +6 | 6 | 7 | 27 | — | Archer's Glade: Turret Toss Lv3 + POW ≥ 520 |
-| Hold the Line | Signature | POW | Earth | 1 Close | 54 | 0 | +5 | 30 | 16 | 42 | heal 20% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Hold the Line | Signature | POW | Earth | 1 Close | 54 | 0 | +5 | 30 | 16 | 42 | heal 20% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Wishlume
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Wishlight Flash | Basic | INT | Light | 3 Mid | 11 | 13 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Wishlight Flash | Basic | INT | Light | 3 Mid | 11 | 13 | +3 | 5 | 4 | 24 | — | Starter |
 | Paper Flutter | Basic | INT | Light | 1 Close | 13 | 13 | +3 | 7 | 8 | 24 | — | Starter |
 | Glimmer Bolt | Hit | INT | Light | 4 Far | 16 | 13 | +14 | 8 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Lantern Beam | Heavy | INT | Light | 4 Far | 44 | 50 | -12 | 11 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
@@ -423,111 +392,111 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Prism Needle | Sharp | INT | Light | 3 Mid | 25 | 22 | -4 | 11 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Ember Siphon | Special | INT | Fire | 2 Near | 46 | 27 | -1 | 19 | 12 | 36 | drain 50% of dmg | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Starlight Lance | Chain | INT | Light | 4 Far | 22 | 14 | +15 | 10 | 10 | 30 | — | Archer's Glade: Glimmer Bolt Lv3 + INT ≥ 520 |
-| Festival of Lights | Signature | INT | Light | 4 Far | 60 | 62 | +0 | 22 | 17 | 42 | — | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Festival of Lights | Signature | INT | Light | 4 Far | 60 | 62 | +0 | 22 | 17 | 42 | — | Auto at Prime (loyalty ≥ 60) |
 
 #### Quillion
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Quill Poke | Basic | POW | Physical | 1 Close | 11 | 12 | +7 | 6 | 6 | 24 | — | Starter |
-| Lunge | Basic | POW | Physical | 2 Near | 14 | 10 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Lunge | Basic | POW | Physical | 2 Near | 14 | 10 | +8 | 7 | 5 | 24 | — | Starter |
 | Riposte | Hit | POW | Physical | 2 Near | 19 | 14 | +19 | 7 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Spine Burst | Heavy | POW | Physical | 1 Close | 44 | 52 | -12 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Bramble Bind | Wither | POW | Nature | 1 Close | 27 | 12 | -2 | 43 | 5 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Fleche | Sharp | POW | Physical | 2 Near | 26 | 22 | -4 | 10 | 34 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Quill Flurry | Special | POW | Physical | 3 Mid | 47 | 11 | +2 | 17 | 8 | 36 | 3 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Grand Riposte | Chain | POW | Physical | 2 Near | 25 | 18 | +23 | 8 | 10 | 30 | — | Archer's Glade: Riposte Lv3 + POW ≥ 520 |
-| Hundred-Quill Waltz | Signature | POW | Physical | 2 Near | 57 | 12 | +14 | 22 | 18 | 42 | 4 hits | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Hundred-Quill Waltz | Signature | POW | Physical | 2 Near | 57 | 12 | +14 | 22 | 18 | 42 | 4 hits | Auto at Prime (loyalty ≥ 60) |
 
 #### Cinderlynx
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Ember Swipe | Basic | POW | Fire | 1 Close | 13 | 14 | +5 | 5 | 8 | 24 | — | Starter |
-| Spark Pounce | Basic | POW | Fire | 2 Near | 13 | 13 | +6 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Spark Pounce | Basic | POW | Fire | 2 Near | 13 | 13 | +6 | 7 | 5 | 24 | — | Starter |
 | Cinder Jab | Hit | POW | Fire | 1 Close | 17 | 19 | +14 | 8 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Inferno Maul | Heavy | POW | Fire | 1 Close | 45 | 54 | -12 | 11 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Smoke Veil | Wither | INT | Fire | 3 Mid | 25 | 12 | -2 | 44 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Blazing Rake | Sharp | POW | Fire | 2 Near | 29 | 22 | -4 | 11 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Wildfire Rush | Special | POW | Fire | 3 Mid | 47 | 36 | -1 | 20 | 11 | 36 | dash to Close after | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Flare Fang Flurry | Chain | POW | Fire | 1 Close | 21 | 21 | +6 | 6 | 11 | 27 | — | Archer's Glade: Ember Swipe Lv3 + POW ≥ 520 |
-| Kindled Fury | Signature | POW | Fire | 2 Near | 55 | 60 | +6 | 26 | 14 | 42 | miss: self-dmg 10% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Kindled Fury | Signature | POW | Fire | 2 Near | 55 | 60 | +6 | 26 | 14 | 42 | miss: self-dmg 10% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Bloatoad
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Belly Bounce | Basic | POW | Water | 1 Close | 11 | 10 | +3 | 6 | 7 | 24 | — | Starter |
-| Tongue Lash | Basic | POW | Water | 2 Near | 10 | 11 | +3 | 6 | 6 | 24 | — | Starter · sub-quirk |
+| Tongue Lash | Basic | POW | Water | 2 Near | 10 | 11 | +3 | 6 | 6 | 24 | — | Starter |
 | Sticky Tongue | Hit | POW | Water | 2 Near | 19 | 15 | +15 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Bog Slam | Heavy | POW | Water | 1 Close | 44 | 53 | -8 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Croak Quake | Wither | POW | Earth | 3 Mid | 26 | 14 | +0 | 38 | 7 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Wart Spitball | Sharp | POW | Water | 3 Mid | 25 | 26 | -3 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Gulp and Spit | Special | POW | Water | 1 Close | 50 | 29 | +2 | 19 | 9 | 36 | drain 40% of dmg | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Swamp Sumo | Chain | POW | Water | 1 Close | 50 | 70 | -5 | 16 | 14 | 42 | — | Iron Quarry: Bog Slam Lv3 + POW ≥ 520 |
-| Balloon Belly | Signature | POW | Water | 1 Close | 53 | 0 | +6 | 20 | 18 | 42 | heal 25% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Balloon Belly | Signature | POW | Water | 1 Close | 53 | 0 | +6 | 20 | 18 | 42 | heal 25% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Coilfang
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Coil Squeeze | Basic | POW | Dark | 1 Close | 10 | 10 | +3 | 6 | 8 | 24 | — | Starter |
-| Fang Snap | Basic | POW | Physical | 2 Near | 10 | 10 | +3 | 5 | 7 | 24 | — | Starter · sub-quirk |
+| Fang Snap | Basic | POW | Physical | 2 Near | 10 | 10 | +3 | 5 | 7 | 24 | — | Starter |
 | Jade Strike | Hit | POW | Dark | 2 Near | 20 | 14 | +14 | 9 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Constrictor Crush | Heavy | POW | Dark | 1 Close | 44 | 50 | -12 | 12 | 10 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Venom Mist | Wither | INT | Dark | 3 Mid | 27 | 12 | -2 | 40 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Crest Cleave | Sharp | POW | Dark | 2 Near | 25 | 22 | -4 | 11 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Serpent Dance | Special | POW | Dark | 3 Mid | 48 | 16 | +1 | 28 | 12 | 36 | 2 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Jade Viper Rush | Chain | POW | Dark | 2 Near | 26 | 20 | +21 | 11 | 9 | 30 | — | Archer's Glade: Jade Strike Lv3 + POW ≥ 520 |
-| Emerald Coil | Signature | POW | Dark | 1 Close | 55 | 50 | +6 | 26 | 17 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Emerald Coil | Signature | POW | Dark | 1 Close | 55 | 50 | +6 | 26 | 17 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Nimbusheep
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Woolly Bump | Basic | POW | Physical | 2 Near | 11 | 12 | +3 | 7 | 8 | 24 | — | Starter |
-| Drizzle Puff | Basic | INT | Water | 1 Close | 10 | 12 | +7 | 5 | 8 | 24 | — | Starter · sub-quirk |
+| Drizzle Puff | Basic | INT | Water | 1 Close | 10 | 12 | +7 | 5 | 8 | 24 | — | Starter |
 | Hail Tuft | Hit | INT | Ice | 3 Mid | 19 | 15 | +17 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Downpour | Heavy | INT | Water | 4 Far | 44 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Fog Fleece | Wither | INT | Water | 2 Near | 26 | 12 | -2 | 45 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Rainbow Arc | Sharp | INT | Water | 4 Far | 29 | 22 | -5 | 9 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Rain Shelter | Special | INT | Water | 3 Mid | 48 | 0 | +2 | 17 | 9 | 36 | heal 20% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Rainstorm Flock | Chain | INT | Water | 3 Mid | 18 | 20 | +10 | 6 | 11 | 27 | — | Archer's Glade: Drizzle Puff Lv3 + INT ≥ 520 |
-| Cumulonimbus | Signature | INT | Water | 4 Far | 60 | 64 | +0 | 23 | 15 | 42 | — | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Cumulonimbus | Signature | INT | Water | 4 Far | 60 | 64 | +0 | 23 | 15 | 42 | — | Auto at Prime (loyalty ≥ 60) |
 
 #### Galeheron
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Beak Jab | Basic | POW | Physical | 2 Near | 11 | 12 | +6 | 5 | 5 | 24 | — | Starter |
-| Gust Feather | Basic | INT | Wind | 1 Close | 13 | 12 | +6 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Gust Feather | Basic | INT | Wind | 1 Close | 13 | 12 | +6 | 7 | 5 | 24 | — | Starter |
 | Wind Spear | Hit | INT | Wind | 3 Mid | 18 | 17 | +18 | 9 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Tempest Dive | Heavy | INT | Wind | 4 Far | 44 | 60 | -6 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Downdraft | Wither | INT | Wind | 3 Mid | 28 | 18 | +4 | 41 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Lightning Stride | Sharp | POW | Wind | 2 Near | 25 | 30 | +2 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Squall Line | Special | INT | Wind | 4 Far | 48 | 13 | -1 | 16 | 12 | 36 | 3 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Gale Lance | Chain | INT | Wind | 3 Mid | 24 | 24 | +21 | 11 | 9 | 30 | — | Archer's Glade: Wind Spear Lv3 + INT ≥ 520 |
-| Eye of the Storm | Signature | INT | Wind | 3 Mid | 55 | 58 | +2 | 40 | 17 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Eye of the Storm | Signature | INT | Wind | 3 Mid | 55 | 58 | +2 | 40 | 17 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Nibblegrub
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Nibble | Basic | POW | Physical | 1 Close | 14 | 13 | +5 | 5 | 5 | 24 | — | Starter |
-| Wriggle Roll | Basic | POW | Nature | 2 Near | 11 | 14 | +6 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Wriggle Roll | Basic | POW | Nature | 2 Near | 11 | 14 | +6 | 5 | 4 | 24 | — | Starter |
 | Chomp | Hit | POW | Physical | 1 Close | 18 | 16 | +18 | 9 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Wobble Crush | Heavy | POW | Nature | 1 Close | 48 | 64 | -6 | 13 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Silk Spray | Wither | INT | Nature | 3 Mid | 29 | 18 | +4 | 39 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Mandible Snap | Sharp | POW | Physical | 2 Near | 26 | 30 | +2 | 11 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Cocoon Guard | Special | POW | Nature | 1 Close | 46 | 0 | -2 | 17 | 12 | 36 | heal 20% max HP | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Tumbleweed Roll | Chain | POW | Nature | 2 Near | 19 | 25 | +9 | 6 | 7 | 27 | — | Archer's Glade: Wriggle Roll Lv3 + POW ≥ 520 |
-| Big Snack | Signature | POW | Nature | 1 Close | 53 | 56 | +6 | 21 | 16 | 42 | drain 60% of dmg | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Big Snack | Signature | POW | Nature | 1 Close | 53 | 56 | +6 | 21 | 16 | 42 | drain 60% of dmg | Auto at Prime (loyalty ≥ 60) |
 
 #### Velvesper
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Dust Puff | Basic | INT | Dark | 3 Mid | 12 | 13 | +6 | 5 | 5 | 24 | — | Starter · sub-quirk |
+| Dust Puff | Basic | INT | Dark | 3 Mid | 12 | 13 | +6 | 5 | 5 | 24 | — | Starter |
 | Wing Flutter | Basic | INT | Dark | 1 Close | 12 | 12 | +4 | 6 | 5 | 24 | — | Starter |
 | Moonbeam Dart | Hit | INT | Light | 4 Far | 20 | 14 | +13 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Dusk Nova | Heavy | INT | Dark | 4 Far | 48 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
@@ -535,69 +504,69 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Eyespot Glare | Sharp | INT | Dark | 3 Mid | 27 | 22 | -4 | 9 | 29 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Moonlit Waltz | Special | INT | Light | 2 Near | 47 | 30 | +2 | 30 | 12 | 36 | heal 15% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Crescent Volley | Chain | INT | Dark | 4 Far | 26 | 17 | +14 | 11 | 13 | 30 | — | Archer's Glade: Moonbeam Dart Lv3 + INT ≥ 520 |
-| Twilight Veil | Signature | INT | Dark | 3 Mid | 57 | 43 | +4 | 55 | 30 | 42 | — | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Twilight Veil | Signature | INT | Dark | 3 Mid | 57 | 43 | +4 | 55 | 30 | 42 | — | Auto at Prime (loyalty ≥ 60) |
 
 #### Ashwraith
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Ember Touch | Basic | INT | Fire | 1 Close | 10 | 11 | +4 | 6 | 7 | 24 | — | Starter |
-| Ash Flurry | Basic | INT | Dark | 3 Mid | 14 | 11 | +4 | 7 | 7 | 24 | — | Starter · sub-quirk |
+| Ash Flurry | Basic | INT | Dark | 3 Mid | 14 | 11 | +4 | 7 | 7 | 24 | — | Starter |
 | Wisp Lash | Hit | INT | Fire | 3 Mid | 19 | 14 | +14 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Pyre Bloom | Heavy | INT | Fire | 4 Far | 48 | 50 | -12 | 12 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Mournful Wail | Wither | INT | Dark | 2 Near | 27 | 12 | -2 | 44 | 8 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Ghostflame Dart | Sharp | INT | Fire | 4 Far | 29 | 22 | -5 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Soulsiphon | Special | INT | Dark | 3 Mid | 47 | 27 | 0 | 17 | 10 | 36 | drain 50% of dmg | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Phantom Lashes | Chain | INT | Dark | 3 Mid | 25 | 19 | +19 | 8 | 11 | 30 | — | Archer's Glade: Wisp Lash Lv3 + INT ≥ 520 |
-| Last Ember | Signature | INT | Fire | 2 Near | 56 | 60 | +3 | 22 | 15 | 42 | miss: self-dmg 12% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Last Ember | Signature | INT | Fire | 2 Near | 56 | 60 | +3 | 22 | 15 | 42 | miss: self-dmg 12% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Zipwisp
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Zip Bump | Basic | POW | Physical | 2 Near | 14 | 11 | +7 | 7 | 5 | 24 | — | Starter |
-| Crackle | Basic | INT | Lightning | 1 Close | 12 | 13 | +3 | 5 | 6 | 24 | — | Starter · sub-quirk |
+| Crackle | Basic | INT | Lightning | 1 Close | 12 | 13 | +3 | 5 | 6 | 24 | — | Starter |
 | Arc Flick | Hit | INT | Lightning | 3 Mid | 18 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Overcharge | Heavy | INT | Lightning | 2 Near | 44 | 50 | -12 | 12 | 12 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Static Field | Wither | INT | Lightning | 4 Far | 27 | 12 | -2 | 43 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Zigzag Bolt | Sharp | INT | Lightning | 3 Mid | 25 | 22 | -4 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Chain Spark | Special | INT | Lightning | 4 Far | 49 | 11 | -1 | 19 | 8 | 36 | 3 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Crackle Storm | Chain | INT | Lightning | 3 Mid | 20 | 20 | +6 | 6 | 9 | 27 | — | Archer's Glade: Crackle Lv3 + INT ≥ 520 |
-| Ball Lightning Dance | Signature | INT | Lightning | 2 Near | 54 | 13 | +6 | 36 | 17 | 42 | 4 hits | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Ball Lightning Dance | Signature | INT | Lightning | 2 Near | 54 | 13 | +6 | 36 | 17 | 42 | 4 hits | Auto at Prime (loyalty ≥ 60) |
 
 #### Mirrorkin
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Glint | Basic | INT | Light | 1 Close | 12 | 11 | +5 | 7 | 8 | 24 | — | Starter |
-| Shard Toss | Basic | INT | Light | 3 Mid | 13 | 11 | +4 | 5 | 7 | 24 | — | Starter · sub-quirk |
+| Shard Toss | Basic | INT | Light | 3 Mid | 13 | 11 | +4 | 5 | 7 | 24 | — | Starter |
 | Reflection Ray | Hit | INT | Light | 3 Mid | 19 | 18 | +17 | 9 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Shatterburst | Heavy | INT | Light | 4 Far | 45 | 60 | -11 | 13 | 10 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Mocking Image | Wither | INT | Dark | 2 Near | 25 | 16 | +3 | 48 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Prism Cut | Sharp | INT | Light | 3 Mid | 27 | 27 | -1 | 10 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Steal the Spotlight | Special | INT | Light | 2 Near | 49 | 16 | +0 | 34 | 12 | 36 | steal guts = wither | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Infinite Corridor | Chain | INT | Light | 3 Mid | 25 | 23 | +20 | 11 | 12 | 30 | — | Archer's Glade: Reflection Ray Lv3 + INT ≥ 520 |
-| Looking-Glass Swap | Signature | INT | Light | 2 Near | 54 | 24 | +5 | 50 | 15 | 42 | steal guts = wither | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Looking-Glass Swap | Signature | INT | Light | 2 Near | 54 | 24 | +5 | 50 | 15 | 42 | steal guts = wither | Auto at Prime (loyalty ≥ 60) |
 
 #### Gearhoot
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Talon Tick | Basic | POW | Physical | 2 Near | 11 | 13 | +7 | 7 | 8 | 24 | — | Starter |
-| Lens Flash | Basic | INT | Light | 1 Close | 11 | 13 | +7 | 6 | 8 | 24 | — | Starter · sub-quirk |
+| Lens Flash | Basic | INT | Light | 1 Close | 11 | 13 | +7 | 6 | 8 | 24 | — | Starter |
 | Calibrated Shot | Hit | INT | Light | 3 Mid | 17 | 18 | +20 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Overclock Cannon | Heavy | INT | Light | 4 Far | 45 | 64 | -6 | 11 | 8 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Gear Grind | Wither | INT | Light | 2 Near | 26 | 18 | +4 | 46 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Precision Bolt | Sharp | INT | Light | 4 Far | 25 | 30 | +2 | 10 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Spring Repair | Special | INT | Light | 3 Mid | 49 | 0 | +2 | 16 | 11 | 36 | heal 25% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Clockwork Barrage | Chain | INT | Light | 3 Mid | 23 | 9 | +23 | 10 | 11 | 30 | 3 hits | Archer's Glade: Calibrated Shot Lv3 + INT ≥ 520 |
-| Midnight Chime | Signature | INT | Dark | 3 Mid | 53 | 29 | +3 | 55 | 18 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Midnight Chime | Signature | INT | Dark | 3 Mid | 53 | 29 | +3 | 55 | 18 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Reefclaw
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Pincer Pinch | Basic | POW | Physical | 1 Close | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Pincer Pinch | Basic | POW | Physical | 1 Close | 14 | 10 | +3 | 5 | 4 | 24 | — | Starter |
 | Shell Shove | Basic | POW | Physical | 2 Near | 11 | 10 | +3 | 5 | 7 | 24 | knockback | Starter |
 | Coral Jab | Hit | POW | Physical | 2 Near | 16 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Tidebreaker Clamp | Heavy | POW | Water | 1 Close | 47 | 62 | -9 | 12 | 11 | 39 | — | Iron Quarry: POW ≥ 360 |
@@ -605,175 +574,175 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Sideways Slash | Sharp | POW | Water | 2 Near | 28 | 24 | -3 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Riptide Hold | Special | POW | Water | 1 Close | 49 | 30 | +0 | 18 | 9 | 36 | stun 40 ticks | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Reef Lance | Chain | POW | Water | 2 Near | 22 | 22 | +17 | 8 | 11 | 30 | — | Archer's Glade: Coral Jab Lv3 + POW ≥ 520 |
-| Kingtide | Signature | POW | Water | 2 Near | 53 | 58 | +2 | 27 | 15 | 42 | knockback | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Kingtide | Signature | POW | Water | 2 Near | 53 | 58 | +2 | 27 | 15 | 42 | knockback | Auto at Prime (loyalty ≥ 60) |
 
 #### Lootlid
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Lid Chomp | Basic | POW | Physical | 1 Close | 13 | 14 | +8 | 7 | 5 | 24 | — | Starter |
-| Coin Toss | Basic | INT | Light | 2 Near | 13 | 14 | +8 | 5 | 4 | 24 | — | Starter · sub-quirk |
+| Coin Toss | Basic | INT | Light | 2 Near | 13 | 14 | +8 | 5 | 4 | 24 | — | Starter |
 | Tongue Grab | Hit | POW | Physical | 1 Close | 18 | 19 | +20 | 8 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Treasure Slam | Heavy | POW | Physical | 1 Close | 47 | 64 | -6 | 11 | 10 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Fool's Gold Glare | Wither | INT | Dark | 3 Mid | 26 | 14 | +1 | 38 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Hinge Snap | Sharp | POW | Physical | 2 Near | 28 | 30 | +2 | 10 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Jackpot! | Special | INT | Light | 3 Mid | 48 | 35 | -2 | 16 | 11 | 36 | random: x2 dmg / heal 20% / fizzle | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Gold Rain | Chain | INT | Water | 2 Near | 21 | 9 | +8 | 6 | 7 | 27 | 3 hits | Archer's Glade: Coin Toss Lv3 + INT ≥ 520 |
-| Hoard Avalanche | Signature | POW | Earth | 2 Near | 56 | 72 | +3 | 23 | 16 | 42 | miss: self-dmg 12% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Hoard Avalanche | Signature | POW | Earth | 2 Near | 56 | 72 | +3 | 23 | 16 | 42 | miss: self-dmg 12% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Aurelwyrm
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Gilded Claw | Basic | POW | Physical | 1 Close | 10 | 11 | +5 | 7 | 6 | 24 | — | Starter |
-| Sun Spark | Basic | INT | Fire | 3 Mid | 12 | 11 | +5 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Sun Spark | Basic | INT | Fire | 3 Mid | 12 | 11 | +5 | 7 | 5 | 24 | — | Starter |
 | Ribbon Lash | Hit | POW | Physical | 2 Near | 17 | 19 | +20 | 7 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Sovereign Crush | Heavy | POW | Physical | 1 Close | 46 | 64 | -6 | 12 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Dragon's Glare | Wither | INT | Fire | 3 Mid | 29 | 14 | +3 | 39 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Crown Horn Thrust | Sharp | POW | Physical | 2 Near | 25 | 30 | +2 | 9 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Solar Flare Breath | Special | INT | Fire | 4 Far | 49 | 56 | -1 | 22 | 8 | 36 | — | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Sunfire Volley | Chain | INT | Fire | 3 Mid | 20 | 25 | +6 | 8 | 8 | 27 | — | Archer's Glade: Sun Spark Lv3 + INT ≥ 520 |
-| Heaven's Ribbon | Signature | INT | Fire | 4 Far | 60 | 66 | +2 | 21 | 17 | 42 | — | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Heaven's Ribbon | Signature | INT | Fire | 4 Far | 60 | 66 | +2 | 21 | 17 | 42 | — | Auto at Prime (loyalty ≥ 60) |
 
 #### Hearthwing
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Talon Rake | Basic | POW | Physical | 1 Close | 11 | 13 | +4 | 7 | 7 | 24 | — | Starter |
-| Cinder Cough | Basic | INT | Fire | 3 Mid | 11 | 10 | +7 | 5 | 5 | 24 | — | Starter · sub-quirk |
+| Cinder Cough | Basic | INT | Fire | 3 Mid | 11 | 10 | +7 | 5 | 5 | 24 | — | Starter |
 | Wingbeat Jab | Hit | POW | Physical | 2 Near | 19 | 15 | +15 | 8 | 6 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Furnace Crush | Heavy | POW | Fire | 1 Close | 45 | 53 | -11 | 11 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Smoulder Smoke | Wither | INT | Fire | 3 Mid | 27 | 14 | +2 | 37 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Horn Hook | Sharp | POW | Physical | 2 Near | 29 | 27 | -3 | 11 | 29 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Bellows Blaze | Special | INT | Fire | 4 Far | 48 | 11 | +0 | 17 | 8 | 36 | 3 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Cinder Gust | Chain | INT | Fire | 3 Mid | 19 | 19 | +10 | 6 | 8 | 27 | — | Archer's Glade: Cinder Cough Lv3 + INT ≥ 520 |
-| Hearthfire Torrent | Signature | INT | Fire | 4 Far | 60 | 64 | +0 | 25 | 15 | 42 | — | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Hearthfire Torrent | Signature | INT | Fire | 4 Far | 60 | 64 | +0 | 25 | 15 | 42 | — | Auto at Prime (loyalty ≥ 60) |
 
 #### Grumblestone
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Pebble Punch | Basic | POW | Earth | 1 Close | 10 | 11 | +4 | 6 | 5 | 24 | — | Starter |
-| Grumble Shove | Basic | POW | Physical | 2 Near | 10 | 11 | +4 | 7 | 8 | 24 | knockback | Starter · sub-quirk |
+| Grumble Shove | Basic | POW | Physical | 2 Near | 10 | 11 | +4 | 7 | 8 | 24 | knockback | Starter |
 | Knuckle Knock | Hit | POW | Earth | 1 Close | 17 | 15 | +15 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Geode Smash | Heavy | POW | Earth | 1 Close | 45 | 64 | -6 | 13 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Gravel Grind | Wither | POW | Earth | 2 Near | 28 | 18 | +4 | 46 | 8 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Crystal Jab | Sharp | POW | Earth | 2 Near | 27 | 30 | +2 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Rockfall Ruckus | Special | POW | Earth | 3 Mid | 49 | 13 | +2 | 18 | 12 | 36 | 3 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Amethyst Avalanche | Chain | POW | Earth | 1 Close | 51 | 94 | -9 | 16 | 15 | 42 | — | Iron Quarry: Geode Smash Lv3 + POW ≥ 520 |
-| Crystal Heart Quake | Signature | POW | Earth | 2 Near | 54 | 34 | +4 | 50 | 18 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Crystal Heart Quake | Signature | POW | Earth | 2 Near | 54 | 34 | +4 | 50 | 18 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Pluckrex
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Snap Bite | Basic | POW | Physical | 1 Close | 11 | 11 | +6 | 6 | 5 | 24 | — | Starter |
-| Tail Thump | Basic | POW | Physical | 2 Near | 12 | 10 | +7 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Tail Thump | Basic | POW | Physical | 2 Near | 12 | 10 | +7 | 7 | 5 | 24 | — | Starter |
 | Plucky Jab | Hit | POW | Physical | 2 Near | 18 | 15 | +18 | 8 | 9 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Courage Crash | Heavy | POW | Physical | 1 Close | 44 | 54 | -11 | 11 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Crest Flare | Wither | INT | Light | 3 Mid | 28 | 14 | +1 | 43 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Rising Claw | Sharp | POW | Physical | 2 Near | 25 | 24 | -1 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Stampede Rush | Special | POW | Physical | 3 Mid | 50 | 42 | +0 | 17 | 8 | 36 | dash to Close after | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Hero's Combo | Chain | POW | Physical | 2 Near | 24 | 20 | +17 | 10 | 12 | 30 | — | Archer's Glade: Plucky Jab Lv3 + POW ≥ 520 |
-| Sunrise Roar | Signature | INT | Light | 4 Far | 56 | 30 | +4 | 40 | 16 | 42 | stun 30 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Sunrise Roar | Signature | INT | Light | 4 Far | 56 | 30 | +4 | 40 | 16 | 42 | stun 30 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Paladove
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Wing Buffet | Basic | POW | Light | 2 Near | 14 | 10 | +3 | 6 | 8 | 24 | — | Starter |
-| Halo Spark | Basic | INT | Light | 1 Close | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Halo Spark | Basic | INT | Light | 1 Close | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter |
 | Lightfeather Dart | Hit | INT | Light | 3 Mid | 16 | 14 | +14 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Dawnbreak Beam | Heavy | INT | Light | 4 Far | 47 | 50 | -12 | 13 | 9 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Lull of Peace | Wither | INT | Light | 2 Near | 27 | 15 | +1 | 40 | 4 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Gleaming Quill | Sharp | INT | Light | 4 Far | 27 | 23 | -2 | 10 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Mending Hymn | Special | INT | Light | 3 Mid | 46 | 0 | -1 | 0 | 0 | 36 | heal 25% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Featherlight Volley | Chain | INT | Light | 3 Mid | 22 | 7 | +21 | 11 | 13 | 30 | 3 hits | Archer's Glade: Lightfeather Dart Lv3 + INT ≥ 520 |
-| Sanctuary Wings | Signature | INT | Light | 2 Near | 53 | 0 | +3 | 40 | 14 | 42 | heal 15% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Sanctuary Wings | Signature | INT | Light | 2 Near | 53 | 0 | +3 | 40 | 14 | 42 | heal 15% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Starhowl
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Night Nip | Basic | POW | Dark | 1 Close | 11 | 10 | +3 | 7 | 5 | 24 | — | Starter |
-| Twinkle Yip | Basic | INT | Light | 3 Mid | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Twinkle Yip | Basic | INT | Light | 3 Mid | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter |
 | Moonleap Strike | Hit | POW | Light | 2 Near | 16 | 14 | +14 | 8 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Eclipse Maul | Heavy | POW | Dark | 1 Close | 48 | 56 | -10 | 12 | 9 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Northwind Wail | Wither | INT | Wind | 3 Mid | 28 | 15 | +1 | 38 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Comet Fang | Sharp | POW | Light | 2 Near | 28 | 29 | -1 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Falling Star Volley | Special | INT | Light | 4 Far | 47 | 10 | -4 | 18 | 12 | 36 | 3 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Supernova Fang | Chain | POW | Light | 2 Near | 34 | 38 | +2 | 12 | 31 | 33 | — | Windrun Steppe: Comet Fang Lv3 + POW ≥ 520 |
-| Constellation Hunt | Signature | INT | Light | 3 Mid | 54 | 15 | +6 | 25 | 30 | 42 | 4 hits | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Constellation Hunt | Signature | INT | Light | 3 Mid | 54 | 15 | +6 | 25 | 30 | 42 | 4 hits | Auto at Prime (loyalty ≥ 60) |
 
 #### Petalphant
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Trunk Bop | Basic | POW | Physical | 2 Near | 14 | 12 | +6 | 6 | 8 | 24 | — | Starter |
-| Seed Sneeze | Basic | INT | Nature | 1 Close | 11 | 12 | +6 | 7 | 6 | 24 | — | Starter · sub-quirk |
+| Seed Sneeze | Basic | INT | Nature | 1 Close | 11 | 12 | +6 | 7 | 6 | 24 | — | Starter |
 | Ear Flap Slap | Hit | POW | Physical | 2 Near | 17 | 18 | +19 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Stomp of Spring | Heavy | POW | Physical | 1 Close | 46 | 64 | -6 | 13 | 8 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Sleepy Blossom | Wither | INT | Nature | 3 Mid | 28 | 18 | +4 | 40 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Thorn Whirl | Sharp | INT | Wind | 2 Near | 26 | 30 | +2 | 11 | 31 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Rainwater Bath | Special | INT | Water | 3 Mid | 49 | 0 | +1 | 0 | 0 | 36 | heal 25% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Seed Storm Sneeze | Chain | INT | Wind | 3 Mid | 19 | 21 | +10 | 8 | 9 | 27 | — | Archer's Glade: Seed Sneeze Lv3 + INT ≥ 520 |
-| Full Bloom | Signature | INT | Nature | 1 Close | 56 | 58 | +6 | 26 | 18 | 42 | drain 60% of dmg | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Full Bloom | Signature | INT | Nature | 1 Close | 56 | 58 | +6 | 26 | 18 | 42 | drain 60% of dmg | Auto at Prime (loyalty ≥ 60) |
 
 #### Scrollopus
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Tentacle Swat | Basic | POW | Physical | 2 Near | 13 | 12 | +6 | 7 | 5 | 24 | — | Starter |
-| Ink Flick | Basic | INT | Dark | 1 Close | 12 | 12 | +6 | 5 | 5 | 24 | — | Starter · sub-quirk |
+| Ink Flick | Basic | INT | Dark | 1 Close | 12 | 12 | +6 | 5 | 5 | 24 | — | Starter |
 | Footnote Dart | Hit | INT | Dark | 3 Mid | 18 | 17 | +18 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Tome Tsunami | Heavy | INT | Water | 4 Far | 48 | 60 | -6 | 13 | 8 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Ink Cloud | Wither | INT | Dark | 2 Near | 27 | 18 | +4 | 48 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Quill Scribble | Sharp | INT | Dark | 3 Mid | 29 | 30 | +2 | 9 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Eightfold Lecture | Special | INT | Dark | 4 Far | 47 | 9 | -2 | 19 | 11 | 36 | 4 hits | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Bibliography Barrage | Chain | INT | Dark | 3 Mid | 24 | 10 | +18 | 11 | 13 | 30 | 3 hits | Archer's Glade: Footnote Dart Lv3 + INT ≥ 520 |
-| Inksteal Riddle | Signature | INT | Dark | 2 Near | 57 | 27 | +6 | 50 | 17 | 42 | steal guts = wither | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Inksteal Riddle | Signature | INT | Dark | 2 Near | 57 | 27 | +6 | 50 | 17 | 42 | steal guts = wither | Auto at Prime (loyalty ≥ 60) |
 
 #### Gloomgrin
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Grin Bite | Basic | POW | Physical | 1 Close | 13 | 14 | +8 | 6 | 6 | 24 | — | Starter |
-| Wing Slap | Basic | POW | Physical | 2 Near | 14 | 14 | +8 | 7 | 7 | 24 | — | Starter · sub-quirk |
+| Wing Slap | Basic | POW | Physical | 2 Near | 14 | 14 | +8 | 7 | 7 | 24 | — | Starter |
 | Sneaky Jab | Hit | POW | Physical | 1 Close | 17 | 19 | +20 | 9 | 10 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Rooftop Drop | Heavy | POW | Dark | 1 Close | 44 | 64 | -10 | 13 | 12 | 39 | — | Iron Quarry: POW ≥ 360 |
 | Spooky Snicker | Wither | INT | Dark | 2 Near | 26 | 18 | +4 | 44 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Ledge Claw | Sharp | POW | Physical | 2 Near | 29 | 30 | +2 | 11 | 32 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Rain-Spout Spit | Special | POW | Water | 3 Mid | 49 | 30 | +2 | 16 | 12 | 36 | stun 30 ticks | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Dusk Ambush | Chain | POW | Dark | 1 Close | 23 | 22 | +19 | 11 | 13 | 30 | — | Archer's Glade: Sneaky Jab Lv3 + POW ≥ 520 |
-| Petrify Pounce | Signature | POW | Dark | 1 Close | 57 | 44 | +2 | 24 | 14 | 42 | stun 45 ticks | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Petrify Pounce | Signature | POW | Dark | 1 Close | 57 | 44 | +2 | 24 | 14 | 42 | stun 45 ticks | Auto at Prime (loyalty ≥ 60) |
 
 #### Rammerjack
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Horn Bonk | Basic | POW | Physical | 1 Close | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter |
-| Hoof Stamp | Basic | POW | Physical | 2 Near | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter · sub-quirk |
+| Hoof Stamp | Basic | POW | Physical | 2 Near | 11 | 10 | +3 | 7 | 8 | 24 | — | Starter |
 | Brow Bump | Hit | POW | Physical | 2 Near | 18 | 14 | +14 | 8 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Battering Charge | Heavy | POW | Physical | 1 Close | 44 | 50 | -12 | 13 | 10 | 39 | dash to Close after | Iron Quarry: POW ≥ 360 |
 | Bleat Blast | Wither | POW | Sound | 3 Mid | 25 | 12 | -2 | 41 | 5 | 30 | — | Starfall Observatory: POW+INT ≥ 480 |
 | Spiral Horn Hook | Sharp | POW | Physical | 2 Near | 27 | 22 | -4 | 10 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Avalanche Charge | Special | POW | Earth | 3 Mid | 47 | 36 | -2 | 19 | 10 | 36 | knockback | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
 | Twin Horn Bash | Chain | POW | Physical | 1 Close | 19 | 19 | +10 | 8 | 11 | 27 | — | Archer's Glade: Horn Bonk Lv3 + POW ≥ 520 |
-| Mountain Ram | Signature | POW | Earth | 2 Near | 53 | 64 | +4 | 23 | 18 | 42 | miss: self-dmg 10% max HP | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Mountain Ram | Signature | POW | Earth | 2 Near | 53 | 64 | +4 | 23 | 18 | 42 | miss: self-dmg 10% max HP | Auto at Prime (loyalty ≥ 60) |
 
 #### Frostlance
 
 | Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Tusk Poke | Basic | POW | Physical | 1 Close | 14 | 13 | +8 | 5 | 6 | 24 | — | Starter |
-| Snowflake Puff | Basic | INT | Ice | 3 Mid | 12 | 13 | +8 | 7 | 5 | 24 | — | Starter · sub-quirk |
+| Snowflake Puff | Basic | INT | Ice | 3 Mid | 12 | 13 | +8 | 7 | 5 | 24 | — | Starter |
 | Icicle Thrust | Hit | POW | Ice | 2 Near | 19 | 19 | +20 | 7 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
 | Blizzard Lance | Heavy | INT | Ice | 4 Far | 46 | 64 | -6 | 13 | 10 | 39 | — | Iron Quarry: INT ≥ 360 |
 | Frostbite Breeze | Wither | INT | Ice | 3 Mid | 27 | 18 | +4 | 42 | 7 | 30 | — | Starfall Observatory: INT ≥ 280 |
 | Glacier Pierce | Sharp | POW | Ice | 2 Near | 27 | 30 | +2 | 10 | 29 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
 | Northern Lights | Special | INT | Light | 4 Far | 48 | 0 | -2 | 30 | 0 | 36 | heal 15% max HP | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
 | Crystal Lance Rush | Chain | POW | Ice | 2 Near | 25 | 25 | +20 | 8 | 11 | 30 | — | Archer's Glade: Icicle Thrust Lv3 + POW ≥ 520 |
-| Polar Spiral | Signature | POW | Ice | 2 Near | 54 | 18 | +3 | 23 | 30 | 42 | 3 hits | Pure breed: auto at Prime (loyalty ≥ 60) |
+| Polar Spiral | Signature | POW | Ice | 2 Near | 54 | 18 | +3 | 23 | 30 | 42 | 3 hits | Auto at Prime (loyalty ≥ 60) |
 
 ### 3.1 Universal techniques (Songsheets; any monster can learn these)
 
@@ -1005,7 +974,7 @@ None of these can be permanently missed. Each starts with a rumor, and the Journ
 1. **Velvesper (metamorphosis).**
    - Rumor (Basil, after you've owned a Nibblegrub for about a year): "Grubs that eat sweet pudding and live happy lives sometimes spin silk…"
    - Condition: in June week 4, a Nibblegrub aged 144–240 weeks with loyalty ≥ 70, fatigue ≤ 20 and stress ≤ 15, that has had Berry Pudding as its monthly food at least 12 times.
-   - Result: it spins a cocoon for 4 weeks (no actions; it still ages) and emerges as a Velvesper with the same sub-breed. It keeps 80% of its trained gains, all its Stat Sweets, and any grade steps a Pearl or Fusion had earned above Nibblegrub's grades (v1.11).
+   - Result: it spins a cocoon for 4 weeks (no actions; it still ages) and emerges as a whole Velvesper. It keeps 80% of its trained gains, all its Stat Sweets, and any grade steps a Pearl or Fusion had earned above Nibblegrub's grades (v1.11).
      - It keeps 80% of its trained gains.
      - Lifespan total +60 weeks.
      - Techniques are kept where Velvesper's kit has the same family; otherwise they become Velvesper's starters.
@@ -1116,7 +1085,7 @@ Town → Odd Jobs is Basil's board. It lists every job with its status, its pay 
 | Grand Breeder | Reach breeder rank 10 |
 | Lineage Keeper | Raise a generation-5 monster |
 | Encyclopedist | Own all 30 breeds |
-| Collector | Discover 50 variants |
+| Collector | Discover 30 looks (breeds or secret variants) |
 | Gentle Heart | A monster lives ≥ 95% of its nominal lifespan |
 | Iron Bond | Win a Crown with loyalty 100 |
 | Sleeper Awakened | Wake 10 Sleeping Stones |

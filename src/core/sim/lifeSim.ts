@@ -47,7 +47,6 @@ export const POLICIES: Record<PolicyName, CarePolicy> = {
 
 export interface LifeSimOptions {
   breed: BreedId
-  sub?: BreedId
   policy: PolicyName | CarePolicy
   seed: number
   difficulty?: Difficulty
@@ -75,7 +74,6 @@ export interface YearSummary {
 
 export interface LifeReport {
   breed: BreedId
-  sub: BreedId
   policy: string
   seed: number
   lifespanAtBirth: number
@@ -110,16 +108,14 @@ function neutralFoodFor(m: Monster): FoodId {
 export function simulateLife(opts: LifeSimOptions): LifeReport {
   const policy = typeof opts.policy === 'string' ? POLICIES[opts.policy] : opts.policy
   const rng = createRng(opts.seed)
-  const sub = opts.sub ?? opts.breed
   const likes = opts.likes ?? rollLikes(rng)
-  const monster = createMonster({ id: `sim-${opts.seed}`, mainBreed: opts.breed, subBreed: sub, likes })
+  const monster = createMonster({ id: `sim-${opts.seed}`, mainBreed: opts.breed, likes })
   if (opts.grades) Object.assign(monster.grades, opts.grades)
   let state: GameState = createGameState({ monster, difficulty: opts.difficulty ?? 'Standard' })
   state.foodChoice = policy.food === 'liked' ? monster.likes.food : policy.food === 'disliked' ? monster.likes.dislikedFood : neutralFoodFor(monster)
 
   const report: LifeReport = {
     breed: opts.breed,
-    sub,
     policy: policy.name,
     seed: opts.seed,
     lifespanAtBirth: monster.lifespanTotal,

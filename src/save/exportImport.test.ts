@@ -3,8 +3,18 @@ import { createGameState } from '../core/state.ts'
 import { makeMonster } from '../core/test-helpers.ts'
 import { fileNameFor, importCodeFromHash, importUrlFor, monsterJsonText, monsterShareCode, parseImportText, qrSvgFor, readImport, shareTextFor } from './exportImport.ts'
 import { makeSave } from './schema.ts'
+import { encodeShareCode } from './shareCode.ts'
 
 describe('export and import text (§19)', () => {
+  it('still reads a share code made before v1.12, when the monster was a mix', async () => {
+    const m = makeMonster({ main: 'tumblefox' })
+    m.name = 'Cinder Tumblefox'
+    const old = { ...JSON.parse(JSON.stringify(m)), subBreed: 'cinderlynx', flags: { pure: false, edited: false, sandbox: false }, appearance: { paletteBreed: 'cinderlynx', accentPart: 'ember ear tufts' } }
+    const code = await encodeShareCode({ schemaVersion: 14, kind: 'monster', monster: old, history: [] })
+    const r = await readImport(code)
+    expect(r.ok && r.kind === 'monster' && r.file.monster).toEqual({ ...m, name: 'Tumblefox' })
+  })
+
   it('reads the .json download back as a monster file with its history', async () => {
     const m = makeMonster({ id: 'orig' })
     const older = makeMonster({ id: 'orig' })
@@ -22,7 +32,7 @@ describe('export and import text (§19)', () => {
   })
 
   it('reads a share code, a share .txt, and an import link', async () => {
-    const m = makeMonster({ main: 'galeheron', sub: 'zipwisp' })
+    const m = makeMonster({ main: 'galeheron' })
     const code = await monsterShareCode(m)
     for (const text of [code, shareTextFor(m, code), importUrlFor('https://x.github.io/wildsong-ranch/', code), `  ${code}\n`]) {
       const r = await readImport(text)

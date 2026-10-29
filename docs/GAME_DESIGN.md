@@ -135,7 +135,7 @@ Shrine / Market ─► NEW MONSTER
 |---|---|---|
 | `id` | string | Unique; imported copies get a new id |
 | `name` | 1–16 chars | Player-chosen; default = variant name |
-| `mainBreed`, `subBreed` | breed id | Main = body, kit, trait. Sub = palette, accent, quirk technique |
+| `mainBreed` | breed id | The monster's one whole breed: body, colours, kit, trait (§14.3; the sub breed was retired in v1.12) |
 | `variantId` | string or null | Secret-phrase special variants (CONTENT §12) |
 | `generation` | int ≥ 1 | Fusion babies = max(parents) + 1 |
 | `parents` | [id, id] or [] | Lineage |
@@ -158,8 +158,7 @@ Shrine / Market ─► NEW MONSTER
 | `status` | `{injuredWeeks, sickWeeks, tonic:{stat, weeksLeft}, usedSunfruit, usedMoonfruit, heartstoneReceived, cocoon…}` | |
 | `diet` | `{lastFood, sameFoodStreak, puddingCount…}` | For boredom and events |
 | `records` | wins, losses, draws, KOs, cups won, titles, earnings, highest grade, Crowns won, stat points gained from Stat Sweets (per stat) | Sweets are shown separately on the Monster Card |
-| `flags` | `pure`, `edited`, `sandbox` | `edited` is set by Monster Lab |
-| `appearance` | palette id, accent part, variant overrides | Derived from breeds, overridable in the Lab |
+| `flags` | `edited`, `sandbox` | `edited` is set by Monster Lab |
 
 **Derived values (never stored):**
 - `loyalty = round((spoil + fear) / 2)`
@@ -194,7 +193,7 @@ E 0.58 · D 0.79 · C 1.00 · B 1.32 · A 1.55 · **S 1.80** (v1.11)
 - **What the cap limits:** drills, Journeys, cup podium growth, Heartstones and the cocoon raise a stat's **trained points** (the stat minus its Stat Sweets points) only up to its grade's cap.
 - **Stat Sweets go past it.** The only limit left is the save bound of 9,999 per stat.
 - **Nothing above a cap is taken away.** After a grade drop (an edit, a breed change), those points stay; training just can't add more.
-- **Where S comes from:** no breed starts with S. It comes from the sub-breed's +1 step (§14.3), the Potential Pearl (§8), Fusion inheritance (§15) or the Lab.
+- **Where S comes from:** no breed starts with S. It comes from the Potential Pearl (§8), Fusion inheritance (§15) or the Lab. (Before v1.12 a Shrine mix's sub breed could also lift an A to S.)
 - **On the Monster Card**, each bar is that cap wide, in the stat's own colour. Trained points are solid and sweets are a lighter segment. When the total passes the cap, the bar stretches and a thin mark shows where the cap is.
 
 ### 5.3 Growth types and life stages (tested)
@@ -443,8 +442,7 @@ Real time is measured in the UI (core never reads the clock): the save is writte
 
 **At birth:**
 ```
-lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
-                · (pure ? 1.10 : 1)
+lifespanTotal = round(breed.lifespan · 1.10)
                 + shrineOffset (−10…+30 weeks)
 ```
 
@@ -534,7 +532,7 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 | Sharp | 24–30 | 22–30 | −4…+2 | 8–12 | 26–34 | 30 | Crits |
 | Special | 40–55 | varies | varies | varies | varies | 36 | Effects |
 | Chain | base +6 (+8 from Basic) | ×1.3 (×1.7 from Basic) | +3 | ×1.2 | +3 | +3 | Upgrade |
-| Signature | 54–60 | strong | | | | 42 | Pure-breed showpiece |
+| Signature | 54–60 | strong | | | | 42 | The breed's showpiece |
 
 ### 10.3 Effects
 
@@ -553,14 +551,14 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
 
 ### 10.4 Learning
 
-- **Starters:** each monster is born with its main breed's two Basic techniques, plus its sub-breed's **quirk** technique if that is different.
+- **Starters:** each monster is born with its breed's two Basic techniques.
 - **Journeys:** each successful week can teach one technique from that site's family (§11).
 - **Songsheets:** read a Songsheet to learn its technique instantly (§10.5).
 - **Mastery:**
   - Using a technique raises `uses`.
   - At 15 uses → Lv2 (+2 hit).
   - At 40 uses → Lv3 (+2 force), which unlocks its Chain upgrade at the matching Journey site.
-- **Signature** (pure breeds only): learned automatically when the monster first enters Prime with loyalty ≥ 60, as a celebratory scene. If missed, it can be learned at Glacier Bastion with DEF + type stat ≥ 700.
+- **Signature** (every breed has one): learned automatically when the monster first enters Prime with loyalty ≥ 60, as a celebratory scene. If missed, it can be learned at Glacier Bastion with DEF + type stat ≥ 700.
 - **Cap:** at most 12 learned techniques. Learning a 13th asks which one to forget. Forgotten techniques can be relearned any time from the Songbook (if you own the sheet) or on a Journey.
 - **In battle:** all learned techniques are available, grouped by range.
 
@@ -573,8 +571,8 @@ lifespanTotal = round(0.6 · main.lifespan + 0.4 · sub.lifespan)
   - The Journal shows Songbook completion.
 - **Who can learn what:**
   - **Universal sheets** (24 music-themed techniques, CONTENT §3.1): **any** monster.
-  - **Breed sheets:** one for every non-Basic technique in each breed's kit. A monster can learn one if the technique is in its main breed's kit or is its sub-breed's quirk.
-  - **Signature sheets:** pure breeds of that breed only.
+  - **Breed sheets:** one for every non-Basic technique in each breed's kit. A monster can learn one if the technique is in its breed's kit.
+  - **Signature sheets:** monsters of that breed only.
   - Chains taught by a sheet don't need the base technique at Lv3.
 - **Where sheets come from:**
   - The **Guild Library** in Town sells the universal sheets and the breed sheets of every breed you've unlocked. Prices and rank gates are in CONTENT §3.
@@ -625,7 +623,7 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 - one technique roll
 
 **Technique roll:**
-1. Candidates are the site-family techniques of the monster's main breed (plus Chains whose base is at Lv3) that it hasn't learned, in table order.
+1. Candidates are the site-family techniques of the monster's breed (plus Chains whose base is at Lv3) that it hasn't learned, in table order.
 2. Roll only for the **first** candidate whose requirement score is met.
 3. `reqScore = sum of the listed stats + loyalty`.
 4. Chance: 0% below the requirement; 30% at it; +10% per 50 points over; capped at 90%.
@@ -755,7 +753,7 @@ Whenever the monster starts an action (AI decision or player tap), roll a distra
 
 ### 12.8 Breed traits
 
-Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Traits are never inherited from the sub-breed. Since v1.11 a Fusion baby can also carry a second, **inherited trait** (§15).
+Each breed has one trait (CONTENT §2), applied as multipliers or bonuses. Since v1.11 a Fusion baby can also carry a second, **inherited trait** (§15).
 - **Both traits work.** Multipliers multiply (two −20% damage traits give ×0.64), bonuses add, and a yes/no effect works if either trait has it.
 - **One-trait monsters are unchanged.** A monster with one trait fights exactly as before; a pinned battle log checks it. M10 gave Gilded a battle side: it gains 7 guts each time it lands a hit (`BATTLE_TRAITS.gildedGutsOnHit`), besides its prize and chore bonuses.
 
@@ -1020,7 +1018,7 @@ decisions cost well under 0.1 ms per monster per tick.
   - B: + Heavy.
   - A: + the other of Wither/Sharp, plus a Chain at 50%.
   - S and above: all non-Signature techniques, plus Special.
-  - Pure-breed bosses also get their Signature.
+  - Bosses also get their Signature.
   - From grade B, NPCs also know 1–2 universal techniques that suit their stats.
 - **Personality:** from CONTENT rivals; otherwise random.
 - **Seeding:** deterministic from (year, week, cup id).
@@ -1048,11 +1046,11 @@ So "Hello,  World!" equals "hello world".
 - Seed a `mulberry32` RNG from `h1 ^ h2`.
 
 **Derive, in this order** (order is part of the contract; changing it changes every monster):
-1. **Main breed:**
+1. **Breed:**
    - Weighted pick by breed `commonness` (CONTENT §2) among **all** breeds.
    - If the result is locked, the stone hums with a teaser such as "…a sleeping power, heavy as stone…" and **no monster is made**.
    - The phrase is saved to the Journal's **Sleeping Stones** list. When that breed unlocks, the stone wakes and can be tapped to create the monster for free.
-2. **Sub breed:** from `h2`, weighted by commonness among unlocked breeds.
+2. *(Retired in v1.12: the sub breed. It drew from its own `h2` stream, so removing it moved no other roll: every phrase still makes the same breed, offsets and personality.)*
 3. **Stat offsets:** −10…+20 per stat.
 4. **Lifespan offset:** −10…+30 weeks.
 5. **Guts rate:** ±1 (bounded 6–20).
@@ -1073,22 +1071,25 @@ So "Hello,  World!" equals "hello world".
 - The first monster is free; after that 1,500G, or 2,500G for the seasonal breed.
 - Market monsters use fixed seeds (so they are the same for everyone) with zero offsets.
 
-### 14.3 Main/sub mixing (MUST)
+### 14.3 One breed per monster (MUST, v1.12)
+
+Every monster is **one whole breed** (Art 2.0 P0, owner, Oct 28, 2026). The main/sub mix system is retired, so each breed can be designed and painted on its own.
 
 | Aspect | Rule |
 |---|---|
-| Body, kit, trait, growth type | Main breed |
-| Base stats | round(0.75·main + 0.25·sub) + shrine offsets |
-| Growth grades | Main's grades; then **+1 step** on the sub's best stat (up to S since v1.11) and **−1 step** on the sub's worst stat (min E). Ties are broken in the order LIF, POW, INT, SKI, SPD, DEF |
-| Guts rate | main + round((sub − main)/4), then the shrine offset |
-| Lifespan | §7 (60/40 blend, pure +10%) |
-| Palette | Sub's palette on the main body; the main's eyes and markings stay |
-| Accent | One accent part from the sub (CONTENT §2 "accent"), e.g. its ears, tail or frills |
-| Techniques | Main's kit + the sub's quirk technique |
-| Pure (main = sub) | +10% lifespan, the classic palette, Signature technique access, "(Pure)" badge |
-| Variant name | "{sub adjective} {Main name}", e.g. "Cinder Puddlepup"; pure → "Puddlepup" |
+| Body, colours, kit, trait, growth type | The breed |
+| Base stats | The breed's base + Shrine offsets |
+| Growth grades | The breed's grades |
+| Guts rate | The breed's, then the Shrine offset |
+| Lifespan | §7: the breed's lifespan + 10%, for every monster (`BIRTH.lifespanBonusPct`) |
+| Techniques | The breed's two starter Basics; its whole kit, Signature included, can be learned |
+| Name | The breed's name ("Puddlepup"); a secret variant keeps its own ("Songheart Puddlepup") |
 
-That gives 30 × 30 = 900 combinations, plus special variants. Mixes come from the Shrine and ✏️ Edit. Since Fusion 2 (v1.10.0), a Fusion baby is always pure (§15).
+**What the old "pure" bonuses became** (owner, Oct 28): every monster gets them. The +10% lifespan applies to everyone, so lifespans and the §26 balance targets are exactly what the sims already measured; every monster can earn its Signature (§10.4–§10.5; the loyalty, Glacier and Crown-sheet routes are unchanged); the Pure badge is gone.
+
+**Older saves** (save v15): a mixed monster becomes its main breed and keeps its stats, grades, techniques (an old sub-quirk Basic stays until forgotten), guts and lifespan. A name the game gave it ("Cinder Tumblefox") becomes the breed's name; a name the player chose stays. Old share codes and files still import. Looks already collected in the Journal stay counted.
+
+The 21 secret variants (CONTENT §12) stay as special looks of their breed.
 
 ---
 
@@ -1098,20 +1099,19 @@ That gives 30 × 30 = 900 combinations, plus special variants. Mixes come from t
 - **Output:** the baby goes to the Freezer, or becomes active if the ranch is empty.
 - **The parents become Ancestors.** They move to the Memorial with a "Fused" badge and are never deleted. The baby's Monster Card shows the family tree.
 
-**Outcome odds (Fusion 2, v1.10.0).** The baby is always **one whole breed** (main = sub, so it's pure). Mixes still come from the Shrine and ✏️ Edit.
+**Outcome odds (Fusion 2, v1.10.0).** The baby is always **one whole breed**, like every monster since v1.12 (§14.3).
 1. The rows:
-   - P1's main breed, weight 35;
-   - P2's main breed, weight 35;
+   - P1's breed, weight 35;
+   - P2's breed, weight 35;
    - the pair's two **surprises**, weights 20 and 10, best first.
-2. Subs never matter here: a mixed parent counts as its main breed.
-3. A breed that appears twice adds up. Same-breed parents give 70 / 20 / 10.
-4. **Locked breeds never appear.**
+2. A breed that appears twice adds up. Same-breed parents give 70 / 20 / 10.
+3. **Locked breeds never appear.**
    - A locked parent breed drops out, and so does a locked surprise; the next-best surprise takes that slot.
    - The rest is normalized to whole percents that add up to 100 (largest remainder).
    - Examples: 54 / 31 / 15 with P1's breed locked; 67 / 33 with both parents' breeds locked.
    - No rows left means no Fusion.
 5. **Lineage Seal** catalyst: doubles P1's weight (52 / 26 / 15 / 7; same breed 78 / 15 / 7). It does nothing when P1's breed is locked, and the Lab says so.
-6. **Surprises** (CONTENT §2.3). The pair is the two main breeds, unordered, so swapping the parents never changes the surprises. Every unlocked breed other than the parents is scored:
+6. **Surprises** (CONTENT §2.3). The pair is the two parents' breeds, unordered, so swapping the parents never changes the surprises. Every unlocked breed other than the parents is scored:
    - **+100** if it is the pair's signature recipe;
    - **+6** for each kind rule that fires (one parent has kind *a*, the other has *b*, and the candidate has the rule's result kind);
    - **+4** if it shares at least one kind with each parent;
@@ -1153,8 +1153,8 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
   4. the second parent's inherited trait.
   Hungry Grub never passes on (its cocoon belongs to Nibblegrub). The born screen names the trait and the head start.
 - **Techniques:**
-  - Same main breed as P1: inherit 2/3 of P1's learned non-Basic techniques (rounded down), with uses and levels.
-  - Different main breed: up to one technique per family, taken from either parent's techniques that exist in the baby's breed kit.
+  - Same breed as P1: inherit 2/3 of P1's learned non-Basic techniques (rounded down), with uses and levels.
+  - Different breed: up to one technique per family, taken from either parent's techniques that exist in the baby's breed kit.
 - **Nature and form:** (2·P1 + P2)/3.
 - **Generation:** max(parent generations) + 1.
 
@@ -1245,15 +1245,15 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 
 **Library (global, shared by all save slots):**
 - **Sources:** Active monster, Freezer, Library (saved Lab creations), Memorial (read-only), and Presets.
-  - Presets: every breed's pure baby, plus trained presets at E/C/A/S power, generated with `scaleToTotal`.
+  - Presets: every breed's baby, plus trained presets at E/C/A/S power, generated with `scaleToTotal`.
 - Filter by breed, source and badge. Sort by total, age, name or date.
-- **Card:** portrait, name, variant, total, grade, and badges (Edited 🔧, Frozen ❄️, Memorial 🕯️, Pure ✦).
+- **Card:** portrait, name, variant, total, grade, and badges (Edited 🔧, Frozen ❄️, Memorial 🕯️).
 - **Actions:** View · Edit · Duplicate · Export · Send to Freezer (if there's room) · Make Active (with a confirm that the current one goes to the Freezer) · Delete (Library only, with confirm) · Battle (Versus).
 
-**Create:** start from a breed (main and sub pickers with portraits), from a phrase (Shrine preview), or from a blank template. The editor can use any breed or variant, even undiscovered ones; those ask "Not discovered yet. Use anyway?" so players who enjoy discovery aren't spoiled by accident.
+**Create:** start from a breed (a breed picker with portraits), from a phrase (Shrine preview), or from a blank template. The editor can use any breed or variant, even undiscovered ones; those ask "Not discovered yet. Use anyway?" so players who enjoy discovery aren't spoiled by accident.
 
 **Editor sections** (live SVG preview pinned at the top; every change re-renders):
-1. **Identity:** name, main, sub, variant (any; undiscovered ones ask for confirmation).
+1. **Identity:** name, breed, variant (any; undiscovered ones ask for confirmation).
 2. **Stats:**
    - Six sliders (1–1,500) with ±1 and ±10 steppers and a number field that goes to 9,999. The total is shown. Each row shows the grade and its cap.
    - "Max all" sets every stat to its cap plus its sweets.
@@ -1263,10 +1263,10 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 5. **Personality:** liked and disliked food, favorite toy, battle like, liked and disliked drill.
 6. **Techniques:**
    - The learned list with uses and level.
-   - Add from the breed kit, the sub's quirk and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 294.
+   - Add from the breed kit and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 294.
    - Set uses and level; remove.
 7. **Records** (optional): grade, wins and losses, titles.
-8. **Appearance:** palette (main, sub or variant), size stage preview.
+8. **Appearance:** expression and size stage previews (the colours are the breed's, or its secret variant's).
 
 - **Validation:** all values are clamped and validated with clear inline messages. Nothing invalid can be saved.
 - **Edited flag:**
@@ -1274,7 +1274,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
   - Showing a 🔧 badge is a Settings option, **off by default**.
   - **There are no gameplay restrictions on edited monsters**; it's the player's game.
 - **Save:** Save (back to its source) · Save as copy (to the Library) · Cancel.
-- **Breed change:** techniques that aren't in the new kit are listed and removed on save, unless **Keep all techniques** is ticked. Trait, body and kit follow the new main breed.
+- **Breed change:** techniques that aren't in the new kit are listed and removed on save, unless **Keep all techniques** is ticked. Trait, body, colours and kit follow the new breed.
 - **Undo:**
   - **Revert** discards unsaved changes.
   - Every save keeps the previous version in the monster's **Edit history** (last 10), and **Restore** brings any of them back.
@@ -1370,7 +1370,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 **Procedural SVG "paper-doll" monsters.** Each breed's art brief is in CONTENT §2.
 - **Body plans:** blob, quadruped, biped, serpent, avian, floater, shelled, insect, construct.
 - **Parts:** each plan defines **sockets** (head, back, tail, ears, limbs) where parts attach. Parts are parametric SVG paths.
-- **Colors:** palettes are CSS variables: `--body`, `--belly`, `--accent`, `--eye`, `--outline`. The sub breed swaps the palette and adds one accent part.
+- **Colors:** palettes are CSS variables: `--body`, `--belly`, `--accent`, `--eye`, `--outline`. Each breed wears its own palette; a secret variant has its own.
 - **Expressions:** neutral, happy, tired, stressed, sad, angry, sleepy, sick, plus a sparkle overlay. They map to the cues in §6.6.
 - **Style:** cozy storybook.
   - Thick rounded outlines (3–4 px at 256 px size, `stroke-linejoin: round`).
@@ -1392,11 +1392,10 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 - **Hearthwing**, **Pluckrex** and **Paladove** have two looks: **young** for life stages 1–4 and **grown** from stage 5 (Prime). Every other breed has one look.
 - The switch happens the week the monster enters Prime, with a short, skippable "grow up" moment (a glow, then the new form) and a Wren line ("{name} has grown up!"). The ranch scene for it arrives with M3; the Lab preview and the presets already switch by stage.
 - The breed's art data carries an optional `grown` look; anything it leaves out falls back to the base look.
-- **Mixes:** the main breed's forms apply. The sub breed's palette and accent part are used on both forms.
 - Size by life stage still applies (young 70–85 %, grown 100 %). The form is derived from the life stage and never stored in a save.
 
 **High-end phone polish** (same date; the owner plays on a Galaxy S25 Ultra-class phone; source: `docs/NEW_MONSTERS.md` §6):
-- The procedural SVG system and its palettes stay, so every main/sub mix (30 × 30 = 900) recolours automatically. No pre-rendered images or 3D.
+- The procedural SVG system and its palettes stay. No pre-rendered images or 3D.
 - **Richer shading:** a soft top-left-lit gradient on every body part plus a rim highlight; a soft contact shadow; optional subtle textures per breed (scales, fur strokes, stone grain, feathers).
 - **More life:** secondary motion (ears, tails, wings, manes and tentacles lag slightly behind the body), squash-and-stretch on hops, and eyes that glance toward where the player taps.
 - **Signature particles** in a lightweight layer, off under reduced motion: Hearthwing embers · Grumblestone crystal glints · Paladove light motes · Starhowl twinkles · Petalphant drifting petals · Scrollopus ink bubbles · Gloomgrin dust puffs · Frostlance snowflakes · one fitting effect for each older breed where it suits (rain for Nimbusheep, sparks for Zipwisp, steam for Gearhoot…).

@@ -80,7 +80,7 @@ import { circle, ellipse, g, line, path, polygon, rect } from './svg.ts'
 /**
  * The 20 breed looks (CONTENT §2.2 art briefs): which body plan knobs to use, what face to draw,
  * and the signature features that snap to the plan's sockets. Fixed colours named in a brief
- * (a brick, a glow, a tongue) stay the same whatever palette the sub breed brings.
+ * (a brick, a glow, a tongue) stay the same whatever palette the body wears (a secret variant's own, say).
  */
 
 export interface LookContext {

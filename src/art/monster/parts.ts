@@ -4,8 +4,7 @@ import { circle, ellipse, g, lighten, line, path, poly, polygon, polyline, rect 
 
 /**
  * Shared parametric parts (GAME_DESIGN §22): ears, tails, crests and the like, drawn at a socket.
- * The 20 breed looks use them for their own features, and the ACCENTS table uses them for the one
- * part a sub breed adds to the main body (§14.3, CONTENT §2.2 "accent").
+ * The breed looks use them for their own features.
  */
 
 export interface PartPiece {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { MARKET } from '../data/tuning.ts'
 import { marketMonster, marketStock } from './market.ts'
-import { mixBreeds } from './monster.ts'
+import { breedBirth } from './monster.ts'
 
 describe('the Market (§14.2)', () => {
   it('always stocks the four starters plus the season’s breed', () => {
@@ -16,14 +16,13 @@ describe('the Market (§14.2)', () => {
     expect(jan.filter((o) => !o.seasonal).every((o) => o.price === MARKET.price)).toBe(true)
   })
 
-  it('gift monsters are the same for everyone: pure, zero offsets, a fixed personality', () => {
+  it('gift monsters are the same for everyone: the breed itself, zero offsets, a fixed personality', () => {
     const a = marketMonster('puddlepup', 'x')
     const b = marketMonster('puddlepup', 'y')
     expect({ ...a, id: '' }).toEqual({ ...b, id: '' })
-    expect(a.stats).toEqual(mixBreeds('puddlepup', 'puddlepup').base)
-    expect(a.lifespanTotal).toBe(mixBreeds('puddlepup', 'puddlepup').lifespan)
+    expect(a.stats).toEqual(breedBirth('puddlepup').base)
+    expect(a.lifespanTotal).toBe(breedBirth('puddlepup').lifespan)
     expect(a.nature).toBe(0)
-    expect(a.flags.pure).toBe(true)
     expect(a.name).toBe(BREED_BY_ID.puddlepup.name)
     expect(a.likes.food).not.toBe(a.likes.dislikedFood)
     expect(marketMonster('tumblefox', 'z').likes).not.toEqual(a.likes)

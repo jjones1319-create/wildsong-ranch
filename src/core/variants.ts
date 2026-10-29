@@ -3,7 +3,7 @@ import { SECRET_BY_HASH, SECRET_BY_ID, type SecretVariant, type VariantPerk } fr
 import { SHRINE, VARIANTS } from '../data/tuning.ts'
 import { STAT_KEYS, type Family, type Stats } from '../data/types.ts'
 import { cyrb53 } from './hash.ts'
-import { mixBreeds, type Monster } from './monster.ts'
+import type { Monster } from './monster.ts'
 
 /**
  * CONTENT §12 special variants: the lookup from a normalized phrase, what a variant adds at birth, and the
@@ -23,11 +23,11 @@ export function perkOf(m: Pick<Monster, 'variantId'>): VariantPerk | null {
   return secretOf(m)?.perk ?? null
 }
 
-/** "Songheart Puddlepup" for a secret variant, otherwise the §14.3 variant name. */
-export function variantNameOf(m: Pick<Monster, 'mainBreed' | 'subBreed' | 'variantId'>): string {
+/** "Songheart Puddlepup" for a secret variant, otherwise the breed's name. */
+export function variantNameOf(m: Pick<Monster, 'mainBreed' | 'variantId'>): string {
   const secret = secretOf(m)
   if (secret) return `${secret.adjective} ${BREED_BY_ID[secret.breed].name}`
-  return mixBreeds(m.mainBreed, m.subBreed).variantName
+  return BREED_BY_ID[m.mainBreed].name
 }
 
 /** The variant's birth stat bonus as full Stats (zeros where it gives nothing). */

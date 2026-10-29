@@ -74,7 +74,6 @@ describe('a whole legacy: life → farewell → Heartstone → the Shrine → Fu
     expect(findRelative(state, 'b')?.name).toBe(b.monster.name)
     expect(baby.generation).toBe(2)
     // Fusion 2: the baby is one whole breed, whatever mixes the Shrine made.
-    expect(baby.subBreed).toBe(baby.mainBreed)
 
     // Everything new survives a save round trip.
     const raw = JSON.parse(JSON.stringify(makeSave(state, 99)))

@@ -53,13 +53,12 @@ const FAMILY_ORDER: Family[] = ['Basic', 'Hit', 'Wither', 'Sharp', 'Heavy', 'Spe
 
 export interface NpcOptions {
   breed: BreedId
-  sub?: BreedId
   grade?: NpcGrade
   /** Overrides the grade's band; the grade for the technique set then follows the total. */
   total?: number
   seed: number
   personality?: Personality
-  /** A pure-breed boss also knows its Signature. */
+  /** A boss also knows its Signature. */
   boss?: boolean
   name?: string
 }
@@ -70,8 +69,7 @@ export function npcMonster(o: NpcOptions): Monster {
   const grade: NpcGrade = o.grade ?? (o.total !== undefined ? gradeForTotal(o.total) : 'E')
   const band = NPC.totals[grade]!
   const total = o.total ?? rng.nextInt(band[0], band[1])
-  const sub = o.sub ?? o.breed
-  const m = createMonster({ id: `npc-${o.breed}-${o.seed}`, mainBreed: o.breed, subBreed: sub, likes: rollLikes(rng), name: o.name ?? breed.name })
+  const m = createMonster({ id: `npc-${o.breed}-${o.seed}`, mainBreed: o.breed, likes: rollLikes(rng), name: o.name ?? breed.name })
 
   // Stats by growth-grade weights with personal noise, then an exact total.
   const weights = zeroStats()
@@ -99,9 +97,7 @@ export function npcMonster(o: NpcOptions): Monster {
     families.add('Chain')
   }
   const ids = kit.filter((t) => families.has(t.family)).sort((a, b) => FAMILY_ORDER.indexOf(a.family) - FAMILY_ORDER.indexOf(b.family)).map((t) => t.id)
-  if (o.boss && sub === o.breed) ids.push(...kit.filter((t) => t.family === 'Signature').map((t) => t.id))
-  const quirk = m.techniques.find((t) => !kit.some((k) => k.id === t.id))
-  if (quirk) ids.push(quirk.id)
+  if (o.boss) ids.push(...kit.filter((t) => t.family === 'Signature').map((t) => t.id))
   if (gi >= NPC_GRADES.indexOf(NPC.universalFrom)) {
     const type = m.stats.POW >= m.stats.INT ? 'POW' : 'INT'
     const allowed = new Set<Family>(gi >= 5 ? ['Basic', 'Hit', 'Wither', 'Sharp', 'Heavy', 'Special'] : gi >= 4 ? ['Basic', 'Hit', 'Wither', 'Sharp'] : ['Basic', 'Hit'])

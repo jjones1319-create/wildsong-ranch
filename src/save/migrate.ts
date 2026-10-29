@@ -33,8 +33,12 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   monster's `inheritedTrait` (none for older monsters), the sweets record clamped to its stat, and wider bounds
  *   for the best total and expedition stamina. Nothing to rewrite: the validator's defaults fill the rest, for saves,
  *   monster files and Libraries alike.
+ * - v15 (Art P0): one breed per monster. Monsters lose `subBreed`, `flags.pure` and `appearance`; Heartstones lose
+ *   `donorSub`; Encyclopedia phrases lose `subBreed`. A mixed monster becomes its main breed and keeps its stats,
+ *   grades, techniques, guts and lifespan. The validator does the work (schema.ts, legacyMix.ts), because bare monster
+ *   imports never pass through here: it drops the old fields and gives an untouched mix name the breed's name.
  */
-export const SAVE_VERSION = 14
+export const SAVE_VERSION = 15
 
 type RawSave = Record<string, unknown>
 
@@ -165,6 +169,7 @@ const MIGRATIONS: Record<number, Migration> = {
     return next
   },
   13: (raw) => ({ ...raw, schemaVersion: 14 }),
+  14: (raw) => ({ ...raw, schemaVersion: 15 }),
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {

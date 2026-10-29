@@ -1,7 +1,7 @@
 import { UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { TITLES } from '../data/tuning.ts'
 import type { BreedId } from '../data/types.ts'
-import { mixBreeds, type Monster } from './monster.ts'
+import { breedBirth, type Monster } from './monster.ts'
 import type { GameState } from './state.ts'
 
 /**
@@ -49,9 +49,9 @@ export function knownMonsters(state: GameState): Monster[] {
   return [...(state.monster ? [state.monster] : []), ...state.freezer, ...state.elderGrove, ...state.memorial.map((e) => e.monster), ...state.hallOfFame.map((h) => h.monster)]
 }
 
-/** How much of the breed mix's nominal lifespan a monster has lived, in percent. */
+/** How much of its breed's nominal lifespan a monster has lived, in percent. */
 export function livedNominalPct(m: Monster): number {
-  const nominal = Math.max(1, mixBreeds(m.mainBreed, m.subBreed).lifespan)
+  const nominal = Math.max(1, breedBirth(m.mainBreed).lifespan)
   return Math.floor((m.ageWeeks * 100) / nominal)
 }
 

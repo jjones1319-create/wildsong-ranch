@@ -30,12 +30,12 @@ describe('Journeys in play (M5)', () => {
     expect(journeyCost(months, ((months[1]! + 1) % 12) + 1 === months[0] ? 13 : 13)).toBe(JOURNEY.cost)
   })
 
-  it('the Signature: at Prime for a pure breed with loyalty ≥ 60, or at Glacier Bastion with DEF + type ≥ 700', () => {
+  it('the Signature: at Prime with loyalty ≥ 60, or at Glacier Bastion with DEF + type ≥ 700, for every breed', () => {
     const pure = makeMonster({ spoil: 60, fear: 60 })
     const sig = signatureOf('puddlepup')
     expect(signatureAtPrime(pure)?.id).toBe(sig.id)
     expect(signatureAtPrime(makeMonster({ spoil: 50, fear: 50 }))).toBeNull()
-    expect(signatureAtPrime(makeMonster({ sub: 'tumblefox', spoil: 60, fear: 60 }))).toBeNull()
+    expect(signatureAtPrime(makeMonster({ main: 'tumblefox', spoil: 60, fear: 60 }))?.id).toBe(signatureOf('tumblefox').id)
     const full = makeMonster({ spoil: 60, fear: 60 })
     full.techniques = Array.from({ length: 12 }, (_, i) => ({ id: `universal.${['beat-bump', 'shuffle-step-kick', 'hum-pulse', 'whistle-shot', 'staccato-jab', 'downbeat-strike', 'chime-bolt', 'piccolo-dart', 'crescendo-slam', 'timpani-crash', 'grand-finale', 'fortissimo-blast'][i]}`, uses: 0, level: 1 as const }))
     expect(signatureAtPrime(full)).toBeNull()
@@ -45,7 +45,7 @@ describe('Journeys in play (M5)', () => {
     expect(cands.some((t) => t.family === 'Signature')).toBe(true)
     expect(requirementValue(sig)).toBe(SIGNATURE.glacierRequirement)
     expect(techniqueChancePct(strong, sig)).toBeGreaterThan(0)
-    expect(techniqueCandidates(makeMonster({ sub: 'tumblefox' }), 'glacier-bastion').some((t) => t.family === 'Signature')).toBe(false)
+    expect(techniqueCandidates(makeMonster({ main: 'tumblefox' }), 'glacier-bastion').filter((t) => t.family === 'Signature').map((t) => t.id)).toEqual([signatureOf('tumblefox').id])
   })
 
   it('the Trial opponent is the site’s wild breed at your grade or one up, and the reward scales by grade', () => {

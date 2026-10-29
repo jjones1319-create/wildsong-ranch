@@ -8,7 +8,7 @@ import { cyrb53 } from './hash.ts'
 import { countOf } from './items.ts'
 import { findStored, placeOnRanch, ranchBusy, recordInEncyclopedia } from './legacy.ts'
 import { divRound } from './mathx.ts'
-import { createMonster, gradeIndex, mixBreeds, rollLikes, stepGrade, trainedOf, traitOf, zeroStats, type Monster, type TechniqueSlot } from './monster.ts'
+import { breedBirth, createMonster, gradeIndex, rollLikes, stepGrade, trainedOf, traitOf, zeroStats, type Monster, type TechniqueSlot } from './monster.ts'
 import type { Rng } from './rng.ts'
 import type { GameState } from './state.ts'
 import { variantNameOf } from './variants.ts'
@@ -22,7 +22,7 @@ import { variantNameOf } from './variants.ts'
 export type OutcomeSource = 'p1' | 'p2' | 'both' | 'surprise'
 
 export interface FusionOutcome {
-  /** The baby's breed (main and sub alike). */
+  /** The baby's breed. */
   breed: BreedId
   /** Whole percent; the list sums to 100. */
   pct: number
@@ -130,19 +130,19 @@ function rankByValue(values: Stats): Stats {
 }
 
 /** The baby breed's stats ranked by growth grade, ties broken by base stat. */
-export function babyRanks(main: BreedId, sub: BreedId): Stats {
-  const mix = mixBreeds(main, sub)
-  const order = [...STAT_KEYS].sort((a, b) => gradeIndex(mix.grades[b]) - gradeIndex(mix.grades[a]) || mix.base[b] - mix.base[a] || STAT_KEYS.indexOf(a) - STAT_KEYS.indexOf(b))
+export function babyRanks(breed: BreedId): Stats {
+  const birth = breedBirth(breed)
+  const order = [...STAT_KEYS].sort((a, b) => gradeIndex(birth.grades[b]) - gradeIndex(birth.grades[a]) || birth.base[b] - birth.base[a] || STAT_KEYS.indexOf(a) - STAT_KEYS.indexOf(b))
   const out = zeroStats()
   order.forEach((k, i) => (out[k] = i + 1))
   return out
 }
 
 /** M (0–6): stats where the baby's rank equals either parent's rank. */
-export function compatibility(p1: Pick<Monster, 'stats'>, p2: Pick<Monster, 'stats'>, main: BreedId, sub: BreedId): number {
+export function compatibility(p1: Pick<Monster, 'stats'>, p2: Pick<Monster, 'stats'>, breed: BreedId): number {
   const r1 = rankByValue(p1.stats)
   const r2 = rankByValue(p2.stats)
-  const rb = babyRanks(main, sub)
+  const rb = babyRanks(breed)
   let m = 0
   for (const k of STAT_KEYS) if (rb[k] === r1[k] || rb[k] === r2[k]) m += 1
   return m
@@ -167,8 +167,8 @@ export function rarityK(pct: number): number {
 
 /** The parents' trained gains (trained points − that parent's breed base; sweets don't pass on), blended 2:1, never below 0; ×div. */
 function blendedOffsets3(p1: Monster, p2: Monster): Stats {
-  const b1 = mixBreeds(p1.mainBreed, p1.subBreed).base
-  const b2 = mixBreeds(p2.mainBreed, p2.subBreed).base
+  const b1 = BREED_BY_ID[p1.mainBreed].base
+  const b2 = BREED_BY_ID[p2.mainBreed].base
   const out = zeroStats()
   for (const k of STAT_KEYS) out[k] = Math.max(0, FUSION.offset.p1 * (trainedOf(p1, k) - b1[k]) + FUSION.offset.p2 * (trainedOf(p2, k) - b2[k]))
   return out
@@ -216,7 +216,7 @@ export function babyStatOffsets(p1: Monster, p2: Monster, m: number, outcomePct:
 
 /** §15 (v1.11): one step up in a stat when the better parent's grade there beats the baby breed's own, never past it. */
 export function inheritedGrades(p1: Pick<Monster, 'grades'>, p2: Pick<Monster, 'grades'>, breed: BreedId): Grades {
-  const grades = { ...mixBreeds(breed, breed).grades }
+  const grades = { ...BREED_BY_ID[breed].grades }
   for (const k of STAT_KEYS) {
     const best = Math.max(gradeIndex(p1.grades[k]), gradeIndex(p2.grades[k]))
     if (best > gradeIndex(grades[k])) grades[k] = stepGrade(grades[k], 1)
@@ -270,19 +270,18 @@ export interface FusionResult {
 /** Builds the baby for a chosen outcome (the roll itself happens in `fuse`). The baby is one whole breed. */
 export function makeBaby(p1: Monster, p2: Monster, outcome: FusionOutcome, catalyst: CatalystEffect, id: string, rng: Rng): FusionResult {
   const breed = outcome.breed
-  const compat = compatibility(p1, p2, breed, breed)
+  const compat = compatibility(p1, p2, breed)
   const headStart = headStartFrom(p1, p2, compat, outcome.pct)
   const offsets = babyStatOffsets(p1, p2, compat, outcome.pct, catalyst)
   const likes = rollLikes(rng)
   const baby = createMonster({
     id,
     mainBreed: breed,
-    subBreed: breed,
     likes,
     offsets: { stats: offsets, lifespan: catalyst.lifespan, gutsRate: 0, nature: divRound(FUSION.blend.p1 * p1.nature + FUSION.blend.p2 * p2.nature, FUSION.blend.div) },
     generation: Math.max(p1.generation, p2.generation) + 1,
     parents: [p1.id, p2.id],
-    name: variantNameOf({ mainBreed: breed, subBreed: breed, variantId: null }),
+    name: variantNameOf({ mainBreed: breed, variantId: null }),
   })
   baby.form = divRound(FUSION.blend.p1 * p1.form + FUSION.blend.p2 * p2.form, FUSION.blend.div)
   // v1.11: better grades and a second trait from the parents.
@@ -290,7 +289,7 @@ export function makeBaby(p1: Monster, p2: Monster, outcome: FusionOutcome, catal
   baby.inheritedTrait = inheritedTraitFor(p1, p2, breed)
   // Starters first (createMonster), then the inherited ones.
   const starters = new Set(startersOf(breed).map((t) => t.id))
-  baby.techniques = [...baby.techniques.filter((t) => starters.has(t.id) || TECHNIQUE_BY_ID[t.id]?.subQuirk), ...inheritedTechniques(baby, p1, p2)]
+  baby.techniques = [...baby.techniques.filter((t) => starters.has(t.id)), ...inheritedTechniques(baby, p1, p2)]
   return { baby, outcome, compat, tier: compatTier(compat), newFind: false, headStart }
 }
 

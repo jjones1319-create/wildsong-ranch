@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { BREEDS, BREED_BY_ID } from '../data/breeds.ts'
 import { STAGE_END_PCT } from '../data/tuning.ts'
 import { GROWTH_TYPES, STAT_KEYS } from '../data/types.ts'
-import { createMonster, gradeFactor100, lifeStage, loyaltyOf, mixBreeds, rollLikes, rollOffsets, stageFactor100, starsFor, stepGrade, styleBandOf, styleOf, strainOf, totalStats, type Likes } from './monster.ts'
+import { divRound } from './mathx.ts'
+import { breedBirth, createMonster, gradeFactor100, lifeStage, loyaltyOf, rollLikes, rollOffsets, stageFactor100, starsFor, stepGrade, styleBandOf, styleOf, strainOf, totalStats, type Likes } from './monster.ts'
 import { createRng } from './rng.ts'
 
 export const TEST_LIKES: Likes = { food: 'honey-bread', dislikedFood: 'turnips', toy: 'rubber-ball', battle: 0, drill: 'log-toss', dislikedDrill: 'acorn-shower' }
@@ -42,48 +44,34 @@ describe('grades and stages (§5)', () => {
   })
 })
 
-describe('mixing (§14.3)', () => {
-  it('a pure Puddlepup keeps its base stats, gets +10% lifespan and its two Basics', () => {
-    const mix = mixBreeds('puddlepup', 'puddlepup')
-    expect(mix.base).toEqual({ LIF: 120, POW: 70, INT: 60, SKI: 80, SPD: 70, DEF: 70 })
-    expect(mix.grades).toEqual({ LIF: 'C', POW: 'C', INT: 'D', SKI: 'B', SPD: 'C', DEF: 'C' })
-    expect(mix.lifespan).toBe(418)
-    expect(mix.gutsRate).toBe(12)
-    expect(mix.pure).toBe(true)
-    expect(mix.variantName).toBe('Puddlepup')
-    expect(mix.techniques).toEqual(['puddlepup.splash-nip', 'puddlepup.bubble-pop'])
+describe('one whole breed (§14.3)', () => {
+  it('a Puddlepup keeps its base stats, gets +10% lifespan and its two Basics', () => {
+    const birth = breedBirth('puddlepup')
+    expect(birth.base).toEqual({ LIF: 120, POW: 70, INT: 60, SKI: 80, SPD: 70, DEF: 70 })
+    expect(birth.grades).toEqual({ LIF: 'C', POW: 'C', INT: 'D', SKI: 'B', SPD: 'C', DEF: 'C' })
+    expect(birth.lifespan).toBe(418)
+    expect(birth.gutsRate).toBe(12)
+    expect(birth.name).toBe('Puddlepup')
+    expect(birth.techniques).toEqual(['puddlepup.splash-nip', 'puddlepup.bubble-pop'])
   })
 
-  it('blends a Cinder Tumblefox 75/25 with half-even rounding, grade steps and the sub quirk', () => {
-    const mix = mixBreeds('tumblefox', 'cinderlynx')
-    expect(mix.base).toEqual({ LIF: 90, POW: 78, INT: 72, SKI: 78, SPD: 102, DEF: 48 })
-    // Cinderlynx grades D A D C B E: best POW (+1 on Tumblefox's D → C), worst DEF (−1: D → E)
-    expect(mix.grades).toEqual({ LIF: 'D', POW: 'C', INT: 'C', SKI: 'B', SPD: 'B', DEF: 'E' })
-    expect(mix.gutsRate).toBe(11)
-    expect(mix.lifespan).toBe(352)
-    expect(mix.pure).toBe(false)
-    expect(mix.variantName).toBe('Cinder Tumblefox')
-    expect(mix.techniques).toEqual(['tumblefox.scamper-swipe', 'tumblefox.foxfire-flicker', 'cinderlynx.spark-pounce'])
+  it("every breed is born with its own base, grades and guts and 110% of its lifespan, rounded half-even", () => {
+    for (const b of BREEDS) {
+      const birth = breedBirth(b.id)
+      expect(birth.base).toEqual(b.base)
+      expect(birth.grades).toEqual(b.grades)
+      expect(birth.gutsRate).toBe(b.gutsRate)
+      expect(birth.lifespan).toBe(divRound(b.lifespan * 110, 100))
+      expect(birth.name).toBe(b.name)
+    }
   })
 
-  it('breaks grade ties in LIF, POW, INT, SKI, SPD, DEF order', () => {
-    // Cobblemaw grades B A E D E B: worst is INT (first E), not SPD
-    const mix = mixBreeds('puddlepup', 'cobblemaw')
-    expect(mix.grades.POW).toBe('B')
-    expect(mix.grades.INT).toBe('E')
-    expect(mix.grades.SPD).toBe('C')
-    // Aurelwyrm B A A C C C: best is POW (first A)
-    const mix2 = mixBreeds('moatshell', 'aurelwyrm')
-    expect(mix2.grades.POW).toBe('B')
-    expect(mix2.grades.INT).toBe('D')
-  })
-
-  it('a sub can lift an A to S (v1.11), and steps stop at S and E', () => {
-    // Wishlume sub (E E A C B E): best INT; Velvesper main INT is already A, so it becomes S
-    expect(mixBreeds('velvesper', 'wishlume').grades.INT).toBe('S')
-    expect(mixBreeds('velvesper', 'wishlume').grades.LIF).toBe('E')
-    // Nothing goes past S.
-    expect(mixBreeds('velvesper', 'velvesper').grades.INT).toBe('A')
+  it('hands out copies, so changing a newborn never changes the breed', () => {
+    const birth = breedBirth('velvesper')
+    birth.grades.INT = 'S'
+    birth.base.INT = 1
+    expect(BREED_BY_ID.velvesper.grades.INT).toBe('A')
+    expect(breedBirth('velvesper').base.INT).toBe(BREED_BY_ID.velvesper.base.INT)
   })
 })
 
@@ -92,7 +80,6 @@ describe('createMonster and derived values (§4)', () => {
     const m = createMonster({
       id: 'm1',
       mainBreed: 'puddlepup',
-      subBreed: 'puddlepup',
       likes: TEST_LIKES,
       offsets: { stats: { LIF: 5, POW: -10, INT: 20, SKI: 0, SPD: 0, DEF: 0 }, lifespan: 12, gutsRate: -1, nature: 30 },
     })
@@ -104,7 +91,7 @@ describe('createMonster and derived values (§4)', () => {
     expect(m.ageWeeks).toBe(0)
     expect(m.fatigue).toBe(0)
     expect(m.grade).toBe('E')
-    expect(m.flags.pure).toBe(true)
+    expect(m.flags).toEqual({ edited: false, sandbox: false })
     expect(loyaltyOf(m)).toBe(30)
     expect(styleOf(m)).toBe(0)
     expect(styleBandOf(styleOf(m))).toBe('even')
@@ -113,11 +100,11 @@ describe('createMonster and derived values (§4)', () => {
     expect(m.techniques.map((t) => t.id)).toEqual(['puddlepup.splash-nip', 'puddlepup.bubble-pop'])
   })
 
-  it('names variants and keeps the sub accent on mixed monsters', () => {
-    const m = createMonster({ id: 'm2', mainBreed: 'puddlepup', subBreed: 'cinderlynx', likes: TEST_LIKES })
-    expect(m.name).toBe('Cinder Puddlepup')
-    expect(m.appearance).toEqual({ paletteBreed: 'cinderlynx', accentPart: 'ember ear tufts' })
-    expect(m.flags.pure).toBe(false)
+  it('has no sub breed, palette or accent part: the breed is the whole monster', () => {
+    const m = createMonster({ id: 'm2', mainBreed: 'cinderlynx', likes: TEST_LIKES })
+    expect(m.name).toBe('Cinderlynx')
+    expect(Object.keys(m)).not.toContain('subBreed')
+    expect(Object.keys(m)).not.toContain('appearance')
   })
 
   it('maps style to the §6.4 bands', () => {

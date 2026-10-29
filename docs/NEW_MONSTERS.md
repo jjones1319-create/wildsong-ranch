@@ -4,6 +4,8 @@ Breeds 21–30, added after M2 at the owner's request: a real winged dragon, a r
 
 This file is the source for that change. Once the monsters are added, `docs/CONTENT.md` holds them like every other breed, and this file can stay as a record.
 
+> **Since v1.12 (Art P0), every monster is one whole breed.** The accent parts, sub adjectives, sub-quirk techniques, "Pure breed" Signature rule and mixes below are a record of how the batch was first built; GAME_DESIGN §14.3 has the current rule.
+
 > **Originality rule** (same as `CLAUDE.md`): these are original creatures.
 > - Do not make them resemble characters from Monster Rancher, Digimon, Pokémon or any other franchise.
 > - If a drawing starts to look like a famous character, change it until it doesn't.

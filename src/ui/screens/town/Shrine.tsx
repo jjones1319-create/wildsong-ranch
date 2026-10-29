@@ -236,7 +236,7 @@ export function ShrineScreen() {
                 <MonsterPortrait monster={monsterFromRoll(rollShrine(p.phrase, p.artist, g.unlocked), 'enc')} size={56} animate={false} />
                 <span class="stone__body">
                   <span class="stone__phrase">
-                    {p.name} · {variantNameOf({ mainBreed: p.mainBreed, subBreed: p.subBreed, variantId: p.variantId })}
+                    {p.name} · {variantNameOf(p)}
                   </span>
                   <span class="muted small">{fill(t.stoneRow, { phrase: p.phrase, artist: p.artist ? ` · ${p.artist}` : '' })}</span>
                 </span>

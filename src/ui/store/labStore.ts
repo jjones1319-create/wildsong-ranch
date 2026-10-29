@@ -95,7 +95,7 @@ function listOf(source: LabSource): Listed[] {
 export const visible = computed<Listed[]>(() => {
   const base = listOf(labTab.value)
   const filter = labBreedFilter.value
-  const filtered = filter === 'all' ? base : base.filter((l) => l.monster.mainBreed === filter || l.monster.subBreed === filter)
+  const filtered = filter === 'all' ? base : base.filter((l) => l.monster.mainBreed === filter)
   const keepOrder = labSort.value === 'date' && labTab.value !== 'library'
   return keepOrder ? filtered : sortBy(filtered, labSort.value)
 })
@@ -197,7 +197,7 @@ export function patchMonster(fn: (m: Monster) => void): void {
 }
 
 export function draftBreedChanged(d: EditorDraft): boolean {
-  return d.monster.mainBreed !== d.original.mainBreed || d.monster.subBreed !== d.original.subBreed
+  return d.monster.mainBreed !== d.original.mainBreed
 }
 
 /** Techniques that Save will drop: only after a breed change, and only without Keep all. */

@@ -1,6 +1,6 @@
 /**
  * GAME_DESIGN §22 / CONTENT §12: the unique palette of each secret variant. The body wears these colours
- * instead of the sub breed's; the main breed's eyes stay unless the variant names its own.
+ * instead of its breed's; the breed's eyes stay unless the variant names its own.
  */
 export interface VariantPalette {
   body: string

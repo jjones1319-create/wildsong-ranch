@@ -474,7 +474,7 @@ The owner asked (2026-10-28) for Fusion to give one of four breeds, each with a 
 - two random-feeling **surprises** that make sense for the pair, like a snake and a bird making a dragon.
 
 Their choices:
-- Fusion babies are always one whole breed. Mixes stay in the Shrine and ✏️ Edit for now.
+- Fusion babies are always one whole breed. Mixes stay in the Shrine and ✏️ Edit for now (retired everywhere in Art P0, v1.12).
 - New combo-only breeds (a bull-warrior and others) wait for the Blender monster work, which comes next.
 
 Spec: GAME_DESIGN §14.3 and §15; CONTENT §2, §2.3 and §6.
@@ -517,6 +517,26 @@ Spec: GAME_DESIGN §4, §5.1–§5.2, §6.3, §8, §11, §12.3, §12.8, §14.3, 
   - `StatsGuide` (a sheet and the Journal's Stats page);
   - the editor's number box to 9,999, cap labels, "Max all" to the caps and the inherited-trait picker.
 - [x] 7. Tests, docs, the e2e card spec, `npm run verify`, PROGRESS, commit, deploy, phone checklist.
+
+## Art 2.0 (P0–P19)
+
+Decided Oct 28, 2026. Spec: `docs/ART_2_PLAN.md`; the owner's prompts are in `ART_2_PROMPTS.md`. Blender makes every monster (a 3D model with its skeleton, animations and face sheet) and every scene; the game only displays them. One milestone per prompt, committed as `Art P<n>: <summary>` with a minor version bump.
+
+**Mixes are retired.** Since P0 every monster is one whole breed. The earlier milestone lists above (M1, M2, M2.5, M5, M6) describe the main/sub mix system as it was built at the time; GAME_DESIGN §14.3 has the current rule.
+
+### P0: One breed per monster (v1.12.0)
+
+The owner retired the main/sub mix system (Oct 28) so that each breed can be designed and painted on its own. Their choices for the old "pure" bonuses: every monster gets the +10% lifespan and Signature access, and the Pure badge goes. Collector now needs 30 looks (was 50).
+
+Spec: GAME_DESIGN §4, §5.2, §7, §10, §12.8, §13, §14.1, §14.3, §15, §19, §22; CONTENT §2.2, §3, §11 and the titles table; ART_2_PLAN §8 (P0).
+
+- [x] 1. Core: `breedBirth(breed)` replaces `mixBreeds(main, sub)`; `subBreed`, `flags.pure` and `appearance` leave the monster; the Signature gates lose their purity checks (Prime, Glacier Bastion, Songsheets, the Guild Library, bosses); Fusion, the Lab, the cocoon (a whole Velvesper), Heartstones, titles and the sims use the one breed; `BIRTH.lifespanBonusPct` for everyone.
+- [x] 2. Shrine: the sub step goes. It drew from its own `h2` stream, so every phrase keeps its breed, offsets, likes and nature (checked against the old code over 3,000 phrases; the 106 that were already one breed make byte-identical monsters).
+- [x] 3. Data: no accent parts, sub adjectives or sub-quirk tags; "Auto at Prime (loyalty ≥ 60)" for the Signature rows (CONTENT §3 and `techniques.ts` together).
+- [x] 4. Save v15: the validator drops the old fields everywhere a monster is stored (bare imports included) and renames an untouched mix name ("Cinder Tumblefox") to the breed's; Heartstones and Encyclopedia phrases lose their sub; tests for saves, files, Libraries, old share codes and garbage.
+- [x] 5. Classic art: every monster wears its own breed's palette (secret variants keep theirs); `accents.ts` deleted.
+- [x] 6. Screens: one Breed picker in Create and ✏️ Edit, no Colours choice, no Pure badge; names and Library filters by breed.
+- [x] 7. Tests, docs, `npm run verify`, e2e, PROGRESS, commit, deploy, phone checklist.
 
 ## LATER (after v1.0)
 

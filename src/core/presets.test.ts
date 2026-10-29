@@ -13,7 +13,7 @@ describe('presets (§19)', () => {
     expect(all).toHaveLength(BREED_IDS.length * PRESET_TIERS.length)
     expect(new Set(all.map((p) => p.id)).size).toBe(all.length)
     expect(all.every((p) => isPresetId(p.id) && p.monster.id === p.id)).toBe(true)
-    expect(all.every((p) => p.monster.flags.pure && !p.monster.flags.edited)).toBe(true)
+    expect(all.every((p) => !p.monster.flags.edited)).toBe(true)
   })
 
   it('babies are newborn and trained presets hit their totals at the start of Prime', () => {

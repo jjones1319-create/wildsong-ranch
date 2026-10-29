@@ -59,7 +59,7 @@ describe('grade caps (§5.2, v1.11)', () => {
   })
 
   it('a newborn starts inside its caps', () => {
-    const m = createMonster({ id: 'x', mainBreed: 'bloatoad', subBreed: 'bloatoad', likes: makeMonster().likes, offsets: { stats: { LIF: 5000, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } } })
+    const m = createMonster({ id: 'x', mainBreed: 'bloatoad', likes: makeMonster().likes, offsets: { stats: { LIF: 5000, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } } })
     expect(m.stats.LIF).toBe(STAT_CAP_BY_GRADE[m.grades.LIF])
     expect(m.inheritedTrait).toBeNull()
   })

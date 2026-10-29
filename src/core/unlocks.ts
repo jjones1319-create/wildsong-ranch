@@ -8,7 +8,7 @@ import { placeNewMonster, type Placed } from './creation.ts'
 import { addItems, countOf } from './items.ts'
 import { trainedGains } from './legacy.ts'
 import { clamp, divRound } from './mathx.ts'
-import { addCondition, createMonster, gradeIndex, loyaltyOf, mixBreeds, rollLikes, stepGrade, sweetsOf, type Monster, type TechniqueSlot } from './monster.ts'
+import { addCondition, breedBirth, createMonster, gradeIndex, loyaltyOf, rollLikes, stepGrade, sweetsOf, type Monster, type TechniqueSlot } from './monster.ts'
 import { createRng } from './rng.ts'
 import type { GameState } from './state.ts'
 
@@ -118,7 +118,7 @@ export function startCocoon(input: GameState): GameState {
 }
 
 /**
- * The metamorphosis: a new main breed with the same sub-breed, 80 % of the trained gains kept on top of the
+ * The metamorphosis: a whole new breed, 80 % of the trained gains kept on top of the
  * new base (Stat Sweets are kept whole), the new breed's grades plus any steps the old grades had earned above
  * the old breed's (Pearls, inheritance), its growth, guts rate and trait, +60 weeks of life, techniques carried
  * over where the new kit has the same family (same range when it can), otherwise the new starters.
@@ -126,22 +126,20 @@ export function startCocoon(input: GameState): GameState {
 export function metamorphose(input: Monster, into: BreedId): Monster {
   const m = structuredClone(input)
   const gains = trainedGains(m)
-  const oldGrades = mixBreeds(m.mainBreed, m.subBreed).grades
-  const mix = mixBreeds(into, m.subBreed)
+  const oldGrades = breedBirth(m.mainBreed).grades
+  const birth = breedBirth(into)
   for (const k of STAT_KEYS) {
-    const kept = mix.base[k] + divRound(gains[k] * UNLOCKS.cocoon.keepGainsPct, 100) + sweetsOf(m, k)
+    const kept = birth.base[k] + divRound(gains[k] * UNLOCKS.cocoon.keepGainsPct, 100) + sweetsOf(m, k)
     m.stats[k] = clamp(kept, RANGES.stat.min, RANGES.stat.max)
   }
   const earned = (k: StatKey) => Math.max(0, gradeIndex(m.grades[k]) - gradeIndex(oldGrades[k]))
-  const grades = { ...mix.grades }
-  for (const k of STAT_KEYS) grades[k] = stepGrade(mix.grades[k], earned(k))
+  const grades = { ...birth.grades }
+  for (const k of STAT_KEYS) grades[k] = stepGrade(birth.grades[k], earned(k))
   m.mainBreed = into
   m.grades = grades
   m.growthType = BREED_BY_ID[into].growth
-  m.gutsRate = mix.gutsRate
+  m.gutsRate = birth.gutsRate
   m.lifespanTotal = clamp(m.lifespanTotal + UNLOCKS.cocoon.lifespanBonus, RANGES.lifespan.min, RANGES.lifespan.max)
-  m.flags.pure = mix.pure
-  m.appearance = { paletteBreed: m.subBreed, accentPart: mix.pure ? null : BREED_BY_ID[m.subBreed].art.accentPart }
 
   const kit = techniquesOfBreed(into)
   const taken = new Set<string>()
@@ -160,7 +158,7 @@ export function metamorphose(input: Monster, into: BreedId): Monster {
     taken.add(match.id)
     carried.push({ ...slot, id: match.id })
   }
-  const starters: TechniqueSlot[] = mix.techniques.filter((id) => !carried.some((s) => s.id === id)).map((id) => ({ id, uses: 0, level: 1 }))
+  const starters: TechniqueSlot[] = birth.techniques.filter((id) => !carried.some((s) => s.id === id)).map((id) => ({ id, uses: 0, level: 1 }))
   m.techniques = [...starters, ...carried].slice(0, SONGBOOK.maxTechniques)
   return m
 }
@@ -215,7 +213,7 @@ export function reefclawDue(state: GameState): boolean {
 
 /** A Reefclaw moves into the Tide Pool: the ranch if it is empty, else the Freezer. No room: it tries again next June. */
 export function reefclawArrival(input: GameState): { state: GameState; placed: Placed | null } {
-  const reefclaw = createMonster({ id: `reefclaw-${input.week}`, mainBreed: 'reefclaw', subBreed: 'reefclaw', likes: rollLikes(createRng(UNLOCKS.reefclaw.seed)), name: 'Reefclaw' })
+  const reefclaw = createMonster({ id: `reefclaw-${input.week}`, mainBreed: 'reefclaw', likes: rollLikes(createRng(UNLOCKS.reefclaw.seed)), name: 'Reefclaw' })
   const placed = placeNewMonster(input, reefclaw)
   if (!placed.placed) return { state: input, placed: null }
   const state = placed.state

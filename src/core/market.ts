@@ -34,5 +34,5 @@ export function marketStock(month: number, unlocked: readonly BreedId[] = []): M
 export function marketMonster(breed: BreedId, id: string): Monster {
   const rng = createRng(MARKET.seedBase + BREED_IDS.indexOf(breed))
   const likes = rollLikes(rng)
-  return createMonster({ id, mainBreed: breed, subBreed: breed, likes, name: BREED_BY_ID[breed].name })
+  return createMonster({ id, mainBreed: breed, likes, name: BREED_BY_ID[breed].name })
 }

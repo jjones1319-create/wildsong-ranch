@@ -12,6 +12,7 @@ import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
 import type { ExpeditionLoot, GameState } from '../core/state.ts'
+import { retireMixName } from './legacyMix.ts'
 import { isRawSave, migrate, SAVE_VERSION } from './migrate.ts'
 
 /**
@@ -140,40 +141,44 @@ const RecordsSchema = v.fallback(
   { wins: 0, losses: 0, draws: 0, kos: 0, cupsWon: 0, titles: [], earnings: 0, highestGrade: 'E', crownsWon: 0, fromSweets: { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 } },
 )
 
-export const MonsterSchema = v.object({
-  id: v.pipe(v.string(), v.minLength(1)),
-  name: text('', RANGES.nameLength.max),
-  mainBreed: v.picklist(BREED_IDS),
-  subBreed: v.picklist(BREED_IDS),
-  variantId: v.fallback(v.nullable(v.string()), null),
-  generation: int(1, 1_000_000, 1),
-  parents: v.fallback(v.union([v.tuple([v.string(), v.string()]), v.tuple([])]), []),
-  seedPhrase: text('', 200),
-  heirloom: v.fallback(v.nullable(v.picklist(FAMILIES)), null),
-  // v14: a second trait inherited at Fusion; an unknown id becomes none.
-  inheritedTrait: v.fallback(v.nullable(v.picklist(TRAIT_IDS)), null),
-  stats: v.fallback(StatsSchema, { LIF: 1, POW: 1, INT: 1, SKI: 1, SPD: 1, DEF: 1 }),
-  grades: v.fallback(GradesSchema, { LIF: 'C', POW: 'C', INT: 'C', SKI: 'C', SPD: 'C', DEF: 'C' }),
-  growthType: oneOf(GROWTH_TYPES, 'Steady'),
-  gutsRate: int(RANGES.gutsRate.min, RANGES.gutsRate.max, 12),
-  lifespanTotal: int(RANGES.lifespan.min, RANGES.lifespan.max, 300),
-  ageWeeks: weeks(),
-  fatigue: cond(),
-  stress: cond(),
-  spoil: cond(),
-  fear: cond(),
-  nature: int(RANGES.nature.min, RANGES.nature.max, 0),
-  form: int(RANGES.form.min, RANGES.form.max, 0),
-  fame: int(RANGES.fame.min, RANGES.fame.max, 0),
-  grade: oneOf(TOURNAMENT_GRADES, 'E'),
-  techniques: v.fallback(v.array(v.fallback(v.nullable(TechniqueSlotSchema), null)), []),
-  likes: LikesSchema,
-  status: StatusSchema,
-  diet: DietSchema,
-  records: RecordsSchema,
-  flags: v.fallback(v.object({ pure: bool(false), edited: bool(false), sandbox: bool(false) }), { pure: false, edited: false, sandbox: false }),
-  appearance: v.fallback(v.object({ paletteBreed: v.picklist(BREED_IDS), accentPart: v.fallback(v.nullable(v.string()), null) }), { paletteBreed: 'puddlepup', accentPart: null }),
-})
+// v15 (Art P0): one breed per monster. An old `subBreed`, `flags.pure` and `appearance` are dropped, and an
+// untouched mix name becomes the breed's name. This runs for every monster, bare monster imports included.
+export const MonsterSchema = v.pipe(
+  v.unknown(),
+  v.transform((raw) => retireMixName(raw, 'mainBreed', 'subBreed', 'name')),
+  v.object({
+    id: v.pipe(v.string(), v.minLength(1)),
+    name: text('', RANGES.nameLength.max),
+    mainBreed: v.picklist(BREED_IDS),
+    variantId: v.fallback(v.nullable(v.string()), null),
+    generation: int(1, 1_000_000, 1),
+    parents: v.fallback(v.union([v.tuple([v.string(), v.string()]), v.tuple([])]), []),
+    seedPhrase: text('', 200),
+    heirloom: v.fallback(v.nullable(v.picklist(FAMILIES)), null),
+    // v14: a second trait inherited at Fusion; an unknown id becomes none.
+    inheritedTrait: v.fallback(v.nullable(v.picklist(TRAIT_IDS)), null),
+    stats: v.fallback(StatsSchema, { LIF: 1, POW: 1, INT: 1, SKI: 1, SPD: 1, DEF: 1 }),
+    grades: v.fallback(GradesSchema, { LIF: 'C', POW: 'C', INT: 'C', SKI: 'C', SPD: 'C', DEF: 'C' }),
+    growthType: oneOf(GROWTH_TYPES, 'Steady'),
+    gutsRate: int(RANGES.gutsRate.min, RANGES.gutsRate.max, 12),
+    lifespanTotal: int(RANGES.lifespan.min, RANGES.lifespan.max, 300),
+    ageWeeks: weeks(),
+    fatigue: cond(),
+    stress: cond(),
+    spoil: cond(),
+    fear: cond(),
+    nature: int(RANGES.nature.min, RANGES.nature.max, 0),
+    form: int(RANGES.form.min, RANGES.form.max, 0),
+    fame: int(RANGES.fame.min, RANGES.fame.max, 0),
+    grade: oneOf(TOURNAMENT_GRADES, 'E'),
+    techniques: v.fallback(v.array(v.fallback(v.nullable(TechniqueSlotSchema), null)), []),
+    likes: LikesSchema,
+    status: StatusSchema,
+    diet: DietSchema,
+    records: RecordsSchema,
+    flags: v.fallback(v.object({ edited: bool(false), sandbox: bool(false) }), { edited: false, sandbox: false }),
+  }),
+)
 
 const JourneySchema = v.object({
   site: v.picklist(JOURNEY_SITE_IDS),
@@ -339,26 +344,32 @@ const MemorialSchema = v.object({
   week: int(0, 1_000_000, 0),
 })
 
-const HeartstoneSchema = v.object({
-  id: v.string(),
-  donorId: text('', 64),
-  donorName: text('', RANGES.nameLength.max),
-  donorBreed: v.picklist(BREED_IDS),
-  donorSub: v.fallback(v.picklist(BREED_IDS), 'puddlepup'),
-  donorVariant: v.fallback(v.nullable(v.string()), null),
-  gains: v.fallback(SweetsSchema, { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }),
-  family: oneOf(FAMILIES, 'Basic'),
-  week: int(0, 1_000_000, 0),
-})
+const HeartstoneSchema = v.pipe(
+  v.unknown(),
+  v.transform((raw) => retireMixName(raw, 'donorBreed', 'donorSub', 'donorName')),
+  v.object({
+    id: v.string(),
+    donorId: text('', 64),
+    donorName: text('', RANGES.nameLength.max),
+    donorBreed: v.picklist(BREED_IDS),
+    donorVariant: v.fallback(v.nullable(v.string()), null),
+    gains: v.fallback(SweetsSchema, { LIF: 0, POW: 0, INT: 0, SKI: 0, SPD: 0, DEF: 0 }),
+    family: oneOf(FAMILIES, 'Basic'),
+    week: int(0, 1_000_000, 0),
+  }),
+)
 
-const EncyclopediaPhraseSchema = v.object({
-  phrase: text('', 200),
-  artist: text('', 200),
-  name: text('', RANGES.nameLength.max),
-  mainBreed: v.picklist(BREED_IDS),
-  subBreed: v.picklist(BREED_IDS),
-  variantId: v.fallback(v.nullable(v.string()), null),
-})
+const EncyclopediaPhraseSchema = v.pipe(
+  v.unknown(),
+  v.transform((raw) => retireMixName(raw, 'mainBreed', 'subBreed', 'name')),
+  v.object({
+    phrase: text('', 200),
+    artist: text('', 200),
+    name: text('', RANGES.nameLength.max),
+    mainBreed: v.picklist(BREED_IDS),
+    variantId: v.fallback(v.nullable(v.string()), null),
+  }),
+)
 
 const EncyclopediaSchema = v.fallback(
   v.object({

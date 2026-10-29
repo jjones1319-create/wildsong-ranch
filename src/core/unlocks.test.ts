@@ -8,7 +8,7 @@ import { buyFromMarket } from './creation.ts'
 import { actionMenu, answerEvent, beginWeek, chooseAction, finishWeek } from './game.ts'
 import { concludeLife, trainedGains } from './legacy.ts'
 import { marketStock } from './market.ts'
-import { loyaltyOf, mixBreeds, type Monster } from './monster.ts'
+import { breedBirth, loyaltyOf, type Monster } from './monster.ts'
 import { createRng } from './rng.ts'
 import { createGameState, type GameState, type TournamentState } from './state.ts'
 import { makeMonster, type MonsterOverrides } from './test-helpers.ts'
@@ -98,13 +98,12 @@ describe('1. Velvesper: the cocoon (CONTENT §11)', () => {
     s = rest.state
     expect(rest.events).toContain('emerged')
     expect(s.monster!.mainBreed).toBe('velvesper')
-    expect(s.monster!.subBreed).toBe('nibblegrub')
     expect(s.unlocked).toContain('velvesper')
     expect(s.titles).toContain('Silk & Moonlight')
     expect(s.unlocks.cocoonInto).toBeNull()
     expect(s.monster!.status.cocoonWeeks).toBe(0)
     expect(s.monster!.lifespanTotal).toBe(life + UNLOCKS.cocoon.lifespanBonus)
-    const base = mixBreeds('velvesper', 'nibblegrub').base
+    const base = breedBirth('velvesper').base
     for (const k of STAT_KEYS) expect(s.monster!.stats[k]).toBe(Math.min(999, base[k] + Math.round((gains[k] * UNLOCKS.cocoon.keepGainsPct) / 100)))
     expect(s.monster!.growthType).toBe(BREED_BY_ID.velvesper.growth)
   })
@@ -119,7 +118,7 @@ describe('1. Velvesper: the cocoon (CONTENT §11)', () => {
     const hit = TECHNIQUE_BY_ID[grub.techniques.find((t) => TECHNIQUE_BY_ID[t.id]?.family === 'Hit')?.id ?? '']
     const moth = metamorphose(grub, 'velvesper')
     expect(moth.techniques.some((t) => t.id === 'universal.beat-bump' && t.uses === 30)).toBe(true)
-    for (const id of mixBreeds('velvesper', 'nibblegrub').techniques) expect(moth.techniques.some((t) => t.id === id)).toBe(true)
+    for (const id of breedBirth('velvesper').techniques) expect(moth.techniques.some((t) => t.id === id)).toBe(true)
     if (hit) expect(moth.techniques.some((t) => TECHNIQUE_BY_ID[t.id]?.family === 'Hit' && TECHNIQUE_BY_ID[t.id]?.breed === 'velvesper')).toBe(true)
     expect(moth.techniques.every((t) => TECHNIQUE_BY_ID[t.id]?.breed !== 'nibblegrub' || TECHNIQUE_BY_ID[t.id]?.family === 'Basic')).toBe(true)
     expect(moth.id).toBe(grub.id)

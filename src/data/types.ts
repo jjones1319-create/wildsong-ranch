@@ -314,10 +314,6 @@ export interface BreedArt {
   plan: BodyPlan
   brief: string
   palette: { body: string; belly: string; accent: string; eye: string }
-  /** The part this breed adds to the main body when it is the sub-breed. */
-  accentPart: string
-  /** Variant-name adjective when this breed is the sub-breed ("Cinder Puddlepup"). */
-  adjective: string
   /** GAME_DESIGN §22 growth forms: the look from Prime onward, for breeds that grow up. Anything left out falls back to the base look. */
   grown?: { brief: string }
 }
@@ -405,8 +401,6 @@ export interface Technique {
   learn: TechLearn
   /** V1: the element its effects are drawn with (CONTENT §3 Element column). */
   element: Element
-  /** The Basic technique a breed passes on when it is the sub-breed. */
-  subQuirk: boolean
   /** The Songsheet that teaches it, or null when none exists (breed Basics). */
   sheet: Songsheet | null
 }

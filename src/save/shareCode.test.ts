@@ -5,7 +5,7 @@ import { decodeShareCode, encodeShareCode, extractShareCode, fromBase64Url, SHAR
 
 describe('share codes (§19)', () => {
   it('round-trips a monster file and starts with WS1-', async () => {
-    const file = makeMonsterFile(makeMonster({ main: 'coilfang', sub: 'wishlume' }))
+    const file = makeMonsterFile(makeMonster({ main: 'coilfang' }))
     const code = await encodeShareCode(file)
     expect(code.startsWith(SHARE_PREFIX)).toBe(true)
     expect(code).toMatch(/^WS1-[A-Za-z0-9_-]+$/)

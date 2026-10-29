@@ -21,7 +21,7 @@ describe('the Shrine in play (§14.1)', () => {
     expect(first.placed).toBe('ranch')
     expect(first.state.monster?.id).toBe('id1')
     expect(first.state.weekPhase).toBe('start')
-    expect(first.state.encyclopedia.phrases).toEqual([{ phrase: 'river song', artist: 'the valley choir', name: 'River', mainBreed: first.monster.mainBreed, subBreed: first.monster.subBreed, variantId: null }])
+    expect(first.state.encyclopedia.phrases).toEqual([{ phrase: 'river song', artist: 'the valley choir', name: 'River', mainBreed: first.monster.mainBreed, variantId: null }])
     expect(first.state.encyclopedia.breeds).toEqual([first.monster.mainBreed])
     const second = awaken(first.state, 'river song', 'the valley choir', 'id2')
     expect(second.kind).toBe('born')

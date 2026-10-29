@@ -438,7 +438,7 @@ function conclude(state: GameState, how: ExpeditionEnd): void {
   if (e.keyFound === 'brass-blueprint') state.inventory = addItems(state.inventory, 'brass-blueprint', 1)
   if (e.keyFound === 'lootlid') {
     if (!state.unlocked.includes('lootlid')) state.unlocked.push('lootlid')
-    const lootlid = createMonster({ id: `lootlid-${e.seed}`, mainBreed: 'lootlid', subBreed: 'lootlid', likes: rollLikes(createRng(UNLOCKS.lootlidSeed + e.seed)), name: 'Lootlid' })
+    const lootlid = createMonster({ id: `lootlid-${e.seed}`, mainBreed: 'lootlid', likes: rollLikes(createRng(UNLOCKS.lootlidSeed + e.seed)), name: 'Lootlid' })
     const placed = placeNewMonster(state, lootlid)
     if (placed.placed) {
       // placeNewMonster returns a fresh copy; carry its changes back into this state.

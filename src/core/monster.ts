@@ -1,5 +1,5 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
-import { startersOf, subQuirkOf } from '../data/techniques.ts'
+import { startersOf } from '../data/techniques.ts'
 import { BIRTH, GRADE_FACTOR_100, RANGES, STAGES, STAGE_END_PCT, STAGE_FACTOR_100, STAT_CAP_BY_GRADE, STYLE_BANDS, DRILL } from '../data/tuning.ts'
 import {
   DRILL_IDS,
@@ -90,7 +90,6 @@ export interface Monster {
   id: string
   name: string
   mainBreed: BreedId
-  subBreed: BreedId
   variantId: string | null
   generation: number
   parents: [string, string] | []
@@ -118,8 +117,7 @@ export interface Monster {
   status: MonsterStatus
   diet: MonsterDiet
   records: MonsterRecords
-  flags: { pure: boolean; edited: boolean; sandbox: boolean }
-  appearance: { paletteBreed: BreedId; accentPart: string | null }
+  flags: { edited: boolean; sandbox: boolean }
 }
 
 export type StyleBand = 'doting' | 'fond' | 'gentle' | 'even' | 'firm' | 'strict' | 'spartan'
@@ -259,10 +257,6 @@ export function lowerStat(m: Monster, k: StatKey, delta: number): number {
   return m.stats[k] - before
 }
 
-export function isPure(m: Monster): boolean {
-  return m.mainBreed === m.subBreed
-}
-
 export function weeksLeft(m: Monster): number {
   return Math.max(0, m.lifespanTotal - m.ageWeeks)
 }
@@ -278,65 +272,31 @@ export function zeroOffsets(): BirthOffsets {
   return { stats: zeroStats(), lifespan: 0, gutsRate: 0, nature: 0 }
 }
 
-export interface MixResult {
+export interface BreedBirth {
   base: Stats
   grades: Grades
   gutsRate: number
   lifespan: number
-  pure: boolean
-  variantName: string
+  name: string
   techniques: string[]
 }
 
-/** The stat with the highest (or lowest) grade; ties go to the earlier stat in LIF, POW, INT, SKI, SPD, DEF order. */
-function extremeStatByGrade(grades: Grades, highest: boolean): StatKey {
-  let best: StatKey = 'LIF'
-  for (const k of STAT_KEYS) {
-    const better = highest ? gradeIndex(grades[k]) > gradeIndex(grades[best]) : gradeIndex(grades[k]) < gradeIndex(grades[best])
-    if (better) best = k
-  }
-  return best
-}
-
-/** §14.3 main/sub mixing, before Shrine offsets. */
-export function mixBreeds(mainId: BreedId, subId: BreedId): MixResult {
-  const main = BREED_BY_ID[mainId]
-  const sub = BREED_BY_ID[subId]
-  const pure = mainId === subId
-  const base = zeroStats()
-  for (const k of STAT_KEYS) {
-    base[k] = divRound(BIRTH.mainStatWeight * main.base[k] + BIRTH.subStatWeight * sub.base[k], BIRTH.mainStatWeight + BIRTH.subStatWeight)
-  }
-  const grades: Grades = { ...main.grades }
-  if (!pure) {
-    const up = extremeStatByGrade(sub.grades, true)
-    const down = extremeStatByGrade(sub.grades, false)
-    grades[up] = stepGrade(grades[up], 1)
-    grades[down] = stepGrade(grades[down], -1)
-  }
-  const gutsRate = clamp(main.gutsRate + divRound(sub.gutsRate - main.gutsRate, BIRTH.gutsBlendDivisor), RANGES.gutsRate.min, RANGES.gutsRate.max)
-  let lifespan = divRound(BIRTH.mainLifeWeight * main.lifespan + BIRTH.subLifeWeight * sub.lifespan, BIRTH.mainLifeWeight + BIRTH.subLifeWeight)
-  if (pure) lifespan = divRound(lifespan * (100 + BIRTH.pureLifespanBonusPct), 100)
-  const techniques = startersOf(mainId).map((t) => t.id)
-  if (!pure) {
-    const quirk = subQuirkOf(subId).id
-    if (!techniques.includes(quirk)) techniques.push(quirk)
-  }
+/** §14.3 a newborn of one whole breed, before Shrine offsets: the breed's stats, grades and guts, its lifespan plus the bonus. */
+export function breedBirth(breedId: BreedId): BreedBirth {
+  const breed = BREED_BY_ID[breedId]
   return {
-    base,
-    grades,
-    gutsRate,
-    lifespan,
-    pure,
-    variantName: pure ? main.name : `${sub.art.adjective} ${main.name}`,
-    techniques,
+    base: { ...breed.base },
+    grades: { ...breed.grades },
+    gutsRate: clamp(breed.gutsRate, RANGES.gutsRate.min, RANGES.gutsRate.max),
+    lifespan: divRound(breed.lifespan * (100 + BIRTH.lifespanBonusPct), 100),
+    name: breed.name,
+    techniques: startersOf(breedId).map((t) => t.id),
   }
 }
 
 export interface CreateMonsterInput {
   id: string
   mainBreed: BreedId
-  subBreed: BreedId
   likes: Likes
   name?: string
   offsets?: Partial<BirthOffsets>
@@ -348,17 +308,15 @@ export interface CreateMonsterInput {
 
 /** A newborn monster (§4, §7, §14.3). Offsets come from the Shrine; the Market uses zero offsets. */
 export function createMonster(input: CreateMonsterInput): Monster {
-  const mix = mixBreeds(input.mainBreed, input.subBreed)
+  const birth = breedBirth(input.mainBreed)
   const offsets: BirthOffsets = { ...zeroOffsets(), ...input.offsets, stats: { ...zeroStats(), ...input.offsets?.stats } }
   const stats = zeroStats()
-  for (const k of STAT_KEYS) stats[k] = clamp(mix.base[k] + offsets.stats[k], RANGES.stat.min, STAT_CAP_BY_GRADE[mix.grades[k]])
+  for (const k of STAT_KEYS) stats[k] = clamp(birth.base[k] + offsets.stats[k], RANGES.stat.min, STAT_CAP_BY_GRADE[birth.grades[k]])
   const main = BREED_BY_ID[input.mainBreed]
-  const sub = BREED_BY_ID[input.subBreed]
   return {
     id: input.id,
-    name: (input.name ?? mix.variantName).slice(0, RANGES.nameLength.max),
+    name: (input.name ?? birth.name).slice(0, RANGES.nameLength.max),
     mainBreed: input.mainBreed,
-    subBreed: input.subBreed,
     variantId: input.variantId ?? null,
     generation: input.generation ?? 1,
     parents: input.parents ?? [],
@@ -366,10 +324,10 @@ export function createMonster(input: CreateMonsterInput): Monster {
     heirloom: null,
     inheritedTrait: null,
     stats,
-    grades: mix.grades,
+    grades: birth.grades,
     growthType: main.growth,
-    gutsRate: clamp(mix.gutsRate + offsets.gutsRate, RANGES.gutsRate.min, RANGES.gutsRate.max),
-    lifespanTotal: clamp(mix.lifespan + offsets.lifespan, RANGES.lifespan.min, RANGES.lifespan.max),
+    gutsRate: clamp(birth.gutsRate + offsets.gutsRate, RANGES.gutsRate.min, RANGES.gutsRate.max),
+    lifespanTotal: clamp(birth.lifespan + offsets.lifespan, RANGES.lifespan.min, RANGES.lifespan.max),
     ageWeeks: 0,
     fatigue: 0,
     stress: 0,
@@ -379,7 +337,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
     form: 0,
     fame: 0,
     grade: 'E',
-    techniques: mix.techniques.map((id) => ({ id, uses: 0, level: 1 })),
+    techniques: birth.techniques.map((id) => ({ id, uses: 0, level: 1 })),
     likes: { ...input.likes },
     status: {
       injuredWeeks: 0,
@@ -401,8 +359,7 @@ export function createMonster(input: CreateMonsterInput): Monster {
     },
     diet: { lastFood: null, sameFoodStreak: 0, puddingCount: 0, monthsFed: 0 },
     records: { wins: 0, losses: 0, draws: 0, kos: 0, cupsWon: 0, titles: [], earnings: 0, highestGrade: 'E', crownsWon: 0, fromSweets: zeroStats() },
-    flags: { pure: mix.pure, edited: false, sandbox: false },
-    appearance: { paletteBreed: input.subBreed, accentPart: mix.pure ? null : sub.art.accentPart },
+    flags: { edited: false, sandbox: false },
   }
 }
 

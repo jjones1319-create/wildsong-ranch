@@ -4,7 +4,7 @@ import { CALENDAR, FREEZER, HEARTSTONE, RANGES } from '../data/tuning.ts'
 import { FAMILIES, STAT_KEYS, type Family, type JourneySiteId, type StatKey, type Stats } from '../data/types.ts'
 import { finishEdit } from './lab.ts'
 import { divRound } from './mathx.ts'
-import { addTrained, mixBreeds, trainedOf, zeroStats, type Monster } from './monster.ts'
+import { addTrained, breedBirth, trainedOf, zeroStats, type Monster } from './monster.ts'
 import type { GameState, Heartstone, MemorialCause } from './state.ts'
 import { variantNameOf } from './variants.ts'
 
@@ -169,7 +169,7 @@ export function mostUsedFamily(m: Monster): Family {
 
 /** Trained gains: trained points (the stat without Stat Sweets) − the breed base at birth, never below 0. */
 export function trainedGains(m: Monster): Stats {
-  const base = mixBreeds(m.mainBreed, m.subBreed).base
+  const base = breedBirth(m.mainBreed).base
   const out = zeroStats()
   for (const k of STAT_KEYS) out[k] = Math.max(0, trainedOf(m, k) - base[k])
   return out
@@ -181,7 +181,6 @@ export function heartstoneFrom(m: Monster, week: number): Heartstone {
     donorId: m.id,
     donorName: m.name,
     donorBreed: m.mainBreed,
-    donorSub: m.subBreed,
     donorVariant: m.variantId,
     gains: trainedGains(m),
     family: mostUsedFamily(m),

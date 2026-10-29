@@ -17,7 +17,7 @@ import {
   scaleToTotal,
   techniquesOutsideKit,
 } from './lab.ts'
-import { mixBreeds, totalStats } from './monster.ts'
+import { breedBirth, totalStats } from './monster.ts'
 import { createRng } from './rng.ts'
 import { makeMonster } from './test-helpers.ts'
 
@@ -54,8 +54,8 @@ describe('scaleToTotal (§19 Stats)', () => {
 
 describe('stat buttons', () => {
   it('breed base, max all and a seeded randomize', () => {
-    const m = makeMonster({ main: 'cobblemaw', sub: 'wishlume' })
-    expect(breedBaseStats(m)).toEqual(mixBreeds('cobblemaw', 'wishlume').base)
+    const m = makeMonster({ main: 'cobblemaw' })
+    expect(breedBaseStats(m)).toEqual(breedBirth('cobblemaw').base)
     // v1.11: "Max all" fills each stat to its grade's cap, keeping the Stat Sweets on top.
     m.records.fromSweets.POW = 40
     m.stats.POW = 200
@@ -74,18 +74,18 @@ describe('stat buttons', () => {
   })
 
   it('reset to breed default restores grades, growth, guts and lifespan only', () => {
-    const m = makeMonster({ main: 'galeheron', sub: 'moatshell' })
+    const m = makeMonster({ main: 'galeheron' })
     m.grades.LIF = 'A'
     m.growthType = 'Late'
     m.gutsRate = 20
     m.lifespanTotal = 1
     m.stats.POW = 777
     const r = resetGrowthToBreed(m)
-    const mix = mixBreeds('galeheron', 'moatshell')
-    expect(r.grades).toEqual(mix.grades)
+    const birth = breedBirth('galeheron')
+    expect(r.grades).toEqual(birth.grades)
     expect(r.growthType).toBe('Steady')
-    expect(r.gutsRate).toBe(mix.gutsRate)
-    expect(r.lifespanTotal).toBe(mix.lifespan)
+    expect(r.gutsRate).toBe(birth.gutsRate)
+    expect(r.lifespanTotal).toBe(birth.lifespan)
     expect(r.stats.POW).toBe(777)
   })
 })
@@ -98,7 +98,7 @@ describe('blank and duplicate', () => {
     expect(Object.values(b.stats).every((v) => v === LAB.blank.stat)).toBe(true)
     expect(Object.values(b.grades).every((g) => g === LAB.blank.grade)).toBe(true)
     expect(b.lifespanTotal).toBe(LAB.blank.lifespan)
-    expect(b.flags.pure).toBe(true)
+    expect(b.flags).toEqual({ edited: false, sandbox: false })
   })
 
   it('duplicate keeps everything but the id and lineage', () => {
@@ -116,34 +116,33 @@ describe('blank and duplicate', () => {
 })
 
 describe('techniques in the editor', () => {
-  it('lists the kit, the sub quirk and universals, or everything with Allow any', () => {
-    const m = makeMonster({ main: 'puddlepup', sub: 'tumblefox' })
+  it('lists the kit (its Signature too) and universals, or everything with Allow any', () => {
+    const m = makeMonster({ main: 'puddlepup' })
     const normal = addableTechniques(m, false)
-    expect(normal.every((t) => t.breed === 'puddlepup' || t.breed === 'universal' || (t.breed === 'tumblefox' && t.subQuirk))).toBe(true)
+    expect(normal.every((t) => t.breed === 'puddlepup' || t.breed === 'universal')).toBe(true)
     expect(normal.some((t) => t.id === 'puddlepup.splash-nip')).toBe(false)
-    expect(normal.some((t) => t.family === 'Signature')).toBe(false)
+    expect(normal.filter((t) => t.family === 'Signature').map((t) => t.breed)).toEqual(['puddlepup'])
     const any = addableTechniques(m, true)
     expect(any.length).toBe(294 - m.techniques.length)
     expect(any.some((t) => t.breed === 'aurelwyrm')).toBe(true)
   })
 
-  it('breed change removes techniques outside the new kits unless Keep all is ticked', () => {
-    const m = makeMonster({ main: 'puddlepup', sub: 'puddlepup' })
+  it('breed change removes techniques outside the new kit unless Keep all is ticked', () => {
+    const m = makeMonster({ main: 'puddlepup' })
     m.techniques.push({ id: 'universal.beat-bump', uses: 0, level: 1 })
-    const r = applyBreedChange(m, 'coilfang', 'galeheron', false)
+    const r = applyBreedChange(m, 'coilfang', false)
     expect(r.removed).toEqual(['puddlepup.splash-nip', 'puddlepup.bubble-pop'])
     expect(r.monster.techniques.map((t) => t.id)).toEqual(['universal.beat-bump'])
-    expect(r.monster.flags.pure).toBe(false)
-    expect(r.monster.appearance.paletteBreed).toBe('galeheron')
-    expect(r.monster.appearance.accentPart).toBe('crest plumes')
+    expect(r.monster.mainBreed).toBe('coilfang')
     expect(r.monster.growthType).toBe('Early')
-    const kept = applyBreedChange(m, 'coilfang', 'galeheron', true)
+    expect(r.monster.stats).toEqual(m.stats)
+    const kept = applyBreedChange(m, 'coilfang', true)
     expect(kept.removed).toEqual([])
     expect(kept.monster.techniques).toHaveLength(3)
     expect(techniquesOutsideKit(kept.monster)).toEqual(['puddlepup.splash-nip', 'puddlepup.bubble-pop'])
-    const same = applyBreedChange(m, 'puddlepup', 'puddlepup', false)
+    const same = applyBreedChange(m, 'puddlepup', false)
     expect(same.removed).toEqual([])
-    expect(same.monster.appearance.accentPart).toBeNull()
+    expect(same.monster).toEqual(m)
   })
 })
 

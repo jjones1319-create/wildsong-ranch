@@ -5,10 +5,9 @@ import { STAGES } from '../../data/tuning.ts'
 import { BODY_PLANS, BREED_IDS, type BreedId } from '../../data/types.ts'
 import { EXPRESSIONS, expressionFromCues, faceFor } from './expressions.ts'
 import { POLISH } from './looks.ts'
-import { buildPalette, paletteFor } from './palettes.ts'
+import { buildPalette } from './palettes.ts'
 import { formForStage, hasGrownForm, renderMonster, renderMonsterSvg, specForBreed, specFromMonster } from './render.ts'
 
-const OLD = BREED_IDS.slice(0, 20) as BreedId[]
 const NEW = BREED_IDS.slice(20) as BreedId[]
 const GROWING: BreedId[] = ['hearthwing', 'pluckrex', 'paladove']
 
@@ -28,10 +27,10 @@ function expectClean(svg: string) {
 }
 
 describe('procedural monster art (§22)', () => {
-  it('renders every main/sub pair cleanly (900 combinations)', () => {
-    for (const main of BREED_IDS) {
-      for (const sub of BREED_IDS) {
-        const svg = renderMonsterSvg(specForBreed(main, { sub }))
+  it('renders every breed cleanly at every life stage', () => {
+    for (const breed of BREED_IDS) {
+      for (let stage = 1; stage <= STAGES.count; stage++) {
+        const svg = renderMonsterSvg(specForBreed(breed, { stage }))
         expectClean(svg)
         expect(svg.length).toBeGreaterThan(1500)
       }
@@ -43,18 +42,17 @@ describe('procedural monster art (§22)', () => {
     for (const plan of BODY_PLANS) expect(plans.has(plan)).toBe(true)
   })
 
-  it('wears the sub palette with the main eyes, and attaches the sub accent part', () => {
-    const pure = renderMonsterSvg(specForBreed('puddlepup'))
-    const mixed = renderMonsterSvg(specForBreed('puddlepup', { sub: 'lootlid' }))
-    expect(mixed).not.toBe(pure)
-    expect(mixed).toContain(BREED_BY_ID.lootlid.art.palette.body)
-    expect(mixed).toContain(BREED_BY_ID.puddlepup.art.palette.eye)
-    expect(mixed).not.toContain(BREED_BY_ID.puddlepup.art.palette.body)
-    expect(mixed).toContain(BREED_BY_ID.lootlid.art.palette.accent)
-    expect(mixed.length).toBeGreaterThan(pure.length)
+  it("every breed wears its own palette and eyes, and no other breed's", () => {
+    for (const breed of BREED_IDS) {
+      const svg = renderMonsterSvg(specForBreed(breed))
+      const pal = BREED_BY_ID[breed].art.palette
+      expect(svg).toContain(pal.body)
+      expect(svg).toContain(pal.eye)
+    }
+    expect(renderMonsterSvg(specForBreed('puddlepup'))).not.toContain(BREED_BY_ID.lootlid.art.palette.body)
   })
 
-  it('a secret variant wears its own colours instead of the sub palette', () => {
+  it('a secret variant wears its own colours instead of its breed palette', () => {
     const m = makeMonster({ main: 'puddlepup' })
     const plain = renderMonsterSvg(specFromMonster(m, { animate: false }))
     m.variantId = 'songheart-puddlepup'
@@ -67,11 +65,11 @@ describe('procedural monster art (§22)', () => {
   })
 
   it('reads the palette and expression from a real monster', () => {
-    const m = makeMonster({ main: 'coilfang', sub: 'wishlume' })
-    expect(paletteFor(m).body).toBe(BREED_BY_ID.wishlume.art.palette.body)
-    expect(paletteFor(m).eye).toBe(BREED_BY_ID.coilfang.art.palette.eye)
+    const m = makeMonster({ main: 'coilfang' })
     const spec = specFromMonster(m)
-    expect(spec.accentBreed).toBe('wishlume')
+    expect(spec.mainBreed).toBe('coilfang')
+    expect(spec.eyeColor).toBe(BREED_BY_ID.coilfang.art.palette.eye)
+    expect(renderMonsterSvg(spec)).toBe(renderMonsterSvg(specForBreed('coilfang', { stage: spec.stage })))
     expect(spec.expression).toBe('neutral')
     m.fatigue = 90
     m.stress = 60
@@ -156,7 +154,7 @@ describe('breeds 21–30 and the growth forms (NEW_MONSTERS §3, §5)', () => {
       expect(grown.length).toBeGreaterThan(young.length)
     }
     expect(formForStage('puddlepup', 10)).toBe('young')
-    const m = makeMonster({ main: 'hearthwing', sub: 'hearthwing' })
+    const m = makeMonster({ main: 'hearthwing' })
     m.lifespanTotal = 100
     m.ageWeeks = 50
     expect(formForStage(m.mainBreed, specFromMonster(m).stage)).toBe('young')
@@ -164,19 +162,6 @@ describe('breeds 21–30 and the growth forms (NEW_MONSTERS §3, §5)', () => {
     expect(formForStage(m.mainBreed, specFromMonster(m).stage)).toBe('grown')
   })
 
-  it('mixes every new breed with every old breed, both ways, with the sub accent and palette', () => {
-    for (const fresh of NEW) {
-      for (const old of OLD) {
-        const a = renderMonsterSvg(specForBreed(fresh, { sub: old }))
-        const b = renderMonsterSvg(specForBreed(old, { sub: fresh }))
-        expectClean(a)
-        expectClean(b)
-        expect(a).toContain(BREED_BY_ID[old].art.palette.body)
-        expect(b).toContain(BREED_BY_ID[fresh].art.palette.body)
-        expect(a).not.toBe(renderMonsterSvg(specForBreed(fresh)))
-      }
-    }
-  })
 })
 
 describe('high-end polish (NEW_MONSTERS §6)', () => {
@@ -212,7 +197,7 @@ describe('high-end polish (NEW_MONSTERS §6)', () => {
     expect(renderMonsterSvg(specForBreed('hearthwing', { lite: true }))).toContain('ws-mon--lite')
     expect(renderMonsterSvg(specForBreed('hearthwing', { animate: false }))).not.toContain('ws-mon__particles')
     expect(renderMonsterSvg(specForBreed('hearthwing', { particles: false }))).not.toContain('ws-mon__particles')
-    const m = makeMonster({ main: 'frostlance', sub: 'frostlance' })
+    const m = makeMonster({ main: 'frostlance' })
     expect(specFromMonster(m, { animate: false }).particles).toBe(false)
     expect(specFromMonster(m).particles).toBe(true)
   })

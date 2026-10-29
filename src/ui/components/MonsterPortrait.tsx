@@ -10,7 +10,6 @@ import { lite } from '../store/perf.ts'
 export interface PortraitProps {
   monster?: Monster
   breed?: BreedId
-  sub?: BreedId
   size?: number
   expression?: Expression
   sparkle?: boolean
@@ -33,7 +32,7 @@ export function MonsterPortrait(p: PortraitProps) {
   const spec: RenderSpec | null = p.monster
     ? specFromMonster(p.monster, { expression: p.expression, sparkle: p.sparkle, mischief: p.mischief, stage: p.stage, animate, lite: liteMode })
     : p.breed
-      ? specForBreed(p.breed, { sub: p.sub, expression: p.expression, sparkle: p.sparkle, mischief: p.mischief, stage: p.stage, animate, lite: liteMode })
+      ? specForBreed(p.breed, { expression: p.expression, sparkle: p.sparkle, mischief: p.mischief, stage: p.stage, animate, lite: liteMode })
       : null
   const key = spec ? JSON.stringify([spec, p.size, p.mirror, p.label]) : ''
   const svg = useMemo(() => (spec ? renderMonsterSvg(spec, { size: p.size ?? 128, mirror: p.mirror, label: p.label ?? p.monster?.name }) : ''), [key])

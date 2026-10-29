@@ -4,37 +4,42 @@ import { addSheet, canLearn, forgetTechnique, goodFit, learnReplacing, learnTech
 import { makeMonster } from './test-helpers.ts'
 
 describe('who can learn what (§10.5)', () => {
-  const mixed = makeMonster({ main: 'puddlepup', sub: 'cinderlynx' })
-  const pure = makeMonster({ main: 'puddlepup', sub: 'puddlepup' })
+  const pup = makeMonster({ main: 'puddlepup' })
 
   it('universal sheets work for anyone', () => {
-    expect(canLearn(mixed, 'universal.beat-bump')).toEqual({ ok: true })
-    expect(canLearn(pure, 'universal.feedback-loop')).toEqual({ ok: true })
+    expect(canLearn(pup, 'universal.beat-bump')).toEqual({ ok: true })
+    expect(canLearn(makeMonster({ main: 'cinderlynx' }), 'universal.feedback-loop')).toEqual({ ok: true })
   })
 
-  it("breed sheets need the main breed's kit or the sub's quirk", () => {
-    expect(canLearn(mixed, 'puddlepup.belly-flop')).toEqual({ ok: true })
-    expect(canLearn(mixed, 'cinderlynx.spark-pounce')).toEqual({ ok: false, reason: 'known' }) // the quirk is a starter
-    expect(canLearn(mixed, 'cinderlynx.inferno-maul')).toEqual({ ok: false, reason: 'notInKit' })
-    expect(canLearn(mixed, 'cobblemaw.gravel-swipe')).toEqual({ ok: false, reason: 'notInKit' })
-    expect(canLearn(forgetTechnique(mixed, 'cinderlynx.spark-pounce'), 'cinderlynx.spark-pounce')).toEqual({ ok: true })
+  it("breed sheets need the breed's own kit", () => {
+    expect(canLearn(pup, 'puddlepup.belly-flop')).toEqual({ ok: true })
+    expect(canLearn(pup, 'puddlepup.splash-nip')).toEqual({ ok: false, reason: 'known' }) // a starter
+    expect(canLearn(pup, 'cinderlynx.spark-pounce')).toEqual({ ok: false, reason: 'notInKit' })
+    expect(canLearn(pup, 'cobblemaw.gravel-swipe')).toEqual({ ok: false, reason: 'notInKit' })
+    expect(canLearn(forgetTechnique(pup, 'puddlepup.bubble-pop'), 'puddlepup.bubble-pop')).toEqual({ ok: true })
   })
 
-  it('Signature sheets are for pure breeds only', () => {
-    expect(canLearn(pure, 'puddlepup.puddle-party')).toEqual({ ok: true })
-    expect(canLearn(mixed, 'puddlepup.puddle-party')).toEqual({ ok: false, reason: 'signatureNotPure' })
-    expect(canLearn(pure, 'cinderlynx.kindled-fury')).toEqual({ ok: false, reason: 'notInKit' })
-    expect(canLearn(pure, 'nope.nothing')).toEqual({ ok: false, reason: 'unknownTechnique' })
+  it("every monster can learn its own breed's Signature (v1.12), and no other", () => {
+    expect(canLearn(pup, 'puddlepup.puddle-party')).toEqual({ ok: true })
+    expect(canLearn(pup, 'cinderlynx.kindled-fury')).toEqual({ ok: false, reason: 'notInKit' })
+    expect(canLearn(pup, 'nope.nothing')).toEqual({ ok: false, reason: 'unknownTechnique' })
+  })
+
+  it("an old mix keeps the other breed's Basic it knew, but can't learn it back once forgotten", () => {
+    const old = makeMonster({ main: 'puddlepup' })
+    old.techniques.push({ id: 'cinderlynx.spark-pounce', uses: 3, level: 1 })
+    expect(canLearn(old, 'cinderlynx.spark-pounce')).toEqual({ ok: false, reason: 'known' })
+    expect(canLearn(forgetTechnique(old, 'cinderlynx.spark-pounce'), 'cinderlynx.spark-pounce')).toEqual({ ok: false, reason: 'notInKit' })
   })
 
   it('a Chain from a sheet does not need the base at Lv3', () => {
-    expect(canLearn(pure, 'puddlepup.cannonball-flop')).toEqual({ ok: true })
+    expect(canLearn(pup, 'puddlepup.cannonball-flop')).toEqual({ ok: true })
   })
 })
 
 describe('learning, the 12 cap, forgetting and relearning', () => {
   it('learns up to 12, then reports full until one is forgotten', () => {
-    let m = makeMonster({ main: 'puddlepup', sub: 'puddlepup' })
+    let m = makeMonster({ main: 'puddlepup' })
     const ids = ['puddlepup.frill-flick', 'puddlepup.belly-flop', 'puddlepup.soggy-cloud', 'puddlepup.slipstream-spin', 'puddlepup.geyser-burst', 'puddlepup.cannonball-flop', 'puddlepup.puddle-party', 'universal.beat-bump', 'universal.hum-pulse', 'universal.staccato-jab']
     for (const id of ids) {
       const r = learnTechnique(m, id)
@@ -71,7 +76,7 @@ describe('good fit, songbook and mastery', () => {
     const songbook = addSheet(addSheet([], 'universal.hum-pulse'), 'cinderlynx.inferno-maul')
     expect(songbook).toEqual(['cinderlynx.inferno-maul', 'universal.hum-pulse'])
     expect(addSheet(songbook, 'universal.hum-pulse')).toEqual(songbook)
-    const m = makeMonster({ main: 'puddlepup', sub: 'cinderlynx' })
+    const m = makeMonster({ main: 'puddlepup' })
     expect(learnableFromSongbook(m, songbook).map((t) => t.id)).toEqual(['universal.hum-pulse'])
   })
 
