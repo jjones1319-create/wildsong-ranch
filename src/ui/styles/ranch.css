@@ -246,6 +246,19 @@
   text-align: center;
 }
 
+/* The reason doubles as the way in when a card is waiting (the storm spark, a request). */
+.actionbar__reason--link {
+  background: none;
+  border: 0;
+  padding: 10px 0;
+  min-height: 44px;
+  color: var(--accent, #f2b544);
+  text-decoration: underline;
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
 .btn[disabled] {
   opacity: 0.45;
   cursor: default;

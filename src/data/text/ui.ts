@@ -137,7 +137,7 @@ export const UI_TEXT = {
       trial: "The mentor's Trial is waiting.",
       expedition: '{name} is away with Tomas.',
       expeditionMap: 'The expedition is under way. Finish the map first.',
-      event: 'Answer the spark first.',
+      event: 'Answer the spark first. Tap here to open it.',
     },
     journeyWeek: 'Journey week {week} of 4 · {site}',
     continueJourney: 'Continue the Journey',

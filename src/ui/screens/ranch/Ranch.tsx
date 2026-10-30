@@ -38,6 +38,7 @@ import { trialOutcome } from '../../store/tournamentStore.ts'
 import { versusSideA } from '../../store/versusStore.ts'
 import { DrillResult } from './DrillResult.tsx'
 import { EmptyRanch } from './EmptyRanch.tsx'
+import { trialGateOpen } from './gates.ts'
 import { TrialCard } from './TrialCard.tsx'
 import { FoodPrompt } from './FoodPrompt.tsx'
 import { RequestCard } from './RequestCard.tsx'
@@ -67,6 +68,11 @@ export function RanchScreen() {
   }, [g?.week, g?.weekPhase, f.kind])
   const [expOpen, setExpOpen] = useState(false)
   const [planOpen, setPlanOpen] = useState(false)
+  // A waiting card the player opened by hand (the reason line, or the ?! emote), so nothing else can hide it.
+  const [forced, setForced] = useState<'event' | 'request' | null>(null)
+  useEffect(() => {
+    if (!g?.pendingEvent && !g?.pendingRequest) setForced(null)
+  }, [g?.pendingEvent, g?.pendingRequest])
   const running = plannerRunning.value
   const summaryOpen = plannerView.value === 'summary'
   const liteMode = lite.value
@@ -84,16 +90,16 @@ export function RanchScreen() {
   const quiet = f.kind === 'idle' && !running && !summaryOpen && !arrivalOpen
   const ranchTip = quiet ? tipFor({ screen: 'ranch' }) : null
   const showFood = needsFoodChoice(g) && !ranchTip && quiet
-  const showRequest = g.pendingRequest !== null && quiet && !showFood
+  const showRequest = g.pendingRequest !== null && (forced === 'request' || (quiet && !showFood))
   const report = [...weeklyReport(g), ...weekNews.value]
   const season = seasonName.toLowerCase()
   const emote = emoteFor(g)
   const reason = mn.reason && mn.reason !== 'ended' && mn.reason !== 'noMonster' ? fill(t.reasons[mn.reason], { name: m.name }) : null
   const repeatWhat = mn.repeat ? (mn.repeat.kind === 'drill' ? DRILL_BY_ID[mn.repeat.drill].name : t.actions.rest) : null
   const cups = eventsForWeek(g)
-  const trialPending = quiet && !showFood && !showRequest && (g.trial !== null || g.journey?.pendingTechnique !== null || trialOutcome.value !== null)
+  const trialPending = quiet && !showFood && !showRequest && trialGateOpen(g, trialOutcome.value !== null)
   const openSites = sitesOpenAt(g.week)
-  const showEvent = g.pendingEvent !== null && quiet && !showFood && !showRequest && !trialPending
+  const showEvent = g.pendingEvent !== null && (forced === 'event' || (quiet && !showFood && !showRequest && !trialPending))
   const canPlan = mn.train && !running && f.kind === 'idle'
   const mapInProgress = g.expedition !== null && !g.expedition.ended
   // §3 a ★ cup this week puts a dot on the Battle button.
@@ -118,7 +124,7 @@ export function RanchScreen() {
         )}
         <div class="stage__art">
           <MonsterPortrait monster={m} size={200} live idleActs light={lightPreset(seasonName, weather)} />
-          <Emote key={emote ?? 'none'} kind={emote} name={m.name} />
+          <Emote key={emote ?? 'none'} kind={emote} name={m.name} onTap={emote === 'surprise' && (g.pendingEvent || g.pendingRequest) ? () => setForced(g.pendingEvent ? 'event' : 'request') : undefined} />
         </div>
         {(m.status.bondPct > 100 || g.settings.vacation) && (
           <p class="stage__chips">
@@ -225,7 +231,13 @@ export function RanchScreen() {
             </button>
           </div>
         )}
-        {reason && <p class="actionbar__reason">{reason}</p>}
+        {reason && (mn.reason === 'event' || mn.reason === 'request') ? (
+          <button type="button" class="actionbar__reason actionbar__reason--link" onClick={() => setForced(mn.reason === 'event' ? 'event' : 'request')}>
+            {reason}
+          </button>
+        ) : reason ? (
+          <p class="actionbar__reason">{reason}</p>
+        ) : null}
       </div>
 
       <FoodPrompt open={showFood} />

@@ -1,0 +1,6 @@
+# The reference pictures stay on this PC: about 190 large images would bloat the repo.
+# Back this folder up yourself (OneDrive, Google Drive or a zip). The Markdown files are committed.
+*.png
+*.jpg
+*.jpeg
+*.webp

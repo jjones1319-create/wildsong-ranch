@@ -2,6 +2,14 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Hotfix: the storm spark card (2026-10-29) · v1.13.1
+
+**Fixed:** on a storm week the "A storm spark!" card never opened, so "Answer the spark first." showed with Train, Rest, Journey and Battle disabled and no way forward. The ranch's trial gate read `g.journey?.pendingTechnique !== null`, which is true when there is no journey at all (`undefined !== null`), so the trial card's gate always won. It now goes through `trialGateOpen` (`src/ui/screens/ranch/gates.ts`, unit-tested: no journey, a journey with nothing pending, a pending technique, a trial, an outcome). The expedition screen's sell hint had the same shape and is fixed the same way.
+
+**Two ways in, in case anything else ever hides a card:** tapping the reason line under the buttons ("Answer the spark first. Tap here to open it.") opens the waiting card, and tapping the monster's ?! bubble opens the waiting event or request instead of the Monster Card.
+
+**Tests:** `gates.test.ts`; e2e `event.spec.ts` on the phone profile (a storm week with no journey shows the card; "Let it go" unlocks the actions; "Chase it" gives Stormglass and ends the week; the two hand-openers are present).
+
 ## Art P1: Puddlepup pilot (2026-10-29) · v1.13.0
 
 **Live:**

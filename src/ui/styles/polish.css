@@ -222,6 +222,18 @@
   pointer-events: none;
 }
 
+/* A tappable bubble (the ranch's ?! opens the waiting card): a real thumb target, above the stage button. */
+.emote--tap {
+  cursor: pointer;
+  pointer-events: auto;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.35);
+}
+
 .emote--heart {
   color: #e8546e;
 }

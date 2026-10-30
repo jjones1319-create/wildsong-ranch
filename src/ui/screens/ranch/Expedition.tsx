@@ -120,7 +120,7 @@ export function ExpeditionScreen() {
           )}
           {e.keyFound === 'brass-blueprint' && <p class="notice notice--ok">{t.screen.blueprint}</p>}
           <p class="muted small">{fill(t.screen.afterEffects, { fatigue: EXPEDITION.after.fatigue, stress: EXPEDITION.after.stress })}</p>
-          {e.loot.some((l) => ITEM_BY_ID[l.id]?.sell !== null) && <p class="muted small">{t.screen.sellHint}</p>}
+          {e.loot.some((l) => (ITEM_BY_ID[l.id]?.sell ?? null) !== null) && <p class="muted small">{t.screen.sellHint}</p>}
         </section>
         <div class="spacer" />
         <div class="actionbar">
