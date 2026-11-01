@@ -30,7 +30,7 @@ The game (three.js) only displays what Blender made. Code still draws the UI, th
 | The drawn (SVG) monsters | Stay, as the fallback (no WebGL, a model still loading, offline before its first download) and as a setting: Settings → Graphics → Monsters: **3D / Classic**. A breed without a model shows Classic. |
 | Pilot breed | **Puddlepup** (the owner may swap it). It's the balanced starter most players meet first; its quadruped body plan serves 9 breeds; its round shapes suit the style; and a water monster suits the Waterfall Stand pilot. |
 | New dependencies (approved by running P1) | `three` (runtime, in a lazy chunk) and a dev-only glTF optimiser (`@gltf-transform/cli` with meshopt). Nothing else without asking. |
-| Concept art | Optional. If `concept/<breed-id>/` holds the owner's ChatGPT pictures, view them before modelling. They're reference only and never shipped. §2.4 has the new style text for those prompts. |
+| Reference pictures | Every monster has the owner's ChatGPT reference set in `chatgpt/monsters/<NN>-<breed-id>/`: `PROMPTS.md` (its creature card and "Notes for Claude Code"), `1-hero.png` (the design lock), `2-turnaround.png`, `3-faces.png`, `4-details.png`, `5-poses.png`, and where they apply `variant-<variant-id>.png`, `grown-*.png`, `cocoon-*.png` and `6-scale.png`. Read `chatgpt/FOR-CLAUDE-CODE.md` and the owner's two choices at the top of `chatgpt/CHECKLIST.md`, then view every picture before modelling. Which source wins: the card on part counts and which parts exist (image models miscount; log any mismatch); the pictures on shapes, proportions, markings, placement, surface detail and materials (the hero over the others, the turnaround for measurements); CONTENT §2.2 and `src/art/monster/variants.ts` on exact colours (never sample hex from a picture). The pictures are gitignored reference only and never shipped. §2.4 points to the style text they were made with. |
 | What this replaces | GAME_DESIGN §14.3 main/sub mixing (retired in P0); VISUAL_UPGRADE_PLAN §0 ("3D pilot skipped", "richer storybook vector", "ChatGPT painted backgrounds") and its V3, V4 and V5; CLAUDE.md's "Not for now: 3D monsters"; and the "no pre-rendered images or 3D" lines in GAME_DESIGN §22 and NEW_MONSTERS §6. V1's effects layer stays. V2 (visible attacks) becomes P12. |
 
 ## 1. What does not change
@@ -97,12 +97,8 @@ The game (three.js) only displays what Blender made. Code still draws the UI, th
 - No design may resemble a famous character. The fresh-eyes review (§6) checks for it.
 - Describe the style in plain words in code and docs; don't name other games, films or studios as references.
 
-### 2.4 The new style text for ChatGPT concept pictures
-P1 replaces the Style Guide in `docs/CONCEPT_PROMPTS.md` with this. The old one says "not anime". The owner can paste this one today:
-
-```
-You are making original concept art for "Wildsong Ranch", a cozy monster-raising game whose monsters are cel-shaded 3D characters. Style: clean cel-shaded character art with a slight anime touch: soft two-tone shading, a warm rim light, outlines in a darker tint of each colour (not black), big glossy expressive eyes with white highlights, rounded chunky appealing shapes with a slightly big head, and a clear readable silhouette. Warm, friendly storybook feel. Not realistic, not pixel art. Plain white background, no text, no logos, no watermark. The creature must be an original design: do not base it on, or make it resemble, any character from Pokémon, Digimon, Monster Rancher, Dragon Quest, Yo-kai Watch or any other franchise, and avoid their signature silhouettes. Use exactly the hex colours I give. I will ask for several images of the same creature in this conversation: keep its design identical across all of them.
-```
+### 2.4 The style text for the ChatGPT reference pictures
+The style text now in use is the project instructions in `chatgpt/PROJECT-INSTRUCTIONS.md`: every picture in `chatgpt/monsters/` was made with it, with `chatgpt/style-anchor.png` (Puddlepup's hero) attached to each hero. The owner chose its **film** look (not the anime cel variant described under its box) and a **fur** coat for Puddlepup (`chatgpt/CHECKLIST.md`). The older style text that used to sit here, and the Style Guide in `docs/CONCEPT_PROMPTS.md`, are retired. How the film look changes the shading and outline rules of §2.1 is proposed in `docs/ART_2_DETAIL.md` (Art 2.1) and waits for the owner's approval.
 
 ## 3. Architecture
 
@@ -223,7 +219,7 @@ public/baked/scenes/<scene>/         plates (.webp), loops (.mp4), scene.json, p
 The monster's toon shader takes the key, fill and rim light from `scene.json`. On the ranch stage they come from the season and the weather. So a monster at golden hour is warm, under the waterfall it's cool and wet, and at night it's moonlit.
 
 ### 3.6 Budgets
-Tests and `check:build` enforce these where they can.
+Tests and `check:build` enforce these where they can. The owner set the Art 2.1 targets on Nov 1, 2026 (`docs/ART_2_DETAIL.md` §2 and §5: an Ultra tier for S25-class phones, High and Lite); the table below stands until the owner approves the spike's look and the phone's Performance check result, and step A1 replaces it.
 
 | Item | Budget |
 |---|---|
@@ -299,7 +295,7 @@ A breed, scene or clip isn't done until it has been through all six steps.
 
    Look at every sheet. Fix shape, proportion, deformation (no collapsing joints, no parts passing through each other) and timing.
 2. **In-game sheets** (`npm run art:review`): Playwright in the installed Chrome renders the Lab's Models viewer and the real screens at 412 px wide into `art-review/` (gitignored). They show the same angles and faces, the secret variant (if any), six key frames of the main clips, the ranch stage and a battle. The game's renderer decides the final look, so this is the sheet that counts.
-3. **Fresh-eyes review:** a subagent that hasn't seen the work gets the in-game sheets, the breed's CONTENT brief and palette, §2 and any concept pictures. It lists what's off:
+3. **Fresh-eyes review:** a subagent that hasn't seen the work gets the in-game sheets, the breed's CONTENT brief and palette, §2, and the breed's reference pictures and card from `chatgpt/monsters/<NN>-<breed-id>/` (with the "which source wins" rules of `chatgpt/FOR-CLAUDE-CODE.md` §2). It lists what's off:
    - off-brief or off-style;
    - ugly deformation;
    - unreadable at 64 px;
@@ -467,7 +463,7 @@ Each batch ends with a lineup sheet.
 **After Art 2.0:** a new breed (such as the combo-only bull-warrior BUILD_PLAN mentions) is one short prompt: a recipe on an existing body plan, then the review loop.
 
 ## 9. Risks
-- **A breed still looks off after two rounds of feedback:** re-run the fix with Fable 5.1, give it the concept pictures, or simplify the design.
+- **A breed still looks off after two rounds of feedback:** re-run the fix with Fable 5.1, put its reference pictures (`chatgpt/monsters/<NN>-<breed-id>/`) beside the in-game sheets again, or simplify the design.
 - **Style drift across batches:** the lineup sheet in every batch, with P1 and P2 as the reference.
 - **Frame rate or heat on weaker phones:** the Quality tiers. Lite drops outlines and springs and caps at 30 fps, and Classic is always there.
 - **Download size and repo history:** the budgets (§3.6), runtime caching, and committing finals only.

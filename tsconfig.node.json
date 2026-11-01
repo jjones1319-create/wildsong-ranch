@@ -19,6 +19,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "pwa-assets.config.ts", "scripts/**/*.ts", "tools/**/*.ts"],
+  "include": ["vite.config.ts", "vite.perf.config.ts", "pwa-assets.config.ts", "scripts/**/*.ts", "tools/**/*.ts"],
   "exclude": ["tools/audio/baseline-legacy.ts"]
 }

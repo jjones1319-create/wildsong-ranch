@@ -1,7 +1,7 @@
 {
   "name": "wildsong-ranch",
   "private": true,
-  "version": "1.13.1",
+  "version": "1.13.2",
   "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
   "type": "module",
   "license": "MIT",
@@ -11,7 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.perf.config.ts",
+    "perf:dev": "vite --config vite.perf.config.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",

@@ -65,12 +65,7 @@ Those two steps set the look for everything after. Fixing the look later would m
 2. **Keep your PC awake during runs.** Some steps run for hours, and they pause if the PC sleeps. In Windows:
    1. Open Settings → System → Power & battery → Screen, sleep & hibernate timeouts.
    2. Set "When plugged in, put my device to sleep after" to **Never**. You can switch it back later.
-3. **Optional: concept pictures.** If you want Claude to see what you have in mind before it models a monster, make 2–3 ChatGPT pictures of it:
-   1. Use the prompts in `docs/CONCEPT_PROMPTS.md`, but **paste the new style text from `docs/ART_2_PLAN.md` §2.4 instead of the old Style Guide.** The old one says "not anime".
-   2. Save the pictures as `Monster Rancher/concept/puddlepup/sheet.png`, `expressions.png` and `action.png`. To make the folders in VS Code, right-click in the Explorer and choose **New Folder**.
-   3. Do the same for each batch's monsters before their step if you like.
-
-   Claude works from the written descriptions without them, so this is optional.
+3. **Reference pictures: already done.** You made every monster's pictures in ChatGPT, and they're in `chatgpt/monsters/<NN>-<breed-id>/` (for example `chatgpt/monsters/01-puddlepup/`). Each folder has the monster's `PROMPTS.md` and its pictures: the hero, the turnaround, the faces, the details, the poses, and its variant, grown form or cocoon where it has one. `chatgpt/README.md` explains how they were made, and `chatgpt/PROJECT-INSTRUCTIONS.md` is the style they were made in. Every prompt below tells Claude to read `chatgpt/FOR-CLAUDE-CODE.md` and look at the pictures first. You don't need to do anything else with them.
 4. **Want a different first monster?** P1 and P2 use Puddlepup. To pick another, replace the word `Puddlepup` (and `puddlepup`) in both prompts with its name. Four-legged ones are the easiest start: Tumblefox, Cobblemaw, Cinderlynx, Nimbusheep, Starhowl, Petalphant or Rammerjack.
 
 ---
@@ -103,7 +98,7 @@ Those two steps set the look for everything after. Fixing the look later would m
 ```
 Art 2.0, P1: the pilot monster.
 
-Read CLAUDE.md, then docs/ART_2_PLAN.md in full (the spec for this whole overhaul), the GAME_DESIGN and CONTENT sections it points to, and the latest docs/PROGRESS.md entries. If concept/puddlepup/ has pictures, look at them first. Start in plan mode and show me your plan before you build.
+Read CLAUDE.md, then docs/ART_2_PLAN.md in full (the spec for this whole overhaul), the GAME_DESIGN and CONTENT sections it points to, and the latest docs/PROGRESS.md entries. Then read chatgpt/FOR-CLAUDE-CODE.md and my two choices at the top of chatgpt/CHECKLIST.md, and look at every picture in chatgpt/monsters/01-puddlepup/ and its PROMPTS.md card first. Start in plan mode and show me your plan before you build.
 
 Goal: make ONE monster, Puddlepup, a high-quality 3D monster built in Blender, in the plan's "slight anime/cartoon" style, and put it in the game so I can judge it on my phone. Blender creates everything about it: the model, its skeleton, every animation and its face sheet. The game only displays it. Every other breed stays as it is for now.
 
@@ -157,11 +152,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P2: Waterfall Stand
 ```
 Art 2.0, P3: four-legged monsters, part 1.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. Finish the quadruped clip set: every clip in §5, for Puddlepup too.
-2. Four breeds: Tumblefox, Cobblemaw, Cinderlynx, Nimbusheep. For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every quadruped clip; and run the review loop (§6) until it meets the quality bar.
+2. Four breeds: Tumblefox, Cobblemaw, Cinderlynx, Nimbusheep. For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every quadruped clip; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 4. End with the lineup sheet and tell me its file name so I can open it in VS Code.
 
@@ -173,10 +168,10 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P3: quadrupeds 1", 
 ```
 Art 2.0, P4: four-legged monsters, part 2.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
-1. Four breeds: Starhowl, Petalphant, Rammerjack, and Hearthwing in both forms (young and grown; the grown form needs the quadruped rig's long-neck and wing options, §4, and Petalphant needs the trunk). For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every quadruped clip; and run the review loop (§6) until it meets the quality bar.
+1. Four breeds: Starhowl, Petalphant, Rammerjack, and Hearthwing in both forms (young and grown; the grown form needs the quadruped rig's long-neck and wing options, §4, and Petalphant needs the trunk). For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every quadruped clip; and run the review loop (§6) until it meets the quality bar.
 2. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 3. End with the lineup sheet and tell me its file name so I can open it in VS Code.
 
@@ -188,11 +183,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P4: quadrupeds 2", 
 ```
 Art 2.0, P5: two-legged monsters.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. A new body plan: the biped rig (§4) and every clip in §5 for it, proven on Quillion first. Its sit, brace and fall must work in Waterfall Stand.
-2. Four breeds: Quillion, Grumblestone, Pluckrex in both forms (young and grown), Gloomgrin. For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every biped clip; and run the review loop (§6) until it meets the quality bar.
+2. Four breeds: Quillion, Grumblestone, Pluckrex in both forms (young and grown), Gloomgrin. For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every biped clip; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 4. End with the lineup sheet (every finished breed so far) and tell me its file name so I can open it in VS Code.
 
@@ -204,11 +199,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P5: bipeds", push, 
 ```
 Art 2.0, P6: floating monsters.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. A new body plan: the floater rig (§4) and every clip in §5 for it, in its own way (gliding instead of walking, hovering low instead of sitting, pressed down by the water instead of bracing).
-2. Five breeds: Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance. For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every floater clip; and run the review loop (§6) until it meets the quality bar.
+2. Five breeds: Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance. For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every floater clip; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 4. End with the lineup sheet (every finished breed so far) and tell me its file name so I can open it in VS Code.
 
@@ -220,11 +215,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P6: floaters", push
 ```
 Art 2.0, P7: shelled monsters and blobs.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. Two new body plans: the shelled rig (with the crab option) and the blob rig (with the throat sac and tentacles), §4, each with every clip in §5.
-2. Four breeds: Moatshell, Reefclaw, Bloatoad, Scrollopus. For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
+2. Four breeds: Moatshell, Reefclaw, Bloatoad, Scrollopus. For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 4. End with the lineup sheet (every finished breed so far) and tell me its file name so I can open it in VS Code.
 
@@ -236,11 +231,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P7: shelled and blo
 ```
 Art 2.0, P8: serpents and birds.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. Two new body plans: the serpent rig and the avian rig (§4), each with every clip in §5.
-2. Four breeds: Coilfang, Aurelwyrm, Galeheron, and Paladove in both forms (young and grown, the grown one with four wings). For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
+2. Four breeds: Coilfang, Aurelwyrm, Galeheron, and Paladove in both forms (young and grown, the grown one with four wings). For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand.
 4. End with the lineup sheet (every finished breed so far) and tell me its file name so I can open it in VS Code.
 
@@ -252,11 +247,11 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P8: serpents and bi
 ```
 Art 2.0, P9: insects and constructs, the last monsters.
 
-Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6) and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
+Read CLAUDE.md, docs/ART_2_PLAN.md (§2, §3.1, §3.3, §4, §5, §6), chatgpt/FOR-CLAUDE-CODE.md and the latest docs/PROGRESS.md entries: what P1 and P2 settled is the reference for the look. Start in plan mode.
 
 Build:
 1. Two new body plans: the insect rig and the construct rig (§4), each with every clip in §5.
-2. Four breeds: Nibblegrub, Velvesper, Gearhoot, Lootlid, plus the cocoon Nibblegrub turns into (a 3D model the life-moments step will animate). For each one: look at concept/<breed-id>/ first if it exists; build it in Blender from its CONTENT brief and colors, in the pilot's style; build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
+2. Four breeds: Nibblegrub, Velvesper, Gearhoot, Lootlid, plus the cocoon Nibblegrub turns into (a 3D model the life-moments step will animate). For each one: first read its card (PROMPTS.md) and look at every picture in its chatgpt/monsters/<NN>-<breed-id>/ folder, including its variant, grown-form or cocoon pictures; build it in Blender to match them, in the pilot's style (chatgpt/FOR-CLAUDE-CODE.md §2 says which source wins: the card on part counts, the pictures on shapes, markings and materials, CONTENT on exact colors); build its painted textures and every clip for its plan; and run the review loop (§6) until it meets the quality bar.
 3. Each one is live in 3D everywhere (§3.3) and works in Waterfall Stand. Every breed now has a model, so check that no screen still shows a Classic drawing unless Classic is chosen in Settings.
 4. End with the full lineup sheet of all 33 looks and tell me its file name so I can open it in VS Code.
 

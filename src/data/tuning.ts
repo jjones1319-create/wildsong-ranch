@@ -1174,6 +1174,91 @@ export const ART = {
     snow: { key: '#f0f6ff', fill: '#d0e0ff', rim: '#ffffff', dir: [0.4, 0.85, 0.4] as const },
     night: { key: '#9fb4ff', fill: '#3a4a7a', rim: '#cfd8ff', dir: [-0.3, 0.8, 0.4] as const },
   },
+  /**
+   * Art 2.1 Ultra (docs/ART_2_DETAIL.md): the film look and its rendering, tried first in the Performance check
+   * (perf/). Standard physical materials only, so the WebGL and WebGPU renderers draw the same thing.
+   */
+  ultra: {
+    /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */
+    studio: {
+      key: { color: '#fff3e6', intensity: 2.0, azDeg: -45, elDeg: 42 },
+      rim: { color: '#ffd2a6', intensity: 2.2, azDeg: 155, elDeg: 30 },
+      sky: '#dfe9ff',
+      ground: '#7c7466',
+      hemi: 1.6,
+      environment: 0.7,
+      background: '#8a8b8f',
+      exposure: 1.0,
+      shadowMapPx: 2048,
+      shadowRadius: 6,
+      shadowBias: -0.002,
+      shadowNormalBias: 0.05,
+    },
+    /** Film materials: damp fur (rough, a light coat, sheen), gently glowing fins (fake translucency), soft normals. */
+    film: {
+      normalScale: 0.5,
+      furRoughness: 1.0,
+      furCoat: 0.12,
+      furCoatRoughness: 0.35,
+      furSheen: 0.55,
+      cardSheen: 0.25,
+      /** Cards fade in between these values of 1 − |N·V| (0 = facing the camera, 1 = edge-on): only the outline shows them. */
+      cardEdgeFade: [0.25, 0.65] as const,
+      sheenColor: '#bff2e6',
+      sheenRoughness: 0.5,
+      finCoat: 0.3,
+      finGlow: 0.2,
+      envIntensity: 0.6,
+      cardAlphaTest: 0.5,
+      /** Eyes: glossy but dark (a modest coat, weak reflections), so the iris stays the reference's deep slate. */
+      eyeCoat: 0.4,
+      eyeEnv: 0.15,
+    },
+    /** Post effects at full quality. */
+    post: {
+      msaa: 4,
+      aoIntensity: 0.45,
+      aoRadius: 0.25,
+      bloom: { strength: 0.18, radius: 0.5, threshold: 0.9 },
+      grade: { saturation: 1.0, contrast: 1.02, warmth: 0.02, vignette: 0.08 },
+      dof: { aperture: 0.002, maxBlur: 0.008 },
+    },
+    /**
+     * Dynamic resolution and quality: hold the frame rate by lowering the render resolution first (device pixels per
+     * CSS pixel), then effects one step at a time; the monster's detail never changes.
+     */
+    scaling: {
+      targetFps: 60,
+      dprMax: 3.0,
+      dprStart: 2.5,
+      dprMin: 1.25,
+      dprStepDown: 0.1,
+      dprStepUp: 0.05,
+      /** A frame counts as missed when it arrives this much later than one 60 fps frame. */
+      missFactor: 1.15,
+      /** Lower when more than this share of the last second's frames missed; raise after this long with none. */
+      missShareDown: 0.05,
+      calmMsUp: 5000,
+      holdAfterDownMs: 6000,
+      /** With a GPU timer: raise only while a frame costs less than this share of the frame budget. */
+      gpuShareUp: 0.7,
+    },
+    /** Effect levels the controller steps through after the resolution floor (0 = everything on). */
+    levels: ['all', 'ao-half', 'no-bloom', 'shadow-1024', 'no-ao', 'msaa-2', 'no-msaa'] as const,
+    /** The Performance check (perf/): stage lengths in seconds and the pass line. */
+    check: {
+      abSeconds: 30,
+      sceneSeconds: 30,
+      soakMinutes: 10,
+      probeSeconds: 5,
+      windowSeconds: 30,
+      quick: { abSeconds: 8, sceneSeconds: 8, soakMinutes: 1, probeSeconds: 3, windowSeconds: 10 },
+      passFps: 58,
+      passMissShare: 0.02,
+      memoryStepMb: 22,
+      memoryCapMb: 4096,
+    },
+  },
 } as const
 
 /** §22 backgrounds and weather overlays. */

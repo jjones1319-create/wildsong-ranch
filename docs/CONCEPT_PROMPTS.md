@@ -1,23 +1,28 @@
 # Concept reference prompts for ChatGPT (for Art 2.0: the Blender monsters)
 
-**What this is for.** You generate 2–3 concept images per breed in ChatGPT. They are **reference only**: Claude Code looks at them while rebuilding each monster's rig, parts, proportions and shading in V3. They never ship in the game and never get traced or imported. They simply get your taste into the monsters.
+> **Retired (Oct 31, 2026).** The reference pictures are now made with the `chatgpt/` folder, and they're done for every monster:
+> - **The style text in use** is `chatgpt/PROJECT-INSTRUCTIONS.md` (the owner chose its film look). It replaces the Style Guide below.
+> - **The prompts** are each monster's `chatgpt/monsters/<NN>-<breed-id>/PROMPTS.md`, whose creature card replaces the Creature paragraphs below.
+> - **The pictures** are in the same folders, with the file names in `chatgpt/FOR-CLAUDE-CODE.md` §1 (`1-hero.png`, `2-turnaround.png`, `3-faces.png`, `4-details.png`, `5-poses.png`, variants, grown forms and the cocoon), not in `concept/<breed-id>/`.
+>
+> The rest of this file is kept as history.
+
+**What this was for.** You generate 2–3 concept images per breed in ChatGPT. They are **reference only**: Claude Code looks at them while rebuilding each monster's rig, parts, proportions and shading in V3. They never ship in the game and never get traced or imported. They simply get your taste into the monsters.
 
 **How to do it (per breed):**
 1. Start a **new ChatGPT conversation** for each breed (so the creature stays consistent within it).
 2. Paste the **Style Guide** below, then that breed's **Creature** paragraph, then the **Image 1** request. Generate.
 3. In the same conversation, paste **Image 2**, generate; then **Image 3** (optional but valuable for battles), generate.
 4. If an image looks like a famous character (a well-known cartoon fox, dragon, electric mouse…), reply "Make it more original; change the silhouette and markings" and regenerate.
-5. Save each image into your project folder: `Monster Rancher/concept/<breed-id>/sheet.png`, `expressions.png`, `action.png` (breed ids are in the headings below). Claude Code will add `concept/` to `.gitignore` so these stay on your PC and out of the public repo.
+5. Save each image into your project folder. Now: `chatgpt/monsters/<NN>-<breed-id>/` with the names in `chatgpt/FOR-CLAUDE-CODE.md` §1 (gitignored, so they stay on your PC). Formerly: `Monster Rancher/concept/<breed-id>/sheet.png`, `expressions.png`, `action.png`.
 
 Do the breeds in any order. Even 10 breeds done before V3 starts is a big help; Claude Code can work breed by breed as you add more.
 
 ---
 
-## Style Guide (paste first in every conversation)
+## Style Guide
 
-```
-You are making original concept art for "Wildsong Ranch", a cozy monster-raising game whose monsters are cel-shaded 3D characters. Style: clean cel-shaded character art with a slight anime touch: soft two-tone shading, a warm rim light, outlines in a darker tint of each colour (not black), big glossy expressive eyes with white highlights, rounded chunky appealing shapes with a slightly big head, and a clear readable silhouette. Warm, friendly storybook feel. Not realistic, not pixel art. Plain white background, no text, no logos, no watermark. The creature must be an original design: do not base it on, or make it resemble, any character from Pokémon, Digimon, Monster Rancher, Dragon Quest, Yo-kai Watch or any other franchise, and avoid their signature silhouettes. Use exactly the hex colours I give. I will ask for several images of the same creature in this conversation: keep its design identical across all of them.
-```
+The style text now in use is the project instructions in `chatgpt/PROJECT-INSTRUCTIONS.md`. The old cel-shaded style text that stood here is retired.
 
 ## Image requests (paste after the Creature paragraph, one at a time)
 
@@ -168,4 +173,4 @@ Replace `[ATTACK]` with the breed's attack line given below.
 - It's clearly **our** creature (matches the hex colours and the described features) and not recognisable as a franchise character.
 - The three views in Image 1 are the same size and design.
 - Nothing extra: no text, no logo, no busy background.
-- Saved as `concept/<breed-id>/sheet.png`, `expressions.png`, `action.png`.
+- Saved in `chatgpt/monsters/<NN>-<breed-id>/` under the names in `chatgpt/FOR-CLAUDE-CODE.md` §1 (this used to be `concept/<breed-id>/sheet.png`, `expressions.png`, `action.png`).

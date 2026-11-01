@@ -2,6 +2,32 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Art 2.1: the detail spike and the Performance check (2026-11-01) · v1.13.2
+
+**Live:**
+- **The Performance check:** https://jjones1319-create.github.io/wildsong-ranch/perf/ (a separate page; the game itself is unchanged). On the phone it runs a WebGL vs WebGPU A/B, the Monster Card close-up, Meadow Dash, a cold speed probe, a **10-minute battle soak** with dynamic resolution, and a warm probe. It then reports fps, render resolution, effect level, graphics memory and throttling at the start and the end, plus PASS or FAIL. **Copy results** puts the report on the clipboard. An opt-in memory ceiling test finds how much graphics memory the phone allows.
+- Nothing in the game changes until the owner approves the look and the phone's result.
+
+**Done**
+- **Targets** (the owner's, Nov 1): an Ultra tier for S25-class phones, designed for the hot phone; High and Lite stay. They're in `docs/ART_2_DETAIL.md` (rev 2) and `ART.ultra` in `tuning.ts`. ART_2_PLAN §3.6 stands until approval.
+- **The spike** (`tools/blender/spikes/detail_spike.py`):
+  - a Puddlepup head, fins and front paw sculpted as 1.9 million triangles of lying fur clumps, baked down to a 25k-triangle game mesh;
+  - a body atlas plus the cinematic head set;
+  - soft-tipped fur cards that fade in only at the outline;
+  - a small tuft;
+  - a grey-box torso stand-in for the performance scenes.
+- **Renderer** (`src/art3d/perf/`): the film material with no outlines; the studio lights of the reference pictures (soft key shadows, warm rim); GTAO, bloom, grading, 4× MSAA and depth of field on the Card; the dynamic resolution and quality controller. Both WebGL and WebGPU draw the same picture.
+- **KTX2:** toktx installed (approved). ETC1S everywhere is about the size of WebP and uses about 84% less graphics memory; UASTC normals are about 4× larger, so they stay off the phone. The renderer's transcoder ships in `public/basis/`, outside the precache.
+- **Downloads:** about 6.4 MB per monster on Ultra with everything (KTX2), and about 210 MB for all 33 looks (ART_2_DETAIL §5.3).
+- **PC numbers** (Intel Iris Xe ≈ a hot S25 Ultra): WebGPU draws the battle about 2.6× faster than WebGL (at 2.5× resolution, about 11 ms against 27 ms per frame).
+- **Tools:** `npm run perf:dev`. `tools/art/spike-detail.ts` encodes, captures, benches and writes `art-review/detail-spike/sheet.png`. `npm run build` also builds the check into `dist/perf/`.
+
+**Known issues**
+- The check's monster is the spike stand-in, not the rebuilt Puddlepup.
+- The PC numbers are an estimate. The phone's soak decides.
+
+**Next:** the owner runs the Performance check on the S25 Ultra and looks at the spike sheet. After both are approved, A1 (the pipeline) and the Puddlepup rebuild at Ultra.
+
 ## Hotfix: the storm spark card (2026-10-29) · v1.13.1
 
 **Fixed:** on a storm week the "A storm spark!" card never opened, so "Answer the spark first." showed with Train, Rest, Journey and Battle disabled and no way forward. The ranch's trial gate read `g.journey?.pendingTechnique !== null`, which is true when there is no journey at all (`undefined !== null`), so the trial card's gate always won. It now goes through `trialGateOpen` (`src/ui/screens/ranch/gates.ts`, unit-tested: no journey, a journey with nothing pending, a pending technique, a trial, an outcome). The expedition screen's sell hint had the same shape and is fixed the same way.

@@ -46,9 +46,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff2,json,ogg}'],
         // Art 2.0 §3.7: models download on first use and are kept by the runtime cache below; the breed portraits
         // (public/portraits) stay precached as the offline fallback pictures.
-        globIgnores: ['**/models/**'],
+        globIgnores: ['**/models/**', '**/perf/**', '**/basis/**'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallback: `${BASE}index.html`,
+        // Art 2.1: the Performance check (perf/, its own build) is a separate page the game never serves
+        navigateFallbackDenylist: [/\/perf\//],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {

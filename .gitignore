@@ -37,3 +37,6 @@ tools/blender/out/
 # Art 2.0 (docs/ART_2_PLAN.md): the owner's concept pictures (reference only, never shipped) and the in-game review sheets
 concept/
 art-review/
+
+# Art 2.1 Performance check: the UASTC normal maps are a local comparison only (too large for the download cap; ART_2_DETAIL §3.3)
+public/models/perf/*_normal.ktx2
