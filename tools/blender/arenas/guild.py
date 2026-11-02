@@ -5,7 +5,7 @@
 
 build   the scene in metres, Z-up (the ring floor at z = 0, centred on the origin, the inner fence line at r = 6.0):
         the packed-earth ring and its low earth rim, rope-fence posts with sagging hessian ropes and two gates on the
-        A–B axis (x), stepped wooden stands with a stylised crowd, banner poles carrying the Guild emblem, bunting,
+        A–B axis (x), stepped wooden stands (their crowd is the game's, at the exported seats), banner poles carrying the Guild emblem, bunting,
         Poly Haven CC0 props, the river, Tunewick (plaster, timber-frame and thatch houses, a bridge, a mill, the
         Shrine on its hill), stylised trees and grass, and far mountains for the sky panorama; saves guild_src.blend
 bake    per atlas group: join, unwrap, then Cycles bakes albedo (full size) and diffuse light (direct + indirect, half
@@ -780,6 +780,76 @@ def build_crowd(M: Mats, seats, rng) -> int:
     return n
 
 
+def drop_baked_crowd(M: Mats, seats, rng) -> None:
+    """The crowd lives in the game now (src/art3d/duel/crowd.ts: animated, filled by Fame). The old baked people are still
+    built and then thrown away, only so the shared random stream stays the same and the banners, props, town and trees
+    (and the fly-in path threaded between them) stay exactly where they were."""
+    build_crowd(M, seats, rng)
+    for name in ('crowd_cloth', 'crowd_skin'):
+        ob = bpy.data.objects.get(name)
+        if ob is not None:
+            me = ob.data
+            bpy.data.objects.remove(ob, do_unlink=True)
+            bpy.data.meshes.remove(me)
+
+
+# Where the game's crowd sits or stands (guild.json → seats). Bench seats every SEAT_PITCH along each tier, kids at the
+# rail in front of the stands, and standing folk by the gates and along the open front. All deterministic.
+SEAT_PITCH = 0.44                 # the straight planks get 3–5 seats each, 0.45–0.55 m apart
+GROUND_R, GROUND_PITCH = 7.85, 0.62
+GATE_SPOTS = [(7.2, 3.1), (8.0, 3.22), (8.8, 3.12), (10.3, 2.05), (11.05, 2.6)]     # (|x|, |y|) per gate and side
+FRONT = [(8.0, 256.0, 290.0)]          # (radius, from°, to°) rows (one: the crowd's triangle budget)
+FRONT_PITCH = 0.62
+
+
+def crowd_spots() -> list[dict]:
+    """Every seat and standing spot, Blender frame (z up): p = the seat top or the ground under the spot, `face` = the
+    yaw (radians, Blender, from +x) the person faces (the ring centre), row (tier; -1 on the ground), section, kind
+    (seat / ground / stand) and lite (every other spot of each row, so Lite keeps an even half)."""
+    out = []
+
+    def add(x, y, z, row, section, kind, i):
+        out.append({'p': (x, y, z), 'face': math.atan2(-y, -x), 'row': row, 'section': section, 'kind': kind, 'lite': i % 2 == 0})
+
+    names = ['long', 'nearA', 'nearB']
+    for si, (d0, d1, tiers, _near) in enumerate(STANDS):
+        a0, a1 = math.radians(d0), math.radians(d1)
+        rmid = TIER0_R + TIER_STEP_R * tiers / 2
+        nseg = max(2, int(round((a1 - a0) * rmid / 2.1)))
+        for t in range(tiers):
+            r = TIER0_R + TIER_STEP_R * t
+            h = TIER0_H + TIER_STEP_H * t
+            i = 0
+            for k in range(nseg):
+                b0, b1 = a0 + (a1 - a0) * k / nseg, a0 + (a1 - a0) * (k + 1) / nseg
+                m = (b0 + b1) / 2
+                L = 2 * r * math.tan((b1 - b0) / 2)                       # the straight plank's length at radius r
+                n = max(1, int(L / SEAT_PITCH))
+                for j in range(n):
+                    s = ((j + 0.5) / n - 0.5) * L
+                    add(r * math.cos(m) - s * math.sin(m), r * math.sin(m) + s * math.cos(m), h, t, names[si], 'seat', i)
+                    i += 1
+        # kids at the rail in front of the stand (clear of its end walls)
+        span = (a1 - a0) - 2 * 0.3 / GROUND_R
+        n = int(span * GROUND_R / GROUND_PITCH)
+        for j in range(n):
+            b = a0 + 0.3 / GROUND_R + span * (j + 0.5) / n
+            add(GROUND_R * math.cos(b), GROUND_R * math.sin(b), 0.0, -1, names[si], 'ground', j)
+    for gate, sx in (('gateA', -1.0), ('gateB', 1.0)):
+        i = 0
+        for sy in (-1.0, 1.0):
+            for (ax, ay) in GATE_SPOTS:
+                add(sx * ax, sy * ay, 0.0, -1, gate, 'stand', i)
+                i += 1
+    for ri, (r, d0, d1) in enumerate(FRONT):
+        a0, a1 = math.radians(d0), math.radians(d1)
+        n = int((a1 - a0) * r / FRONT_PITCH) + 1
+        for j in range(n):
+            b = a0 + (a1 - a0) * j / max(1, n - 1)
+            add(r * math.cos(b), r * math.sin(b), 0.0, -1 - ri, 'front', 'stand', j)
+    return out
+
+
 # ----------------------------------------------------------------------------- banners and bunting
 BANNER_POLES = [(40, 11.95), (65, 12.0), (90, 12.05), (115, 12.0), (140, 11.95)]
 
@@ -1458,7 +1528,9 @@ def stage_build(quick: bool) -> dict:
     with C.Timer('stands'):
         seats = build_stands(M, rng)
     with C.Timer('crowd'):
-        build_crowd(M, seats, rng)
+        drop_baked_crowd(M, seats, rng)
+        spots = crowd_spots()
+        C.log(f'crowd spots: {len(spots)} ({sum(s["lite"] for s in spots)} in Lite)')
     with C.Timer('banners'):
         build_banners(M, rng)
     with C.Timer('props'):

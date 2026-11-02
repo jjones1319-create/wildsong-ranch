@@ -1,3 +1,4 @@
+import { pathOf } from '../../data/paths.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { AI, BATTLE } from '../../data/tuning.ts'
 import type { PlanMode, Technique } from '../../data/types.ts'
@@ -222,6 +223,13 @@ function valueOf(state: BattleState, o: Option, f: FighterState, opp: FighterSta
   if (sit.tick - (f.aiTechUsed[t.id] ?? NEVER) > AI.score.windowTicks) v = divRound(v * V.varietyPct, 100)
   if (f.habit === 'spamsWither' && t.family === 'Wither') v = divRound(v * V.habitBias, 100)
   if (f.habit === 'stealsGuts' && (t.effect?.kind === 'gutsSteal' || t.family === 'Wither')) v = divRound(v * V.habitBias, 100)
+  // docs/BATTLE_3D.md §4.4–§4.5 (duel only; null on the line): sweeps against a sidestepper, knockbacks against a
+  // rusher or an opponent with its back to the fence
+  const bias = f.duelBias
+  if (bias) {
+    if (bias.sweepPct !== 100 && pathOf(t) === 'sweep') v = divRound(v * bias.sweepPct, 100)
+    if (bias.knockPct !== 100 && t.effect?.kind === 'push') v = divRound(v * bias.knockPct, 100)
+  }
   return v
 }
 
@@ -298,7 +306,9 @@ function computePlan(state: BattleState, f: FighterState, opp: FighterState, sit
     const variety = divRound(varietyCap * Math.min(AI.score.windowTicks, sit.tick - f.aiBandUsed[b]!), AI.score.windowTicks)
     let cautionHere = caution
     if (heavyBand === b) cautionHere = divRound(cautionHere * S.heavyReady.cautionPct, 100)
-    let s = divRound(offense[b]! * aggression, 100) - divRound(threat[b]! * cautionHere, 100) + variety - travel * AI.score.travelWeight
+    // §4.4 (duel only): the opponent's favourite range counts as more dangerous
+    const threatHere = f.duelBias && f.duelBias.avoidBand === b ? divRound(threat[b]! * f.duelBias.avoidPct, 100) : threat[b]!
+    let s = divRound(offense[b]! * aggression, 100) - divRound(threatHere * cautionHere, 100) + variety - travel * AI.score.travelWeight
     if (kiting && b > sit.band) s += AI.score.chillKiteBonus
     score[b] = s
   }

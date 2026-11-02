@@ -2,6 +2,65 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Battle 3D round 2: AI 3.0 and a living crowd (2026-11-02) · v1.16.0
+
+The owner's notes on v1.15: "the auto seemed relatively elementary and battle AI could be improved"; "adding people cheering and movement with some detail and random monsters in there (more people based on your popularity would be cool)"; "if you aren't in range it would just not work". For the AI they chose "a mix of all of these", plus: "an untrained pet or spoiled pet might fight worse by making worse decisions".
+
+**Live (Lab → Battle 3D (test)):**
+- **AI 3.0** (BATTLE_3D §4), for the CPU and your Auto:
+  - **battle sense** (5–95): the CPU's comes from its tier; your monster's from how it was raised (battles fought, loyalty, not spoiled);
+  - **sidesteps timed to the wind-up**, and a low-sense monster's nervous flinches;
+  - **dodge, then punish:** it doesn't trade blows with an attack it is about to sidestep, and fires into your openings;
+  - **reads your habits:** sweeps against a sidestepper, knockbacks against a rusher, and it stays out of your favourite range;
+  - **uses the ring:** it herds you toward the fence, and **a monster knocked or shoved into the fence is stunned for 0.4 s** ("Into the fence!");
+  - **visible styles:** rushers circle less and dash in to punish, tricksters feint in and out, careful ones circle more and save guts for a finisher;
+  - **spoiled monsters** sometimes show off (the flashiest move) or stop chasing.
+- **The 🧠 chip** raises your Puddlepup three ways (Seasoned 70 · Untrained 30 · Spoiled 19) and restarts the fight, to compare Auto.
+- **Out of range, a tap does nothing:** you walk there yourself. An in-range tap while busy still fires as soon as it can.
+- **The living crowd** in the Guild arena:
+  - townsfolk with hats, scarves, pennants and foam hands;
+  - **the stands fill with Fame** (25% at 0, full at 100; the 👥 chip tries 10/40/70/100);
+  - **painted plywood cut-outs** of all 32 breeds among them;
+  - they bob, wave and follow the fight, cheer in ripples (small, big, huge on a KO), and stand for the ovation;
+  - Reduce motion keeps it gentle.
+
+**Done**
+- **Core:**
+  - `duelSense.ts` (battle sense and its reasons), `duelRead.ts` (habits and biases), `duelAi.ts` rewritten;
+  - two duel-only hooks in `ai.ts` (technique values and the favourite-range threat; no-ops on the line, the golden record holds);
+  - the fence stop in `engine.ts`;
+  - `herdDir` in `geometry.ts`;
+  - all numbers in `AI.duel` and `BATTLE.duel.fence`.
+- **Tests:**
+  - `duelAi3.test.ts` (8): sense from raising, sense by side, the fence, herding, reading, punishing, seasoned beats spoiled, styles;
+  - `duel.test.ts` counts real sidesteps (not flinches) and fence stops;
+  - `crowdPlan.test.ts` (18).
+- **Balance** (`npm run sim:balance -- --mode duel`, docs/BALANCE_DUEL.md):
+  - pairs inside 30–70: 96.6% / 98.0% / **92.7%** at 1,000 / 2,000 / 3,000 (90.3% at 3,000 before AI 3.0);
+  - the late runaways came down (Velvesper −4.4, Wishlume −4.4, Starhowl −3.9);
+  - attacks per monster per match: 6.3–12.2.
+- **Tried and dropped:** a guts reserve for punishing. Holding shots reset the plan's pacing, so the CPU attacked a third less and lost more.
+- **Crowd:**
+  - `crowd.ts`, `crowdPlan.ts`, `crowdPose.ts`, `crowdParts.ts`, `cutouts.ts`;
+  - the Guild arena rebaked without its painted people, with 238 seat spots in `guild.json`;
+  - `tools/art/crowd-review.ts` makes `art-review/arena-guild/crowd-sheet.png`.
+- **Screen:**
+  - the 🧠 and 👥 chips;
+  - out-of-range taps ignored;
+  - the fence float, burst and crowd cheer.
+
+**Numbers** (PC proxy):
+- **Crowd at Fame 100:** 217 people + 21 cut-outs, about 37k triangles, 10 draws, 0.2–0.4 ms CPU a frame.
+- **Arena:** Full 101k triangles and 6.6 MB (from 7.4 MB); Lite 45k triangles and 1.7 MB.
+
+**Known issues**
+- **The people are simple peg dolls up close** (the behind camera), which suits the faceted trees but isn't refined.
+- **Against a player who attacks nonstop**, an Expert punishes only about one opening in five, because it spends its guts as fast as it gets them.
+- **An older AI 2.0 quirk:** in some matchups a Skilled CPU beats an Expert against simple spam.
+- **The cut-outs' texture has no mipmaps**, so far boards may shimmer in the fly-in.
+
+**Next:** the Crown Amphitheatre, the huge Roman arena for the Officials, Crowns and the Legend Cup (the owner chose our own build, Roman style, Nov 2), then the owner's phone test.
+
 ## Hotfix: Battle 3D feet, Push and tapping (2026-11-02) · v1.15.1
 
 The owner's first phone test: "it was difficult to attack, there was no push, and they seemed to be floating".

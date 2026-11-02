@@ -449,6 +449,18 @@ def to_gltf(v) -> list[float]:
     return [round(p.x, 4), round(p.y, 4), round(p.z, 4)]
 
 
+def seats_gltf() -> list[dict]:
+    """The crowd's spots (guild.crowd_spots) in the glTF frame: p = [x, y, z] (y up; the seat top or the ground), yaw =
+    radians about +y with the person facing (sin yaw, 0, cos yaw), toward the ring centre (three's rotation.y)."""
+    out = []
+    for s in G.crowd_spots():
+        x, y, z = s['p']
+        dx, dy = math.cos(s['face']), math.sin(s['face'])
+        out.append({'p': to_gltf((x, y, z)), 'yaw': round(math.atan2(dx, -dy), 4), 'row': s['row'], 'section': s['section'],
+                    'kind': s['kind'], 'lite': s['lite']})
+    return out
+
+
 def stage_export() -> dict:
     bpy.ops.wm.open_mainfile(filepath=str(G.OUT / 'guild_baked.blend'))
     O = bpy.data.objects
@@ -525,6 +537,7 @@ def stage_export() -> dict:
                     for o in anchors},
         'flyIn': [{'node': f'cam_fly_{i}', 'eye': to_gltf(e), 'target': to_gltf(t), 't': tt, 'fovDeg': f} for i, (e, t, tt, f) in enumerate(G.FLY)],
         'sun': {'direction': to_gltf(G.SUN_DIR), 'color': [1.0, 0.94, 0.84]},
+        'seats': seats_gltf(),
         'trianglesFull': tris_full, 'trianglesLite': tris_lite,
         'sources': [{'id': a, **{k: man[a][k] for k in ('type', 'name', 'authors', 'url', 'license')}} for a in used if a in man],
     }

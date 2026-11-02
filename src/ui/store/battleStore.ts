@@ -87,6 +87,9 @@ export interface FighterView {
   assistTech: string | null
   /** §12.11 the brain's current plan (the thinking icon); null for a player on the pads. */
   plan: PlanMode | null
+  /** Battle 3D (docs/BATTLE_3D.md §4.1): battle sense 5–95 and how spoiled (0–2); 0 and 0 on the line. */
+  sense: number
+  spoiled: 0 | 1 | 2
   techniques: { id: string; name: string; range: 1 | 2 | 3 | 4; cost: number; hitPct: number; canFire: boolean; affordable: boolean }[]
 }
 
@@ -198,6 +201,8 @@ function snapshot(): BattleView | null {
     special: f.special?.kind ?? null,
     dawdling: f.dawdleTicks > 0,
     stunned: f.stunTicks > 0,
+    sense: f.sense,
+    spoiled: f.spoiled,
     attacks: f.attacks,
     hits: f.hits,
     damage: f.damageDealt,
@@ -307,6 +312,10 @@ function describe(events: readonly BattleEvent[]): void {
         break
       case 'stun':
         pushEffect(e.side, t.floats.stun, 'note')
+        playBattleEvent('stun', e.side === 0 ? -0.3 : 0.3)
+        break
+      case 'fence':
+        pushEffect(e.side, BATTLE3D_TEXT.fence, 'note')
         playBattleEvent('stun', e.side === 0 ? -0.3 : 0.3)
         break
       case 'push':

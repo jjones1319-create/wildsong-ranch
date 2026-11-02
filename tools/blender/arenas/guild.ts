@@ -1,7 +1,7 @@
 /**
  * The Breeders' Guild arena (ART_2_PLAN §7.3): Blender build → what the phone downloads → review sheets.
  *
- *   npm run art:arena -- [--stages build,bake,export,review,ship,shots] [--quick]
+ *   npm run art:arena -- [--stages build,bake,export,review,ship,shots] [--quick] [--pub <dir>]
  *
  * build…review   headless Blender (tools/blender/arenas/guild.py), logging to tools/blender/out/arena-guild/guild.log
  * ship           tools/blender/out/arena-guild/ → public/models/arenas/guild/: guild.glb and guild_lite.glb, each
@@ -27,7 +27,9 @@ const ROOT = join(HERE, '..', '..', '..')
 const SRC = join(ROOT, 'tools', 'blender', 'out', 'arena-guild')
 const TEX = join(SRC, 'tex')
 const STAGE = join(SRC, 'encoded')
-const PUB = join(ROOT, 'public', 'models', 'arenas', 'guild')
+/** Where `ship` writes (`--pub <dir>` stages it elsewhere, e.g. tools/blender/out/arena-guild/ship, for a review first). */
+const PUB_ARG = process.argv.includes('--pub') ? process.argv[process.argv.indexOf('--pub') + 1] : undefined
+const PUB = PUB_ARG ? join(ROOT, PUB_ARG) : join(ROOT, 'public', 'models', 'arenas', 'guild')
 const REVIEW = join(ROOT, 'art-review', 'arena-guild')
 const PORT = 5175
 const FFMPEG: string = createRequire(import.meta.url)('ffmpeg-static')
@@ -165,15 +167,23 @@ async function ship(): Promise<void> {
       sky: { radius: 400, centre: [0, 1.6, 0], note: 'two half-domes (sky_front looks toward -Z, the town; sky_back toward +Z): keep the camera far plane at 900 m or more' },
       anisotropy: 'set map.anisotropy to 4-8 on the ground atlases (ring, apron, mid, far) for the grazing battle view',
       flyIn: 'cam_fly_0 ... cam_fly_5: each node looks down its local -Z (three camera convention); `t` is seconds, `fovDeg` the vertical field of view; interpolate eye and target with a Catmull-Rom curve',
+      seats: "`seats`: every crowd spot; the benches are baked empty and the game seats its crowd here (src/art3d/duel/crowd.ts; how many by the player's Fame, ART.duel.crowd). `p` = the seat top or the ground under the spot (glTF frame, metres), `yaw` = three's rotation.y with the person facing (sin yaw, 0, cos yaw), toward the ring; `row` = the stand tier (0 = front; -1 on the ground), `section` = long / nearA / nearB (the stands, and the kids at the rail in front of each), gateA / gateB / front (standing folk), `kind` = seat / ground (kids standing at the rail) / stand, `lite` = kept in Lite (every other spot of each row)",
     },
     budget: report,
     problems,
   }
-  writeFileSync(join(PUB, 'guild.json'), JSON.stringify(sidecar, null, 1) + '\n')
+  writeFileSync(join(PUB, 'guild.json'), sidecarText(sidecar))
   const mb = (n: number) => (n / 1048576).toFixed(2) + ' MB'
   console.log(`full: ${full.triangles} tris, ${full.drawCalls} draws, ${mb(full.bytes)} (WebP equivalent ${mb(report.full.webpEquivalentBytes)})`)
   console.log(`lite: ${lite.triangles} tris, ${lite.drawCalls} draws, ${mb(lite.bytes)} (WebP equivalent ${mb(report.lite.webpEquivalentBytes)})`)
   for (const p of problems) console.log('PROBLEM', p)
+}
+
+/** guild.json as text: indented, but the crowd's seats one per line (a few hundred of them). */
+function sidecarText(sidecar: Record<string, unknown>): string {
+  const seats = Array.isArray(sidecar.seats) ? (sidecar.seats as unknown[]) : []
+  const text = JSON.stringify(sidecar, null, 1)
+  return text.replace(/"seats": \[[\s\S]*?\n \]/, () => `"seats": [\n${seats.map((x) => '  ' + JSON.stringify(x)).join(',\n')}\n ]`) + '\n'
 }
 
 // ---------------------------------------------------------------------------- shots

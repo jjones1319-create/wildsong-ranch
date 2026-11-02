@@ -220,6 +220,31 @@ export interface FighterState {
   aiStrafeUntil: number
   aiSidestepAt: number
   aiSidestepFor: number
+  /** AI 3.0 (docs/BATTLE_3D.md §4.1): battle sense 5–95, and how spoiled the monster is (0 no, 1 fond, 2 doting). */
+  sense: number
+  spoiled: 0 | 1 | 2
+  /** §4.3: the opening it last decided about (the tick it began), and when it fires into it (NEVER: it won't). */
+  aiOpeningSeen: number
+  aiPunishAt: number
+  /** §4.4 what it has seen: its straight-line fires, the opponent's sidesteps against them, ticks the opponent walked in, ticks watched, the opponent's fires per range [0, Close…Far]. */
+  readLineFires: number
+  readSidesteps: number
+  readAdvance: number
+  readTicks: number
+  readBand: number[]
+  /** §4.4–§4.5 what it makes of that (null outside the duel, so the line's AI is untouched). */
+  duelBias: DuelBias | null
+  /** §4.6–§4.7: feinting and slacking until these ticks. */
+  aiFeintUntil: number
+  aiLazyUntil: number
+}
+
+/** AI 3.0's adjustments to the range plan (×100; 100 = none): its sweeps, its knockbacks, and a range to stay out of. */
+export interface DuelBias {
+  sweepPct: number
+  knockPct: number
+  avoidBand: number
+  avoidPct: number
 }
 
 export type BattleEvent =
@@ -230,6 +255,8 @@ export type BattleEvent =
   | { t: number; kind: 'miss'; side: Side; target: Side; tech: string; hitNo: number; of: number; dodged?: boolean }
   /** Duel: a sidestep started. */
   | { t: number; kind: 'sidestep'; side: Side; dir: -1 | 1 }
+  /** Duel: knocked or shoved into the fence, and stunned there. */
+  | { t: number; kind: 'fence'; side: Side; ticks: number }
   | { t: number; kind: 'heal'; side: Side; amount: number; why: 'tech' | 'drain' | 'blessed' | 'jackpot' }
   | { t: number; kind: 'reflect'; side: Side; target: Side; amount: number }
   | { t: number; kind: 'recoil'; side: Side; amount: number }

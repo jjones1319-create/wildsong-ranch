@@ -523,6 +523,11 @@ export const BATTLE = {
     sidestep: { ticks: 8, units: 180, cost: 4, cooldown: 45 },
     /** A straight-line technique misses a defender standing farther than this from its line (units: a body radius and a little). */
     pathHalfWidth: 110,
+    /**
+     * §4.5 the fence: a slide (knockback or shove) that the fence stops (this step moved under stopPct of a full step,
+     * with the fighter within nearUnits of the ring edge) ends there and stuns it.
+     */
+    fence: { stunTicks: 12, stopPct: 50, nearUnits: 6 },
   },
 } as const
 
@@ -586,16 +591,62 @@ export const AI = {
    * between techniques it circles the opponent now and then, and always away from a wall that is close behind.
    */
   duel: {
-    sidestepPct: { rookie: 20, skilled: 40, expert: 60 },
-    /** A sidestep is a reflex, quicker than a plan's reaction (ticks after the opponent's fire). */
-    sidestepReact: { rookie: { min: 8, max: 14 }, skilled: { min: 5, max: 10 }, expert: { min: 3, max: 7 } },
+    /**
+     * AI 3.0 §4.1 battle sense (5–95): CPU fighters by tier; the player's monster from its raising: base, +perBattle
+     * per battle fought up to battleCap, + (loyalty − 50) × loyaltyPct/100, minus the spoiled penalty by raising style.
+     * Below skilledFrom it plans like a Rookie, below expertFrom like a Skilled fighter.
+     */
+    sense: {
+      tier: { rookie: 25, skilled: 55, expert: 85 },
+      base: 30,
+      perBattle: 1,
+      battleCap: 35,
+      loyaltyPct: 40,
+      spoiled: { fond: 6, doting: 15 },
+      min: 5,
+      max: 95,
+      skilledFrom: 40,
+      expertFrom: 70,
+      /** The reasons shown: seasoned from this many battles, untrained below that many, loyal or fickle from ± this much. */
+      why: { seasonedBattles: 20, untrainedBattles: 5, loyalFrom: 8 },
+    },
+    /** §4.2 sidestep chance: basePct + perSensePct × sense / 100 (+ careful bonus); reflex from slow (sense 0) to quick (100). */
+    sidestep: { basePct: 10, perSensePct: 60, carefulPct: 15, reactSlow: { min: 9, max: 16 }, reactQuick: { min: 2, max: 5 }, ignoreOffLineFrom: 50 },
+    /** Below this sense it sometimes flinches: every flinchEvery ticks, (flinchBelow − sense) × flinchPerPoint/10 percent. */
+    flinch: { below: 35, every: 30, perPoint: 2 },
     /** Reflex delay × (1 − SPD/reactSpdDiv): speed helps, but not twice over (fast breeds already dodge by SPD). */
     reactSpdDiv: 3000,
     /** Guts kept back after paying for a sidestep. */
     sidestepReserve: 2,
+    /**
+     * §4.3 punishing an opening: chance perSensePct × sense / 100 (percent), after a delay from slow to quick (ticks).
+     * With nothing ready it heads for the range of its best affordable technique, dashing in when a rusher or from
+     * dashFromSense, and retries while the opening lasts. From holdFromSense it doesn't trade blows with a technique
+     * it is about to sidestep: it dodges, then punishes. (A guts reserve for punishing was tried and dropped: holding
+     * shots resets the plan's pacing, so it fired a third less often and lost more than it gained.)
+     */
+    punish: { perSensePct: 90, slow: 12, quick: 2, dashRetry: 6, dashFromSense: 70, holdFromSense: 50 },
+    /** §4.4 reading: from minTicks, refreshed every everyTicks; thresholds; bonuses at sense 100 (scaled by sense). */
+    read: {
+      minTicks: 90,
+      everyTicks: 30,
+      sidestepper: { minFires: 3, sharePct: 30, sweepBonus: 80 },
+      rusher: { sharePct: 40, knockBonus: 60, circlePct: 20 },
+      favourite: { minFires: 4, sharePct: 50, avoidBonus: 100 },
+    },
+    /** §4.5 herding: from minSense, when the opponent's back is within units of the fence; aligned within alignPct (cos ×100). */
+    herd: { minSense: 40, units: 300, knockBonus: 60, alignPct: 94 },
     /** Chance (percent) at each plan to circle for a while, and how long (ticks). */
     circlePct: 45,
     circleTicks: { min: 30, max: 75 },
+    /** §4.6 styles: circling ×100, and the trickster's feints (chance per plan, length, step) and the careful finisher. */
+    styles: {
+      rusher: { circlePct: 50 },
+      trickster: { circlePct: 120, feintPct: 35, feintTicks: 30, feintStep: 7 },
+      careful: { circlePct: 140, finisherHpPct: 35 },
+    },
+    /** §4.7 spoiled: showing off and slacking chances (fond, doting), checked every slackEvery ticks; slacking lasts slackTicks. */
+    spoiled: { showOffPct: [0, 12, 25], slackPct: [0, 10, 20], slackEvery: 30, slackTicks: 30 },
   },
   /** The player's Auto styles (§12.11): aggression / caution, band biases, pacing, free dashes and the poke horizon. */
   styles: {
@@ -1273,6 +1324,68 @@ export const ART = {
     blinkGaps: [3.4, 4.8, 2.6, 5.2, 3.9, 2.2],
     /** Wind-up telegraphs on the floor: POW warm, INT cool. */
     telegraph: { pow: '#ff7a1a', int: '#2e8dff', opacity: 0.5 },
+    /** §8: the Guild arena's living crowd (src/art3d/duel/crowd*.ts, cutouts.ts) at the seats in its guild.json. */
+    /**
+     * The test screen's upbringing chip (§4.1): the player's Puddlepup raised three ways, so Auto's battle sense can be
+     * felt: battles fought, Spoil and Fear. Seasoned → 70 (plans like an Expert), Untrained → 30, Spoiled → 19.
+     */
+    testUpbringing: {
+      seasoned: { battles: 30, spoil: 76, fear: 76 },
+      untrained: { battles: 0, spoil: 50, fear: 50 },
+      spoiled: { battles: 2, spoil: 98, fear: 12 },
+    },
+    crowd: {
+      /** The test screen's Fame (start, and the chip's steps), and the crowd's seed (added to each battle's own seed). */
+      defaultFame: 60,
+      fameSteps: [10, 40, 70, 100],
+      seed: 7,
+      /** Filled share of the arena's spots (percent) at Fame 0 and at Fame 100, straight between (deterministic seats). */
+      fillPct: { fame0: 25, fame100: 100 },
+      /** Of the filled bench seats, the share (percent) holding a painted cut-out of a breed instead of a person. */
+      cutoutPct: 14,
+      /** Kids among the bench crowd (percent); the ground spots in front of the stands are always kids. */
+      kidPct: 16,
+      /** Sizes (percent of a base adult): kids, and the adults' height and width ranges. */
+      size: { kid: 66, heightMin: 92, heightMax: 108, widthMin: 86, widthMax: 122 },
+      /** Looks (percent of people): a hat (else hair, else bald), a scarf, a pennant, a foam hand (the last three not in Lite). */
+      looks: { hatPct: 26, hairPct: 70, scarfPct: 18, pennantPct: 8, foamPct: 7 },
+      /** Seat preference when filling: per section and per tier back, plus a random share (all ×100). */
+      prefer: { long: 100, nearA: 86, nearB: 86, gateA: 60, gateB: 60, front: 66, ground: 74, perRow: 12, jitter: 55 },
+      /** Idle: bob (m), sway (deg), the rhythm range (Hz); now and then someone waves (every waveSec, wavePct of people). */
+      idle: { bobM: 0.012, swayDeg: 2.4, hzMin: 0.35, hzMax: 0.8, waveSec: 7, wavePct: 9, waveHz: 2.2 },
+      /** Heads follow the action: the most they turn from the body (deg) and how fast (per second). */
+      look: { maxDeg: 70, rate: 3.2 },
+      /**
+       * Cheers: peak excitement (percent), the share of people who join (percent), and the envelope (attack, hold,
+       * decay, seconds). Small = a hit; big = a crit, a heavy hit, a fence knock, a Special or a Signature; huge = a KO;
+       * ovation = the win (the benches stand up).
+       */
+      cheer: {
+        small: { peak: 45, joinPct: 35, attack: 0.18, hold: 0.45, decay: 0.9 },
+        big: { peak: 80, joinPct: 75, attack: 0.2, hold: 0.9, decay: 1.4 },
+        huge: { peak: 100, joinPct: 100, attack: 0.25, hold: 1.8, decay: 2.2 },
+        ovation: { peak: 100, joinPct: 100, attack: 0.6, hold: 9, decay: 2.5 },
+      },
+      /** The cheer ripples round the stands from the side nearest the action (m/s along the ring), plus a random lag (s). */
+      ripple: { speedMps: 30, lagSec: 0.3 },
+      /** At full excitement: hop (m), hop rate (Hz), lean forward (deg); arms go up past these excitements (percent). */
+      excite: { hopM: 0.1, hopHz: 2.6, leanDeg: 7, armPct: 30, bothArmsPct: 60, standPct: 50 },
+      /** Reduce motion: every amplitude at this percent, no hops, and nobody stands up. */
+      reducePct: 35,
+      /** Cheers at once (the oldest is dropped). */
+      maxCheers: 6,
+      /** Cut-outs: board height and widest (m), post and thickness (m), atlas cell and wood edge (px), cheer bob (m), tilt and rock (deg), brightness. */
+      cutout: { heightM: 0.74, maxWidthM: 0.66, postM: 0.1, thickM: 0.022, cellPx: 120, edgePx: 4, hopM: 0.07, tiltDeg: 9, swayDeg: 2, shade: 0.92 },
+      /** The people's painted light (a matcap that sits with the arena's baked light): sun, sky, bounce and floor shares. */
+      light: { sun: 0.62, sky: 0.5, bounce: 0.16, floor: 0.34 },
+      palette: {
+        skin: ['#F3D3B6', '#EBBE98', '#D9A47C', '#BF865F', '#9A6645', '#704A33', '#F7DEC8', '#C79470'],
+        hair: ['#3B2A20', '#6A4528', '#2A2420', '#B07B3E', '#D9B26A', '#8C3B2A', '#A7A29C', '#E3D7C4'],
+        clothes: ['#D9534A', '#E9A23B', '#3E8E7E', '#4F79B5', '#8E5DA8', '#E7C76A', '#6FA05A', '#F0E2C6', '#C46A8A', '#5A9CB3', '#B5552E', '#7B8F3A', '#E58F6B', '#356A8F', '#F2B6A0', '#2E8F86'],
+        hats: ['#E8C873', '#D9B45E', '#7A5A3C', '#3E8E7E', '#C94F3F', '#F0E2C6', '#4F79B5'],
+        accents: ['#2E8F86', '#E2694F', '#E7B24C', '#8061A8', '#F3E4C3', '#4F79B5'],
+      },
+    },
   },
   ultra: {
     /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */

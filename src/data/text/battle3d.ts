@@ -10,6 +10,7 @@ export const BATTLE3D_TEXT = {
   camera: { side: '🎥 Side', behind: '🎥 Behind' },
   cameraLabel: 'Switch camera',
   dodged: 'Dodged!',
+  fence: 'Into the fence!',
   push: 'Push',
   pushHint: 'Push: walk right up to them first',
   range: (band: string, metres: string) => `${band} · ${metres} m`,
@@ -19,4 +20,14 @@ export const BATTLE3D_TEXT = {
   reduceMotion: 'gentle camera',
   stats: (fps: number, dpr: number, backend: string, level: string) => `${fps.toFixed(0)} fps · ${dpr.toFixed(2)}× · ${backend} · ${level}`,
   stand: { arena: 'Stand-in arena (the Guild arena is being built)', monster: 'Stand-in Puddlepup (Art 2.0; the Ultra one is being built)' },
+  /** The crowd chip: the stands fill with your monster's Fame. */
+  crowdFame: (fame: number) => `👥 Fame ${fame}`,
+  upbringing: {
+    names: { seasoned: 'Seasoned', untrained: 'Untrained', spoiled: 'Spoiled' },
+    chip: (name: string, sense: number) => `🧠 ${name} ${sense}`,
+    label: (sense: number, why: string) => `Battle sense ${sense}${why ? `: ${why}` : ''}. It's how well your monster fights on Auto. Tap to try another upbringing (the fight restarts).`,
+    why: { seasoned: 'seasoned', untrained: 'untrained', loyal: 'loyal', fickle: 'not very loyal', spoiled: 'spoiled' },
+  },
+  crowdFameLabel: (fame: number) => `Crowd for Fame ${fame}. Tap to try another Fame.`,
+  crowdStats: (people: number, cutouts: number, ms: number) => ` · 👥 ${people} + ${cutouts} boards · ${ms.toFixed(2)} ms`,
 } as const

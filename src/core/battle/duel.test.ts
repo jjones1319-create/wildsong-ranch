@@ -92,7 +92,7 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
 
   it('is deterministic, keeps everyone inside the ring and apart, and the AI circles and sidesteps', () => {
     let sidesteps = 0
-    let dodged = 0
+    let fence = 0
     let circled = 0
     for (let s = 0; s < 24; s++) {
       const a = npcMonster({ breed: s % 2 ? 'quillion' : 'puddlepup', total: 1500 + 100 * (s % 5), seed: 40 + s })
@@ -107,15 +107,22 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
         }
         expect(gapUnits(b.state)).toBeGreaterThanOrEqual(0)
       }
-      sidesteps += b.state.log.filter((e) => e.kind === 'sidestep').length
-      dodged += b.state.log.filter((e) => e.kind === 'miss' && e.dodged).length
+      sidesteps += reactiveSidesteps(b.state.log)
+      fence += b.state.log.filter((e) => e.kind === 'fence').length
       const again = runBattle(ai(a, 'expert'), ai(c, 'expert'), duel(500 + s))
       expect(again.log).toEqual(b.state.log)
     }
     expect(circled).toBeGreaterThan(0)
     expect(sidesteps).toBeGreaterThan(0)
-    expect(dodged).toBeGreaterThan(0)
+    // AI 3.0 herds opponents to the fence (§4.5); full dodges are covered by the Belly Flop test above
+    expect(fence).toBeGreaterThan(0)
   })
+
+  // sidesteps against an incoming technique (a rookie's nervous flinches, §4.2, don't count)
+  const reactiveSidesteps = (log: readonly BattleEvent[]) => {
+    const air: [number, number][] = log.filter((e) => e.kind === 'fire' && e.lands !== undefined).map((e) => [e.t, (e as { lands: number }).lands])
+    return log.filter((e) => e.kind === 'sidestep' && air.some(([from, to]) => e.t >= from && e.t <= to)).length
+  }
 
   it('expert AIs sidestep more than rookies', () => {
     const count = (tier: 'rookie' | 'expert') => {
@@ -123,7 +130,7 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
       for (let s = 0; s < 12; s++) {
         const a = npcMonster({ breed: 'puddlepup', total: 1600, seed: 7 + s })
         const r = runBattle(ai(a, tier), ai(structuredClone(a), tier), duel(70 + s))
-        n += r.log.filter((e) => e.kind === 'sidestep').length
+        n += reactiveSidesteps(r.log)
       }
       return n
     }

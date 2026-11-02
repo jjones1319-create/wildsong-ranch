@@ -8,7 +8,9 @@ import { masteryBonuses } from '../songbook.ts'
 import { variantFarHit, variantWitherPlus } from '../variants.ts'
 import { decideAi } from './ai.ts'
 import { decideDuel } from './duelAi.ts'
-import { centreDist, clampLine, isDuel, moveAlongAxis, offsetFromAim, sidestepMove, slideStep, slideVector, strafeAround } from './geometry.ts'
+import { observeDuel } from './duelRead.ts'
+import { senseForTier, senseOfMonster, tierForSense } from './duelSense.ts'
+import { WALL, centreDist, clampLine, isDuel, moveAlongAxis, offsetFromAim, sidestepMove, slideStep, slideVector, strafeAround } from './geometry.ts'
 import { pathOf } from '../../data/paths.ts'
 import { decideAiV1 } from './aiV1.ts'
 import { bandCentre, bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
@@ -189,12 +191,43 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     aiStrafeUntil: NEVER,
     aiSidestepAt: NEVER,
     aiSidestepFor: NEVER,
+    sense: 0,
+    spoiled: 0,
+    aiOpeningSeen: NEVER,
+    aiPunishAt: NEVER,
+    readLineFires: 0,
+    readSidesteps: 0,
+    readAdvance: 0,
+    readTicks: 0,
+    readBand: [0, 0, 0, 0, 0],
+    duelBias: null,
+    aiFeintUntil: NEVER,
+    aiLazyUntil: NEVER,
   }
 }
 
+/**
+ * docs/BATTLE_3D.md §4.1: a duel fighter's battle sense. The CPU's comes from its tier; the player's monster's from
+ * how it was raised, and its tier for the range plan follows from that.
+ */
+function setupDuelBrain(f: FighterState, s: FighterSetup): void {
+  if (s.control === 'player') {
+    const r = senseOfMonster(s.monster)
+    f.sense = r.sense
+    f.spoiled = r.spoiled
+    f.tier = tierForSense(r.sense)
+  } else f.sense = senseForTier(f.tier)
+  f.duelBias = { sweepPct: 100, knockPct: 100, avoidBand: 0, avoidPct: 100 }
+}
+
 export function createBattle(a: FighterSetup, b: FighterSetup, opts: BattleOptions): Battle {
+  const fighters: [FighterState, FighterState] = [setupFighter(0, a), setupFighter(1, b)]
+  if (opts.mode === 'duel') {
+    setupDuelBrain(fighters[0], a)
+    setupDuelBrain(fighters[1], b)
+  }
   return {
-    state: { mode: opts.mode ?? 'line', tick: 0, timerTicks: opts.timerTicks, seed: opts.seed, fighters: [setupFighter(0, a), setupFighter(1, b)], outcome: null, log: [] },
+    state: { mode: opts.mode ?? 'line', tick: 0, timerTicks: opts.timerTicks, seed: opts.seed, fighters, outcome: null, log: [] },
     rng: createRng(opts.seed),
   }
 }
@@ -503,13 +536,26 @@ function movement(state: BattleState, f: FighterState, opp: FighterState): void 
   }
 }
 
-function slide(state: BattleState, f: FighterState, opp: FighterState): void {
+function slide(state: BattleState, f: FighterState, opp: FighterState, log: BattleEvent[]): void {
   if (f.slideTicks <= 0) return
   const perTick = divRound(BATTLE.push.distance * CENTI, BATTLE.push.ticks)
   if (isDuel(state)) {
+    const bx = f.x
+    const by = f.y
     slideStep(f, opp, perTick)
     f.slideTicks -= 1
     f.stillTicks = 0
+    // §4.5 the fence: stopped against it, the slide ends there with a stun
+    const F = BATTLE.duel.fence
+    const mx = f.x - bx
+    const my = f.y - by
+    const moved = Math.sqrt(mx * mx + my * my)
+    const atFence = Math.sqrt(f.x * f.x + f.y * f.y) >= WALL - F.nearUnits * CENTI
+    if (f.slideTicks > 0 && atFence && moved * 100 < perTick * F.stopPct) {
+      f.slideTicks = 0
+      f.stunTicks = Math.max(f.stunTicks, F.stunTicks)
+      log.push({ t: state.tick, kind: 'fence', side: f.side, ticks: F.stunTicks })
+    }
     return
   }
   f.x = clampLine(f.x + perTick * f.slideDir)
@@ -797,6 +843,8 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
   }
   for (const f of state.fighters) {
     const opp = state.fighters[(1 - f.side) as Side]
+    // AI 3.0 §4.4 reads the opponent every tick, busy or not (last tick's events only)
+    if (isDuel(state) && (f.control === 'ai' || f.auto)) observeDuel(state, f, opp)
     if (!canAct(f)) continue
     if (f.control === 'ai' || f.auto) {
       if (f.brain === 'v1') decideAiV1(state, f, opp, rng)
@@ -834,7 +882,7 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
     }
     for (const f of state.fighters) {
       const opp = state.fighters[(1 - f.side) as Side]
-      if (f.slideTicks > 0) slide(state, f, opp)
+      if (f.slideTicks > 0) slide(state, f, opp, log)
       else if (f.pushTicks > 0) f.pushTicks -= 1
       else movement(state, f, opp)
       // A busy monster that just finished its animation and owes a lunge: start it now.

@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { senseOfMonster, senseReasons } from '../../../core/battle/duelSense.ts'
+import type { Monster } from '../../../core/monster.ts'
 import { npcMonster } from '../../../core/npc.ts'
 import { BATTLE3D_TEXT as T } from '../../../data/text/battle3d.ts'
 import { fill } from '../../../data/text/format.ts'
 import { BAND_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
-import { BATTLE, INPUT } from '../../../data/tuning.ts'
+import { ART, BATTLE, INPUT } from '../../../data/tuning.ts'
 import type { Duel3D, DuelCamera, DuelStats } from '../../../art3d/duel/duel3d.ts'
 import { navigate } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
 import {
   dash,
   effects,
+  fire,
   leaveBattle,
   liveBattleState,
   moveStick,
@@ -25,7 +28,6 @@ import {
   skipToEnd,
   speed,
   startBattle,
-  tapTechnique,
   toggleAuto,
   view,
   type FighterView,
@@ -35,9 +37,24 @@ import { ThumbStick } from './ThumbStick.tsx'
 
 const B = UI_TEXT.battle
 
+type Upbringing = keyof typeof ART.duel.testUpbringing
+const UPBRINGINGS = Object.keys(ART.duel.testUpbringing) as Upbringing[]
+let upbringing: Upbringing = 'seasoned'
+
+/** The player's Puddlepup, raised the chosen way (§4.1: its battle sense on Auto comes from this). */
+function playerMonster(): Monster {
+  const m = npcMonster({ breed: 'puddlepup', total: 1600, seed: 31, name: 'Puddlepup' })
+  const u = ART.duel.testUpbringing[upbringing]
+  m.records.wins = Math.ceil(u.battles / 2)
+  m.records.losses = Math.floor(u.battles / 2)
+  m.spoil = u.spoil
+  m.fear = u.fear
+  return m
+}
+
 /** The test's fighters: Puddlepup (the player) against Songheart Puddlepup (the CPU), docs/BATTLE_3D.md §8. */
 function startDuel(): void {
-  const a = npcMonster({ breed: 'puddlepup', total: 1600, seed: 31, name: 'Puddlepup' })
+  const a = playerMonster()
   const b = npcMonster({ breed: 'puddlepup', total: 1600, seed: 32, name: 'Songheart' })
   b.variantId = 'songheart-puddlepup'
   startBattle({ a, b, aControl: 'player', personalityA: 'Steady', personalityB: 'Steady', tierA: 'expert', tierB: 'skilled', timerSec: 60, origin: 'lab', mode: 'duel' })
@@ -63,7 +80,7 @@ function Bars({ f, right }: { f: FighterView; right?: boolean }) {
 declare global {
   interface Window {
     /** For the review recordings (tools/art/battle3d-review.ts). */
-    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void }
+    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; crowdFame(fame: number): Promise<void> }
   }
 }
 
@@ -73,6 +90,8 @@ export function Battle3DScreen() {
   const [phase, setPhase] = useState<'loading' | 'intro' | 'fight' | 'error'>('loading')
   const [cam, setCam] = useState<DuelCamera>('side')
   const [stats, setStats] = useState<DuelStats | null>(null)
+  // the crowd's Fame (the test chip): how full the Guild arena's stands are
+  const [fame, setFame] = useState<number>(ART.duel.crowd.defaultFame)
   const phaseRef = useRef(phase)
   phaseRef.current = phase
   // a tap on an in-range card while the monster is still busy fires as soon as it can (INPUT.tapBufferMs)
@@ -87,7 +106,7 @@ export function Battle3DScreen() {
         const m = await import('../../../art3d/duel/duel3d.ts')
         if (!alive || !canvas.current) return
         const d = await m.createDuel3D(
-          { canvas: canvas.current, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), speed: () => speed.value },
+          { canvas: canvas.current, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), speed: () => speed.value, crowdFame: fame },
           liveBattleState,
         )
         if (!alive) {
@@ -121,6 +140,10 @@ export function Battle3DScreen() {
         if ((view.value?.fighters[0].auto ?? false) !== on) toggleAuto()
       },
       speed: (x) => setSpeed(x),
+      async crowdFame(n) {
+        setFame(n)
+        await duel.current?.setCrowdFame(n)
+      },
     }
     return () => {
       alive = false
@@ -145,7 +168,7 @@ export function Battle3DScreen() {
     if (!card || performance.now() > q.until || v?.fighters[0].auto) queued.current = null
     else if (card.canFire) {
       queued.current = null
-      tapTechnique(q.id)
+      fire(q.id)
     }
   }, [v])
 
@@ -153,20 +176,30 @@ export function Battle3DScreen() {
   const tapCard = (id: string) => {
     const now = view.value
     const card = now?.fighters[0].techniques.find((t) => t.id === id)
-    if (!now || !card) return
     queued.current = null
-    if (!card.canFire && card.affordable && card.range === now.band) queued.current = { id, until: performance.now() + INPUT.tapBufferMs }
-    else tapTechnique(id)
-  }
-  /** The stick: letting go doesn't cancel a walk that Assist started for a tapped card. */
-  const onStick = (dir: -1 | 0 | 1, side: -1 | 0 | 1) => {
-    if (dir === 0 && side === 0 && view.value?.fighters[0].assistTech) return
-    moveStick(dir, side)
+    // the owner (Nov 2): out of range, a tap does nothing; you walk there yourself. No Assist walk in Battle 3D.
+    if (!now || !card || !card.affordable || card.range !== now.band) return
+    if (card.canFire) fire(id)
+    else queued.current = { id, until: performance.now() + INPUT.tapBufferMs }
   }
   const switchCam = () => {
     const next: DuelCamera = cam === 'side' ? 'behind' : 'side'
     duel.current?.setCamera(next)
     setCam(next)
+  }
+  const [raised, setRaised] = useState<Upbringing>(upbringing)
+  const sense = useMemo(() => senseOfMonster(playerMonster()), [raised])
+  const cycleUpbringing = () => {
+    upbringing = UPBRINGINGS[(UPBRINGINGS.indexOf(upbringing) + 1) % UPBRINGINGS.length]!
+    setRaised(upbringing)
+    startDuel()
+    setPaused(false)
+  }
+  const cycleFame = () => {
+    const steps = ART.duel.crowd.fameSteps
+    const next = steps.find((s) => s > fame) ?? steps[0]
+    setFame(next)
+    void duel.current?.setCrowdFame(next)
   }
 
   return (
@@ -216,6 +249,19 @@ export function Battle3DScreen() {
             <button type="button" class={`btn ${paused.value ? 'btn--on' : ''}`} aria-label={paused.value ? B.resume : B.pause} onClick={() => setPaused(!paused.value)} disabled={!!v.outcome}>
               {paused.value ? '▶' : '⏸'}
             </button>
+            <button
+              type="button"
+              class="btn b3d__sense"
+              aria-label={T.upbringing.label(sense.sense, senseReasons(sense).map((r) => T.upbringing.why[r]).join(', '))}
+              onClick={cycleUpbringing}
+            >
+              {T.upbringing.chip(T.upbringing.names[raised], sense.sense)}
+            </button>
+            {stats?.crowd && (
+              <button type="button" class="btn b3d__fame" aria-label={T.crowdFameLabel(fame)} onClick={cycleFame}>
+                {T.crowdFame(fame)}
+              </button>
+            )}
           </div>
 
           {effects.value.map((e) => {
@@ -241,7 +287,7 @@ export function Battle3DScreen() {
                       <button
                         key={c.id}
                         type="button"
-                        class={`tcard ${c.canFire && playerSide ? 'tcard--fire' : ''} ${!c.affordable || !playerSide ? 'tcard--dim' : ''} ${queued.current?.id === c.id ? 'tcard--queued' : ''} ${a.assistTech === c.id ? 'tcard--assist' : ''}`}
+                        class={`tcard ${c.canFire && playerSide ? 'tcard--fire' : ''} ${!c.affordable || !playerSide ? 'tcard--dim' : ''} ${queued.current?.id === c.id ? 'tcard--queued' : ''}`}
                         disabled={!playerSide}
                         onClick={() => tapCard(c.id)}
                       >
@@ -260,7 +306,7 @@ export function Battle3DScreen() {
 
           {playerSide && (
             <>
-              <ThumbStick label={T.stickHint} basis={() => duel.current?.basisOnScreen() ?? null} onMove={onStick} onSidestep={sidestep} onDash={dash} />
+              <ThumbStick label={T.stickHint} basis={() => duel.current?.basisOnScreen() ?? null} onMove={moveStick} onSidestep={sidestep} onDash={dash} />
               <button type="button" class="pad pad--push b3d__push" disabled={!v.touching} aria-label={v.touching ? T.push : T.pushHint} onClick={pushOpponent}>
                 {T.push}
               </button>
@@ -296,6 +342,7 @@ export function Battle3DScreen() {
           {stats.arena === 'stand-in' && <span> · {T.stand.arena}</span>}
           {stats.monster === 'art2' && <span> · {T.stand.monster}</span>}
           {settings.value.reduceMotion ? ` · ${T.reduceMotion}` : ''}
+          {stats.crowd && T.crowdStats(stats.crowd.people, stats.crowd.cutouts, stats.crowd.cpuMs)}
         </p>
       )}
     </main>

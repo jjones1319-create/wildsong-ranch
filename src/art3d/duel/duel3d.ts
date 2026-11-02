@@ -39,6 +39,7 @@ import { ART, BATTLE } from '../../data/tuning.ts'
 import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
 import { memoryMb, noteTextures } from './memory.ts'
+import { createCrowd, type Crowd, type CrowdStats } from './crowd.ts'
 
 /**
  * docs/BATTLE_3D.md §6–§8: Battle 3D's picture. One film-look renderer (the Art 2.1 view: WebGPU where the phone has
@@ -67,6 +68,8 @@ export interface DuelOptions {
   backend?: Backend
   /** Speed multiplier of the battle (×1/×2/×4) for the clips. */
   speed: () => number
+  /** The player's monster's Fame (0–100): how full the Guild arena's stands are (ART.duel.crowd). */
+  crowdFame?: number
 }
 
 export interface DuelStats {
@@ -81,6 +84,8 @@ export interface DuelStats {
   /** Estimated GPU memory (textures, geometry, render targets) and Chrome's JS heap, in MB. */
   gpuMb: number
   heapMb: number | null
+  /** The Guild arena's crowd (people, cut-outs, its draws, triangles and CPU ms), or null without it. */
+  crowd: CrowdStats | null
 }
 
 export interface Duel3D {
@@ -98,6 +103,8 @@ export interface Duel3D {
    * CSS-pixel space (y down), so the stick means the same from any camera.
    */
   basisOnScreen(): { fwd: { x: number; y: number }; left: { x: number; y: number } }
+  /** Refill the stands for another Fame (the test screen's chip). */
+  setCrowdFame(fame: number): Promise<void>
   stats(): DuelStats
   dispose(): void
 }
@@ -152,6 +159,8 @@ interface ArenaInfo {
   sun?: { direction: [number, number, number] }
   flyIn?: { eye: [number, number, number]; target: [number, number, number]; t: number; fovDeg: number }[]
   runtime?: { shadowCatcher?: { node: string } }
+  /** The crowd's seats (checked by crowd.ts). */
+  seats?: unknown
 }
 
 interface Arena {
@@ -493,6 +502,12 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   noteTextures(arena.root, textures)
   noteTextures(asset.scene, textures)
   scene.add(arena.root)
+  // the Guild arena's living crowd (§8): its seats come with the arena (the stand-in has none); each battle's own seed
+  // seats a different crowd and draws different breeds' boards
+  const crowdSeed = D.crowd.seed + (getState()?.seed ?? 0)
+  const makeCrowd = (fame: number) => (arena.kind === 'guild' ? createCrowd(scene, arena.info, { fame, lite: o.lite, reduceMotion: o.reduceMotion, seed: crowdSeed }) : Promise.resolve(null))
+  let crowd: Crowd | null = await makeCrowd(o.crowdFame ?? D.crowd.defaultFame)
+  let ovation = false
   const studio = buildStudio(scene, v.environment, new Vector3(0, 0.5, 0), 8)
   // outdoors: a soft sky instead of the studio's grey (the Guild arena brings its own sky domes)
   scene.background = new Color(D.sky)
@@ -714,14 +729,25 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         const rate = windupSec > 0.01 ? Math.min(2.6, Math.max(0.7, imp / windupSec)) : o.speed()
         play(a, clip, { loop: false, rate })
         if (e.lands !== undefined && e.path) addTelegraph(s, e.side, e.path, tech?.type === 'INT', e.lands)
-        if (tech && (tech.family === 'Special' || tech.family === 'Signature')) startCine(a, now)
+        if (tech && (tech.family === 'Special' || tech.family === 'Signature')) {
+          startCine(a, now)
+          crowd?.cheer('big')
+        }
       } else if (e.kind === 'hit') {
         const t = actors[e.target]
         const heavy = e.crit || e.damage * 8 >= s.fighters[e.target].maxHp
         if (s.fighters[e.target].hp > 0) play(t, heavy ? 'hit_heavy' : 'hit', { loop: false, rate: o.speed() })
         sparks.burst(t.pos.clone().add(new Vector3(0, t.height * 0.55, 0)), heavy ? 28 : 16, now, e.t % 7)
+        crowd?.cheer(heavy ? 'big' : 'small')
       } else if (e.kind === 'ko') {
         startCine(actors[(1 - e.side) as Side], now)
+        crowd?.cheer('huge')
+      } else if (e.kind === 'fence') {
+        // §4.5 knocked into the fence: a burst at its feet and a jolt
+        const t = actors[e.side]
+        sparks.burst(t.pos.clone().add(new Vector3(0, 0.2, 0)), 24, now, e.t % 5)
+        play(t, 'hit_heavy', { loop: false, rate: o.speed() })
+        crowd?.cheer('big')
       }
     }
   }
@@ -930,7 +956,13 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         camera.lookAt(camLook)
         setFov(camFov)
       }
+      // the win brings the stands to their feet (once per result)
+      if (!!s.outcome !== ovation) {
+        ovation = !!s.outcome
+        if (ovation) crowd?.cheer('ovation')
+      }
     }
+    crowd?.update(dt, now, { x: (actors[0].pos.x + actors[1].pos.x) / 2, z: (actors[0].pos.z + actors[1].pos.z) / 2 })
     updateTelegraphs()
     sparks.update(now, camera)
     v.render()
@@ -989,11 +1021,17 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     stats() {
       const avg = frameTimes.length ? frameTimes.reduce((p, c) => p + c, 0) / frameTimes.length : 16.7
       const mem = memoryMb(textures, scene, v.targetBytes())
-      return { backend: v.backend, fps: 1000 / avg, dpr, level: ART.ultra.levels[levelIndex]!, gpuMs: v.gpuMs(), cpuMs, arena: arena.kind, monster: asset.kind, gpuMb: mem.gpu, heapMb: mem.heap }
+      return { backend: v.backend, fps: 1000 / avg, dpr, level: ART.ultra.levels[levelIndex]!, gpuMs: v.gpuMs(), cpuMs, arena: arena.kind, monster: asset.kind, gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null }
+    },
+    async setCrowdFame(fame) {
+      const next = await makeCrowd(fame)
+      crowd?.dispose()
+      crowd = disposed ? (next?.dispose(), null) : next
     },
     dispose() {
       disposed = true
       cancelAnimationFrame(raf)
+      crowd?.dispose()
       for (const t of telegraphs) {
         t.mesh.geometry.dispose()
         ;(t.mesh.material as Material).dispose()

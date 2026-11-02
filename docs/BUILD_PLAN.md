@@ -590,6 +590,18 @@ Spec: docs/BATTLE_3D.md (the design) and GAME_DESIGN §12 (unchanged rules; the 
 - [x] 9. Review: `npm run art:battle3d` (a recording per camera, stats.json, sizes) in `art-review/battle3d/`.
 - [x] 10. Finish: 1.15.0, `npm run verify`, PROGRESS, commit, push, then the owner's phone test and approval before anything else is rebuilt.
 
+## Battle 3D round 2: AI 3.0, the living crowd, the Crown Amphitheatre (v1.15.1–v1.17.0)
+
+Spec: docs/BATTLE_3D.md §4 (AI 3.0), §5 (controls), §8.2 (the crowd). The owner's phone notes on v1.15 drove all of it. Still a test in the Lab; nothing else is rebuilt until approval.
+
+- [x] 1. Hotfix 1.15.1: the monsters' feet (the variant holder no longer counts in the fit), contact shadows, Push always shown, the tap buffer, the range chip.
+- [x] 2. Out of range, a tap does nothing (the owner).
+- [x] 3. AI 3.0: battle sense, timed sidesteps, patience and punishing, reading habits, herding and the fence stun, styles, spoiled habits; tests; the duel balance re-run.
+- [x] 4. The living crowd: Fame fills the stands, painted cut-outs of every breed, cheers; the Guild arena rebaked with seat spots.
+- [x] 5. The test screen: the 🧠 upbringing and 👥 Fame chips.
+- [x] 6. v1.16.0: verify, recordings, commit, deploy.
+- [ ] 7. The Crown Amphitheatre (our own, Roman; the candidates sheet in art-review/arena-candidates/): the build, the bake, Lite, the seats and a painted far crowd, the review sheet; then the arena switch in the test and v1.17.0.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

@@ -153,6 +153,23 @@ export function offsetFromAim(ax: number, ay: number, dx: number, dy: number, px
   return Math.round(Math.abs(lx * (py - ay) - ly * (px - ax)) / len)
 }
 
+/**
+ * docs/BATTLE_3D.md §4.5 herding: which way `f` circles `opp` (+1 left, −1 right) to get between it and the ring's
+ * middle, so the opponent's back faces the fence; 0 once it is there (the angle's cosine ×100 is at least alignPct).
+ * Circling left turns the line from `opp` to `f` clockwise.
+ */
+export function herdDir(f: FighterState, opp: FighterState, alignPct: number): -1 | 0 | 1 {
+  const dx = f.x - opp.x
+  const dy = f.y - opp.y
+  const cx = -opp.x
+  const cy = -opp.y
+  const dl = Math.sqrt(dx * dx + dy * dy)
+  const cl = Math.sqrt(cx * cx + cy * cy)
+  if (dl === 0 || cl === 0) return 0
+  if ((dx * cx + dy * cy) * 100 >= alignPct * dl * cl) return 0
+  return dx * cy - dy * cx > 0 ? -1 : 1
+}
+
 /** Which way is "left" of `f` relative to the ring centre: +1 when its left points away from the centre. */
 export function leftIsOutward(f: FighterState, opp: FighterState): boolean {
   const { ux, uy } = towardUnit(f, opp)
