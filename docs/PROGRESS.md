@@ -2,6 +2,78 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Battle 3D: the lock-on duel, test build (2026-11-02) · v1.15.0
+
+**Live (test only):** Lab → **Battle 3D (test)**. Every other battle (cups, Versus, trials) is the classic one, unchanged, until the owner approves.
+- **The duel** (docs/BATTLE_3D.md):
+  - the monsters always face each other: forward and back change the gap exactly as before, and left and right circle the opponent;
+  - every technique has a wind-up and paints its path on the floor;
+  - a sidestep in time makes it harder to land, and can dodge a straight-line one completely; wide sweeps can't be dodged;
+  - stats still decide most fights.
+- **Controls:** a left-thumb stick (flick sideways to sidestep, flick forward to dash), the technique panel, Auto (take over any time), ×1/×2/×4, the camera button, Skip, pause, and the left-handed layout.
+- **Cameras:**
+  - side-on (a three-quarter view on a tall phone);
+  - behind your monster;
+  - cinematic cuts for Specials, Signatures and KOs;
+  - an entrance: a fly-in over the river and Tunewick, a walk-on through the gates, a face-off.
+- **The Breeders' Guild arena:**
+  - built in Blender: a packed-earth ring, a rope fence, banners, a crowd, the river and Tunewick;
+  - CC0 Poly Haven props and materials, with the light baked in;
+  - a Lite version.
+- **Puddlepup at Art 2.1 Ultra** against Songheart Puddlepup: fur cards, every battle clip plus strafe, sidestep and blink.
+
+**Done**
+- **Design:** docs/BATTLE_3D.md; GAME_DESIGN §12 points to it.
+- **Engine:**
+  - `BattleOptions.mode`: 'line' replays bit for bit (the golden record holds) and 'duel' adds the ring;
+  - `core/battle/geometry.ts`;
+  - the fire/land split with wind-ups by family;
+  - `data/paths.ts` (straight line or sweep);
+  - the sidestep;
+  - every number is in `BATTLE.duel`.
+- **AI:** `core/battle/duelAi.ts`: a sidestep reflex by tier and SPD, and circling toward open ground. Auto uses the same brain.
+- **Tests:** `duel.test.ts` (9) and `stickMath.test.ts` (3); every classic battle test unchanged.
+- **Runtime** `src/art3d/duel/`:
+  - the arena and monsters (Ultra; the Art 2.0 Puddlepup in Lite);
+  - film materials rebuilt by part (card edge fade, Songheart's second colour set);
+  - clips timed to the engine's landing tick;
+  - cameras that never leave the fence (the side-on camera widens its lens, then rises, when it can't back up);
+  - telegraph lanes, sparks;
+  - dynamic resolution (also during the entrance);
+  - a memory estimate in the stats.
+- **Screen** `#lab/battle3d` (`src/ui/screens/battle3d/`): the stick maths is pure and tested.
+- **Art:**
+  - `npm run art:arena` (`tools/blender/arenas/`, CC0 sources in CREDITS);
+  - `npm run art:ultra` (`build_ultra.py`; ART_2_DETAIL §9.1).
+- **Review:** `npm run art:battle3d` records `art-review/battle3d/`:
+  - the videos 1-intro, 2-side, 3-behind and 4-cinematic;
+  - stats.json.
+- **Housekeeping:** Python caches and the Ultra comparison textures are no longer committed.
+
+**Numbers** (the PC proxy: Intel Iris Xe, Chrome, WebGPU, a 412 × 892 phone screen at 2.625×; the phone's numbers come from the owner's test):
+- **Frame rate:** the duel starts at 2.0× resolution. Dynamic resolution settles at 1.6–1.7× within about 4 seconds, then holds **60 fps with every effect on** (GPU 7–10 ms a frame). The entrance's first seconds stall on this PC while the graphics warm up.
+- **First download:** about **12.3 MB**, then cached:
+  - the arena 7.4 MB;
+  - Puddlepup 4.1 MB (both fighters share it);
+  - code 0.7 MB gzipped.
+  - Lite is about 3.2 MB.
+- **Memory:** about 230 MB of graphics memory at 2.0×, 180–190 MB once settled (mostly the render buffers), and a JS heap of about 105–120 MB.
+- **Balance in duel mode** (BATTLE_3D §9, docs/BALANCE_DUEL.md):
+  - fast breeds gain (Velvesper 61 → 67 and Galeheron 54 → 62 at 3,000) and slow heavy hitters lose (Gloomgrin 40 → 34);
+  - pairs inside 30–70: 96.4% / 98.2% / 90.3% at 1,000 / 2,000 / 3,000, against 94.8% / 99.4% / 94.2% in the classic battle.
+
+**Known issues**
+- **The arena** is warm and storybook, but simpler and more toy-like than the furry monsters: plain houses and trees, flat grass, and a crowd that doesn't move.
+- **Puddlepup Ultra** (fresh-eyes review: partly):
+  - the ear membrane reads as a separate blade;
+  - the nose sits on a stalk in profile;
+  - the tail fan is flat;
+  - the blink's closed lids read as tape.
+- **Duel balance** is less even late (90.3% of pairs at 3,000; Velvesper's mean is 67). The wind-up table is the lever, after the owner has played it.
+- **Not yet in the duel:** the cinematic cuts can't be switched off in Settings (a tuning switch for now), and there are no 3D versions of the other breeds and arenas until approval.
+
+**Next:** the owner's phone test (fps, feel of the stick and the sidestep, the cameras, the arena's look). Nothing else is rebuilt until they approve.
+
 ## Breeds 31–32: Stripeneck and Plumdrake (2026-11-02) · v1.14.0
 
 **Live:**

@@ -1,12 +1,13 @@
 import { signal } from '@preact/signals'
 import { playBattleEvent, playBattleFx, playStinger, setBattlePaused } from '../../audio/player.ts'
 import { canFire, createBattle, currentBand, gapUnits, previewHitTenths, step, timerTicksFor, type Battle } from '../../core/battle/engine.ts'
-import type { BattleEvent, BattleInput, BattleOutcome, FighterSetup, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
+import type { BattleEvent, BattleInput, BattleMode, BattleOutcome, BattleState, FighterSetup, FighterState, PlayerAction, Side } from '../../core/battle/types.ts'
 import type { Monster } from '../../core/monster.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { fill } from '../../data/text/format.ts'
 import { BAND_LABELS } from '../../data/text/labels.ts'
 import { UI_TEXT } from '../../data/text/ui.ts'
+import { BATTLE3D_TEXT } from '../../data/text/battle3d.ts'
 import { AUDIO, BATTLE, BATTLE_FX } from '../../data/tuning.ts'
 import { fxEventsFor, publishFx, type FighterPose } from '../../fx/bus.ts'
 import type { AiTier, AutoStyle, Habit, Personality, PlanMode } from '../../data/types.ts'
@@ -58,6 +59,8 @@ export interface BattleSetup {
   autoStart?: boolean
   /** A replay of a recorded NPC match: no Rematch, and the card says so. */
   replay?: boolean
+  /** docs/BATTLE_3D.md: 'duel' for Battle 3D; the classic battle is 'line' (the default). */
+  mode?: BattleMode
 }
 
 export interface FighterView {
@@ -67,6 +70,12 @@ export interface FighterView {
   guts: number
   /** Position in arena units (−550…550). */
   x: number
+  /** Duel: the second floor coordinate in arena units (0 on the line). */
+  y: number
+  /** Duel: sidestepping now, and which way it holds (move, strafe). */
+  sidestepping: boolean
+  moveDir: -1 | 0 | 1
+  strafeDir: -1 | 0 | 1
   busyTech: string | null
   special: string | null
   dawdling: boolean
@@ -122,6 +131,23 @@ export const effects = signal<FloatEffect[]>([])
 export const resultLine = signal<string>('')
 
 let battle: Battle | null = null
+/** Battle 3D: the 3D layer listens to every tick's raw events (animations, telegraphs, sparks). */
+const eventListeners = new Set<(events: readonly BattleEvent[]) => void>()
+
+export function onBattleEvents(fn: (events: readonly BattleEvent[]) => void): () => void {
+  eventListeners.add(fn)
+  return () => eventListeners.delete(fn)
+}
+
+/** Battle 3D: the live engine state, read (never written) by the 3D layer every frame. */
+export function liveBattleState(): BattleState | null {
+  return battle?.state ?? null
+}
+
+/** How far the loop is into the next tick (0–1), for smooth movement between ticks. */
+export function tickFraction(): number {
+  return Math.max(0, Math.min(1, carry))
+}
 let raf = 0
 let lastTime = 0
 let carry = 0
@@ -164,6 +190,10 @@ function snapshot(): BattleView | null {
     maxHp: f.maxHp,
     guts: f.guts,
     x: Math.round(f.x / 100),
+    y: Math.round(f.y / 100),
+    sidestepping: f.sidestepTicks > 0,
+    moveDir: f.moveDir,
+    strafeDir: f.strafeDir,
     busyTech: f.busyTech,
     special: f.special?.kind ?? null,
     dawdling: f.dawdleTicks > 0,
@@ -253,7 +283,7 @@ function describe(events: readonly BattleEvent[]): void {
         vibrate(e.crit ? 25 : 12)
         break
       case 'miss':
-        pushEffect(e.target, t.floats.miss, 'miss')
+        pushEffect(e.target, e.dodged ? BATTLE3D_TEXT.dodged : t.floats.miss, 'miss')
         break
       case 'ko':
         koAt = Date.now()
@@ -324,7 +354,9 @@ function runTicks(n: number): void {
     const now = pending.map((p) => ({ ...p, tick }))
     pending = []
     inputs.push(...now)
-    describe(step(battle, now))
+    const events = step(battle, now)
+    describe(events)
+    for (const l of eventListeners) l(events)
   }
   view.value = snapshot()
   // Sound 2.0 §10.3: the timer ticks softly on each of the last seconds.
@@ -364,7 +396,7 @@ export function startBattle(s: BattleSetup, seed = s.seed ?? freshSeed()): void 
   battle = createBattle(
     s.setups?.a ?? { monster: s.a, control: s.aControl, personality: s.personalityA, tier: s.tierA, style: settings.value.autoStyle },
     s.setups?.b ?? { monster: s.b, control: 'ai', personality: s.personalityB, habit: s.habitB ?? 'none', tier: s.tierB },
-    { seed, timerTicks: timerTicksFor(s.timerSec) },
+    { seed, timerTicks: timerTicksFor(s.timerSec), mode: s.mode ?? 'line' },
   )
   if (s.nameB) battle.state.fighters[1].name = s.nameB
   pending = []
@@ -421,6 +453,9 @@ function act(action: PlayerAction, side: Side = 0): void {
 
 export const fire = (tech: string) => act({ kind: 'fire', tech })
 export const move = (dir: -1 | 0 | 1) => act({ kind: 'move', dir })
+/** Battle 3D's stick: forward/back and strafe (+1 left, −1 right, as the monster faces its opponent). */
+export const moveStick = (dir: -1 | 0 | 1, side: -1 | 0 | 1) => act({ kind: 'move', dir, side })
+export const sidestep = (dir: -1 | 1) => act({ kind: 'sidestep', dir })
 export const dash = () => act({ kind: 'dash' })
 export const pushOpponent = () => act({ kind: 'push' })
 export const assist = (tech: string | null) => act({ kind: 'assist', tech })

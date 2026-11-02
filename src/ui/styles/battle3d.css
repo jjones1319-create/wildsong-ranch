@@ -1,0 +1,182 @@
+/* docs/BATTLE_3D.md §5–§8: the Battle 3D test screen. The canvas fills the screen; the HUD floats over it. */
+.b3d {
+  position: relative;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+  background: #cfe6f5;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.b3d__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.b3d__head {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+}
+.b3d__top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 62px);
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.b3d__top .btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  font-size: 14px;
+  color: #23303a;
+  background: rgb(255 255 255 / 0.82);
+}
+/* the four technique columns across the bottom, as in the classic battle, but shorter */
+.b3d__tpanel {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: calc(env(safe-area-inset-bottom) + 6px);
+  max-height: 31dvh;
+  overflow-y: auto;
+  z-index: 2;
+  background: rgb(255 255 255 / 0.62);
+  border-radius: 12px;
+  padding: 4px;
+}
+.b3d__tpanel .tcard {
+  min-height: 44px;
+}
+/* the stick lives in the lower-left of the 3D view, just above the technique panel (thumb reach) */
+.stick {
+  position: absolute;
+  left: 0;
+  bottom: calc(31dvh + env(safe-area-inset-bottom) + 10px);
+  width: 58vw;
+  height: 30dvh;
+  z-index: 1;
+  touch-action: none;
+}
+.stick__base,
+.stick__knob {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.stick__base {
+  background: rgb(255 255 255 / 0.18);
+  border: 2px solid rgb(255 255 255 / 0.55);
+}
+.stick__knob {
+  width: 52px;
+  height: 52px;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+}
+.b3d__push {
+  position: absolute;
+  right: 12px;
+  left: auto;
+  bottom: calc(31dvh + env(safe-area-inset-bottom) + 16px);
+  z-index: 2;
+  min-height: 48px;
+}
+.b3d__float {
+  position: absolute;
+  z-index: 3;
+  transform: translate(-50%, -100%);
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  text-shadow: 0 2px 4px rgb(0 0 0 / 0.55);
+  pointer-events: none;
+  animation: b3d-float 0.9s ease-out forwards;
+}
+.b3d__float--crit {
+  color: #ffd45e;
+  font-size: 24px;
+}
+.b3d__float--miss {
+  color: #cfe9ff;
+}
+.b3d__float--heal {
+  color: #a6f0b2;
+}
+@keyframes b3d-float {
+  to {
+    transform: translate(-50%, -190%);
+    opacity: 0;
+  }
+}
+.b3d__note,
+.b3d__result {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  background: rgb(255 255 255 / 0.92);
+  border-radius: 14px;
+  padding: 14px 18px;
+  text-align: center;
+  max-width: 86vw;
+}
+.b3d__resultline {
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+.b3d__resultbtns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.b3d__skip {
+  position: absolute;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom) + 14px);
+  z-index: 3;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;
+  border: 0;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+}
+.b3d__stats {
+  position: absolute;
+  left: 8px;
+  top: calc(env(safe-area-inset-top) + 114px);
+  z-index: 2;
+  margin: 0;
+  font-size: 10px;
+  color: rgb(0 0 0 / 0.55);
+  pointer-events: none;
+  max-width: 44vw;
+}
+/* left-handed (§24): the stick under the right thumb, Push on the left */
+.b3d--left .stick {
+  left: auto;
+  right: 0;
+}
+.b3d--left .b3d__push {
+  right: auto;
+  left: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .b3d__float {
+    animation-duration: 0.01s;
+  }
+}

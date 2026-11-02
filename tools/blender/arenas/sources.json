@@ -1,0 +1,49 @@
+{
+ "_comment": "The CC0 Poly Haven assets the arenas are dressed with (polyhaven.com, all CC0). fetch.py downloads them into .cache/ (gitignored); the authors land in .cache/manifest.json and CREDITS.md.",
+ "models": {
+  "res": "1k",
+  "ids": [
+   "wine_barrel_01",
+   "wooden_crate_01",
+   "wooden_bucket_01",
+   "wooden_bucket_02",
+   "wicker_basket_01",
+   "wicker_basket_02",
+   "wooden_lantern_01",
+   "painted_wooden_bench",
+   "painted_wooden_stool",
+   "wooden_stool_02",
+   "folding_wooden_stool",
+   "tree_stump_01",
+   "boulder_01"
+  ]
+ },
+ "textures": {
+  "res": "2k",
+  "maps": [
+   "Diffuse",
+   "nor_gl"
+  ],
+  "ids": [
+   "dirt_floor",
+   "dry_ground_rocks",
+   "leafy_grass",
+   "rough_wood",
+   "weathered_planks",
+   "bark_brown_02",
+   "thatch_roof_angled",
+   "white_plaster_rough_01",
+   "cobblestone_floor_01",
+   "rock_boulder_dry",
+   "mossy_rock",
+   "hessian_230",
+   "rough_linen"
+  ]
+ },
+ "hdris": {
+  "res": "4k",
+  "ids": [
+   "kloofendal_48d_partly_cloudy_puresky"
+  ]
+ }
+}

@@ -1,0 +1,20 @@
+/** docs/BATTLE_3D.md: the Battle 3D test screen (Lab → Battle 3D). */
+export const BATTLE3D_TEXT = {
+  title: 'Battle 3D (test)',
+  labButton: 'Battle 3D (test)',
+  loading: 'Building the arena…',
+  noWebgl: "This phone can't draw the 3D arena. The classic battle still works everywhere else.",
+  tapToSkip: 'Tap to skip',
+  faceOff: 'Ready… Fight!',
+  stickHint: 'Drag to move · flick sideways to sidestep · flick forward to dash',
+  camera: { side: '🎥 Side', behind: '🎥 Behind' },
+  cameraLabel: 'Switch camera',
+  dodged: 'Dodged!',
+  push: 'Push',
+  leave: 'Leave',
+  rematch: 'Rematch',
+  skip: 'Skip',
+  reduceMotion: 'gentle camera',
+  stats: (fps: number, dpr: number, backend: string, level: string) => `${fps.toFixed(0)} fps · ${dpr.toFixed(2)}× · ${backend} · ${level}`,
+  stand: { arena: 'Stand-in arena (the Guild arena is being built)', monster: 'Stand-in Puddlepup (Art 2.0; the Ultra one is being built)' },
+} as const

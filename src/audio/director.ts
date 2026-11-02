@@ -212,6 +212,8 @@ export function decide(scene: Scene): Request {
       const c = themeSong({ ...scene, battle: null }, ['lobby'])
       return { ...base, song: c.song, bed: 'arena', crowd: c.crowd, reverb: 'outdoor', packs: ['events'] }
     }
+    // Battle 3D (the test screen) sounds like a battle
+    case 'labBattle3d':
     case 'battle': {
       const b = scene.battle
       if (!b) return { ...base, song: null, bed: 'arena', reverb: 'room', packs: ['events'] }

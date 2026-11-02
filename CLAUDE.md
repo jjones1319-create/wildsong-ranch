@@ -65,19 +65,21 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - `npm run e2e`: the Playwright specs against the built app in the installed Chrome (kill any leftover preview on port 4173 first).
 - `npm run sim:life -- <breed> <policy>`: prints a simulated life (dev tool, from M1).
 - Sound (see the Audio section): `npm run audio:samples` · `npm run audio:analyze` · `npm run audio:check [-- --quick | --calibrate]` · `npm run audio:review`.
-- Art 2.0: `npm run art:monster -- <breed> [--quick] [--stages model,clips,export,review]` (Blender build + optimise) · `npm run art:optimize -- <look>` · `npm run art:review -- <look> [--no-build]` (in-game sheets in `art-review/`) · `npm run art:portraits` (the precached breed pictures in `public/portraits/`).
+- Art 2.0: `npm run art:monster -- <breed> [--quick] [--stages model,clips,export,review]` (Blender build + optimise) · `npm run art:optimize -- <look>` · `npm run art:review -- <look> [--no-build]` (in-game sheets in `art-review/`) · `npm run art:portraits` (the precached breed pictures in `public/portraits/`) · Art 2.1 Ultra: `npm run art:ultra -- <breed> [--blender] [--quick] [--stages build,bake,rig,clips,export]` (Blender `monsters/build_ultra.py` + ship to `public/models/monsters-ultra/`) · `npm run art:ultra-review -- <breed>` (film-look sheet in `art-review/<breed>-ultra/`).
+- Battle 3D (`docs/BATTLE_3D.md`): `npm run art:arena` (the Guild arena: Blender build, bake and ship to `public/models/arenas/guild/`; run `py -I tools/blender/arenas/fetch.py` once first for the CC0 sources) · `npm run art:battle3d [-- --no-build]` (a video per camera and stats.json in `art-review/battle3d/`).
 
 ## Architecture
 ```
 src/
   core/      pure rules: rng, hash, calendar, monster, training, aging, food, items, journey,
-             tournament, npc, fusion, shrine, expedition, events, battle/{engine,formulas,ai,specials}
+             tournament, npc, fusion, shrine, expedition, events, battle/{engine,formulas,ai,specials,geometry,duelAi}
   data/      tuning.ts (ALL numbers) · breeds · techniques · drills · foods · items · calendar ·
              journeys · expeditions · rivals · secrets (hashed) · text/ (all player-facing strings)
   save/      db (idb-keyval) · schema (valibot) · migrate · exportImport · shareCode
   art/       monster/ (bodyPlans, parts, palettes, expressions, render) · backgrounds · icons · models (which breeds have a 3D look)
   art3d/     the 3D monsters (Art 2.0): Stage3D (one renderer, hosts come and go) · actor · materials (cel shader,
-             outline, face) · loader · faceCells · springs · arenaCamera · battleClips · arena3d; only this folder imports three
+             outline, face) · loader · faceCells · springs · arenaCamera · battleClips · arena3d · perf/ (the Art 2.1 film
+             renderer) · duel/ (Battle 3D, docs/BATTLE_3D.md); only this folder imports three
   audio/     player (the UI's API) · director (what plays where, pure) · runtime · engine/ (Web Audio: the only
              place that touches it) · music/ (ABC parser, generators, song model, checker, motifs, songs/)
              · recipes/ (instruments, kits, ambience, effects, drills, events, packs) · analysis/ (loudness…)

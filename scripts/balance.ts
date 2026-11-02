@@ -1,6 +1,6 @@
 /**
  * M9 balance matrices (GAME_DESIGN §26), run across worker threads and written to docs/BALANCE_REPORT.md.
- *   npm run sim:balance -- [--seeds 40] [--battles 200] [--only raise|battle] [--totals 1000,2000,3000] [--out docs/BALANCE_REPORT.md] [--json path]
+ *   npm run sim:balance -- [--seeds 40] [--battles 200] [--only raise|battle] [--totals 1000,2000,3000] [--mode line|duel] [--out docs/BALANCE_REPORT.md] [--json path]
  * Raising: every breed under the four care policies. Battle: every breed pair (mirrors included) at totals
  * 1,000 / 2,000 / 3,000, Expert vs Expert (M10), sides alternating. Runs on Node 24 directly (type stripping), no build step.
  */
@@ -24,6 +24,8 @@ const OUT = flag('out', 'docs/BALANCE_REPORT.md')
 const JSON_OUT = flag('json', '')
 const VARIANTS = 8
 const TOTALS = flag('totals', '1000,2000,3000').split(',').map(Number)
+/** docs/BATTLE_3D.md: `--mode duel` runs the battle matrix as Battle 3D's lock-on duel. */
+const MODE = flag('mode', 'line') === 'duel' ? 'duel' : 'line'
 const POLICIES: PolicyName[] = ['Great', 'Good', 'OK', 'Neglect']
 
 /** §26 bands. */
@@ -55,7 +57,7 @@ if (ONLY !== 'battle') {
 if (ONLY !== 'raise') {
   for (const total of TOTALS)
     for (let i = 0; i < BREED_IDS.length; i++)
-      for (let j = i; j < BREED_IDS.length; j++) tasks.push({ kind: 'battle', a: BREED_IDS[i]!, b: BREED_IDS[j]!, total, seeds: BATTLES, variants: VARIANTS })
+      for (let j = i; j < BREED_IDS.length; j++) tasks.push({ kind: 'battle', a: BREED_IDS[i]!, b: BREED_IDS[j]!, total, seeds: BATTLES, variants: VARIANTS, mode: MODE })
 }
 
 /* ---------- run across workers ---------- */

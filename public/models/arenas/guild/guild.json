@@ -1,0 +1,979 @@
+{
+  "arena": "guild",
+  "title": "The Breeders' Guild arena, Tunewick",
+  "units": "metres, glTF Y-up; the ring floor at y = 0 centred on the origin",
+  "ringRadius": 6,
+  "anchors": {
+    "cam_battle": {
+      "position": [
+        0,
+        1.6,
+        15.5
+      ],
+      "forward": null,
+      "target": [
+        0,
+        0.7,
+        0
+      ],
+      "fovDeg": 40
+    },
+    "cam_establish": {
+      "position": [
+        -22,
+        21,
+        36
+      ],
+      "forward": null,
+      "target": [
+        0,
+        1,
+        -12
+      ],
+      "fovDeg": 50
+    },
+    "cam_fly_0": {
+      "position": [
+        34,
+        34,
+        -64
+      ],
+      "forward": null,
+      "target": [
+        0,
+        1,
+        -6
+      ],
+      "fovDeg": 42,
+      "t": 0
+    },
+    "cam_fly_1": {
+      "position": [
+        16,
+        24,
+        -38
+      ],
+      "forward": null,
+      "target": [
+        0,
+        0.8,
+        -2
+      ],
+      "fovDeg": 42,
+      "t": 1.4
+    },
+    "cam_fly_2": {
+      "position": [
+        -6,
+        15,
+        -22
+      ],
+      "forward": null,
+      "target": [
+        0,
+        0.8,
+        0
+      ],
+      "fovDeg": 40,
+      "t": 2.8
+    },
+    "cam_fly_3": {
+      "position": [
+        -12.0,
+        10.0,
+        -4.0
+      ],
+      "forward": null,
+      "target": [
+        0,
+        0.8,
+        0
+      ],
+      "fovDeg": 38,
+      "t": 4
+    },
+    "cam_fly_4": {
+      "position": [
+        -5.0,
+        6.0,
+        8.0
+      ],
+      "forward": null,
+      "target": [
+        -4.4,
+        0.6,
+        0.0
+      ],
+      "fovDeg": 36,
+      "t": 5
+    },
+    "cam_fly_5": {
+      "position": [
+        -5.4,
+        1.65,
+        1.35
+      ],
+      "forward": null,
+      "target": [
+        2.4,
+        0.75,
+        0
+      ],
+      "fovDeg": 34,
+      "t": 6
+    },
+    "cam_shoulder": {
+      "position": [
+        -4.45,
+        1.55,
+        1.15
+      ],
+      "forward": null,
+      "target": [
+        2.4,
+        0.7,
+        -0.15
+      ],
+      "fovDeg": 52
+    },
+    "gate_A": {
+      "position": [
+        -6.25,
+        0,
+        0
+      ],
+      "forward": [
+        1,
+        0,
+        0
+      ]
+    },
+    "gate_A_start": {
+      "position": [
+        -11.5,
+        0,
+        0
+      ],
+      "forward": [
+        1,
+        0,
+        0
+      ]
+    },
+    "gate_B": {
+      "position": [
+        6.25,
+        0,
+        0
+      ],
+      "forward": [
+        -1,
+        0,
+        0
+      ]
+    },
+    "gate_B_start": {
+      "position": [
+        11.5,
+        0,
+        0
+      ],
+      "forward": [
+        -1,
+        0,
+        0
+      ]
+    },
+    "ring_center": {
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "forward": null
+    },
+    "spawn_A": {
+      "position": [
+        -2.4,
+        0,
+        0
+      ],
+      "forward": [
+        1,
+        0,
+        0
+      ]
+    },
+    "spawn_B": {
+      "position": [
+        2.4,
+        0,
+        0
+      ],
+      "forward": [
+        -1,
+        0,
+        0
+      ]
+    }
+  },
+  "flyIn": [
+    {
+      "node": "cam_fly_0",
+      "eye": [
+        34,
+        34,
+        -64
+      ],
+      "target": [
+        0,
+        1,
+        -6
+      ],
+      "t": 0,
+      "fovDeg": 42
+    },
+    {
+      "node": "cam_fly_1",
+      "eye": [
+        16,
+        24,
+        -38
+      ],
+      "target": [
+        0,
+        0.8,
+        -2
+      ],
+      "t": 1.4,
+      "fovDeg": 42
+    },
+    {
+      "node": "cam_fly_2",
+      "eye": [
+        -6,
+        15,
+        -22
+      ],
+      "target": [
+        0,
+        0.8,
+        0
+      ],
+      "t": 2.8,
+      "fovDeg": 40
+    },
+    {
+      "node": "cam_fly_3",
+      "eye": [
+        -12.0,
+        10.0,
+        -4.0
+      ],
+      "target": [
+        0,
+        0.8,
+        0
+      ],
+      "t": 4,
+      "fovDeg": 38
+    },
+    {
+      "node": "cam_fly_4",
+      "eye": [
+        -5.0,
+        6.0,
+        8.0
+      ],
+      "target": [
+        -4.4,
+        0.6,
+        0.0
+      ],
+      "t": 5,
+      "fovDeg": 36
+    },
+    {
+      "node": "cam_fly_5",
+      "eye": [
+        -5.4,
+        1.65,
+        1.35
+      ],
+      "target": [
+        2.4,
+        0.75,
+        0
+      ],
+      "t": 6,
+      "fovDeg": 34
+    }
+  ],
+  "sun": {
+    "direction": [
+      -0.4194,
+      0.699,
+      0.5792
+    ],
+    "color": [
+      1,
+      0.94,
+      0.84
+    ]
+  },
+  "trianglesFull": {
+    "arena_ring": 5760,
+    "arena_timber": 10832,
+    "arena_near": 3608,
+    "arena_props": 23539,
+    "arena_crowd": 28548,
+    "arena_apron": 3840,
+    "arena_mid": 8448,
+    "arena_far": 6400,
+    "arena_town": 19258,
+    "arena_trees": 13058,
+    "arena_water": 1512,
+    "sky_front": 1584,
+    "sky_back": 1584
+  },
+  "trianglesLite": {
+    "lite_ring": 5760,
+    "lite_timber": 10832,
+    "lite_near": 3608,
+    "lite_props": 10711,
+    "lite_crowd": 15519,
+    "lite_apron": 3840,
+    "lite_trees": 5060,
+    "sky_lite_front": 1584,
+    "sky_lite_back": 1584
+  },
+  "sources": [
+    {
+      "id": "wine_barrel_01",
+      "type": "model",
+      "name": "Wine Barrel 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "url": "https://polyhaven.com/a/wine_barrel_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wooden_crate_01",
+      "type": "model",
+      "name": "Wooden Crate 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "url": "https://polyhaven.com/a/wooden_crate_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wooden_bucket_01",
+      "type": "model",
+      "name": "Wooden Bucket 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "url": "https://polyhaven.com/a/wooden_bucket_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wooden_bucket_02",
+      "type": "model",
+      "name": "Wooden Bucket 02",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "url": "https://polyhaven.com/a/wooden_bucket_02",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wicker_basket_01",
+      "type": "model",
+      "name": "Wicker Basket 01",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "url": "https://polyhaven.com/a/wicker_basket_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wicker_basket_02",
+      "type": "model",
+      "name": "Wicker Basket 02",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "url": "https://polyhaven.com/a/wicker_basket_02",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wooden_lantern_01",
+      "type": "model",
+      "name": "Wooden Lantern 01",
+      "authors": [
+        "James Ray Cock"
+      ],
+      "url": "https://polyhaven.com/a/wooden_lantern_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "painted_wooden_bench",
+      "type": "model",
+      "name": "Painted Wooden Bench",
+      "authors": [
+        "Kirill Sannikov"
+      ],
+      "url": "https://polyhaven.com/a/painted_wooden_bench",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "painted_wooden_stool",
+      "type": "model",
+      "name": "Painted Wooden Stool",
+      "authors": [
+        "Kirill Sannikov"
+      ],
+      "url": "https://polyhaven.com/a/painted_wooden_stool",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "wooden_stool_02",
+      "type": "model",
+      "name": "Wooden Stool 02",
+      "authors": [
+        "Kuutti Siitonen"
+      ],
+      "url": "https://polyhaven.com/a/wooden_stool_02",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "folding_wooden_stool",
+      "type": "model",
+      "name": "Folding Wooden Stool",
+      "authors": [
+        "Ulan Cabanilla"
+      ],
+      "url": "https://polyhaven.com/a/folding_wooden_stool",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "tree_stump_01",
+      "type": "model",
+      "name": "Tree Stump 01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/tree_stump_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "boulder_01",
+      "type": "model",
+      "name": "Boulder 01",
+      "authors": [
+        "Rico Cilliers"
+      ],
+      "url": "https://polyhaven.com/a/boulder_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "dirt_floor",
+      "type": "texture",
+      "name": "Dirt Floor",
+      "authors": [
+        "eye-candy.xyz"
+      ],
+      "url": "https://polyhaven.com/a/dirt_floor",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "dry_ground_rocks",
+      "type": "texture",
+      "name": "Dry Ground Rocks",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/dry_ground_rocks",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "leafy_grass",
+      "type": "texture",
+      "name": "Leafy Grass",
+      "authors": [
+        "Charlotte Baglioni"
+      ],
+      "url": "https://polyhaven.com/a/leafy_grass",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "rough_wood",
+      "type": "texture",
+      "name": "Rough Wood",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/rough_wood",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "weathered_planks",
+      "type": "texture",
+      "name": "Weathered Planks",
+      "authors": [
+        "Dario Barresi",
+        "Dimitrios Savva"
+      ],
+      "url": "https://polyhaven.com/a/weathered_planks",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "bark_brown_02",
+      "type": "texture",
+      "name": "Bark Brown 02",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/bark_brown_02",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "thatch_roof_angled",
+      "type": "texture",
+      "name": "Thatch Roof Angled",
+      "authors": [
+        "Dimitrios Savva",
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/thatch_roof_angled",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "white_plaster_rough_01",
+      "type": "texture",
+      "name": "White Plaster Rough 01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/white_plaster_rough_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "cobblestone_floor_01",
+      "type": "texture",
+      "name": "Cobblestone Floor 01",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/cobblestone_floor_01",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "rock_boulder_dry",
+      "type": "texture",
+      "name": "Rock Boulder Dry",
+      "authors": [
+        "Dimitrios Savva",
+        "Rico Cilliers"
+      ],
+      "url": "https://polyhaven.com/a/rock_boulder_dry",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "mossy_rock",
+      "type": "texture",
+      "name": "Mossy Rock",
+      "authors": [
+        "Rob Tuytel"
+      ],
+      "url": "https://polyhaven.com/a/mossy_rock",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "hessian_230",
+      "type": "texture",
+      "name": "Hessian 230",
+      "authors": [
+        "Rico Cilliers",
+        "colormass"
+      ],
+      "url": "https://polyhaven.com/a/hessian_230",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "rough_linen",
+      "type": "texture",
+      "name": "Rough Linen",
+      "authors": [
+        "Rico Cilliers",
+        "colormass"
+      ],
+      "url": "https://polyhaven.com/a/rough_linen",
+      "license": "CC0 1.0"
+    },
+    {
+      "id": "kloofendal_48d_partly_cloudy_puresky",
+      "type": "hdri",
+      "name": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+      "authors": [
+        "Greg Zaal",
+        "Jarod Guest"
+      ],
+      "url": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "license": "CC0 1.0"
+    }
+  ],
+  "files": {
+    "full": "guild.glb",
+    "lite": "guild_lite.glb"
+  },
+  "materials": {
+    "full": {
+      "guild_apron": {
+        "atlas": "apron",
+        "texture": "apron.ktx2",
+        "doubleSided": false
+      },
+      "guild_crowd": {
+        "atlas": "crowd",
+        "texture": "crowd.ktx2",
+        "doubleSided": true
+      },
+      "guild_far": {
+        "atlas": "far",
+        "texture": "far.ktx2",
+        "doubleSided": false
+      },
+      "guild_mid": {
+        "atlas": "mid",
+        "texture": "mid.ktx2",
+        "doubleSided": false
+      },
+      "guild_timber": {
+        "atlas": "timber",
+        "texture": "timber.ktx2",
+        "doubleSided": true
+      },
+      "guild_props": {
+        "atlas": "props",
+        "texture": "props.ktx2",
+        "doubleSided": true
+      },
+      "guild_ring": {
+        "atlas": "ring",
+        "texture": "ring.ktx2",
+        "doubleSided": false
+      },
+      "guild_town": {
+        "atlas": "town",
+        "texture": "town.ktx2",
+        "doubleSided": true
+      },
+      "guild_trees": {
+        "atlas": "trees",
+        "texture": "trees.ktx2",
+        "doubleSided": true
+      },
+      "guild_water": {
+        "atlas": "water",
+        "texture": "water.ktx2",
+        "doubleSided": false
+      },
+      "guild_sky_back": {
+        "atlas": "sky_back",
+        "texture": "sky_back.ktx2",
+        "doubleSided": true
+      },
+      "guild_sky_front": {
+        "atlas": "sky_front",
+        "texture": "sky_front.ktx2",
+        "doubleSided": true
+      }
+    },
+    "lite": {
+      "guild_apron_lite": {
+        "atlas": "apron",
+        "texture": "apron_lite.ktx2",
+        "doubleSided": false
+      },
+      "guild_crowd_lite": {
+        "atlas": "crowd",
+        "texture": "crowd_lite.ktx2",
+        "doubleSided": true
+      },
+      "guild_timber_lite": {
+        "atlas": "timber",
+        "texture": "timber_lite.ktx2",
+        "doubleSided": true
+      },
+      "guild_props_lite": {
+        "atlas": "props",
+        "texture": "props_lite.ktx2",
+        "doubleSided": true
+      },
+      "guild_ring_lite": {
+        "atlas": "ring",
+        "texture": "ring_lite.ktx2",
+        "doubleSided": false
+      },
+      "guild_trees_lite": {
+        "atlas": "trees",
+        "texture": "trees_lite.ktx2",
+        "doubleSided": true
+      },
+      "guild_sky_lite_back": {
+        "atlas": "sky_lite_back",
+        "texture": "sky_lite_back.ktx2",
+        "doubleSided": true
+      },
+      "guild_sky_lite_front": {
+        "atlas": "sky_lite_front",
+        "texture": "sky_lite_front.ktx2",
+        "doubleSided": true
+      }
+    }
+  },
+  "runtime": {
+    "shading": "Every material is KHR_materials_unlit (three: MeshBasicMaterial) with its KTX2 atlas embedded (KHR_texture_basisu: the GLTFLoader needs a KTX2Loader). The light is baked in, so scene lights and receiveShadow do not change the arena; light the fighters with a key along `sun.direction`.",
+    "hideForSideCamera": [
+      "arena_near",
+      "lite_near"
+    ],
+    "shadowCatcher": {
+      "node": "shadow_catcher",
+      "radius": 6.3,
+      "y": 0.004,
+      "note": "an invisible disc over the ring floor: give it a THREE.ShadowMaterial (opacity about 0.3) to show the fighters' shadows on the unlit floor"
+    },
+    "sky": {
+      "radius": 400,
+      "centre": [
+        0,
+        1.6,
+        0
+      ],
+      "note": "two half-domes (sky_front looks toward -Z, the town; sky_back toward +Z): keep the camera far plane at 900 m or more"
+    },
+    "anisotropy": "set map.anisotropy to 4-8 on the ground atlases (ring, apron, mid, far) for the grazing battle view",
+    "flyIn": "cam_fly_0 ... cam_fly_5: each node looks down its local -Z (three camera convention); `t` is seconds, `fovDeg` the vertical field of view; interpolate eye and target with a Catmull-Rom curve"
+  },
+  "budget": {
+    "full": {
+      "triangles": 127923,
+      "drawCalls": 14,
+      "downloadBytes": 7399632,
+      "meshBytes": 1206723,
+      "textureBytes": 6192909,
+      "webpEquivalentBytes": 5077085,
+      "meshes": {
+        "arena_apron": 3840,
+        "arena_crowd": 28548,
+        "arena_far": 6400,
+        "arena_mid": 8448,
+        "arena_near": 3608,
+        "arena_props": 23427,
+        "arena_ring": 5760,
+        "arena_timber.001": 10832,
+        "arena_town": 19258,
+        "arena_trees": 13058,
+        "arena_water": 1512,
+        "shadow_catcher": 64,
+        "sky_back": 1584,
+        "sky_front": 1584
+      }
+    },
+    "lite": {
+      "triangles": 58562,
+      "drawCalls": 10,
+      "downloadBytes": 2000548,
+      "meshBytes": 546807,
+      "textureBytes": 1453741,
+      "webpEquivalentBytes": 1452489,
+      "meshes": {
+        "lite_apron": 3840,
+        "lite_crowd": 15519,
+        "lite_near": 3608,
+        "lite_props": 10711,
+        "lite_ring": 5760,
+        "lite_timber": 10832,
+        "lite_trees": 5060,
+        "shadow_catcher": 64,
+        "sky_lite_back": 1584,
+        "sky_lite_front": 1584
+      }
+    },
+    "textures": {
+      "apron": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 579224,
+        "webp": 438030
+      },
+      "crowd": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 879587,
+        "webp": 547606
+      },
+      "far": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 179149,
+        "webp": 166714
+      },
+      "mid": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 563987,
+        "webp": 445024
+      },
+      "timber": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 621962,
+        "webp": 259410
+      },
+      "props": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 587581,
+        "webp": 269546
+      },
+      "ring": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 638605,
+        "webp": 632668
+      },
+      "town": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 738862,
+        "webp": 417048
+      },
+      "trees": {
+        "px": [
+          2048,
+          2048
+        ],
+        "ktx2": 710361,
+        "webp": 465200
+      },
+      "water": {
+        "px": [
+          2048,
+          512
+        ],
+        "ktx2": 178663,
+        "webp": 94438
+      },
+      "sky_back": {
+        "px": [
+          2048,
+          1024
+        ],
+        "ktx2": 243812,
+        "webp": 62844
+      },
+      "sky_front": {
+        "px": [
+          2048,
+          1024
+        ],
+        "ktx2": 271116,
+        "webp": 71834
+      },
+      "apron_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 164378,
+        "webp": 80646
+      },
+      "crowd_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 276037,
+        "webp": 225116
+      },
+      "timber_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 206188,
+        "webp": 111890
+      },
+      "props_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 197722,
+        "webp": 109538
+      },
+      "ring_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 176560,
+        "webp": 123378
+      },
+      "trees_lite": {
+        "px": [
+          1024,
+          1024
+        ],
+        "ktx2": 229548,
+        "webp": 184814
+      },
+      "sky_lite_back": {
+        "px": [
+          1024,
+          512
+        ],
+        "ktx2": 96733,
+        "webp": 30598
+      },
+      "sky_lite_front": {
+        "px": [
+          1024,
+          512
+        ],
+        "ktx2": 106575,
+        "webp": 39702
+      }
+    },
+    "budget": {
+      "triangles": 150000,
+      "drawCalls": 40,
+      "texturePx": 2048,
+      "fullBytes": 12582912,
+      "liteBytes": 3145728,
+      "litePx": 1024
+    }
+  },
+  "problems": []
+}

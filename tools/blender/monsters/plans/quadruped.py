@@ -508,12 +508,12 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         go = lambda t: A.pulse(t, 0.3, 0.75)            # lunge
         cb.sample('hips', n, lambda t: (0, 0.05 * ant(t) - 0.12 * go(t), 0.02 * go(t)), kind='loc', step=1)
         cb.sample('chest', n, lambda t: (-14 * ant(t) + 18 * go(t), 0, 0), step=1)
-        cb.sample('neck', n, lambda t: (-8 * ant(t) + 10 * go(t), 0, 0), step=1)
-        cb.sample('head', n, lambda t: (-10 * ant(t) + 22 * go(t), 0, 0), step=1)
+        cb.sample('neck', n, lambda t: (-8 * ant(t) + 5 * go(t), 0, 0), step=1)
+        cb.sample('head', n, lambda t: (-10 * ant(t) + 10 * go(t), 0, 0), step=1)
         cb.sample('jaw', n, lambda t: (28 * go(t), 0, 0), step=1)
         squash(n, lambda t: 1.0 - 0.08 * ant(t) + 0.08 * go(t))
         for s, sx in (('L', 1), ('R', -1)):
-            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (18 * ant(t) - 30 * go(t), sx * 4, 0), step=1)
+            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (8 * ant(t) - 6 * go(t), sx * 3, 0), step=1)
         cb.sample('tail.1', n, lambda t: (16 * ant(t) - 6 * go(t), 0, 0), step=1)
         for leg in ('FL', 'FR'):
             cb.sample(f'thigh.{leg}', n, lambda t: (-30 * go(t), 0, 0), step=1)
@@ -597,8 +597,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         cb.sample('root', n, lambda t: (0, 7 * math.sin(t * 2 * math.pi * 3) * (1 - rec(t)) * A.step_ease(t, 0.1, 0.3), 0), step=1)
         squash(n, lambda t: 1.0 - 0.12 * k(t))
         for s, sx in (('L', 1), ('R', -1)):
-            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (36 * k(t), sx * 3, 0), step=1)
-            cb.sample(f'ear.{s}.2', n, lambda t, sx=sx: (20 * k(t), 0, 0), step=1)
+            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (14 * k(t), sx * 2, 0), step=1)
+            cb.sample(f'ear.{s}.2', n, lambda t, sx=sx: (8 * k(t), 0, 0), step=1)
         cb.sample('tail.1', n, lambda t: (-18 * k(t), 0, 0), step=1)
         for leg in LEGS:
             cb.sample(f'thigh.{leg}', n, lambda t, s=(-1 if leg[0] == 'F' else 1): (s * 16 * k(t), 0, 0), step=1)
@@ -620,7 +620,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             s = -1 if leg[0] == 'F' else 1
             cb.sample(f'thigh.{leg}', n, lambda t, s=s: (s * 30 * fall(t), 0, 0), step=1)
             cb.sample(f'shin.{leg}', n, lambda t, s=s: (-s * 20 * fall(t), 0, 0), step=1)
-        ears(n, 24, 0)
+        ears(n, 10, 0)
         cb.sample('tail.1', n, lambda t: (-14 * fall(t), 0, 10 * fall(t)), step=1)
         cb.face(1, 'strain')
         cb.face(20, 'dizzy')
@@ -646,9 +646,108 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         cb.marker('land', 22)
         made.append(cb.end())
 
+    # ---- Battle 3D: moving sideways while facing the opponent (root motion runs along the monster's own ±X)
+    def lateral(leg: str, frame: int, dx: float, dz: float, body_dz: float = 0.0) -> None:
+        """Put a foot `dx` sideways (+ = the monster's left, +X) and `dz` up from its rest spot: the thigh rolls the leg
+        out, the two-bone IK takes up the lift along the rolled leg, and the foot rolls back flat."""
+        x, y, hz0 = P['legs'][leg]
+        l1, l2 = legs.lengths(leg)
+        ankle = P.get('ankle_z', 0.035)
+        h = hz0 + body_dz - ankle - dz
+        roll = math.degrees(math.atan2(dx, max(0.05, h)))
+        reach = math.hypot(dx, h)
+        th, kn = A.leg_ik(Vector((0, 0, reach)), Vector((0, 0, 0)), l1, l2, Vector((0, -1, 0)))
+        rth, rkn = legs.rest[leg]
+        # a +y roll swings a downward bone's tip toward −X, so a foot going +X rolls by −y
+        cb.rot(f'thigh.{leg}', frame, x=-(th - rth), y=-roll)
+        cb.rot(f'shin.{leg}', frame, x=-(kn - rkn))
+        cb.rot(f'foot.{leg}', frame, x=(th - rth) + (kn - rkn), y=roll)
+
+    def strafe(name: str, side: int) -> None:
+        n = 24
+        stride = P.get('stride', 0.18) * 0.75
+        stance = 0.56
+        cb.begin(name, n, loop=True, root_speed=stride / (stance * n / A.FPS))
+        phases = {'FL': 0.0, 'BR': 0.0, 'FR': 0.5, 'BL': 0.5}      # diagonal pairs: a sideways trot-shuffle
+        plants: list[int] = []
+        for f in range(1, n + 2):
+            t = (f - 1) / n
+            bob = 0.008 * abs(math.sin(t * 2 * math.pi * 2))
+            for leg in LEGS:
+                p = (t + phases[leg]) % 1.0
+                if p < stance:
+                    u = p / stance
+                    dx = side * (stride / 2 - stride * u)       # planted: slides against the motion
+                    dz = 0.0
+                else:
+                    u = (p - stance) / (1 - stance)
+                    dx = side * (-stride / 2 + stride * C.ease_in_out(u))
+                    dz = 0.045 * math.sin(u * math.pi)
+                lateral(leg, f, dx, dz, body_dz=bob)
+        for leg in LEGS:
+            plants.append(1 + int(round(((1.0 - phases[leg]) % 1.0) * n)) % n)
+        # lean into the step, head steady on the opponent, ears and tail trailing
+        cb.sample('root', n, lambda t: (0, side * (3.0 + 1.0 * A.wave(t, 2.0)), 0), step=2)
+        cb.sample('chest', n, lambda t: (3 + 1.5 * A.wave(t, 2.0), 0, side * 2.0), step=2)
+        cb.sample('head', n, lambda t: (-5 - 1.5 * A.wave(t, 2.0, 0.5), -side * 3.0, -side * 4.0), step=2)
+        for s, sx in (('L', 1), ('R', -1)):
+            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (-6, sx * 3 - side * 6 + 3 * A.wave(t, 2.0, 0.2), 0), step=2)
+        cb.sample('tail.1', n, lambda t: (16, 0, -side * 10 + 6 * A.wave(t, 2.0)), step=2)
+        cb.sample('tail.2', n, lambda t: (8, 0, -side * 12 + 8 * A.wave(t, 2.0, -0.12)), step=2)
+        cb.sample('tail.3', n, lambda t: (4, 0, -side * 14 + 10 * A.wave(t, 2.0, -0.24)), step=2)
+        for f in sorted(set(plants)):
+            cb.marker('step', f)
+        made.append(cb.end())
+
+    if want('strafe_l'):
+        strafe('strafe_l', 1)
+    if want('strafe_r'):
+        strafe('strafe_r', -1)
+
+    def sidestep(name: str, side: int) -> None:
+        """A quick dodge hop to the side: 8 ticks (0.27 s). The runtime carries the root SIDESTEP_DISTANCE metres (model
+        units) along ±X over the clip; the body crouches, springs, tucks its legs and lands on `land`."""
+        n = 8
+        cb.begin(name, n, loop=False, root_speed=SIDESTEP_DISTANCE / (n / A.FPS))
+        air = lambda t: A.pulse(t, 0.18, 0.92)
+        crouch = lambda t: A.pulse(t, 0.0, 0.3) + 0.7 * A.pulse(t, 0.82, 1.0)
+        cb.sample('root', n, lambda t: (0, 0, 0.07 * air(t)), kind='loc', step=1)
+        cb.sample('root', n, lambda t: (0, side * 14 * air(t), side * 6 * air(t)), step=1)
+        squash(n, lambda t: 1.0 - 0.12 * crouch(t) + 0.08 * air(t))
+        cb.sample('chest', n, lambda t: (-6 * air(t), 0, side * 4 * air(t)), step=1)
+        cb.sample('head', n, lambda t: (-4 * air(t) + 6 * crouch(t), -side * 10 * air(t), -side * 8 * air(t)), step=1)
+        for s, sx in (('L', 1), ('R', -1)):
+            cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (-18 * air(t) + 12 * crouch(t), sx * 3 - side * 6 * air(t), 0), step=1)
+            cb.sample(f'ear.{s}.2', n, lambda t, sx=sx: (-8 * air(t), -side * 3 * air(t), 0), step=1)
+        cb.sample('tail.1', n, lambda t: (18 * air(t), 0, -side * 20 * air(t)), step=1)
+        cb.sample('tail.2', n, lambda t: (8 * air(t), 0, -side * 16 * air(t)), step=1)
+        for leg in LEGS:
+            tuck = -24 if leg[0] == 'F' else 26
+            out = side * 10 * (1 if (leg.endswith('L') == (side > 0)) else -0.4)
+            cb.sample(f'thigh.{leg}', n, lambda t, tuck=tuck, out=out: (tuck * air(t), -out * air(t), 0), step=1)
+            cb.sample(f'shin.{leg}', n, lambda t, tuck=tuck: (-tuck * 1.3 * air(t), 0, 0), step=1)
+            cb.sample(f'foot.{leg}', n, lambda t, tuck=tuck, out=out: (tuck * 0.3 * air(t), out * air(t), 0), step=1)
+        cb.marker('land', n)
+        made.append(cb.end())
+
+    if want('sidestep_l'):
+        sidestep('sidestep_l', 1)
+    if want('sidestep_r'):
+        sidestep('sidestep_r', -1)
+
     return made
 
+
+# The sidestep's hop: 1.4 arena metres for a 1 m Puddlepup scaled to 150 arena units (100 units = 1 m), i.e.
+# 140 / 150 model metres. The runtime moves the root (model units × heightUnits / restHeight = arena units).
+SIDESTEP_DISTANCE = 1.4 * 100 / 150
+
+# Root motion directions in the glTF frame (Y up, the monster faces +Z, +X is its left).
+ROOT_DIRS = {'walk': (0, 0, 1), 'run': (0, 0, 1), 'dash': (0, 0, 1), 'step_fwd': (0, 0, 1), 'step_back': (0, 0, -1),
+             'strafe_l': (1, 0, 0), 'strafe_r': (-1, 0, 0), 'sidestep_l': (1, 0, 0), 'sidestep_r': (-1, 0, 0)}
 
 STAR_CLIPS = ['idle', 'idle_happy', 'idle_tired', 'idle_sad', 'idle_sick', 'sleep', 'eat', 'pet', 'look_around', 'hop',
               'celebrate', 'walk', 'run', 'sit_down', 'sit', 'dizzy', 'battle_idle', 'step_fwd', 'step_back', 'dash',
               'strike', 'cast', 'shove', 'hit', 'hit_heavy', 'ko', 'win']
+# Battle 3D (the arena's free movement): side-stepping while facing the opponent, and the dodge hop.
+MOVE_CLIPS = ['strafe_l', 'strafe_r', 'sidestep_l', 'sidestep_r']

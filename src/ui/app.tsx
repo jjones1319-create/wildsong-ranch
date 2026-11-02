@@ -37,6 +37,7 @@ const LabBattleLabScreen = lazyScreen(() => import('./screens/lab/LabBattleLab.t
 const LabEffectsScreen = lazyScreen(() => import('./screens/lab/LabEffects.tsx'), 'LabEffectsScreen')
 const LabSoundScreen = lazyScreen(() => import('./screens/lab/LabSound.tsx'), 'LabSoundScreen')
 const LabModelsScreen = lazyScreen(() => import('./screens/lab/LabModels.tsx'), 'LabModelsScreen')
+const Battle3DScreen = lazyScreen(() => import('./screens/battle3d/Battle3DScreen.tsx'), 'Battle3DScreen')
 const LabExportScreen = lazyScreen(() => import('./screens/lab/LabExport.tsx'), 'LabExportScreen')
 const LabVersusScreen = lazyScreen(() => import('./screens/lab/LabVersus.tsx'), 'LabVersusScreen')
 const LabImportScreen = lazyScreen(() => import('./screens/lab/LabImport.tsx'), 'LabImportScreen')
@@ -107,6 +108,8 @@ function Current({ current }: { current: Screen }) {
       return <LabEffectsScreen />
     case 'labModels':
       return <LabModelsScreen />
+    case 'labBattle3d':
+      return <Battle3DScreen />
     case 'battle':
       return <BattleScreen />
     case 'tournament':

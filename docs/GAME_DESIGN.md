@@ -642,6 +642,18 @@ The same setup with site grade A, LIF B at stage 5 gives 100/100/100/77. With si
 
 ## 12. Battle (MUST)
 
+**Battle 3D (the lock-on duel, in test).** `docs/BATTLE_3D.md` is the design.
+- **Where:** the engine's **duel** mode (`runBattle(…, { mode: 'duel' })`), in Lab → Battle 3D (test).
+- **What changes:**
+  - the fighters always face each other on a round ring;
+  - forward and back change the gap exactly as below;
+  - left and right strafe, circling at the same distance;
+  - every technique lands after a short wind-up (§3 there);
+  - a timed sidestep makes a straight-line technique harder to land, or carries the defender out of its path;
+  - the CPU and Auto circle and sidestep.
+- **What stays:** everything in this section (bands, guts, formulas, timing, Fight/Auto/Skip), measured along the line between the fighters.
+- **The classic battle** below is the engine's **line** mode, unchanged everywhere else until the owner approves.
+
 ### 12.1 Arena and ranges
 
 - **Arena:** a 1-D arena 1,200 units wide (x from −600 to +600). Each monster's body radius is 80 (M10: it was 50; the sprite box is drawn 200 units wide so visuals match the physics).

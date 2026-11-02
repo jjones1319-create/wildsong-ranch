@@ -443,6 +443,61 @@ What it asked for, most important first:
   - CONTENT §2.2's art brief gets the damp fur coat and the nose.
 - **Then** P2 (Waterfall Stand) and the P3–P9 batches, each breed with its surface kit.
 
+### 9.1 A1 and P1.1 result (Nov 2): the whole Puddlepup at Ultra, for the Battle 3D test
+**A1, the pipeline (built):**
+- `tools/blender/lib/surface.py`: voxel bodies, Poisson scattering, flow, lock / card / tuft templates (built with `foreach_set`, millions of locks in seconds), coat normals, and **skinning elements**: every card or tuft lock copies the weights of the body vertex nearest its root.
+- `tools/blender/lib/bake.py`: the atlas with its strip, selected → active bakes with only the sources visible, ORM packing, AO into the colour, **variant colour maps on the same UVs**, the cards' root colours.
+- `tools/blender/spikes/detail_spike.py` now imports both (its own copies are gone, about 670 lines). It loads cleanly; its stages were not re-run, so the spike's outputs are untouched.
+- `tools/blender/monsters/build_ultra.py` (stages build, bake, rig, clips, export, review) with the recipe `monsters/breeds/puddlepup_ultra.py`.
+- `tools/art/ultra.ts` (+ `ultra-embed.ts`): KTX2 ETC1S and WebP textures, embedded in the meshopt `.glb` with film-ready materials. `tools/art/ultra-review.ts` (+ `ultra-viewer/`): the film-look sheet.
+- Commands: `npm run art:ultra -- puddlepup --blender` and `npm run art:ultra-review -- puddlepup`.
+
+**P1.1, what was built:**
+- The approved spike head with the round 6 fixes (§8.5): one smooth short cream muzzle and a single smile line; the teal comes down in a V between the eyes; a dark upper lash line under a fur lid (no ring); coral ribbed ear fins, narrower at the root, to the jaw, angled forward; no cards at the ear roots or cheek fronts; a 5-lock teal tuft with a fixed colour (it can't blow out); a cream chest ruff and underside.
+- The body from 2-turnaround.png in the same fur pipeline: a long low torso, four legs with the spike's paw (three pink toe caps, a pad, a cream rim), haunches, and a furry teal tail paddle ending in a coral ribbed fluke with a cream band. Round dark dapples on the back, sides, haunches, upper legs and tail, painted per pixel by position.
+- **Rig:** the quadruped plan's 26 bones (ears and tail are the spring chains) plus two blink bones: 28 joints. Heat weights on the body; the ears and the tail paddle are weighted by position so the fur caps and the membranes move together; every fur card and tuft lock copies the weights of the body vertex at its root.
+- **Clips:** the 27 ★ clips, plus `strafe_l` / `strafe_r` (loops, a sideways trot while facing forward), `sidestep_l` / `sidestep_r` (8 ticks, a dodge hop, `land` at the end) and `blink`. All play in place; the sidecar gives `rootSpeed` (model m/s), `rootDir` (glTF frame) and, for the sidesteps, `rootDistance` (0.933 model m = 1.4 arena m at 150 units).
+- **Face: baked, not a face sheet.** The face sheet draws flat eyes on patches over the head, which can't sit on the 3D lens eyes. The iris, pupil, catchlights and lash line are baked on `lo_eyes`; brows, blush, nose and smile on the body. Blinking scales the blink bones (the `blink` clip keys only them, so it plays over any clip). No expressions yet: clips' `faces` entries are hints only.
+- **The `.glb`** embeds the textures (KHR_texture_basisu ETC1S; `puddlepup.webp.glb` has EXT_texture_webp) with film-ready materials per mesh (`lo_body`, `lo_eyes`, `lo_fins`, `lo_cards` alpha MASK, `lo_tuft`), a hidden `__variant_songheart-puddlepup` mesh holding the Songheart colour map, and the cards' root colours as COLOR_0 (base) and COLOR_1 (Songheart).
+
+**Measured (the shipped round 3 build; Ultra budget in brackets):**
+
+| What | Measured |
+|---|---|
+| Source | 3.70 million triangles; 27,771 sculpted lying locks (9,704 on the head, 18,067 on the body); 124 dapples |
+| LOD0 triangles | **59,635** (≤ 100k, aim 60–80k): body 46,000 · fur cards 8,244 · membranes 4,656 · eye lenses 624 · tuft 110 · variant holder 1 |
+| Fur cards | **2,061 in 2 layers** (1,824 + 237; ≤ 6,000 in ≤ 3) |
+| Joints | **28** (26 plan bones incl. the ear and tail spring chains, + 2 blink bones; ≤ 64) |
+| Clips | 32 (27 ★ + 4 Battle 3D moves + blink): 176 KB |
+| Body atlas 2048² | KTX2 ETC1S 2.16 MB (colour 0.72, normal 0.69, ORM 0.75) · WebP 2.49 MB |
+| Songheart colour map 2048² | KTX2 0.73 MB · WebP 0.75 MB |
+| **Download, everything (one `.glb`)** | **KTX2 4.14 MB · WebP 4.49 MB** (≤ 8 MB) |
+| Build times on the shared PC | build 2–7 min · bake **6 min on the CPU** (`--cpu`; 35 min to hours on the GPU while another job held it) · rig, clips, export 4 min · KTX2 encoding 15 min |
+
+**Fresh-eyes review** (a new agent each round, the same two questions; verdicts in `art-review/puddlepup-ultra/verdicts.txt`, sheets `sheet-round1.png`, `sheet-round2.png`, `sheet.png`):
+- **Round 1: detail and design "partly"; 64 px "partly".** The design reads; asked for bigger ears, open eyes without the heavy lid (it read sad), a blended muzzle with cream cheeks, a longer tail with a head-sized fluke, mitten paws with big toe beans, and calmer ears in strike, sidestep and hit_heavy.
+- **Round 2: "partly"; "partly".** The eyes are now close to the reference. Asked for ears that hang (the bigger fans stuck out like wings), a bigger nose on a broad muzzle, a chunkier body (≈ 1.4 : 1) with a deep cream chest and underside, a thicker tail base, rounder paws, and noted white glitter on cream / teal borders and cards standing up off the back in walk and strike.
+- **Round 3 (shipped): "partly"; "partly".** It now reads as a round teal puppy in three-quarter view (a deep cream chest, big beans, open eyes). Still short, most important first:
+  1. the ear membrane reads as a separate blade or gills at the cheek, not as the lining of a long flap that flares into a wide fan;
+  2. in profile the nose sits on a stalk ahead of the muzzle;
+  3. the tail fan is a flat plane (a line from behind; the pictures' fin is cupped);
+  4. the outline is smooth: a small tuft, no wet spiky clumps; the alpha-tested cards glitter where cream meets teal;
+  5. the dapples are even polka dots (the pictures cluster mixed sizes on the back, the crown and the tail).
+  - Clips: the blink's closed lids read as tape; the membranes still fold under the chin (strike, walk) or flare (hit_heavy, ko, win); the fin tip blows out white in ko.
+
+**Open issues, for P1.1's next pass:**
+- The items above. The ears need a different build: one fin-flap with fur on the outside and the membrane as its lining, rather than a fur cap over a separate fan.
+- The spiky wet silhouette (a bigger crown tuft, cheek ruffs, flame-shaped bib clumps) needs tuft-lock sets on the cheeks and the bib, and a third card layer. Round 6 asked for a *smaller* tuft, so it is the owner's call.
+- The ear and fin springs (A2) will move the membranes more than the clips do: check them in the runtime.
+- No expressions yet (baked face); the blink is a squash of the lens.
+- The atlas packs into about 80% of its width (Blender's packer): a better pack would gain about 20% texel density.
+- The cinematic head set (2048²) was skipped.
+
+**Lessons:**
+- Blender 5.2's glTF exporter wrote a **white COLOR_0** on the cards whatever the vertex-colour options: the first in-engine test showed white card rectangles. The colours now leave as custom attributes (`_COLOR_BASE`, `_COLOR_VARIANT`) and `ultra-embed.ts` makes them COLOR_0 and COLOR_1. Check the cards' colours in every shipped `.glb`.
+- **Dapples painted per vertex on the locks read as camouflage blotches** (a lock is 6 vertices across and 9 along): paint round marks per pixel in the bake shader, by position.
+- A shared GPU can make one Cycles bake 300× slower (the laptop RTX A500 runs at 15 W): when another job holds it, bake on the CPU (`build_ultra.py --cpu`): the body's AO took 38 s on the i7's 12 threads against 15 minutes on the busy GPU. Run bakes in the background with logs.
+
 ## 10. What approval changes in the other docs
 - **ART_2_PLAN:**
   - §2.1: film shading, no lines, 3D eyes and morphs;

@@ -5,6 +5,7 @@ import { divRound } from '../mathx.ts'
 import type { Rng } from '../rng.ts'
 import { currentBand, effectiveCost, gapUnits, previewDamage, previewHitTenths, speedPerTick } from './engine.ts'
 import { bandCentre, hpPctTenths } from './formulas.ts'
+import { roomBehindUnits } from './geometry.ts'
 import { traitFreeDash, traitImmovable, traitsAny } from './traits.ts'
 import type { BattleEvent, BattleState, FighterState, TechniqueRef } from './types.ts'
 
@@ -145,7 +146,7 @@ function punishWindowOf(opp: FighterState): boolean {
 function situationOf(state: BattleState, f: FighterState, opp: FighterState): Situation {
   const tick = state.tick
   const gap = gapUnits(state)
-  const roomBehind = BATTLE.arena.halfWidth - BATTLE.arena.bodyRadius - Math.floor(Math.abs(f.x) / CENTI)
+  const roomBehind = roomBehindUnits(state, f, opp)
   const secondsLeft = Math.floor((state.timerTicks - tick) / TPS)
   const mine = hpPctTenths(f.hp, f.maxHp)
   const theirs = hpPctTenths(opp.hp, opp.maxHp)

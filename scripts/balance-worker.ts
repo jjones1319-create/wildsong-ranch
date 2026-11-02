@@ -11,7 +11,7 @@ import type { Monster } from '../src/core/monster.ts'
 import { simulateLife, type LifeReport, type PolicyName } from '../src/core/sim/lifeSim.ts'
 
 export type RaiseTask = { kind: 'raise'; breed: BreedId; policy: PolicyName; seeds: number[] }
-export type BattleTask = { kind: 'battle'; a: BreedId; b: BreedId; total: number; seeds: number; variants: number }
+export type BattleTask = { kind: 'battle'; a: BreedId; b: BreedId; total: number; seeds: number; variants: number; mode?: 'line' | 'duel' }
 export type Task = RaiseTask | BattleTask
 
 export interface RaiseSlim {
@@ -93,7 +93,8 @@ function runBattleCell(t: BattleTask): TaskResult {
     const a = as[seed % t.variants]!
     const b = bs[seed % t.variants]!
     const swapped = seed % 2 === 1
-    const r = swapped ? runBattle(ai(b), ai(a), { seed, timerTicks: ticks }) : runBattle(ai(a), ai(b), { seed, timerTicks: ticks })
+    const o = { seed, timerTicks: ticks, mode: t.mode ?? 'line' }
+    const r = swapped ? runBattle(ai(b), ai(a), o) : runBattle(ai(a), ai(b), o)
     const sideA = swapped ? 1 : 0
     if (r.outcome.winner === null) draw++
     else if (r.outcome.winner === sideA) {

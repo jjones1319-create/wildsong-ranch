@@ -575,6 +575,21 @@ Their 3D models come in the Art 2.1 batch after the spike is approved.
 - [x] 6. Balance: `npm run sim:balance`; Plumdrake retuned to a tanky caster (PROGRESS has the numbers).
 - [x] 7. Finish: 1.14.0, `npm run verify`, PROGRESS, commit, push, the owner's phone checklist.
 
+## Battle 3D: the lock-on duel, test build (v1.15.0)
+
+Spec: docs/BATTLE_3D.md (the design) and GAME_DESIGN §12 (unchanged rules; the duel is a second mode of the same engine). The test lives in Lab → Battle 3D (test); every other battle stays the classic one until the owner approves. Stop after the test: no other scene or monster is rebuilt until then.
+
+- [x] 1. Design: docs/BATTLE_3D.md (the ring, strafing, wind-ups, paths, the sidestep, the AI, controls, cameras, the test build, balance); GAME_DESIGN §12 points to it.
+- [x] 2. Engine: `BattleOptions.mode` ('line' replays bit for bit; 'duel' adds the ring), `core/battle/geometry.ts`, the fire/land split with per-family wind-ups, `data/paths.ts` (straight line or sweep), the sidestep (timed disadvantage, out-of-path miss), knockback slides, all numbers in `BATTLE.duel`.
+- [x] 3. AI: `core/battle/duelAi.ts` (a sidestep reflex by tier and SPD, circling toward open ground; Auto uses the same brain); numbers in `AI.duel`.
+- [x] 4. Tests: `duel.test.ts` (strafing keeps the gap, landing after the wind-up, the sidestep dodge, sweeps, cost and cooldown, 24 seeded expert duels, the tiers, line mode untouched, path rules), `stickMath.test.ts`; the golden record holds.
+- [x] 5. Balance: `npm run sim:balance -- --mode duel` → docs/BALANCE_DUEL.md; what moved is in BATTLE_3D §9.
+- [x] 6. Runtime `src/art3d/duel/`: the arena and monsters (Ultra with the Art 2.0 fallback), clips, the side-on, behind, cinematic and intro cameras, telegraphs, sparks, dynamic resolution.
+- [x] 7. Screen `#lab/battle3d`: the stick (flick to sidestep or dash), the technique panel, Auto, speeds, camera, Skip, pause, left-handed, results.
+- [x] 8. Art: the Guild arena (`tools/blender/arenas/`, Poly Haven CC0, a Lite version) and Puddlepup at Art 2.1 Ultra (`npm run art:ultra`, with strafe and sidestep clips).
+- [x] 9. Review: `npm run art:battle3d` (a recording per camera, stats.json, sizes) in `art-review/battle3d/`.
+- [x] 10. Finish: 1.15.0, `npm run verify`, PROGRESS, commit, push, then the owner's phone test and approval before anything else is rebuilt.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

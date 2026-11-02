@@ -1,5 +1,8 @@
 import type { AiTier, AutoStyle, Habit, Personality, PlanMode, Stats, TraitId } from '../../data/types.ts'
 import type { Monster } from '../monster.ts'
+import type { TechPath } from '../../data/paths.ts'
+
+export type { TechPath }
 
 export type { Habit }
 
@@ -11,6 +14,10 @@ export type { Habit }
 
 export type Side = 0 | 1
 export type Control = 'ai' | 'player'
+
+/** Line: the classic battle on one line. Duel: Battle 3D's lock-on duel on a round ring (docs/BATTLE_3D.md). */
+export type BattleMode = 'line' | 'duel'
+
 
 /** Which brain drives an AI side: AI 2.0 (the game) or the v1.0 brain (one comparison test only). */
 export type Brain = 'v2' | 'v1'
@@ -29,8 +36,10 @@ export interface FighterSetup {
 
 export type PlayerAction =
   | { kind: 'fire'; tech: string }
-  /** Hold a direction: +1 toward the opponent, −1 away, 0 stop. */
-  | { kind: 'move'; dir: -1 | 0 | 1 }
+  /** Hold a direction: +1 toward the opponent, −1 away, 0 stop. Duel: `side` strafes (+1 to the fighter's left, −1 right). */
+  | { kind: 'move'; dir: -1 | 0 | 1; side?: -1 | 0 | 1 }
+  /** Duel: a quick sidestep (+1 left, −1 right, as the fighter faces its opponent). */
+  | { kind: 'sidestep'; dir: -1 | 1 }
   | { kind: 'dash' }
   | { kind: 'push' }
   /** Assist: walk to the technique's band and fire on arrival; null cancels. */
@@ -61,6 +70,22 @@ export interface TechniqueRef {
   witherBonus: number
 }
 
+/** Duel: a technique between its fire and its landing (the wind-up). */
+export interface PendingFire {
+  tech: string
+  fireTick: number
+  landTick: number
+  path: TechPath
+  /** Guts before paying, and the Battering Ram flag, as they were at the fire. */
+  gutsBefore: number
+  ramArmed: boolean
+  /** The aim: the attacker's and the defender's centres at the fire. */
+  ax: number
+  ay: number
+  dx: number
+  dy: number
+}
+
 export interface FighterState {
   side: Side
   name: string
@@ -88,6 +113,8 @@ export interface FighterState {
 
   /* dynamic */
   x: number
+  /** Duel only: the second floor coordinate (always 0 on the line). */
+  y: number
   hp: number
   guts: number
   gutsAcc: number
@@ -176,12 +203,33 @@ export interface FighterState {
   lastDx: -1 | 0 | 1
   touchTicks: number
   pushes: number
+  /* duel (docs/BATTLE_3D.md); unused on the line */
+  /** Held strafe: +1 left, −1 right, 0 none. */
+  strafeDir: -1 | 0 | 1
+  sidestepTicks: number
+  sidestepDir: -1 | 1
+  sidestepCooldown: number
+  /** Tick the last sidestep started. */
+  sidestepStart: number
+  wantSidestep: -1 | 0 | 1
+  /** A knockback's slide direction in thousandths (the line uses slideDir). */
+  slideVX: number
+  slideVY: number
+  pending: PendingFire | null
+  /** AI: circling until this tick, and a sidestep it has decided on (when, and against which fire tick). */
+  aiStrafeUntil: number
+  aiSidestepAt: number
+  aiSidestepFor: number
 }
 
 export type BattleEvent =
-  | { t: number; kind: 'fire'; side: Side; tech: string; cost: number }
+  /** Duel: `lands` is the tick it lands (after the wind-up) and `path` its shape. */
+  | { t: number; kind: 'fire'; side: Side; tech: string; cost: number; lands?: number; path?: TechPath }
   | { t: number; kind: 'hit'; side: Side; target: Side; tech: string; damage: number; crit: boolean; wither: number; hitNo: number; of: number }
-  | { t: number; kind: 'miss'; side: Side; target: Side; tech: string; hitNo: number; of: number }
+  /** Duel: `dodged` when a sidestep carried the target out of a straight-line technique's path. */
+  | { t: number; kind: 'miss'; side: Side; target: Side; tech: string; hitNo: number; of: number; dodged?: boolean }
+  /** Duel: a sidestep started. */
+  | { t: number; kind: 'sidestep'; side: Side; dir: -1 | 1 }
   | { t: number; kind: 'heal'; side: Side; amount: number; why: 'tech' | 'drain' | 'blessed' | 'jackpot' }
   | { t: number; kind: 'reflect'; side: Side; target: Side; amount: number }
   | { t: number; kind: 'recoil'; side: Side; amount: number }
@@ -210,9 +258,12 @@ export interface BattleOptions {
   seed: number
   /** 1,800 for a 60-second match. */
   timerTicks: number
+  /** Line (default) or duel (Battle 3D). */
+  mode?: BattleMode
 }
 
 export interface BattleState {
+  mode: BattleMode
   tick: number
   timerTicks: number
   seed: number

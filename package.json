@@ -1,7 +1,7 @@
 {
   "name": "wildsong-ranch",
   "private": true,
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "Wildsong Ranch: an original phone-first monster-raising game. Every monster is born from a song.",
   "type": "module",
   "license": "MIT",
@@ -30,7 +30,11 @@
     "art:monster": "node tools/art/monster.ts",
     "art:optimize": "node tools/art/optimize.ts",
     "art:review": "node tools/art/review.ts",
-    "art:portraits": "node tools/art/portraits.ts"
+    "art:battle3d": "node tools/art/battle3d-review.ts",
+    "art:portraits": "node tools/art/portraits.ts",
+    "art:ultra": "node tools/art/ultra.ts",
+    "art:ultra-review": "node tools/art/ultra-review.ts",
+    "art:arena": "node tools/blender/arenas/guild.ts"
   },
   "dependencies": {
     "@preact/signals": "^2.11.3",

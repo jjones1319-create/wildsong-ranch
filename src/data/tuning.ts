@@ -510,6 +510,20 @@ export const BATTLE = {
   statueTicks: 60,
   /** Chill: 3 s of slower walking. */
   chillTicks: 90,
+  /**
+   * docs/BATTLE_3D.md: the duel (Battle 3D). The ring is a disc of radius arena.halfWidth; everything above still
+   * applies, measured along the line between the fighters.
+   */
+  duel: {
+    /** Strafing (circling the opponent) speed, as a percent of walking speed. */
+    strafePct: 80,
+    /** The wind-up before a technique lands, by family, in ticks (30 per second): the telegraph a sidestep answers. */
+    windup: { Basic: 6, Hit: 7, Heavy: 12, Wither: 9, Sharp: 8, Special: 10, Chain: 8, Signature: 12 },
+    /** A sidestep: how long it takes (ticks), how far it goes sideways (units), its guts and its cooldown (ticks). */
+    sidestep: { ticks: 8, units: 180, cost: 4, cooldown: 45 },
+    /** A straight-line technique misses a defender standing farther than this from its line (units: a body radius and a little). */
+    pathHalfWidth: 110,
+  },
 } as const
 
 /** §12.7 specials: trigger numbers and effects. Durations are in ticks (8 s). */
@@ -566,6 +580,23 @@ export const AI = {
   },
   /** Re-plan every 8–12 ticks, or at once on an event (§12.10). */
   replan: { min: 8, max: 12 },
+  /**
+   * docs/BATTLE_3D.md §4: the duel brain on top of the plan. A sidestep is tried against an incoming straight-line
+   * technique with the tier's chance, after its own reflex delay (sidestepReact × (1 − SPD/reactSpdDiv));
+   * between techniques it circles the opponent now and then, and always away from a wall that is close behind.
+   */
+  duel: {
+    sidestepPct: { rookie: 20, skilled: 40, expert: 60 },
+    /** A sidestep is a reflex, quicker than a plan's reaction (ticks after the opponent's fire). */
+    sidestepReact: { rookie: { min: 8, max: 14 }, skilled: { min: 5, max: 10 }, expert: { min: 3, max: 7 } },
+    /** Reflex delay × (1 − SPD/reactSpdDiv): speed helps, but not twice over (fast breeds already dodge by SPD). */
+    reactSpdDiv: 3000,
+    /** Guts kept back after paying for a sidestep. */
+    sidestepReserve: 2,
+    /** Chance (percent) at each plan to circle for a while, and how long (ticks). */
+    circlePct: 45,
+    circleTicks: { min: 30, max: 75 },
+  },
   /** The player's Auto styles (§12.11): aggression / caution, band biases, pacing, free dashes and the poke horizon. */
   styles: {
     balanced: { aggression: 100, caution: 100, closeBias: 100, farBias: 100, cooldownPct: 100, saveBias: 100, dashFreely: false },
@@ -1058,6 +1089,11 @@ export const PLANNER = {
  * §12.11 arena camera (M10): frames both monsters, zooms to fit and never shows past the walls. Units are arena
  * units except the pixel fields. The sprite box is 2 × spriteHalf wide; the drawn body fills about 80 % of it.
  */
+/** docs/BATTLE_3D.md §5: Battle 3D's left-thumb stick (CSS px; a flick is fast and far). */
+export const INPUT = {
+  stick: { radiusPx: 56, dead: 0.35, flickMs: 180, flickReach: 0.8 },
+} as const
+
 export const BATTLE_CAMERA = {
   spriteHalf: 100,
   /** Space beyond each monster's back edge. */
@@ -1188,6 +1224,52 @@ export const ART = {
    * Art 2.1 Ultra (docs/ART_2_DETAIL.md): the film look and its rendering, tried first in the Performance check
    * (perf/). Standard physical materials only, so the WebGL and WebGPU renderers draw the same thing.
    */
+  /** docs/BATTLE_3D.md §6–§8: Battle 3D's picture (metres; the fence is at 6 m). */
+  duel: {
+    /** Monsters are fitted to this height at the head. */
+    monsterHeightM: 1.0,
+    fov: 32,
+    sky: '#cfe6f5',
+    /**
+     * Side-on, for a tall phone: turned yawDeg toward the player's monster (a three-quarter view: inside the fence there
+     * is no room for a square side view of both on a portrait screen), looking down elevationDeg; the distance (start:
+     * base + gap · perGap, kept within min/max) is fitted so both monsters (feet, heads, front and back) sit inside
+     * the clear band of the screen in NDC (between the top bar and the technique panel).
+     */
+    side: { base: 5, perGap: 1.2, lookY: 0.5, yawDeg: 55, elevationDeg: 18, minDist: 3.5, maxDist: 16, bodyHalfM: 0.42, band: { x: 0.84, top: 0.6, bottom: -0.34 } },
+    /**
+     * The Guild arena's crowd starts just past the fence, so every camera stays inside it (ring radius − wallMargin, in
+     * metres). When the side-on camera can't back up far enough it widens its lens instead, up to maxFov degrees, and
+     * if that still isn't enough (fighting by the wall on its side) it rises raiseDeg at a time, up to maxRaiseDeg more.
+     */
+    confine: { wallMargin: 0.45, maxFov: 68, raiseDeg: 6, maxRaiseDeg: 36 },
+    /** The fighters' shadows on the arena's baked (unlit) floor: the arena's shadow_catcher disc. */
+    shadowOpacity: 0.3,
+    /** Sharper ground textures at the battle camera's grazing angle. */
+    groundAnisotropy: 8,
+    /** The far plane (m): the arena's sky domes are 400 m out. */
+    far: 1000,
+    /** Behind the player's monster: back, to one side, up, and the look height on the opponent. */
+    behind: { back: 2.7, side: 0.6, height: 1.5, lookY: 0.2 },
+    /** Camera springs (per second): normal, and gentler with Reduce motion. */
+    spring: 5,
+    springReduced: 2.2,
+    /** Cinematic cuts for Specials, Signatures and KOs: a low three-quarter on the attacker. */
+    cine: { enabled: true, ahead: 1.6, side: 1.3, height: 0.55, seconds: 1.5 },
+    /**
+     * The entrance: the fly-in along the arena's timed camera path (its times scaled to flySeconds), the walk-on from
+     * outside the gates to the start marks, then the face-off until `seconds`.
+     */
+    intro: { seconds: 7.6, flySeconds: 6, walkFrom: 2.4, walkSeconds: 3.8 },
+    /** Dynamic resolution in the duel: when more than missShare of a second's frames are late, step down stepMul× as far. */
+    fastDrop: { missShare: 0.5, stepMul: 3 },
+    /** The duel starts a little below the Performance check's start, so the entrance never crawls; it climbs when calm. */
+    dprStart: 2.0,
+    /** Seconds between blinks, cycled (each monster starts at a different place, so they never blink together). */
+    blinkGaps: [3.4, 4.8, 2.6, 5.2, 3.9, 2.2],
+    /** Wind-up telegraphs on the floor: POW warm, INT cool. */
+    telegraph: { pow: '#ff7a1a', int: '#2e8dff', opacity: 0.5 },
+  },
   ultra: {
     /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */
     studio: {

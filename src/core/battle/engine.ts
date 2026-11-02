@@ -1,12 +1,15 @@
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { AI, BATTLE, BATTLE_TRAITS, HEARTSTONE } from '../../data/tuning.ts'
 import { TOURNAMENT_GRADES, type AiTier, type Technique } from '../../data/types.ts'
-import { clamp, divRound } from '../mathx.ts'
+import { divRound } from '../mathx.ts'
 import { loyaltyOf, totalStats, traitsOf } from '../monster.ts'
 import { createRng, type Rng } from '../rng.ts'
 import { masteryBonuses } from '../songbook.ts'
 import { variantFarHit, variantWitherPlus } from '../variants.ts'
 import { decideAi } from './ai.ts'
+import { decideDuel } from './duelAi.ts'
+import { centreDist, clampLine, isDuel, moveAlongAxis, offsetFromAim, sidestepMove, slideStep, slideVector, strafeAround } from './geometry.ts'
+import { pathOf } from '../../data/paths.ts'
 import { decideAiV1 } from './aiV1.ts'
 import { bandCentre, bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
 import { bulwarkPct, clutchPct, composurePct, lastStandPct, ragePct, specialMods, tickSpecial, tryTrigger, valorPct } from './specials.ts'
@@ -36,7 +39,7 @@ import {
   traitsMul,
   traitsSum,
 } from './traits.ts'
-import type { BattleEvent, BattleInput, BattleOptions, BattleOutcome, BattleResult, BattleState, FighterSetup, FighterState, Side } from './types.ts'
+import type { BattleEvent, BattleInput, BattleOptions, BattleOutcome, BattleResult, BattleState, FighterSetup, FighterState, PendingFire, Side } from './types.ts'
 
 /**
  * GAME_DESIGN §12: the battle engine. A fixed-step simulation at 30 ticks per second, a pure function of
@@ -45,6 +48,9 @@ import type { BattleEvent, BattleInput, BattleOptions, BattleOutcome, BattleResu
  *
  * A technique resolves on the tick it is fired, from the state at that moment; the attacker is then busy for
  * the technique's animation (no movement, no guts regeneration). The renderer shows the impact later.
+ * Duel mode (Battle 3D, docs/BATTLE_3D.md) splits that in two: it is fired (cost, animation) and lands after
+ * its family's wind-up, so a timed sidestep can answer it. Line mode does both on the same tick, in the same
+ * order, so classic battles replay bit for bit.
  *
  * Tick order: inputs → timers → decisions (AI or Assist) → fires → dash, push, walking, slides → regen →
  * Clutch window → time-up check.
@@ -99,6 +105,7 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     stress: m.stress,
     gradeIndex,
     x: (side === 0 ? -BATTLE.arena.startX : BATTLE.arena.startX) * CENTI,
+    y: 0,
     hp: Math.max(1, m.stats.LIF),
     guts: BATTLE.guts.start,
     gutsAcc: 0,
@@ -170,12 +177,24 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     lastDx: 0,
     touchTicks: 0,
     pushes: 0,
+    strafeDir: 0,
+    sidestepTicks: 0,
+    sidestepDir: 1,
+    sidestepCooldown: 0,
+    sidestepStart: NEVER,
+    wantSidestep: 0,
+    slideVX: 0,
+    slideVY: 0,
+    pending: null,
+    aiStrafeUntil: NEVER,
+    aiSidestepAt: NEVER,
+    aiSidestepFor: NEVER,
   }
 }
 
 export function createBattle(a: FighterSetup, b: FighterSetup, opts: BattleOptions): Battle {
   return {
-    state: { tick: 0, timerTicks: opts.timerTicks, seed: opts.seed, fighters: [setupFighter(0, a), setupFighter(1, b)], outcome: null, log: [] },
+    state: { mode: opts.mode ?? 'line', tick: 0, timerTicks: opts.timerTicks, seed: opts.seed, fighters: [setupFighter(0, a), setupFighter(1, b)], outcome: null, log: [] },
     rng: createRng(opts.seed),
   }
 }
@@ -183,7 +202,7 @@ export function createBattle(a: FighterSetup, b: FighterSetup, opts: BattleOptio
 /** The gap between the two bodies, in whole units (§12.1). */
 export function gapUnits(state: BattleState): number {
   const [a, b] = state.fighters
-  return Math.floor(Math.abs(b.x - a.x) / CENTI) - 2 * BATTLE.arena.bodyRadius
+  return Math.floor(centreDist(a, b) / CENTI) - 2 * BATTLE.arena.bodyRadius
 }
 
 export function currentBand(state: BattleState): number {
@@ -192,7 +211,7 @@ export function currentBand(state: BattleState): number {
 
 /** Busy, stunned, dawdling, shoving or being shoved: no actions this tick. */
 export function canAct(f: FighterState): boolean {
-  return f.busyTicks === 0 && f.stunTicks === 0 && f.dawdleTicks === 0 && f.pushTicks === 0 && f.slideTicks === 0
+  return f.busyTicks === 0 && f.stunTicks === 0 && f.dawdleTicks === 0 && f.pushTicks === 0 && f.slideTicks === 0 && f.sidestepTicks === 0
 }
 
 export function isOver(state: BattleState): boolean {
@@ -261,6 +280,7 @@ function applyInput(state: BattleState, input: BattleInput, log: BattleEvent[]):
       if (a.on) {
         f.assistTech = null
         f.moveDir = 0
+        f.strafeDir = 0
       }
       return
     default:
@@ -274,7 +294,11 @@ function applyInput(state: BattleState, input: BattleInput, log: BattleEvent[]):
       break
     case 'move':
       f.moveDir = a.dir
+      if (isDuel(state)) f.strafeDir = a.side ?? 0
       f.assistTech = null
+      break
+    case 'sidestep':
+      if (isDuel(state)) f.wantSidestep = a.dir
       break
     case 'dash':
       f.wantDash = true
@@ -299,6 +323,7 @@ function tickTimers(f: FighterState, state: BattleState, log: BattleEvent[]): vo
   if (f.stunTicks > 0) f.stunTicks -= 1
   if (f.dawdleTicks > 0) f.dawdleTicks -= 1
   if (f.aiCooldown > 0) f.aiCooldown -= 1
+  if (f.sidestepCooldown > 0) f.sidestepCooldown -= 1
   tickSpecial(f)
   if (traitsAny(f.traits, traitBlessed) && f.hp > 0) {
     f.blessedAcc += 1
@@ -346,8 +371,7 @@ export function speedPerTick(f: FighterState, backing: boolean): number {
 
 /** Moves `f` by `dx` centi-units, never through the wall or the opponent's body. */
 function moveBy(f: FighterState, opp: FighterState, dx: number): void {
-  const wall = (BATTLE.arena.halfWidth - BATTLE.arena.bodyRadius) * CENTI
-  let nx = clamp(f.x + dx, -wall, wall)
+  let nx = clampLine(f.x + dx)
   const minGap = 2 * BATTLE.arena.bodyRadius * CENTI
   if (opp.x >= f.x && nx > opp.x - minGap) nx = Math.max(f.x, opp.x - minGap)
   if (opp.x < f.x && nx < opp.x + minGap) nx = Math.min(f.x, opp.x + minGap)
@@ -380,10 +404,73 @@ function startPush(state: BattleState, f: FighterState, opp: FighterState, log: 
 function knockBack(target: FighterState, from: FighterState): void {
   target.slideTicks = BATTLE.push.ticks
   target.slideDir = target.x >= from.x ? 1 : -1
+  const v = slideVector(target, from)
+  target.slideVX = v.vx
+  target.slideVY = v.vy
   target.assistTech = null
 }
 
+/** Duel movement (docs/BATTLE_3D.md §2): a sidestep, else dash / walk along the line between them, plus strafing. */
+function movementDuel(state: BattleState, f: FighterState, opp: FighterState): void {
+  const D = BATTLE.duel
+  const bx = f.x
+  const by = f.y
+  const along = (): number => {
+    const dx = opp.x - bx
+    const dy = opp.y - by
+    return (f.x - bx) * dx + (f.y - by) * dy
+  }
+  if (f.sidestepTicks > 0) {
+    sidestepMove(f, opp, divRound(D.sidestep.units * CENTI, D.sidestep.ticks) * f.sidestepDir)
+    f.sidestepTicks -= 1
+  } else if (f.dashTicks > 0) {
+    const bandBefore = currentBand(state)
+    moveAlongAxis(f, opp, speedPerTick(f, false) * BATTLE.dash.speedMul)
+    if (!f.lunging) f.dashTicks -= 1
+    const bandAfter = currentBand(state)
+    if (f.lunging ? bandAfter <= 1 : bandAfter < bandBefore) {
+      f.dashTicks = 0
+      f.lunging = false
+    }
+    if (gapUnits(state) <= 0) {
+      f.dashTicks = 0
+      f.lunging = false
+    }
+  } else if (canAct(f)) {
+    if (f.moveDir !== 0) moveAlongAxis(f, opp, f.moveDir === 1 ? speedPerTick(f, false) : -speedPerTick(f, true))
+    if (f.strafeDir !== 0) strafeAround(f, opp, divRound(speedPerTick(f, false) * D.strafePct, 100) * f.strafeDir)
+  }
+  if (f.x === bx && f.y === by && f.dashTicks === 0) f.stillTicks += 1
+  else f.stillTicks = 0
+  const a = along()
+  const dx = a === 0 ? 0 : a > 0 ? 1 : -1
+  if (dx !== 0) {
+    if (f.lastDx !== 0 && dx !== f.lastDx) f.dirChanges += 1
+    f.lastDx = dx
+    if (dx === 1) f.lastApproachTick = state.tick
+  }
+}
+
+/** Duel: start a requested sidestep when the fighter is free, can pay and is off cooldown. */
+function startSidestep(state: BattleState, f: FighterState, log: BattleEvent[]): void {
+  const want = f.wantSidestep
+  f.wantSidestep = 0
+  const D = BATTLE.duel.sidestep
+  if (want === 0 || !canAct(f) || f.dashTicks > 0 || f.sidestepCooldown > 0 || f.guts < D.cost) return
+  f.guts -= D.cost
+  f.sidestepTicks = D.ticks
+  f.sidestepDir = want
+  f.sidestepCooldown = D.cooldown
+  f.sidestepStart = state.tick
+  f.assistTech = null
+  log.push({ t: state.tick, kind: 'sidestep', side: f.side, dir: want })
+}
+
 function movement(state: BattleState, f: FighterState, opp: FighterState): void {
+  if (isDuel(state)) {
+    movementDuel(state, f, opp)
+    return
+  }
   const before = f.x
   const oppBefore = opp.x
   if (f.dashTicks > 0) {
@@ -416,11 +503,16 @@ function movement(state: BattleState, f: FighterState, opp: FighterState): void 
   }
 }
 
-function slide(f: FighterState, opp: FighterState): void {
+function slide(state: BattleState, f: FighterState, opp: FighterState): void {
   if (f.slideTicks <= 0) return
   const perTick = divRound(BATTLE.push.distance * CENTI, BATTLE.push.ticks)
-  const wall = (BATTLE.arena.halfWidth - BATTLE.arena.bodyRadius) * CENTI
-  f.x = clamp(f.x + perTick * f.slideDir, -wall, wall)
+  if (isDuel(state)) {
+    slideStep(f, opp, perTick)
+    f.slideTicks -= 1
+    f.stillTicks = 0
+    return
+  }
+  f.x = clampLine(f.x + perTick * f.slideDir)
   // Never slide into the opponent (a slide always goes away from them, but the wall can pin both).
   const minGap = 2 * BATTLE.arena.bodyRadius * CENTI
   if (Math.abs(f.x - opp.x) < minGap) f.x = opp.x + (f.slideDir > 0 ? minGap : -minGap)
@@ -500,10 +592,49 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
   f.busyTech = tech.id
   f.attacks += 1
   f.techUses[tech.id] = (f.techUses[tech.id] ?? 0) + 1
-  log.push({ t: state.tick, kind: 'fire', side: f.side, tech: tech.id, cost })
   const ramArmed = f.ramArmed
   f.ramArmed = false
+  if (isDuel(state)) {
+    // the wind-up: it lands later, aimed at where the defender stands now (docs/BATTLE_3D.md §3)
+    const path = pathOf(tech)
+    const landTick = state.tick + BATTLE.duel.windup[tech.family]
+    log.push({ t: state.tick, kind: 'fire', side: f.side, tech: tech.id, cost, lands: landTick, path })
+    f.pending = { tech: tech.id, fireTick: state.tick, landTick, path, gutsBefore, ramArmed, ax: f.x, ay: f.y, dx: opp.x, dy: opp.y }
+    return
+  }
+  log.push({ t: state.tick, kind: 'fire', side: f.side, tech: tech.id, cost })
+  landFire(state, f, opp, tech.id, ref, gutsBefore, ramArmed, null, rng, log)
+}
 
+/** Duel: the defender started a sidestep during this technique's wind-up. */
+function sidestepTimed(opp: FighterState, p: PendingFire | null): boolean {
+  return p !== null && p.path === 'line' && opp.sidestepStart >= p.fireTick && opp.sidestepStart < p.landTick
+}
+
+/** Duel: lands a technique whose wind-up is over. */
+function landPending(state: BattleState, f: FighterState, opp: FighterState, rng: Rng, log: BattleEvent[]): void {
+  const p = f.pending
+  if (!p || p.landTick !== state.tick) return
+  f.pending = null
+  const ref = f.techniques.find((t) => t.id === p.tech)
+  if (!ref || f.hp <= 0 || state.outcome) return
+  landFire(state, f, opp, p.tech, ref, p.gutsBefore, p.ramArmed, p, rng, log)
+}
+
+/** §12.5–§12.8 and §10.3: the technique lands (at once on the line; after the wind-up in the duel). */
+function landFire(
+  state: BattleState,
+  f: FighterState,
+  opp: FighterState,
+  techId: string,
+  ref: FighterState['techniques'][number],
+  gutsBefore: number,
+  ramArmed: boolean,
+  pending: PendingFire | null,
+  rng: Rng,
+  log: BattleEvent[],
+): void {
+  const tech = TECHNIQUE_BY_ID[techId]!
   const e = tech.effect
   if (e?.kind === 'heal') {
     heal(state, f, divRound(divRound(f.maxHp * e.pct, 100) * traitsMul(f.traits, traitHealMul), 1000), 'tech', log)
@@ -521,15 +652,18 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     gutsDef: opp.guts,
     bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, underdog)) + traitsSum(opp.traits, (t) => traitHitTaken(t, tech.range)),
     advantages: (opp.dawdleTicks > 0 ? 1 : 0) + (theirMods.givesAdvantage ? 1 : 0),
-    disadvantage: theirMods.givesDisadvantage,
+    disadvantage: theirMods.givesDisadvantage || sidestepTimed(opp, pending),
   })
+  // Duel: a straight-line technique aimed at where the defender stood misses if a sidestep carried it out of the path.
+  const dodged = pending !== null && pending.path === 'line' && sidestepTimed(opp, pending) &&
+    offsetFromAim(pending.ax, pending.ay, pending.dx, pending.dy, opp.x, opp.y) > BATTLE.duel.pathHalfWidth * CENTI
   let critChance = critTenths({ sharp: tech.sharp, fame: f.fame, oppFame: opp.fame, nature: f.nature, stress: f.stress, fameCapBonus: traitsSum(f.traits, traitFameCapBonus), bonus: traitsSum(f.traits, traitCritBonus) })
   critChance = divRound(critChance * traitsMul(opp.traits, traitCritTakenMul), 1000) * myMods.critMul
 
   for (let i = 1; i <= hits; i++) {
     if (opp.hp <= 0 || state.outcome) break
-    if (rng.nextInt(1, 1000) > hitChance) {
-      log.push({ t: state.tick, kind: 'miss', side: f.side, target: opp.side, tech: tech.id, hitNo: i, of: hits })
+    if (dodged || rng.nextInt(1, 1000) > hitChance) {
+      log.push(dodged ? { t: state.tick, kind: 'miss', side: f.side, target: opp.side, tech: tech.id, hitNo: i, of: hits, dodged: true } : { t: state.tick, kind: 'miss', side: f.side, target: opp.side, tech: tech.id, hitNo: i, of: hits })
       f.successRow = 0
       opp.successRow += 1
       opp.hitsTakenRow = 0
@@ -667,7 +801,17 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
     if (f.control === 'ai' || f.auto) {
       if (f.brain === 'v1') decideAiV1(state, f, opp, rng)
       else decideAi(state, f, opp, rng, log)
+      if (isDuel(state)) decideDuel(state, f, opp, rng)
     } else assistDecision(state, f)
+  }
+
+  if (isDuel(state)) {
+    // techniques whose wind-up ends now land first, in side order
+    for (const f of state.fighters) {
+      if (state.outcome) break
+      landPending(state, f, state.fighters[(1 - f.side) as Side], rng, log)
+    }
+    for (const f of state.fighters) if (!state.outcome) startSidestep(state, f, log)
   }
 
   for (const f of state.fighters) {
@@ -690,7 +834,7 @@ export function step(battle: Battle, inputs: readonly BattleInput[] = []): Battl
     }
     for (const f of state.fighters) {
       const opp = state.fighters[(1 - f.side) as Side]
-      if (f.slideTicks > 0) slide(f, opp)
+      if (f.slideTicks > 0) slide(state, f, opp)
       else if (f.pushTicks > 0) f.pushTicks -= 1
       else movement(state, f, opp)
       // A busy monster that just finished its animation and owes a lunge: start it now.

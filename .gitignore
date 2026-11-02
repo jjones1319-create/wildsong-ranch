@@ -40,3 +40,16 @@ art-review/
 
 # Art 2.1 Performance check: the UASTC normal maps are a local comparison only (too large for the download cap; ART_2_DETAIL §3.3)
 public/models/perf/*_normal.ktx2
+
+# Arenas (tools/blender/arenas/): the downloaded CC0 Poly Haven sources (fetch.py), never committed
+tools/blender/arenas/.cache/
+tools/blender/arenas/__pycache__/
+
+# Art 2.1 Ultra (tools/art/ultra.ts): the game loads only <breed>.glb and <breed>.json; the separate textures and the
+# WebP copy are local comparisons, rebuilt by `npm run art:ultra`
+public/models/monsters-ultra/*.webp
+public/models/monsters-ultra/*_*.ktx2
+public/models/monsters-ultra/*.webp.glb
+
+# Python caches (Blender scripts)
+__pycache__/
