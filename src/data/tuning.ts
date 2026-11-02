@@ -1181,12 +1181,14 @@ export const ART = {
   ultra: {
     /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */
     studio: {
-      key: { color: '#fff3e6', intensity: 2.0, azDeg: -45, elDeg: 42 },
-      rim: { color: '#ffd2a6', intensity: 2.2, azDeg: 155, elDeg: 30 },
+      key: { color: '#fff3e6', intensity: 2.6, azDeg: -45, elDeg: 42 },
+      /** Round 4: stronger and more to the side, so the warm edge shows on the outline in the front and 3/4 views. */
+      rim: { color: '#ffd2a6', intensity: 4.0, azDeg: 140, elDeg: 22 },
       sky: '#dfe9ff',
       ground: '#7c7466',
-      hemi: 1.6,
-      environment: 0.7,
+      /** Round 3: less fill and room light, so the coat keeps its teal and the cream doesn't clip (round 2 read washed out). */
+      hemi: 1.35,
+      environment: 0.45,
       background: '#8a8b8f',
       exposure: 1.0,
       shadowMapPx: 2048,
@@ -1196,30 +1198,36 @@ export const ART = {
     },
     /** Film materials: damp fur (rough, a light coat, sheen), gently glowing fins (fake translucency), soft normals. */
     film: {
-      normalScale: 0.5,
+      normalScale: 0.6,
       furRoughness: 1.0,
       furCoat: 0.12,
       furCoatRoughness: 0.35,
-      furSheen: 0.55,
+      furSheen: 0.45,
       cardSheen: 0.25,
       /** Cards fade in between these values of 1 − |N·V| (0 = facing the camera, 1 = edge-on): only the outline shows them. */
       cardEdgeFade: [0.25, 0.65] as const,
-      sheenColor: '#bff2e6',
+      /** Close to the fur's own colour: a pale sheen laid a white veil over the coat and the nose. */
+      sheenColor: '#86d3c8',
       sheenRoughness: 0.5,
       finCoat: 0.3,
-      finGlow: 0.2,
+      finGlow: 0.05,
       envIntensity: 0.6,
       cardAlphaTest: 0.5,
-      /** Eyes: glossy but dark (a modest coat, weak reflections), so the iris stays the reference's deep slate. */
-      eyeCoat: 0.4,
+      /**
+       * Eyes: glossy but dark, so the iris stays the reference's deep teal. three uses the scene's environment strength
+       * on materials without their own envMap, so the eye's reflections are cut with a weaker specular instead.
+       */
+      eyeCoat: 0.2,
       eyeEnv: 0.15,
+      eyeSpecular: 0.35,
     },
     /** Post effects at full quality. */
     post: {
       msaa: 4,
       aoIntensity: 0.45,
       aoRadius: 0.25,
-      bloom: { strength: 0.18, radius: 0.5, threshold: 0.9 },
+      /** Only real highlights bloom (at 0.9 the lit cream and the fins glowed). */
+      bloom: { strength: 0.18, radius: 0.5, threshold: 1.2 },
       grade: { saturation: 1.0, contrast: 1.02, warmth: 0.02, vignette: 0.08 },
       dof: { aperture: 0.002, maxBlur: 0.008 },
     },

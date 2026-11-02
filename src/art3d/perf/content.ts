@@ -106,7 +106,8 @@ export async function loadAssets(renderer: AnyRenderer, format: TexFormat): Prom
     m.userData.cineReady = /lo_body|lo_eyes|lo_fins/.test(n)
     // fur cards lie a few millimetres over the coat: their shadows would read as holes in it
     m.castShadow = m.userData.kind !== 'card'
-    m.receiveShadow = true
+    // a fin is a thin lit membrane: the head's shadow on it read as dirty smudges
+    m.receiveShadow = m.userData.kind !== 'fin'
   })
   let standin: Assets['standin'] = null
   if ((await fetchBytes(`${MODELS}standin.glb`)) > 0) {
@@ -118,7 +119,8 @@ export async function loadAssets(renderer: AnyRenderer, format: TexFormat): Prom
       m.userData.part = 'torso'
       m.userData.texSet = 'standin'
       m.castShadow = m.userData.kind !== 'card'
-      m.receiveShadow = true
+      // a fin is a thin lit membrane: the head's shadow on it read as dirty smudges
+    m.receiveShadow = m.userData.kind !== 'fin'
     })
     standin = { scene: sg.scene, tex: await loadTexSet(renderer, 'standin', format, 0) }
   }
@@ -142,6 +144,7 @@ export function filmMaterial(kind: Kind, tex: TexSet): MeshPhysicalMaterial {
     sheenColor: new Color(f.sheenColor),
     sheenRoughness: f.sheenRoughness,
     envMapIntensity: kind === 'eye' ? f.eyeEnv : f.envIntensity,
+    specularIntensity: kind === 'eye' ? f.eyeSpecular : 1,
     // only the fins are two-sided: a fur card's back face gets a flipped normal and renders nearly black at the outline
     side: kind === 'fin' ? DoubleSide : FrontSide,
     vertexColors: kind === 'card' || kind === 'lock',

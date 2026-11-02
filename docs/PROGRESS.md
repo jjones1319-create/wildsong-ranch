@@ -22,7 +22,13 @@ One entry per milestone: what was done, what comes next, and known issues. Newes
 - **PC numbers** (Intel Iris Xe ≈ a hot S25 Ultra): WebGPU draws the battle about 2.6× faster than WebGL (at 2.5× resolution, about 11 ms against 27 ms per frame).
 - **Tools:** `npm run perf:dev`. `tools/art/spike-detail.ts` encodes, captures, benches and writes `art-review/detail-spike/sheet.png`. `npm run build` also builds the check into `dist/perf/`.
 
+- **The look, four review rounds** (ART_2_DETAIL §8): a fresh-eyes reviewer compared each round's sheet with the pictures.
+  - Detail and design went from "no" (rounds 2 and 3) to "partly" (round 4).
+  - 64 px stayed "partly".
+  - Fixed along the way: black wedges from the AO bake, the teddy-bear bumps, silver eyes, scribbled brows, a fin fan that splayed sideways, a big muzzle, a spiky tuft, a washed-out light.
+
 **Known issues**
+- The coat still reads as overlapping leaves, and the ear membranes are smaller than in the pictures. Round 5 would move the coat to more fur cards (ART_2_DETAIL §8.5).
 - The check's monster is the spike stand-in, not the rebuilt Puddlepup.
 - The PC numbers are an estimate. The phone's soak decides.
 

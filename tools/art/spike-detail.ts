@@ -230,7 +230,7 @@ function sheetHtml(st: Stats): string {
   const ok = (f: string) => st.shots?.[f]?.ok === true
   const tag = (s: string) => `<span class="tag">${s}</span>`
   const blank = (cap: string) => `<figure><div class="img" style="width:${D}px;height:${D}px"></div><figcaption>${cap}</figcaption></figure>`
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Art 2.1 detail spike, round 2</title><style>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Art 2.1 detail spike</title><style>
 body{margin:0;padding:18px 22px;background:#e4e6ea;font:14px/1.4 system-ui,Segoe UI,sans-serif;color:#1d2126;width:1900px}
 h1{font-size:22px;margin:0 0 4px} h2{font-size:16px;margin:18px 0 6px} p{margin:2px 0 8px;max-width:1820px}
 .row{display:flex;gap:10px} figure{margin:0;background:#fff;border-radius:8px;padding:6px;box-shadow:0 1px 2px #0002}
@@ -239,7 +239,7 @@ figure img,.img{display:block;border-radius:4px;background:#8a8b8f} figcaption{f
 table{border-collapse:collapse;background:#fff;border-radius:8px;box-shadow:0 1px 2px #0002} td,th{padding:4px 10px;border-bottom:1px solid #e4e6ea;text-align:left;font-size:13px} th{background:#f2f3f5}
 .tag{display:inline-block;background:#1d6f69;color:#fff;border-radius:4px;padding:0 6px;font-size:12px;margin-right:4px}.cols{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
 </style></head><body>
-<h1>Art 2.1 detail spike, round 2: Puddlepup's head and front paw at the Ultra targets</h1>
+<h1>Art 2.1 detail spike: Puddlepup's head and front paw at the Ultra targets</h1>
 <p>Every render is the game's own three.js (r186) on this PC's GPU: the film look with the Ultra effects (soft key-light shadows, ambient occlusion, bloom, colour grading, 4× MSAA), no outlines. ${tag('cinematic')} is the head on its own ${tex.cine.base?.px ?? 2048}² texture set (Monster Card, cutscenes); ${tag('ultra')} is the in-game body atlas (${tex.atlas.base?.px ?? 0}² here = the density 2048² gives a whole Puddlepup). Head and paw: ${(t.total ?? 0).toLocaleString()} triangles, ${(st.build?.cards?.head ?? 0) + (st.build?.cards?.paw ?? 0)} soft fur cards, a tuft of ${st.build?.tuft_locks ?? 0} locks.</p>
 <h2>1 · Head, three-quarter view (the hero's angle)</h2>
 <div class="row">

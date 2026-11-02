@@ -47,7 +47,7 @@ TEAL, CREAM, PINK, EYE = '#3FB6A8', '#F3E6C4', '#F28FA8', '#24323A'
 # The card suggests #36A698 for dapples; the pictures show crisp, clearly darker spots, so derive a deeper teal.
 DAPPLE = C.shade_hex(TEAL, 0.66, cool=0.03)
 BROW = C.mix_hex(EYE, TEAL, 0.3)
-NOSE = '#2B2E35'
+NOSE = '#16171B'
 MOUTH = '#4A2E35'
 
 # ----------------------------------------------------------------------------- proportions (metres; faces −Y, Z up)
@@ -55,12 +55,14 @@ MOUTH = '#4A2E35'
 # across a little below the middle of the head, the nose just below the eye line, a small cream muzzle; the ears start
 # on the upper sides of the head and hang out and down to the chin (~0.95 m across their tips).
 HEAD_C = Vector((0.0, -0.37, 0.77))
-HEAD_R = (0.224, 0.19, 0.215)
-EYE_C = {s: Vector((0.128 * s, -0.522, 0.755)) for s in (1, -1)}
-EYE_R = 0.056
-NOSE_C = Vector((0.0, -0.627, 0.708))
-MUZZLE = ((0.0, -0.592, 0.664), (0.095, 0.074, 0.072))     # the plush, fur-free cream muzzle (centre, radii)
-EAR_ROOT = {s: Vector((0.158 * s, -0.37, 0.922)) for s in (1, -1)}
+HEAD_R = (0.214, 0.19, 0.215)                    # round 4: a little narrower
+EYE_C = {s: Vector((0.125 * s, -0.522, 0.755)) for s in (1, -1)}
+EYE_R = 0.061                                    # round 3: +10% (the pictures' eyes read bigger)
+NOSE_C = Vector((0.0, -0.616, 0.708))
+MUZZLE = ((0.0, -0.578, 0.666), (0.07, 0.056, 0.056))      # the plush, fur-free cream muzzle (centre, radii; round 4: smaller, set back)
+EAR_ROOT = {s: Vector((0.146 * s, -0.37, 0.93)) for s in (1, -1)}
+CHEEK = (0.112, -0.452, 0.668, 0.094)            # the cheek fluff (x, y, z, radius), mirrored
+EAR_GAP = 0.028                                  # the ear hangs this far outside the head and cheeks (the fur between)
 PAW = Vector((0.15, -0.19, 0.0))                 # the front-left paw's ground point
 TOE_DX = (-0.076, 0.0, 0.076)
 
@@ -83,7 +85,7 @@ def norm(a: np.ndarray) -> np.ndarray:
 def ear_frame(s: int):
     """Root, pink-face normal, in-plane down and outward axes for the left (s=1) or right (s=-1) ear."""
     R = EAR_ROOT[s]
-    npk = Vector((0.6 * s, -0.78, 0.12)).normalized()            # the pink face looks front-outward
+    npk = Vector((0.42 * s, -0.9, 0.1)).normalized()             # the pink face looks mostly forward
     down = Vector((0, 0, -1))
     e2 = (down - npk * down.dot(npk)).normalized()
     e1 = Vector((s, 0, 0))
@@ -92,7 +94,7 @@ def ear_frame(s: int):
 
 
 N_RIBS = 6
-EAR_THETA = (math.radians(42), math.radians(6))                  # outer edge (v=0) → inner edge (v=1), from straight down
+EAR_THETA = (math.radians(34), math.radians(6))                  # outer edge (v=0) → inner edge (v=1), from straight down
 EAR_LEN = (0.40, 0.44)
 
 
@@ -103,12 +105,25 @@ def ear_point(s: int, u: float, v: float, rib_relief: float = 0.0) -> Vector:
     L = EAR_LEN[0] + (EAR_LEN[1] - EAR_LEN[0]) * v
     d = e2 * math.cos(th) + e1 * math.sin(th)
     p = R + d * (u * L)
-    # the fan cups gently toward its pink face and droops; soft pleats along the ribs
+    # the fan cups gently toward its pink face and droops (no pleats: they read as a crimped paper fan)
     p += npk * (0.045 * u * u)
     p += Vector((0, 0, -0.03 * u * u))
-    p += npk * (0.004 * math.cos(2 * math.pi * N_RIBS * v) * u)
     p += npk * rib_relief
+    # it hangs outside the head and cheeks, so the whole ear shows from its root on top (a flat fan ran inside the
+    # head and only came out at mid-side)
+    m = head_side_x(p.y, p.z) + EAR_GAP * float(smooth(0.0, 0.25, u))
+    ax = abs(p.x)
+    p.x = s * 0.5 * (ax + m + math.sqrt((ax - m) ** 2 + 0.02 ** 2))
     return p
+
+
+def head_side_x(y: float, z: float) -> float:
+    """How far out the head's dome and cheeks reach at depth y and height z."""
+    q = 1.0 - ((y - HEAD_C.y) / HEAD_R[1]) ** 2 - ((z - HEAD_C.z) / HEAD_R[2]) ** 2
+    x = HEAD_R[0] * math.sqrt(q) if q > 0 else 0.0
+    cx, cy, cz, cr = CHEEK
+    q = 1.0 - ((y - cy) / (cr * 0.95)) ** 2 - ((z - cz) / (cr * 0.9)) ** 2
+    return max(x, cx + cr * math.sqrt(q)) if q > 0 else x
 
 
 def scallop(v: float) -> float:
@@ -126,12 +141,14 @@ def build_ear_sheet(name: str, s: int, nu: int, nv: int, high: bool) -> bpy.type
     bm = bmesh.new()
     uv_l = bm.loops.layers.uv.new('UVMap')
     rows = []
+    params = []
     for j in range(nu + 1):
         u = j / nu
         row = []
         for i in range(nv + 1):
             v = i / nv
             uu = u * scallop(v)
+            params.append((uu, v))
             relief = 0.0
             if high:
                 relief = 0.0028 * rib_mask(v) * (1.0 - 0.5 * u) * smooth(0.04, 0.2, u)
@@ -153,14 +170,8 @@ def build_ear_sheet(name: str, s: int, nu: int, nv: int, high: bool) -> bpy.type
     me.shade_smooth()
     ob = bpy.data.objects.new(name, me)
     C.link_obj(ob)
-    co = np.array([v.co[:] for v in me.vertices])
-    R, npk, e2, e1 = ear_frame(s)
-    rel = co - v3(R)
-    radial = np.linalg.norm(rel, axis=1)
-    ang = np.arctan2(rel @ v3(e1), rel @ v3(e2))
-    vv = np.clip((ang - EAR_THETA[0]) / (EAR_THETA[1] - EAR_THETA[0]), 0, 1)
-    L = EAR_LEN[0] + (EAR_LEN[1] - EAR_LEN[0]) * vv
-    uu = np.clip(radial / L, 0, 1.2)
+    uu = np.array([a for a, _ in params])
+    vv = np.array([b for _, b in params])
     rib = np.array([rib_mask(x) for x in vv])
     add_attr(ob, 'fan', np.stack([uu, vv, rib], axis=1))
     return ob
@@ -180,27 +191,28 @@ def head_parts() -> list[Part]:
     ps = [
         Part('head', 'sphere', loc=tuple(HEAD_C), radius=1.0, scale=HEAD_R),
         Part('forehead', 'sphere', loc=(0.0, -0.42, 0.85), radius=0.13, scale=(1.3, 0.85, 0.85)),
-        Part('cheek', 'sphere', loc=(0.118, -0.452, 0.668), radius=0.1, scale=(1.0, 0.95, 0.9), mirror=True),
-        Part('pad', 'sphere', loc=(0.037, -0.58, 0.662), radius=0.052, scale=(1.0, 0.95, 0.85), mirror=True),
-        Part('bridge', 'sphere', loc=(0.0, -0.565, 0.715), radius=0.047, scale=(1.05, 1.2, 0.8)),
-        Part('chin', 'sphere', loc=(0.0, -0.55, 0.617), radius=0.05, scale=(1.2, 0.95, 0.7)),
-        Part('nose', 'sphere', loc=tuple(NOSE_C), radius=0.032, scale=(1.1, 0.72, 0.64)),
-        Part('neck', 'capsule', loc=(0.0, -0.34, 0.66), to=(0.0, -0.3, 0.56), radius=0.15),
+        Part('cheek', 'sphere', loc=CHEEK[:3], radius=CHEEK[3], scale=(1.0, 0.95, 0.9), mirror=True),
+        Part('pad', 'sphere', loc=(0.029, -0.566, 0.666), radius=0.039, scale=(1.0, 0.95, 0.85), mirror=True),
+        Part('bridge', 'sphere', loc=(0.0, -0.556, 0.716), radius=0.043, scale=(1.05, 1.2, 0.8)),
+        Part('chin', 'sphere', loc=(0.0, -0.54, 0.626), radius=0.038, scale=(1.2, 0.95, 0.7)),
+        Part('nose', 'sphere', loc=tuple(NOSE_C), radius=0.035, scale=(1.15, 0.72, 0.66)),
+        Part('neck', 'capsule', loc=(0.0, -0.34, 0.66), to=(0.0, -0.3, 0.56), radius=0.13),
     ]
     for s in (1, -1):
         R, npk, e2, e1 = ear_frame(s)
         tag = 'L' if s > 0 else 'R'
-        # a furry cap over the top 40% of the ear, straddling the fin, merged into the head
-        cap = ear_point(s, 0.24, 0.5)
+        # a furry cap over the top of the ear, straddling the fin, merged into the head (it ends at the root: no bump)
+        cap = ear_point(s, 0.3, 0.5)
         long = (cap - R).normalized()
-        ps.append(Part(f'earcap{tag}', 'fin', loc=tuple(cap - long * 0.025), radius=0.1,
-                       scale=(0.62, 1.0, 0.24), taper=0.3, rot=_orient(-long, e1)))
+        ps.append(Part(f'earcap{tag}', 'fin', loc=tuple(cap - long * 0.025), radius=0.11,
+                       scale=(0.62, 1.0, 0.22), taper=0.3, rot=_orient(-long, e1)))
         # a narrower furry band down the outer edge toward the tip
         band = ear_point(s, 0.6, 0.04)
         longb = (band - R).normalized()
         ps.append(Part(f'earband{tag}', 'fin', loc=tuple(band), radius=0.17,
                        scale=(0.18, 1.0, 0.11), taper=0.55, rot=_orient(-longb, e1)))
-        ps.append(Part(f'earroot{tag}', 'sphere', loc=tuple(R + Vector((0.0, 0.0, -0.02))), radius=0.07))
+        # the root sits inside the head's curve; round 2's (5 cm proud of the dome) read as teddy-bear ears
+        ps.append(Part(f'earroot{tag}', 'sphere', loc=tuple(R + Vector((0.006 * s, 0.0, -0.05))), radius=0.056))
     return ps
 
 
@@ -331,8 +343,8 @@ def mouth_curve() -> list[tuple[float, float]]:
     right = []
     for k in range(1, 13):
         t = k / 12
-        x = 0.066 * t
-        z = mid - 0.012 * math.sin(math.pi * min(1.0, t * 1.15)) + 0.011 * t ** 3
+        x = 0.046 * t
+        z = mid - 0.008 * math.sin(math.pi * min(1.0, t * 1.15)) + 0.007 * t ** 3
         right.append((x, z))
     return [(-x, z) for x, z in reversed(right)] + pts[1:] + right
 
@@ -341,7 +353,7 @@ def whisker_dots() -> list[tuple[float, float, float]]:
     out = []
     zc = NOSE_C.z
     for s in (1, -1):
-        for z, xs in ((zc - 0.022, (0.043, 0.06, 0.077)), (zc - 0.036, (0.05, 0.068)), (zc - 0.05, (0.057,))):
+        for z, xs in ((zc - 0.022, (0.038, 0.053, 0.067)), (zc - 0.036, (0.044, 0.06)), (zc - 0.05, (0.05,))):
             for x in xs:
                 out.append((x * s, z, 0.0034))
     return out
@@ -352,7 +364,7 @@ def carve_head(ob: bpy.types.Object) -> None:
     x, y, z = co[:, 0], co[:, 1], co[:, 2]
     front = smooth(-0.5, -0.57, y)
     md = polyline_dist(x, z, mouth_curve())
-    groove = np.exp(-(md / 0.0028) ** 2) * front * (z < NOSE_C.z - 0.02)
+    groove = np.exp(-(md / 0.0022) ** 2) * front * (z < NOSE_C.z - 0.02)
     dots = np.zeros_like(x)
     for dx, dz, r in whisker_dots():
         dd = np.sqrt((x - dx) ** 2 + (z - dz) ** 2)
@@ -364,7 +376,7 @@ def carve_head(ob: bpy.types.Object) -> None:
         nos = np.maximum(nos, np.exp(-(dd / 0.0058) ** 2))
     nos *= smooth(NOSE_C.y + 0.018, NOSE_C.y + 0.008, y)
     # the muzzle stays plush and smooth: only the mouth line, the nostrils and a few shallow whisker pits
-    disp = -0.003 * groove - 0.0012 * dots - 0.005 * nos
+    disp = -0.0022 * groove - 0.005 * nos         # round 4: no whisker pits (they read as bumps and specks)
     set_positions(ob, co + vn * disp[:, None])
     base_attrs(ob, co, {'mouth': groove, 'dots': dots})
 
@@ -494,7 +506,7 @@ def head_zones(p: np.ndarray, n: np.ndarray) -> dict[str, np.ndarray]:
     throat = (z < 0.6) & ~ear & ~muzzle
     mirrored = p.copy()
     mirrored[:, 0] = np.abs(mirrored[:, 0])
-    blush = in_ellipsoid(mirrored, (0.155, -0.5, 0.688), (0.06, 0.08, 0.05)) < 1.0
+    blush = in_ellipsoid(mirrored, (0.15, -0.5, 0.69), (0.06, 0.08, 0.05)) < 1.0
     return {'ear': ear, 'ear_u': ear_u, 'muzzle': muzzle, 'nose': nose, 'eye_d': eye_d, 'face': face, 'crown': crown,
             'tuft': tuft, 'cheek': cheek, 'throat': throat, 'blush': blush, 'cut': z < 0.44}
 
@@ -598,7 +610,7 @@ def paw_flow(p, n, zones=None) -> np.ndarray:
 def leaf_width(v: float) -> float:
     """Half-width of a clump along its length: full and rounded across, then a long soft taper to the tip (a damp lock,
     not a round petal and not a hard blade)."""
-    return (0.8 + 0.2 * float(smooth(0.0, 0.25, v))) * (1.0 - float(smooth(0.28, 1.0, v))) ** 0.8
+    return (0.8 + 0.2 * float(smooth(0.0, 0.25, v))) * math.sqrt(max(0.0, 1.0 - float(smooth(0.35, 1.0, v)) ** 1.2))
 
 
 def leaf_height(v: float) -> float:
@@ -775,9 +787,9 @@ def tuft_frames(surface: bpy.types.Object):
     """The small crown tuft of 2-turnaround.png: seven curved wet locks on top of the head, combed back and fanned."""
     bvh = BVHTree.FromObject(surface, bpy.context.evaluated_depsgraph_get())
     P, N, F, L, W, lift = [], [], [], [], [], []
-    spots = [(0.0, -0.41, 0.0, 0.085, 40), (-0.022, -0.4, -26, 0.075, 34), (0.022, -0.4, 26, 0.075, 34),
-             (-0.012, -0.43, -10, 0.068, 44), (0.013, -0.43, 12, 0.066, 44), (-0.04, -0.385, -44, 0.062, 26),
-             (0.04, -0.383, 42, 0.062, 26), (-0.006, -0.385, -4, 0.07, 30), (0.03, -0.42, 34, 0.058, 36)]
+    spots = [(0.0, -0.41, 0.0, 0.072, 34), (-0.022, -0.4, -26, 0.064, 29), (0.022, -0.4, 26, 0.064, 29),
+             (-0.012, -0.43, -10, 0.058, 37), (0.013, -0.43, 12, 0.056, 37), (-0.04, -0.385, -44, 0.053, 22),
+             (0.04, -0.383, 42, 0.053, 22)]
     for x, y, fan, ln, lf in spots:
         hit = bvh.ray_cast(Vector((x, y, 1.4)), Vector((0, 0, -1)))
         if hit[0] is None:
@@ -785,13 +797,13 @@ def tuft_frames(surface: bpy.types.Object):
         p = np.array(hit[0])
         n = np.array(hit[1])
         a = math.radians(fan)
-        f = np.array([math.sin(a), math.cos(a) * 0.9, 0.35])
+        f = np.array([math.sin(a) + 0.4, math.cos(a) * 0.8, 0.3])
         f = f - n * (f @ n)
         P.append(p)
         N.append(n)
         F.append(f / np.linalg.norm(f))
-        L.append(ln)
-        W.append(0.024)
+        L.append(ln * 0.9)
+        W.append(0.034)
         lift.append(math.radians(lf))
     P, N, F = np.array(P), np.array(N), np.array(F)
     return lock_frames(P, N, F, np.array(L), np.array(W), np.array(lift), np.random.default_rng(77), None, jitter_deg=4)
@@ -818,8 +830,8 @@ DAPPLES = [  # (centre, radii): the round spot on the forehead, the scatter over
     ((0.0, -0.37, 0.99), (0.03, 0.03, 0.022)), ((0.09, -0.4, 0.955), (0.022, 0.026, 0.022)), ((-0.095, -0.38, 0.95), (0.024, 0.028, 0.022)),
     ((0.05, -0.27, 0.965), (0.027, 0.03, 0.025)), ((-0.06, -0.25, 0.955), (0.026, 0.03, 0.025)),
     ((0.0, -0.2, 0.9), (0.03, 0.03, 0.028)),
-    ((0.24, -0.35, 0.86), (0.024, 0.026, 0.024)), ((0.29, -0.37, 0.8), (0.028, 0.028, 0.028)),
-    ((-0.24, -0.35, 0.86), (0.024, 0.026, 0.024)), ((-0.29, -0.37, 0.8), (0.028, 0.028, 0.028)),
+    ((0.235, -0.36, 0.86), (0.024, 0.03, 0.024)), ((0.25, -0.39, 0.78), (0.028, 0.032, 0.028)),
+    ((-0.235, -0.36, 0.86), (0.024, 0.03, 0.024)), ((-0.25, -0.39, 0.78), (0.028, 0.032, 0.028)),
     ((0.17, -0.27, 0.72), (0.026, 0.03, 0.026)), ((-0.17, -0.27, 0.72), (0.026, 0.03, 0.026)),
     # the stand-in body's back (performance check only)
     ((0.12, -0.05, 0.64), (0.04, 0.04, 0.04)), ((-0.1, 0.06, 0.65), (0.04, 0.045, 0.04)), ((0.06, 0.2, 0.62), (0.04, 0.04, 0.04)),
@@ -843,31 +855,29 @@ def paint_body_material(name: str) -> bpy.types.Material:
     cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.0, -0.05, 0.27), (0.2, 0.42, 0.13), 0.12))
     cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.0, -0.33, 0.46), (0.16, 0.1, 0.16), 0.12))
     for s in (1, -1):
-        cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.122 * s, -0.53, 0.708), (0.064, 0.06, 0.03), 0.22))
+        cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.119 * s, -0.53, 0.708), (0.064, 0.06, 0.03), 0.22))
     # foot: a cream rim around the sole
     cream = nb.math('MAXIMUM', cream, nb.math('MULTIPLY', ell(nb, p, (PAW.x, PAW.y - 0.07, 0.0), (0.17, 0.2, 0.06), 0.12),
                                              nb.smooth(nb.sep(p)[2], 0.045, 0.02)))
     col = nb.mix(cream, col, nb.rgb(C.lin(CREAM)))
     dap = None
     for c, r in DAPPLES:
-        e = ell(nb, pos, c, r, 0.07)
+        e = ell(nb, pos, c, r, 0.16)
         dap = e if dap is None else nb.math('MAXIMUM', dap, e)
     dap = nb.math('MULTIPLY', dap, nb.math('SUBTRACT', 1.0, cream))
     col = nb.mix(dap, col, nb.rgb(C.lin(DAPPLE)))
-    # brows: short soft arcs well above the eyes
+    # brows: one soft dark dash per side well above the eye, by position (painted by root they broke into scribbles)
     brow = None
     for s in (1, -1):
-        for t in (-1.0, 0.0, 1.0):
-            c = (0.118 * s + 0.022 * t * s, -0.528 + 0.008 * abs(t), 0.842 - 0.005 * abs(t) - 0.003 * t)
-            e = ell(nb, p, c, (0.017, 0.03, 0.0075), 0.1)
-            brow = e if brow is None else nb.math('MAXIMUM', brow, e)
+        e = ell(nb, pos, (0.111 * s, -0.53, 0.858), (0.032, 0.05, 0.0115), 0.35)
+        brow = e if brow is None else nb.math('MAXIMUM', brow, e)
     col = nb.mix(brow, col, nb.rgb(C.lin(BROW)))
     # the blush: a soft round spot between the eye and the muzzle, by position (no streaks along the clumps)
     blush = None
     for s in (1, -1):
-        e = ell(nb, pos, (0.155 * s, -0.5, 0.688), (0.05, 0.06, 0.04), 0.7)
+        e = ell(nb, pos, (0.15 * s, -0.5, 0.69), (0.052, 0.06, 0.042), 0.6)
         blush = e if blush is None else nb.math('MAXIMUM', blush, e)
-    col = nb.mix(nb.math('MULTIPLY', blush, 0.55), col, nb.rgb(C.lin('#F7A1B3')))
+    col = nb.mix(nb.math('MULTIPLY', blush, 0.8), col, nb.rgb(C.lin('#F5919F')))
     # the upper lid line, on the body only
     rim = None
     for s in (1, -1):
@@ -879,9 +889,9 @@ def paint_body_material(name: str) -> bpy.types.Material:
         rim = e if rim is None else nb.math('MAXIMUM', rim, e)
     col = nb.mix(nb.math('MULTIPLY', rim, is_body), col, nb.rgb(C.lin('#2A2226')))
     # nose, mouth line, whisker dots
-    col = nb.mix(ell(nb, pos, tuple(NOSE_C), (0.038, 0.032, 0.026), 0.06), col, nb.rgb(C.lin(NOSE)))
-    col = nb.mix(nb.math('MULTIPLY', _attr_fac(nb, 'mouth'), 1.6, clamp=True), col, nb.rgb(C.lin(MOUTH)))
-    col = nb.mix(nb.math('MULTIPLY', _attr_fac(nb, 'dots'), 1.1, clamp=True), col, nb.rgb(C.lin('#A08E78')))
+    col = nb.mix(ell(nb, pos, tuple(NOSE_C), (0.044, 0.036, 0.03), 0.06), col, nb.rgb(C.lin(NOSE)))
+    # the mouth line on the muzzle only (a clump rooted at its corner took its colour: a brown speck)
+    col = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', _attr_fac(nb, 'mouth'), 1.2, clamp=True), is_body), col, nb.rgb(C.lin(MOUTH)))
     # paw: toe caps and the central pad
     pad = ell(nb, p, (PAW.x, PAW.y - 0.04, 0.011), (0.06, 0.048, 0.02), 0.08)
     for c in cap_centres():
@@ -890,7 +900,7 @@ def paint_body_material(name: str) -> bpy.types.Material:
     # clump shading: slightly darker roots, lighter tips, a little per-clump variation (body surface untouched)
     tpos = _attr_fac(nb, 'tpos')
     lrand = _attr_fac(nb, 'lrand')
-    shade = nb.math('ADD', 0.86, nb.math('MULTIPLY', tpos, 0.2))
+    shade = nb.math('ADD', 0.8, nb.math('MULTIPLY', tpos, 0.28))
     shade = nb.math('ADD', shade, nb.math('MULTIPLY', nb.math('SUBTRACT', lrand, 0.5), 0.08))
     shade = nb.mix(is_body, shade, 1.0, dtype='FLOAT')
     col = nb.mix(1.0, col, nb.comb(shade, shade, shade), blend='MULTIPLY')
@@ -907,12 +917,12 @@ def paint_rough_material(name: str) -> bpy.types.Material:
     p = _attr_vec(nb, 'root')
     tpos = _attr_fac(nb, 'tpos')
     is_lock = nb.math('GREATER_THAN', _attr_fac(nb, 'kind'), 0.5)
-    rough = nb.mix(is_lock, 0.62, nb.math('ADD', 0.44, nb.math('MULTIPLY', nb.math('ABSOLUTE', nb.math('SUBTRACT', tpos, 0.45)), 0.25)), dtype='FLOAT')
+    rough = nb.mix(is_lock, 0.62, nb.math('ADD', 0.4, nb.math('MULTIPLY', nb.math('ABSOLUTE', nb.math('SUBTRACT', tpos, 0.45)), 0.3)), dtype='FLOAT')
     coat = nb.mix(is_lock, 0.08, 0.16, dtype='FLOAT')
     muzzle = ell(nb, p, MUZZLE[0], tuple(r * 1.1 for r in MUZZLE[1]), 0.1)
     rough = nb.mix(muzzle, rough, 0.58, dtype='FLOAT')
     coat = nb.mix(muzzle, coat, 0.06, dtype='FLOAT')
-    glossy = ell(nb, p, tuple(NOSE_C), (0.038, 0.032, 0.026), 0.06)
+    glossy = ell(nb, p, tuple(NOSE_C), (0.044, 0.036, 0.03), 0.06)
     pad = ell(nb, p, (PAW.x, PAW.y - 0.04, 0.011), (0.06, 0.048, 0.02), 0.08)
     for c in cap_centres():
         pad = nb.math('MAXIMUM', pad, ell(nb, p, tuple(c), tuple(r + 0.0015 for r in CAP_R), 0.03))
@@ -938,11 +948,10 @@ def paint_eye_material(name: str, rough_pass: bool = False) -> bpy.types.Materia
     rx = nb.math('DIVIDE', x, EYE_R * 0.96)
     ry = nb.math('DIVIDE', y, EYE_R * 1.08)
     ri = nb.vmath('LENGTH', nb.comb(nb.math('DIVIDE', rx, 0.8), nb.math('DIVIDE', ry, 0.9), 0.0))
-    iris_c = nb.ramp(ri, [(0.0, C.lin('#0F171C')), (0.44, C.lin('#0F171C')), (0.5, C.lin('#1B2F35')),
-                          (0.78, C.lin('#2A5056')), (0.9, C.lin('#3B6E70')), (0.95, C.lin('#16242A')), (0.985, C.lin('#16242A')),
-                          (1.0, C.lin('#F2EFE8'))])
+    iris_c = nb.ramp(ri, [(0.0, C.lin('#0A1014')), (0.5, C.lin('#0A1014')), (0.56, C.lin('#1A383E')),
+                          (0.8, C.lin('#2B5E62')), (0.9, C.lin('#3A7274')), (0.95, C.lin('#13202A')), (1.0, C.lin('#13202A'))])
     low = nb.math('MULTIPLY', nb.smooth(ry, -0.15, -0.65), nb.smooth(ri, 0.95, 0.6))
-    col = nb.mix(nb.math('MULTIPLY', low, 0.7), iris_c, nb.rgb(C.lin('#5AA8A0')))
+    col = nb.mix(nb.math('MULTIPLY', low, 0.55), iris_c, nb.rgb(C.lin('#5AA8A0')))
     big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', rx, 0.24), nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.3), 1.2), 0.0)), 0.2, 0.17)
     small = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('SUBTRACT', rx, 0.27), nb.math('ADD', ry, 0.32), 0.0)), 0.075, 0.058)
     col = nb.mix(nb.math('MAXIMUM', big, small), col, nb.rgb((1.0, 1.0, 1.0)))
@@ -1079,7 +1088,7 @@ def strip_uvs(ob: bpy.types.Object, cells: tuple[int, ...]) -> None:
 
 # ----------------------------------------------------------------------------- build stage
 LYING = {'thickness': 0.085, 'bury': 0.04}
-BASE_AO = 0.3          # share of the baked AO multiplied into the base colour
+BASE_AO = 0.38         # share of the baked AO multiplied into the base colour (round 4: darker gaps between clumps)
 
 
 def stage_build(quick: bool) -> dict:

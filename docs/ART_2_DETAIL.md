@@ -83,13 +83,13 @@ What that means for the design:
   - Seen face-on, the coat is the baked fur. Where the coat curves away at the silhouette, the cards stand up as soft fuzz.
   - This replaced cards that showed everywhere, which read as sequins or scales (§8.3).
 - **Layers:** two on the spike (the coat, plus a longer fringe on the cheeks and the back); up to 3 on Ultra.
-- **Tufts:** small sets of real curved locks (the spike's crown tuft: 9 locks, 198 triangles). Nothing spiky breaks the outline anywhere else.
+- **Tufts:** small sets of real curved locks (the spike's crown tuft: 7 locks, 154 triangles). Nothing spiky breaks the outline anywhere else.
 - **Not used:** shell fur. It multiplies the pixel cost.
 
 ### 3.3 Textures and KTX2
 - **Maps per set:** colour (sRGB, with alpha for the card tiles), normal (MikkTSpace tangents exported), and ORM (AO, roughness, clearcoat mask).
 - **Sizes:**
-  - body atlas 2048² (the spike: 1184², the density 2048² gives a whole Puddlepup);
+  - body atlas 2048² (the spike: 1152², the density 2048² gives a whole Puddlepup);
   - cinematic head set 2048²;
   - face sheet 2048²;
   - Lite: half size.
@@ -156,11 +156,11 @@ Unchanged from revision 1: wet fur, short velvet, long fluffy fur and manes, woo
 ### 4.1 The spike (head, both fins and one front paw; about 45% of a whole Puddlepup's surface)
 | What | Measured |
 |---|---|
-| Source | 1.44 million triangles, 7,012 sculpted lying clumps (top surfaces only) |
-| Game triangles | head 14,000 · eyes 1,056 · fins 3,072 · paw 4,000 · head cards 2,428 (607 cards) · paw cards 504 (126 cards) · tuft 198 (9 locks) = **25,258** |
-| Mesh `.glb` (meshopt, two UV sets on the head, tangents, colours) | 433 KB |
-| Body atlas 1184² | WebP 702 KB · KTX2 ETC1S 744 KB |
-| Cinematic head set 2048² | WebP 1.57 MB · KTX2 ETC1S 1.77 MB |
+| Source | 1.40 million triangles, 6,880 sculpted lying clumps (top surfaces only) |
+| Game triangles | head 14,000 · eyes 1,056 · fins 3,072 · paw 4,000 · head cards 2,272 (568 cards) · paw cards 504 (126 cards) · tuft 154 (7 locks) = **25,058** |
+| Mesh `.glb` (meshopt, two UV sets on the head, tangents, colours) | 425 KB |
+| Body atlas 1152² | WebP 669 KB · KTX2 ETC1S 727 KB |
+| Cinematic head set 2048² | WebP 1.55 MB · KTX2 ETC1S 1.85 MB |
 
 ### 4.2 The performance stand-in
 The spike's head, four copies of its paw and a grey-box torso and tail built with the same fur pipeline (its own 2048² atlas): **59,548 triangles and 2,806 fur cards**. This is the low end of the Ultra aim, not the rebuilt Puddlepup. Two of them fight in the check's battle.
@@ -276,7 +276,7 @@ The screen stays on (Wake Lock).
 - **Fur:**
   - baked clumps are softer and flatter, with clearer strands, tapering to soft points (no round petals, no hard blades);
   - fur cards as fins at the outline only (§3.2);
-  - the tuft is 9 thin curved locks; nothing else spiky.
+  - the tuft is 7 short curved locks (9 in round 2); nothing else spiky.
 - **Muzzle:** smaller, smooth and plush cream, no fur clumps or pores. The blush is a soft spot painted by position.
 - **Markings:** crisp round dapples by position (the round forehead spot of the pictures).
 - **Eyes and paw:**
@@ -296,6 +296,9 @@ The screen stays on (Wake Lock).
   - With the game's own cards, tuft and low mesh visible to the AO rays, the baked fur surface sat in their shadow: the stand-in's AO came out almost black (median 0.03). The aoMap then drew black wedges wherever only fill light reaches (throat, chest).
   - The bake now hides everything but the sources and makes the low mesh invisible to rays.
   - Lying clumps are top surfaces only: closed undersides between overlapping clumps also bake dark.
+- **A glossy dark part reflects the room.** With `scene.environment` set, three uses `scene.environmentIntensity` for every material without its own envMap, so a dark eye or nose turns grey. Cut its specular instead, or give it its own envMap.
+- **A flat fan rooted on the head runs inside it.** Wrap the ear around the outside of the head, so it shows from its root.
+- **Paint thin lines on the body only.** A clump rooted on a painted line takes the colour along its whole length and reads as a speck.
 - **Eyes need their own material.** Fur sheen on an eye turns it milky grey.
 - **GTAO in WebGPU** can't read a multisampled depth buffer. Give it a plain depth and normal pre-pass.
 - **Markings that must stay round** (dapples, blush) are painted by position. Markings that should follow the fur are painted by root.
@@ -316,7 +319,67 @@ What it asked for, most important first:
 4. **Light:** less washed out, cream not clipping, a visible warm rim.
 5. **Muzzle and nose:** a smaller muzzle, a bigger black nose, a rosier blush.
 
-Round 3 is under way.
+### 8.5 Rounds 3 and 4
+**Round 3** (the eyes, the brows, the face, the light):
+- **The ear roots** sit inside the head's curve. Round 2's stood 5 cm proud of the dome.
+- **Eyes:** 10% bigger, with a big dark pupil, a deep teal iris and a dark rim instead of a white ring.
+  - Their reflections are cut with a weaker specular (`eyeSpecular`).
+  - Why it was needed: three uses the scene's environment strength for any material without its own envMap, so the eye's `envMapIntensity` was being ignored.
+- **Brows** are one soft dash per side, painted by position.
+- **Nose and blush:** a bigger black nose and a rosier blush.
+- **Muzzle and tuft:** a smaller muzzle and a tuft of 7 shorter locks.
+- **Light:**
+  - less fill and room light;
+  - a sheen colour close to the fur's own;
+  - bloom only above 1.2;
+  - fins that barely glow.
+
+**Round 3 verdict: detail and design "no"; 64 px "partly".**
+- The eyes, nose and colours improved.
+- The ears still splayed sideways like gills: a flat fan whose inner edge ran inside the head showed only from mid-side.
+- The muzzle was still big.
+- The tuft read as spikes.
+- The coat read as a printed chevron pattern.
+
+**Round 4** (the ears, the muzzle, the silhouette):
+- **Ears:**
+  - each ear wraps the outside of the head and cheeks from its root on top, hanging 3 cm out (the fur between);
+  - the pink face looks mostly forward;
+  - the pleats are gone (they read as a crimped paper fan);
+  - the head's shadow no longer falls on the fins (it read as smudges).
+- **Muzzle:**
+  - smaller and set back, with a thinner mouth line;
+  - no whisker pits;
+  - the mouth colour stays on the muzzle (a clump rooted at its corner had taken it: a brown speck).
+- **Head:**
+  - 5% narrower, with smaller cheeks and neck;
+  - the tuft is wider and swept to one side;
+  - the dapples have soft edges.
+- **Fur:**
+  - clump tips are rounded rather than pointed;
+  - the gaps between clumps are darker;
+  - there's a glossier streak along each clump.
+- **Light:**
+  - a stronger warm rim from the side the camera sees;
+  - more fill;
+  - normals at 0.6.
+
+**Round 4 verdict: detail and design "partly" (up from "no"); 64 px "partly".**
+- **Better:** the palette, the big glossy eyes, the dapples and the drooping ears read as Puddlepup. The sheen level is right and the blush is soft.
+- **Still short of the pictures:**
+  - **Fur:** the baked clumps read as overlapping leaves. Pointed tips read as chevrons and rounded ones as scales: the coat needs a different technique, not more tuning (below).
+  - **Ears:** the pink membranes are narrow strips under the flaps; in the pictures each is a fan about as tall as the head.
+  - **Head:** a little bottom-heavy (jowls), too deep from the side, with a bulge at the back.
+  - **Light:** still no visible warm rim; the fins look unlit.
+  - **Muzzle:** a stray clump on its right side and a wobbly mouth line.
+
+**Round 5, if the owner wants it** (about an hour):
+- **Fur:** fewer, larger, longer clumps flowing back from the nose, with soft see-through edges.
+  - The coat would carry more fur cards: the Ultra budget allows 6,000 per monster; the spike uses about 700.
+  - The baked clumps would become the undercoat.
+- **Ears:** coral membranes as tall as the head, fanning out from under the flaps, lit through.
+- **Head and muzzle:** lift the skull and take out the jowls and the back bulge. Spread the cream across the cheeks so the blush sits on cream. One thin "w" mouth.
+- **Light:** a warm rim through the specular and sheen, so it shows on the outline.
 
 ## 9. Plan after approval
 - **A1, the pipeline:** generalise the spike into `lib/surface.py` and `lib/bake.py`, with LOD0 / LOD1, the cinematic set, the material sidecar, KTX2 ETC1S encoding and the new `optimize.ts` budgets.
