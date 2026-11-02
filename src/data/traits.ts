@@ -32,6 +32,8 @@ export const TRAITS: readonly Trait[] = [
   { id: 'statue-pose', name: 'Statue Pose', description: 'After standing still for 2 seconds, takes 50% less damage until it moves' },
   { id: 'battering-ram', name: 'Battering Ram', description: 'Dashing costs no guts, and the first technique after a dash deals +15% damage' },
   { id: 'chill', name: 'Chill', description: "Its hits slow the target's walking by 25% for 3 seconds" },
+  { id: 'lookout', name: 'Lookout', description: "Always the first to spot something: opponents' Mid and Far techniques (range 3–4) get −6 hit against it" },
+  { id: 'cloud-cushion', name: 'Cloud Cushion', description: 'A padded, huggable giant: Heavy-family techniques deal 35% less damage to it' },
 ]
 
 export const TRAIT_BY_ID = Object.fromEntries(TRAITS.map((t) => [t.id, t])) as Record<TraitId, Trait>

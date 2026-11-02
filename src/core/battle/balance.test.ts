@@ -77,6 +77,7 @@ const PAIRS: [BreedId, BreedId][] = [
   ['starhowl', 'petalphant'],
   ['scrollopus', 'gloomgrin'],
   ['rammerjack', 'frostlance'],
+  ['stripeneck', 'plumdrake'],
 ]
 
 describe('§26 battle balance (AI vs AI, NPC stats, alternating sides)', () => {

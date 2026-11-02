@@ -161,6 +161,9 @@ export const BREED_IDS = [
   'gloomgrin',
   'rammerjack',
   'frostlance',
+  // added after launch (v1.14): the Shrine reaches them through their own draw (GAME_DESIGN §14.1)
+  'stripeneck',
+  'plumdrake',
 ] as const
 export type BreedId = (typeof BREED_IDS)[number]
 
@@ -195,6 +198,8 @@ export const TRAIT_IDS = [
   'statue-pose',
   'battering-ram',
   'chill',
+  'lookout',
+  'cloud-cushion',
 ] as const
 export type TraitId = (typeof TRAIT_IDS)[number]
 

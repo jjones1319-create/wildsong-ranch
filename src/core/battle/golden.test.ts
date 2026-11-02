@@ -15,10 +15,12 @@ const ai = (monster: FighterSetup['monster']): FighterSetup => ({ monster, contr
 describe('battle golden record', () => {
   it('30 fixed battles give the same logs as before the trait-list change', () => {
     const logs: string[] = []
-    BREED_IDS.forEach((breed, i) => {
+    // the launch roster only: breeds added later must not move this record
+    const LAUNCH = BREED_IDS.slice(0, 30)
+    LAUNCH.forEach((breed, i) => {
       const total = [1000, 2000, 3000][i % 3]!
       const a = npcMonster({ breed, total, seed: 100 + i })
-      const b = npcMonster({ breed: BREED_IDS[(i * 7 + 3) % BREED_IDS.length]!, total, seed: 200 + i })
+      const b = npcMonster({ breed: LAUNCH[(i * 7 + 3) % LAUNCH.length]!, total, seed: 200 + i })
       const r = runBattle(ai(a), ai(b), { seed: 300 + i, timerTicks: timerTicksFor(60) })
       logs.push(JSON.stringify([r.outcome, r.log]))
     })

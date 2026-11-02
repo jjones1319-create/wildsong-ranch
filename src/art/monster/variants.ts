@@ -31,6 +31,9 @@ export const VARIANT_PALETTES: Readonly<Record<string, VariantPalette>> = {
   'abyss-reefclaw': { body: '#1C3F6E', belly: '#2E6AA8', accent: '#F26B8A', eye: '#BFE3FF' },
   'gilded-lootlid': { body: '#E0B030', belly: '#F7DE8A', accent: '#8A5A12', eye: '#3A2A10' },
   'sunsoul-aurelwyrm': { body: '#FFF6E0', belly: '#FFFFFF', accent: '#E8B923', eye: '#8A5A12' },
+  // v1.14 (chatgpt/monsters/31-stripeneck/variant-ezgi-stripeneck.png, 32-plumdrake/variant-stormcloud-plumdrake.png)
+  'ezgi-stripeneck': { body: '#7A7DB8', belly: '#E6E4F4', accent: '#1F2140', eye: '#2B1E16' },
+  'stormcloud-plumdrake': { body: '#5A6070', belly: '#C9D0DC', accent: '#3E5C8C', eye: '#8FD3FF' },
 }
 
 export function variantPalette(variantId: string | null | undefined): VariantPalette | null {

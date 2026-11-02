@@ -75,6 +75,7 @@ import {
   type FaceOptions,
   type PartPiece,
 } from './parts.ts'
+import { bandedMane, bellyFreckles, cloudRuff, giraffePatches, littleFangs, ossicones, tailPuff, tuftTail, zebraStripes } from './parts3.ts'
 import { circle, ellipse, g, line, path, polygon, rect } from './svg.ts'
 
 /**
@@ -136,6 +137,8 @@ export const POLISH: Record<BreedId, { texture: TextureKind | null; particles: P
   gloomgrin: { texture: 'stone', particles: 'puff' },
   rammerjack: { texture: 'fur', particles: null },
   frostlance: { texture: null, particles: 'flake' },
+  stripeneck: { texture: 'fur', particles: null },
+  plumdrake: { texture: 'scales', particles: 'puff' },
 }
 
 const stroke = (pal: Palette, width: number, color = pal.outline) => ({ fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })
@@ -576,5 +579,17 @@ export const LOOKS: Record<BreedId, Look> = {
     knobs: { horizontal: true },
     face: { eyes: 'round', mouth: 'smile', eyeScale: 0.9 },
     parts: (s, pal) => [frostFins(s, pal.belly, pal), tealBack(s, pal.accent), iceTusk(s, '#BDE8F5', pal)],
+  },
+  // Added after launch (CONTENT §2.2, 31–32).
+  stripeneck: {
+    knobs: { neck: true, bodyRx: 54, bodyRy: 36, headR: 28, snout: true },
+    face: { eyes: 'round', mouth: 'smile', eyeScale: 1.05 },
+    parts: (s, pal) => [tuftTail(s, pal), bandedMane(s, pal), ossicones(s, pal), pointedEars(s, pal.body, pal.belly, pal), zebraStripes(s, pal), giraffePatches(s, pal), hooves([92, 110, 144, 164], '#4A3A30', pal)],
+  },
+  plumdrake: {
+    knobs: { bodyRx: 50, bodyRy: 46, headR: 34 },
+    face: { eyes: 'round', mouth: 'smile' },
+    // the wings rise from the shoulders, behind the head (the plan's back socket sits at mid-body)
+    parts: (s, pal) => [dragonWings({ ...s, back: { x: s.body.x - 2, y: s.body.y - s.body.ry * 0.6 } }, pal.accent, '#F5F3FA', pal), thickTail(s, pal.body, pal), tailPuff(s, '#F5F3FA', pal), curledHorns(s, '#F1E3C6', pal), bellyFreckles(s, pal), cloudRuff(s, '#F5F3FA', pal), littleFangs(s, pal)],
   },
 }

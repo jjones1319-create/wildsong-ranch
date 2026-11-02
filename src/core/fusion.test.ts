@@ -110,12 +110,15 @@ describe('Fusion surprises (CONTENT §2.3)', () => {
       for (let i = 0; i < unlocked.length; i++) for (let j = i; j < unlocked.length; j++) for (const s of fusionSurprises(unlocked[i]!, unlocked[j]!, unlocked)) c.set(s, c.get(s)! + 1)
       return [...c.values()]
     }
+    // The table grows with the roster, so "nobody crowds it" is a share of the pairings: the caps were 40 of 300
+    // starting pairs and 45 of 465 in all when there were 30 breeds (13.4% and 9.7%).
+    const pairs = (n: number) => (n * (n + 1)) / 2
     const start = counts(STARTING_UNLOCKED)
     expect(Math.min(...start)).toBeGreaterThanOrEqual(5)
-    expect(Math.max(...start)).toBeLessThanOrEqual(40)
+    expect(Math.max(...start)).toBeLessThanOrEqual(Math.ceil(pairs(STARTING_UNLOCKED.length) * 0.134))
     const all = counts(ALL)
     expect(Math.min(...all)).toBeGreaterThanOrEqual(8)
-    expect(Math.max(...all)).toBeLessThanOrEqual(45)
+    expect(Math.max(...all)).toBeLessThanOrEqual(Math.ceil(pairs(ALL.length) * 0.097))
     for (const r of FUSION_RULES) {
       const picks = ALL.some((a) =>
         ALL.some((b) => {
@@ -133,7 +136,7 @@ describe('Fusion surprises (CONTENT §2.3)', () => {
       for (let i = 0; i < unlocked.length; i++) for (let j = i; j < unlocked.length; j++) rows.push(`${unlocked[i]}+${unlocked[j]}>${fusionSurprises(unlocked[i]!, unlocked[j]!, unlocked).join(',')}`)
       return rows.join(';')
     }
-    expect([cyrb53(table(STARTING_UNLOCKED)), cyrb53(table(ALL))]).toEqual([4424695493812943, 2599830349750459])
+    expect([cyrb53(table(STARTING_UNLOCKED)), cyrb53(table(ALL))]).toEqual([2480142777201860, 1402137521401566])
   })
 })
 

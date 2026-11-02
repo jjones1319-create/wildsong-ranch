@@ -5,8 +5,8 @@ import { BREED_TECHNIQUES, TECHNIQUES, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } f
 import { ELEMENTS, type Element } from './types.ts'
 
 describe('technique elements (VISUAL_V1_EFFECTS §5)', () => {
-  it('every one of the 294 techniques has an element', () => {
-    expect(TECHNIQUES).toHaveLength(294)
+  it('every one of the 312 techniques has an element', () => {
+    expect(TECHNIQUES).toHaveLength(312)
     for (const t of TECHNIQUES) expect(ELEMENTS).toContain(t.element)
   })
 
@@ -105,8 +105,8 @@ describe('technique elements (VISUAL_V1_EFFECTS §5)', () => {
       return rows
     }
     const content = new Set<string>()
-    expect(check('docs/CONTENT.md', content)).toBe(294)
-    expect(content.size).toBe(31)
+    expect(check('docs/CONTENT.md', content)).toBe(312)
+    expect(content.size).toBe(33)
     const extra = new Set<string>()
     expect(check('docs/NEW_MONSTERS.md', extra)).toBe(90)
     expect(extra.size).toBe(10)

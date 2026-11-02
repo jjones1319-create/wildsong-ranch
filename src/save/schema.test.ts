@@ -109,7 +109,8 @@ describe('schema version 5 (M6)', () => {
     const r = validateSave(JSON.parse(JSON.stringify(v4)))
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.save.game.unlocked.length).toBe(22)
+    // the 22 starters of that time plus every breed added since (v1.14: Stripeneck, Plumdrake)
+    expect(r.save.game.unlocked.length).toBe(24)
     expect(r.save.game.monster!.heirloom).toBeNull()
     expect(r.save.game.encyclopedia).toEqual({ breeds: [], variants: [], phrases: [], combos: [] })
   })
@@ -133,7 +134,7 @@ describe('schema version 5 (M6)', () => {
     expect(r.save.game.memorial[0]!.epitaph).toHaveLength(80)
     expect(r.save.game.heartstones).toHaveLength(1)
     expect(r.save.game.heartstones[0]!.gains).toEqual({ LIF: 0, POW: 50, INT: 0, SKI: 0, SPD: 0, DEF: 0 })
-    expect(r.save.game.unlocked).toHaveLength(22)
+    expect(r.save.game.unlocked).toHaveLength(24)
     expect(r.save.game.encyclopedia.variants).toEqual(['songheart-puddlepup'])
     expect(r.save.game.monster!.heirloom).toBeNull()
   })

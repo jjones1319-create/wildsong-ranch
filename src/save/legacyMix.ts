@@ -7,7 +7,7 @@ import type { BreedId } from '../data/types.ts'
  * name the game gave it ("Cinder Tumblefox") takes its breed's name instead; a name the player chose is kept.
  * The sub adjectives are frozen here because the live breed data no longer has them.
  */
-const LEGACY_SUB_ADJECTIVES: Record<BreedId, string> = {
+const LEGACY_SUB_ADJECTIVES: Partial<Record<BreedId, string>> = {
   puddlepup: 'Puddle',
   tumblefox: 'Tumble',
   cobblemaw: 'Cobble',

@@ -695,6 +695,10 @@ export const BATTLE_TRAITS = {
   statuePosePct: 50,
   batteringRamPct: 115,
   chillPct: 75,
+  /** Lookout (Stripeneck): opponents' Mid and Far techniques (range 3–4) get this much less hit, in whole percent. */
+  lookoutHit: 6,
+  /** Cloud Cushion (Plumdrake): Heavy-family damage taken, in percent. */
+  cloudCushionPct: 65,
   /** M10 Gilded: guts gained each time it lands a hit. */
   gildedGutsOnHit: 7,
 } as const
@@ -794,6 +798,12 @@ export const SHRINE = {
   randomWords: { min: 1, max: 3 },
   /** A salt for the secret-phrase hashes, so they differ from the Shrine's own seeds. */
   secretSalt: 53,
+  /**
+   * Breeds 1–30 are the launch roster: the breed draw picks among them exactly as it always has. Breeds added after
+   * launch get their own draw from a stream seeded with this salt, so every older phrase keeps its monster (GAME_DESIGN §14.1).
+   */
+  launchBreedCount: 30,
+  addedBreedSalt: 31,
 } as const
 
 /** CONTENT §12 variant perks that are rules rather than birth stats. */
@@ -991,7 +1001,7 @@ export const ARRIVAL = {
 } as const
 
 /** CONTENT §14 title thresholds that are not tournament placings. */
-export const TITLES = { collectorVariants: 30, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 30, perfectPitchRound: 15 } as const
+export const TITLES = { collectorVariants: 30, sweetTooth: 100, sleeperStones: 10, gentleHeartPct: 95, lineageGeneration: 5, encyclopedistBreeds: 32, perfectPitchRound: 15 } as const
 
 /** §23 audio. Volumes are percentages. */
 export const AUDIO = {

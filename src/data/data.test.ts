@@ -11,10 +11,10 @@ import { TRAITS } from './traits.ts'
 import { BREED_IDS, FAMILIES, STAT_KEYS, type Family, type Technique } from './types.ts'
 
 describe('breeds (CONTENT §2)', () => {
-  it('has the 30 breeds with unique ids in table order', () => {
-    expect(BREEDS).toHaveLength(30)
+  it('has the 32 breeds with unique ids in table order', () => {
+    expect(BREEDS).toHaveLength(32)
     expect(BREEDS.map((b) => b.id)).toEqual([...BREED_IDS])
-    expect(new Set(BREEDS.map((b) => b.name)).size).toBe(30)
+    expect(new Set(BREEDS.map((b) => b.name)).size).toBe(32)
   })
 
   it('gives the three growing breeds a grown look and nobody else', () => {
@@ -58,9 +58,9 @@ describe('breeds (CONTENT §2)', () => {
 })
 
 describe('traits, drills, foods, items, journeys', () => {
-  it('has 30 traits, one per breed', () => {
-    expect(TRAITS).toHaveLength(30)
-    expect(new Set(BREEDS.map((b) => b.trait)).size).toBe(30)
+  it('has 32 traits, one per breed', () => {
+    expect(TRAITS).toHaveLength(32)
+    expect(new Set(BREEDS.map((b) => b.trait)).size).toBe(32)
   })
 
   it('has 6 light drills (one per stat) and 5 heavy drills', () => {
@@ -101,10 +101,10 @@ describe('traits, drills, foods, items, journeys', () => {
 })
 
 describe('techniques (CONTENT §3)', () => {
-  it('has 270 breed techniques + 24 universal with unique ids and unique names', () => {
-    expect(BREED_TECHNIQUES).toHaveLength(270)
+  it('has 288 breed techniques + 24 universal with unique ids and unique names', () => {
+    expect(BREED_TECHNIQUES).toHaveLength(288)
     expect(UNIVERSAL_TECHNIQUES).toHaveLength(24)
-    expect(new Set(TECHNIQUES.map((t) => t.id)).size).toBe(294)
+    expect(new Set(TECHNIQUES.map((t) => t.id)).size).toBe(312)
     const names = TECHNIQUES.map((t) => t.name.toLowerCase())
     const dupes = names.filter((n, i) => names.indexOf(n) !== i)
     expect(dupes).toEqual([])
@@ -205,10 +205,10 @@ describe('techniques (CONTENT §3)', () => {
 })
 
 describe('secret variants (CONTENT §12)', () => {
-  it('lists 21 variants with unique ids and hashes, real breeds and a palette each', () => {
-    expect(SECRETS).toHaveLength(21)
-    expect(new Set(SECRETS.map((s) => s.id)).size).toBe(21)
-    expect(SECRET_BY_HASH.size).toBe(21)
+  it('lists 23 variants with unique ids and hashes, real breeds and a palette each', () => {
+    expect(SECRETS).toHaveLength(23)
+    expect(new Set(SECRETS.map((s) => s.id)).size).toBe(23)
+    expect(SECRET_BY_HASH.size).toBe(23)
     for (const s of SECRETS) {
       expect(BREED_IDS).toContain(s.breed)
       expect(VARIANT_PALETTES[s.id]).toBeDefined()

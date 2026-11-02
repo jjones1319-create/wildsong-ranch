@@ -20,6 +20,11 @@ export function traitHitBonus(trait: TraitId, range: TechRange, underdog: boolea
   return bonus
 }
 
+/** Hit taken in whole percent (the defender's trait): Lookout spots Mid and Far techniques coming. */
+export function traitHitTaken(trait: TraitId, range: TechRange): number {
+  return trait === 'lookout' && range >= 3 ? -T.lookoutHit : 0
+}
+
 export interface DealtContext {
   family: Family
   /** Attacker's HP as tenths of a percent. */
@@ -40,16 +45,18 @@ export function traitDealtMul(trait: TraitId, c: DealtContext): number {
 
 export interface TakenContext {
   techType: TechType
+  family: Family
   /** Statue Pose: has stood still long enough. */
   still: boolean
 }
 
-/** Damage-taken multipliers: Fortified, Hard Shell (POW), Unshakable, Statue Pose. */
+/** Damage-taken multipliers: Fortified, Hard Shell (POW), Unshakable, Statue Pose, Cloud Cushion (Heavy). */
 export function traitTakenMul(trait: TraitId, c: TakenContext): number {
   if (trait === 'fortified') return T.fortifiedPct * 10
   if (trait === 'hard-shell' && c.techType === 'POW') return T.hardShellPct * 10
   if (trait === 'unshakable') return T.unshakablePct * 10
   if (trait === 'statue-pose' && c.still) return T.statuePosePct * 10
+  if (trait === 'cloud-cushion' && c.family === 'Heavy') return T.cloudCushionPct * 10
   return 1000
 }
 

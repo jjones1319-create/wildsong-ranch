@@ -548,6 +548,33 @@ Spec: ART_2_PLAN §2 (the look), §3.1 (pipeline), §3.2 (runtime), §3.3 (where
 - [x] 4. Review loop: Blender sheets in `tools/blender/out/puddlepup/review/`, in-game sheets by `npm run art:review` in `art-review/puddlepup/`, fresh-eyes review (two passes: the first found the shading too soft, the outline hidden and the hop leaving the frame; all fixed), budgets (583 KB, 8,705 tris, 26 joints).
 - [x] 5. Tests (`models`, `faceCells`, `springs`, `arenaCamera`, `battleClips`, `manifest`, `portraitCache`), e2e `models.spec.ts` (WebGL off, model 404, the setting, context loss, one canvas), docs, verify, commit, deploy, phone checklist.
 
+## Breeds 31–32: Stripeneck and Plumdrake (v1.14.0)
+
+Spec:
+- the owner's cards in `chatgpt/monsters/31-stripeneck/` and `32-plumdrake/`;
+- CONTENT §2, §2.1–§2.3, §3, §12;
+- GAME_DESIGN §14.1 (the added-breed draw).
+
+Their 3D models come in the Art 2.1 batch after the spike is approved.
+
+- [x] 1. CONTENT: the §2 rows, the Lookout and Cloud Cushion traits, the art briefs, the kinds, two technique tables, the two secret phrases, the counts (32 breeds, 288 + 24 = 312 techniques, 23 secrets).
+- [x] 2. Data: `BREED_IDS` (appended), `TRAIT_IDS`, the breeds, traits, techniques, element defaults, fusion kinds, secrets and variant palettes; `legacyMix` made `Partial`.
+- [x] 3. Rules:
+  - Lookout: `traitHitTaken`, wired into both hit rolls.
+  - Cloud Cushion: `family` in the damage-taken context.
+  - The Shrine's added-breed draw: the launch roster draws as before, and a second stream may replace it, so older phrases keep their monsters.
+- [x] 4. Classic art: `parts3.ts` (patches, stripes, ossicones, banded mane, tufted tail; cloud ruff, tail puff, freckles, fangs) and both looks; the contact sheet checked.
+- [x] 5. Tests:
+  - counts;
+  - the secret phrases;
+  - the added-breed draw (share and stability);
+  - the trait answers;
+  - the golden battles pinned to the launch roster;
+  - the fusion spread caps as a share of the pairings;
+  - the Shrine and fusion pins re-pinned deliberately.
+- [x] 6. Balance: `npm run sim:balance`; Plumdrake retuned to a tanky caster (PROGRESS has the numbers).
+- [x] 7. Finish: 1.14.0, `npm run verify`, PROGRESS, commit, push, the owner's phone checklist.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.

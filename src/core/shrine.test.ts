@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { BREED_IDS, STAT_KEYS } from '../data/types.ts'
-import { STARTING_UNLOCKED } from '../data/breeds.ts'
-import { BIRTH } from '../data/tuning.ts'
+import { BREEDS, STARTING_UNLOCKED } from '../data/breeds.ts'
+import { BIRTH, SHRINE } from '../data/tuning.ts'
 import { SECRETS } from '../data/secrets.ts'
 import { cyrb53 } from './hash.ts'
-import { monsterFromRoll, randomPhrase, rollShrine, suggestName } from './shrine.ts'
+import { addedBreedFor, monsterFromRoll, randomPhrase, rollShrine, suggestName } from './shrine.ts'
 import { createRng } from './rng.ts'
 import { breedBirth } from './monster.ts'
 
@@ -86,7 +86,7 @@ describe('the Shrine of Echoes (§14.1)', () => {
 
 const SECRET_PHRASES = [
   'wildsong', 'tunewick', 'hello world', 'happy birthday', 'thunderstorm', 'teatime', 'ember', 'jade garden', 'pancakes', 'lighthouse', 'fencing',
-  'sunrise', 'bedrock', 'midnight', 'farewell', 'static', 'clockwork', 'reflection', 'high tide', 'treasure', 'golden hour',
+  'sunrise', 'bedrock', 'midnight', 'farewell', 'static', 'clockwork', 'reflection', 'high tide', 'treasure', 'golden hour', 'ezgi', 'cloud nine',
 ]
 
 describe('secret phrases (CONTENT §12)', () => {
@@ -138,6 +138,24 @@ describe('secret phrases (CONTENT §12)', () => {
       const m = monsterFromRoll(r, 'x')
       lines.push(`${r.mainBreed}/${m.variantId ?? '-'} ${m.name} ${STAT_KEYS.map((k) => m.stats[k]).join('/')} ${m.lifespanTotal} ${m.gutsRate} ${m.nature} ${m.likes.food} ${m.likes.drill}`)
     }
-    expect(cyrb53(lines.join('\n'))).toBe(1406725160479249)
+    // v1.14: re-pinned when breeds 31–32 joined; 2,816 of 3,000 test phrases were checked byte-identical against v1.13.3
+    expect(cyrb53(lines.join('\n'))).toBe(6522060436425020)
+  })
+
+  it('added breeds come from their own draw: about 6% of phrases, and they never move another roll (GAME_DESIGN §14.1)', () => {
+    let added = 0
+    for (let i = 0; i < 2000; i++) {
+      const r = rollShrine(`added ${i} ${['moss', 'brook', 'lark'][i % 3]}`, '', ALL)
+      // the launch draw is made either way, so the offsets match a roll that ignores the added breeds
+      const rng = createRng(r.seed.seed)
+      const launch = rng.weightedPick(BREEDS.slice(0, SHRINE.launchBreedCount), (b) => b.commonness).id
+      const stats = STAT_KEYS.map(() => rng.nextInt(BIRTH.statOffset.min, BIRTH.statOffset.max))
+      expect(STAT_KEYS.map((k) => r.offsets.stats[k])).toEqual(stats)
+      const extra = addedBreedFor(r.seed)
+      expect(r.mainBreed).toBe(extra ?? launch)
+      if (extra) added++
+    }
+    expect(added / 2000).toBeGreaterThan(0.04)
+    expect(added / 2000).toBeLessThan(0.09)
   })
 })

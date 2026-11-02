@@ -37,6 +37,8 @@ export const BREED_KINDS: Readonly<Record<BreedId, readonly Kind[]>> = {
   gloomgrin: ['stone', 'night'],
   rammerjack: ['beast', 'knight'],
   frostlance: ['water', 'ice'],
+  stripeneck: ['beast', 'plant'],
+  plumdrake: ['dragon'],
 }
 
 /** One parent has kind `a`, the other has `b` (either way round): breeds of kind `makes` are favored. */

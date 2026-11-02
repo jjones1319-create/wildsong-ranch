@@ -4,7 +4,7 @@ import { TRAITS } from '../../data/traits.ts'
 import type { BreedId } from '../../data/types.ts'
 import { npcMonster } from '../npc.ts'
 import { runBattle, timerTicksFor } from './engine.ts'
-import { traitDealtMul, traitExtraHits, traitHitBonus, traitImmovable, traitRegenMul, traitSpeedMul, traitTakenMul } from './traits.ts'
+import { traitDealtMul, traitExtraHits, traitHitBonus, traitHitTaken, traitImmovable, traitRegenMul, traitSpeedMul, traitTakenMul } from './traits.ts'
 import type { FighterSetup } from './types.ts'
 
 const ai = (monster: FighterSetup['monster']): FighterSetup => ({ monster, control: 'ai', personality: 'Steady' })
@@ -22,11 +22,18 @@ describe('battle traits (CONTENT §2.1, NEW_MONSTERS §2)', () => {
     expect(traitDealtMul('hot-blooded', { family: 'Hit', hpPct: 500, underdog: false, ramArmed: false })).toBe(1150)
     expect(traitDealtMul('hot-blooded', { family: 'Hit', hpPct: 501, underdog: false, ramArmed: false })).toBe(1000)
     expect(traitDealtMul('battering-ram', { family: 'Hit', hpPct: 1000, underdog: false, ramArmed: true })).toBe(1150)
-    expect(traitTakenMul('fortified', { techType: 'INT', still: false })).toBe(700)
-    expect(traitTakenMul('hard-shell', { techType: 'POW', still: false })).toBe(750)
-    expect(traitTakenMul('hard-shell', { techType: 'INT', still: false })).toBe(1000)
-    expect(traitTakenMul('unshakable', { techType: 'INT', still: false })).toBe(800)
-    expect(traitTakenMul('statue-pose', { techType: 'INT', still: true })).toBe(500)
+    expect(traitTakenMul('fortified', { techType: 'INT', family: 'Hit', still: false })).toBe(700)
+    expect(traitTakenMul('hard-shell', { techType: 'POW', family: 'Hit', still: false })).toBe(750)
+    expect(traitTakenMul('hard-shell', { techType: 'INT', family: 'Hit', still: false })).toBe(1000)
+    expect(traitTakenMul('unshakable', { techType: 'INT', family: 'Hit', still: false })).toBe(800)
+    expect(traitTakenMul('statue-pose', { techType: 'INT', family: 'Hit', still: true })).toBe(500)
+    // added after launch: Lookout (Stripeneck) and Cloud Cushion (Plumdrake)
+    expect(traitHitTaken('lookout', 3)).toBe(-6)
+    expect(traitHitTaken('lookout', 4)).toBe(-6)
+    expect(traitHitTaken('lookout', 2)).toBe(0)
+    expect(traitHitTaken('glow', 4)).toBe(0)
+    expect(traitTakenMul('cloud-cushion', { techType: 'POW', family: 'Heavy', still: false })).toBe(650)
+    expect(traitTakenMul('cloud-cushion', { techType: 'POW', family: 'Hit', still: false })).toBe(1000)
     expect(traitRegenMul('live-wire', 29)).toBe(1100)
     expect(traitRegenMul('live-wire', 30)).toBe(1000)
     expect(traitSpeedMul('tailwind')).toBe(1200)

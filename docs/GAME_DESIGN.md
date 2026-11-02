@@ -1047,7 +1047,13 @@ So "Hello,  World!" equals "hello world".
 
 **Derive, in this order** (order is part of the contract; changing it changes every monster):
 1. **Breed:**
-   - Weighted pick by breed `commonness` (CONTENT §2) among **all** breeds.
+   - Weighted pick by breed `commonness` (CONTENT §2) among the **launch roster**: breeds 1–30, locked ones included. The draw is the same as it has always been.
+   - **Breeds added after launch** (31 Stripeneck and 32 Plumdrake, from v1.14):
+     - a second, independent draw decides whether the phrase lands on one of them instead;
+     - the chance is their share of all the commonness (12 of 189, about 6%), and the pick among them is weighted by commonness;
+     - the draw comes from its own stream, seeded from the phrase seed and `SHRINE.addedBreedSalt`. It never touches the main RNG, so every later roll (offsets, personality, name) is unchanged;
+     - every phrase that doesn't land on a new breed makes exactly the monster it made before. Phrases saved in the Encyclopedia and the Sleeping Stones keep working.
+     - Later breeds join the added list the same way.
    - If the result is locked, the stone hums with a teaser such as "…a sleeping power, heavy as stone…" and **no monster is made**.
    - The phrase is saved to the Journal's **Sleeping Stones** list. When that breed unlocks, the stone wakes and can be tapped to create the monster for free.
 2. *(Retired in v1.12: the sub breed. It drew from its own `h2` stream, so removing it moved no other roll: every phrase still makes the same breed, offsets and personality.)*
@@ -1089,7 +1095,7 @@ Every monster is **one whole breed** (Art 2.0 P0, owner, Oct 28, 2026). The main
 
 **Older saves** (save v15): a mixed monster becomes its main breed and keeps its stats, grades, techniques (an old sub-quirk Basic stays until forgotten), guts and lifespan. A name the game gave it ("Cinder Tumblefox") becomes the breed's name; a name the player chose stays. Old share codes and files still import. Looks already collected in the Journal stay counted.
 
-The 21 secret variants (CONTENT §12) stay as special looks of their breed.
+The 23 secret variants (CONTENT §12) stay as special looks of their breed.
 
 ---
 
@@ -1209,7 +1215,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 
 ## 18. Unlocks, secrets and the Journal (MUST)
 
-- **Locked breeds:** 8 of the 30 breeds start locked (CONTENT §11). Each unlock chain uses a different kind of trigger:
+- **Locked breeds:** 8 of the 32 breeds start locked (CONTENT §11). Each unlock chain uses a different kind of trigger:
   - care-based metamorphosis
   - a memorial event after a natural death
   - a seasonal weather event with condition checks
@@ -1263,7 +1269,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 5. **Personality:** liked and disliked food, favorite toy, battle like, liked and disliked drill.
 6. **Techniques:**
    - The learned list with uses and level.
-   - Add from the breed kit and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 294.
+   - Add from the breed kit and all universal techniques. An **Allow any technique** checkbox in the editor adds from all 312.
    - Set uses and level; remove.
 7. **Records** (optional): grade, wins and losses, titles.
 8. **Appearance:** expression and size stage previews (the colours are the breed's, or its secret variant's).

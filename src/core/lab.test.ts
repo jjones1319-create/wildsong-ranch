@@ -123,7 +123,7 @@ describe('techniques in the editor', () => {
     expect(normal.some((t) => t.id === 'puddlepup.splash-nip')).toBe(false)
     expect(normal.filter((t) => t.family === 'Signature').map((t) => t.breed)).toEqual(['puddlepup'])
     const any = addableTechniques(m, true)
-    expect(any.length).toBe(294 - m.techniques.length)
+    expect(any.length).toBe(312 - m.techniques.length)
     expect(any.some((t) => t.breed === 'aurelwyrm')).toBe(true)
   })
 

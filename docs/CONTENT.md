@@ -28,7 +28,7 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 
 ---
 
-## 2. Breeds (30)
+## 2. Breeds (32)
 
 `commonness` weights the Shrine's main-breed pick (unlocked and locked breeds alike). `strength` (1–10) is unused since Fusion 2 (v1.10.0), which picks babies by kinds (§2.3); it is kept for later. Stats are listed LIF / POW / INT / SKI / SPD / DEF. Grades use the same order.
 
@@ -64,6 +64,8 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 | 28 | **Gloomgrin** | Stone-skinned counter-puncher | Shrine | Steady | 380 | 13 | POW | 100/110/60/100/50/120 | C B D B E B | Target Toss | 6 | 6 | Statue Pose |
 | 29 | **Rammerjack** | Charging brawler | Shrine | Early | 340 | 13 | POW | 110/130/40/70/110/70 | C A E D B C | Plow Pull | 7 | 8 | Battering Ram |
 | 30 | **Frostlance** | Icy precision lancer | Shrine | Evergreen | 400 | 12 | Mixed | 100/90/90/130/70/70 | C C C A D D | Target Toss | 6 | 6 | Chill |
+| 31 | **Stripeneck** | Long-necked lookout kicker | Shrine | Steady | 380 | 12 | Mixed | 100/100/70/110/110/50 | C B D B B E | Wind Chase | 6 | 6 | Lookout |
+| 32 | **Plumdrake** | Gentle-giant cloud dragon | Shrine | Late | 440 | 13 | INT | 150/60/130/70/50/100 | A E A D D C | Waterfall Stand | 7 | 6 | Cloud Cushion |
 
 ### 2.1 Traits
 
@@ -99,6 +101,8 @@ Leagues for the every-4-years Summit: the **Vale League** (yours) and the **Coas
 | Statue Pose | After standing still for 2 seconds, takes 50% less damage until it moves |
 | Battering Ram | Dashing costs no guts, and the first technique after a dash deals +15% damage |
 | Chill | Its hits slow the target's walking by 25% for 3 seconds |
+| Lookout | Always the first to spot something: opponents' Mid and Far techniques (range 3–4) get −6 hit against it |
+| Cloud Cushion | A padded, huggable giant: Heavy-family techniques deal 35% less damage to it |
 
 ### 2.2 Art briefs (procedural SVG; see GAME_DESIGN §22)
 
@@ -205,6 +209,16 @@ Each brief lists: body plan · signature features · palette (body / belly / acc
     - **Floater narwhal:** pale blue-white, it swims through the air and leaves a trail of snowflakes.
     - A long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.
     - Palette: #D8EEF7 / #F5FBFE / #1F7A8C (tusk #BDE8F5) / #1B263B.
+31. **Stripeneck** (`chatgpt/monsters/31-stripeneck/`)
+    - **Quadruped giraffe–zebra with a long neck:** a lanky grazer that is giraffe at the front and zebra at the back, on four long but chunky legs with neat dark hooves. A long, thick neck (shorter and sturdier than a real giraffe's) holds up a round head with a soft cream muzzle.
+    - Front half: golden tan with rounded chestnut patches outlined by thin cream lines. Back half: cream with bold charcoal stripes curving round the body. The patterns meet in a soft, wavy blend at the middle.
+    - Two short ossicones with charcoal tufts, big upright ears, long eyelashes, a short brushy charcoal-and-cream mane down the neck, and a zebra tail with a long wavy tuft. Curious, friendly and a little gangly; always the first to spot something. About twice Puddlepup's height.
+    - Palette: #E3B36A / #F4EBDA / #2F2B30 (patches #8E4F2A, hooves #4A3A30) / #2B1E16.
+32. **Plumdrake** (`chatgpt/monsters/32-plumdrake/`)
+    - **Biped cloud dragon:** a big, chunky, huggable dragon with a pear-shaped body on two thick legs, short strong arms, and a long thick tail ending in a fluffy puff.
+    - A soft round lilac belly dusted with darker freckles; small satin plum scales; curled cream ram horns behind the eyes; a cloud-white ruff round the neck; two broad wings with dusky-blue membranes and a row of cloud-white feathers along the trailing edge.
+    - A broad, friendly snout with a big smile and two little rounded fangs; big, kind amber eyes. A gentle giant: protective, goofy and happiest when a friend naps against its belly.
+    - Palette: #7A4E9C / #D8C4EE / #5D78B8 (freckles #B49AD6, ruff #F5F3FA, horns #F1E3C6) / #F2A93B.
 
 ### 2.3 Fusion kinds and recipes (GAME_DESIGN §15)
 
@@ -244,6 +258,8 @@ The 15 kinds are beast, bird, reptile, dragon, water, stone, plant, bug, spirit,
 | Gloomgrin | stone · night |
 | Rammerjack | beast · knight |
 | Frostlance | water · ice |
+| Stripeneck | beast · plant |
+| Plumdrake | dragon |
 
 **Kind rules.** When one parent has the first kind and the other has the second (either way round), breeds of the third kind are favored.
 
@@ -291,7 +307,7 @@ The 15 kinds are beast, bird, reptile, dragon, water, stone, plant, bug, spirit,
 
 ---
 
-## 3. Techniques (270 breed techniques + 24 universal)
+## 3. Techniques (288 breed techniques + 24 universal)
 
 These rows were generated from the family bands in GAME_DESIGN §10.2.
 - **Range:** 1 Close · 2 Near · 3 Mid · 4 Far.
@@ -744,6 +760,34 @@ Assigned by name keywords first, then plain melee names → Physical, then the b
 | Crystal Lance Rush | Chain | POW | Ice | 2 Near | 25 | 25 | +20 | 8 | 11 | 30 | — | Archer's Glade: Icicle Thrust Lv3 + POW ≥ 520 |
 | Polar Spiral | Signature | POW | Ice | 2 Near | 54 | 18 | +3 | 23 | 30 | 42 | 3 hits | Auto at Prime (loyalty ≥ 60) |
 
+#### Stripeneck
+
+| Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Hoof Tap | Basic | POW | Physical | 1 Close | 12 | 13 | +5 | 6 | 7 | 24 | — | Starter |
+| Neck Nudge | Basic | POW | Physical | 2 Near | 11 | 11 | +4 | 7 | 8 | 24 | — | Starter |
+| Lookout Jab | Hit | POW | Physical | 3 Mid | 18 | 15 | +18 | 8 | 8 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Back Hoof Buck | Heavy | POW | Physical | 1 Close | 46 | 58 | -8 | 12 | 10 | 39 | — | Iron Quarry: POW ≥ 360 |
+| Dizzy Stripes | Wither | INT | Light | 3 Mid | 27 | 14 | +1 | 40 | 6 | 30 | — | Starfall Observatory: INT ≥ 280 |
+| Ossicone Hook | Sharp | POW | Physical | 2 Near | 27 | 26 | -2 | 10 | 30 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
+| Stampede Spin | Special | POW | Physical | 3 Mid | 47 | 18 | -2 | 18 | 10 | 36 | 2 hits | Glacier Bastion: DEF+POW ≥ 820 · grade B+ |
+| Long-Neck Lash | Chain | POW | Physical | 3 Mid | 22 | 20 | +16 | 8 | 10 | 27 | — | Archer's Glade: Lookout Jab Lv3 + SKI ≥ 520 |
+| Stripe Blur Buck | Signature | POW | Physical | 1 Close | 54 | 32 | +3 | 22 | 14 | 42 | 2 hits | Auto at Prime (loyalty ≥ 60) |
+
+#### Plumdrake
+
+| Technique | Family | Type | Element | Range | Guts | Force | Hit | Wither | Sharp | Anim | Effect | How it's learned |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Horn Nuzzle | Basic | POW | Physical | 1 Close | 11 | 12 | +4 | 7 | 7 | 24 | — | Starter |
+| Puff Breeze | Basic | INT | Wind | 3 Mid | 12 | 11 | +6 | 6 | 6 | 24 | — | Starter |
+| Flutter Gust | Hit | INT | Wind | 2 Near | 18 | 16 | +15 | 8 | 7 | 27 | — | Archer's Glade: SKI ≥ 220 |
+| Cumulus Crash | Heavy | INT | Wind | 4 Far | 46 | 62 | -8 | 12 | 10 | 39 | — | Iron Quarry: INT ≥ 360 |
+| Snooze Drizzle | Wither | INT | Water | 3 Mid | 28 | 13 | +1 | 45 | 5 | 30 | — | Starfall Observatory: INT ≥ 280 |
+| Downy Whirl | Sharp | INT | Wind | 1 Close | 27 | 25 | -3 | 10 | 28 | 30 | — | Windrun Steppe: SPD+SKI ≥ 520 |
+| Cloud Gust Blast | Special | INT | Wind | 4 Far | 48 | 36 | -2 | 18 | 9 | 36 | knockback | Glacier Bastion: DEF+INT ≥ 820 · grade B+ |
+| Double Downdraft | Chain | INT | Wind | 3 Mid | 24 | 10 | +16 | 9 | 10 | 30 | 2 hits | Archer's Glade: Puff Breeze Lv3 + INT ≥ 520 |
+| Tempest Embrace | Signature | INT | Wind | 1 Close | 56 | 64 | +2 | 24 | 14 | 42 | — | Auto at Prime (loyalty ≥ 60) |
+
 ### 3.1 Universal techniques (Songsheets; any monster can learn these)
 
 24 music-themed techniques, one Songsheet each, sold at the Guild Library and given as prizes. A POW technique uses the monster's POW and an INT technique uses its INT.
@@ -1042,6 +1086,8 @@ Store these as hashes of the normalized phrase. A secret variant gets a unique p
 | high tide | Abyss Reefclaw (deep-sea blue coral) | DEF +25 |
 | treasure | Gilded Lootlid (solid gold) | Prizes +25% (stacks with Gilded) |
 | golden hour | Sunsoul Aurelwyrm (white-gold) | All stats +10 |
+| ezgi | Ezgi Stripeneck (twilight violet with indigo patches) | SKI +20, SPD +10 |
+| cloud nine | Stormcloud Plumdrake (storm-grey scales, silver ruff) | DEF +20, INT +10 |
 
 ---
 
@@ -1084,7 +1130,7 @@ Town → Odd Jobs is Basil's board. It lists every job with its status, its pay 
 | Legend of the Vale | Win the Wildsong Legend |
 | Grand Breeder | Reach breeder rank 10 |
 | Lineage Keeper | Raise a generation-5 monster |
-| Encyclopedist | Own all 30 breeds |
+| Encyclopedist | Own all 32 breeds |
 | Collector | Discover 30 looks (breeds or secret variants) |
 | Gentle Heart | A monster lives ≥ 95% of its nominal lifespan |
 | Iron Bond | Win a Crown with loyalty 100 |

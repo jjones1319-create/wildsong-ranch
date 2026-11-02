@@ -116,7 +116,7 @@ describe('two traits (§12.8, v1.11)', () => {
   })
 
   it('one trait gives exactly its own answer; two combine (multipliers multiply, bonuses add, flags use any)', () => {
-    const taken = { techType: 'POW' as const, still: false }
+    const taken = { techType: 'POW' as const, family: 'Hit' as const, still: false }
     expect(traitsMul(['fortified'], (t) => traitTakenMul(t, taken))).toBe(traitTakenMul('fortified', taken))
     expect(traitsMul(['fortified', 'unshakable'], (t) => traitTakenMul(t, taken))).toBe(divRound(traitTakenMul('fortified', taken) * traitTakenMul('unshakable', taken), 1000))
     expect(traitsMul(['fortified', 'unshakable'], (t) => traitTakenMul(t, taken))).toBeLessThan(traitTakenMul('fortified', taken))

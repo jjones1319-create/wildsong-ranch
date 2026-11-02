@@ -59,6 +59,9 @@ export const SECRETS: readonly SecretVariant[] = [
   { id: 'abyss-reefclaw', hash: 8279694354892750, breed: 'reefclaw', adjective: 'Abyss', look: 'deep-sea blue coral', stats: { DEF: 25 }, lifespan: 0, perk: null },
   { id: 'gilded-lootlid', hash: 1915205757674311, breed: 'lootlid', adjective: 'Gilded', look: 'solid gold', stats: {}, lifespan: 0, perk: 'prizeBonus' },
   { id: 'sunsoul-aurelwyrm', hash: 3366503938878653, breed: 'aurelwyrm', adjective: 'Sunsoul', look: 'white-gold', stats: all(10), lifespan: 0, perk: null },
+  // v1.14: the owner's own phrase is the only way to Ezgi; it never rolls any other way (no secret does)
+  { id: 'ezgi-stripeneck', hash: 5533385424394373, breed: 'stripeneck', adjective: 'Ezgi', look: 'twilight violet with indigo patches', stats: { SKI: 20, SPD: 10 }, lifespan: 0, perk: null },
+  { id: 'stormcloud-plumdrake', hash: 8923164462507960, breed: 'plumdrake', adjective: 'Stormcloud', look: 'storm-grey scales and a silver ruff', stats: { DEF: 20, INT: 10 }, lifespan: 0, perk: null },
 ]
 
 export const SECRET_BY_ID: Readonly<Record<string, SecretVariant>> = Object.fromEntries(SECRETS.map((s) => [s.id, s]))

@@ -92,6 +92,8 @@ const BREED_DEFAULT: Record<BreedId, Element | { INT: Element; POW: Element }> =
   gloomgrin: 'Dark',
   rammerjack: 'Physical',
   frostlance: 'Ice',
+  stripeneck: { POW: 'Physical', INT: 'Light' },
+  plumdrake: { POW: 'Physical', INT: 'Wind' },
 }
 
 /**

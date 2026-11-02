@@ -23,6 +23,7 @@ import {
   traitGutsOnHit,
   traitHealMul,
   traitHitBonus,
+  traitHitTaken,
   traitImmovable,
   traitNimble,
   traitReflect,
@@ -224,7 +225,7 @@ export function previewHitTenths(state: BattleState, side: Side, techId: string)
     spdDef: opp.spdForm + nimbleBonus(traitsAny(opp.traits, traitNimble)),
     gutsAtt: f.guts,
     gutsDef: opp.guts,
-    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, opp.total > f.total)),
+    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, opp.total > f.total)) + traitsSum(opp.traits, (t) => traitHitTaken(t, tech.range)),
     advantages: (opp.dawdleTicks > 0 ? 1 : 0) + (specialMods(opp.special).givesAdvantage ? 1 : 0),
     disadvantage: specialMods(opp.special).givesDisadvantage,
   })
@@ -518,7 +519,7 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     spdDef: opp.spdForm + nimbleBonus(traitsAny(opp.traits, traitNimble)),
     gutsAtt: gutsBefore,
     gutsDef: opp.guts,
-    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, underdog)),
+    bonus: traitsSum(f.traits, (t) => traitHitBonus(t, tech.range, underdog)) + traitsSum(opp.traits, (t) => traitHitTaken(t, tech.range)),
     advantages: (opp.dawdleTicks > 0 ? 1 : 0) + (theirMods.givesAdvantage ? 1 : 0),
     disadvantage: theirMods.givesDisadvantage,
   })
@@ -559,7 +560,7 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
     if (crit) mults.push(BATTLE.damage.critMul * 10)
     const dealt = { family: tech.family, hpPct: hpPctTenths(f.hp, f.maxHp), underdog, ramArmed }
     mults.push(traitsMul(f.traits, (t) => traitDealtMul(t, dealt)))
-    const taken = { techType: tech.type, still: opp.stillTicks >= BATTLE.statueTicks }
+    const taken = { techType: tech.type, family: tech.family, still: opp.stillTicks >= BATTLE.statueTicks }
     mults.push(traitsMul(opp.traits, (t) => traitTakenMul(t, taken)))
     mults.push(myMods.dealtPct * 10, theirMods.takenPct * 10)
     let jackpot: 'double' | 'heal' | 'fizzle' | null = null

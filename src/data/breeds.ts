@@ -202,6 +202,20 @@ export const BREEDS: readonly Breed[] = [
     bonusDrill: 'target-toss', strength: 6, commonness: 6, trait: 'chill',
     art: { plan: 'floater', brief: 'A pale blue-white narwhal that swims through the air and leaves a trail of snowflakes, with a long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.', palette: { body: '#D8EEF7', belly: '#F5FBFE', accent: '#1F7A8C', eye: '#1B263B' } },
   },
+  // Added after launch (v1.14; chatgpt/monsters/31-stripeneck and 32-plumdrake). The Shrine reaches them through their own
+  // draw so every older phrase keeps its monster (GAME_DESIGN §14.1).
+  {
+    id: 'stripeneck', name: 'Stripeneck', niche: 'Long-necked lookout kicker', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Steady', lifespan: 380, gutsRate: 12, lean: 'Mixed', base: stats(100, 100, 70, 110, 110, 50), grades: grades('C', 'B', 'D', 'B', 'B', 'E'),
+    bonusDrill: 'wind-chase', strength: 6, commonness: 6, trait: 'lookout',
+    art: { plan: 'quadruped', brief: 'A lanky giraffe-zebra grazer with a long, sturdy neck: golden tan with cream-outlined chestnut patches at the front, cream with curving charcoal stripes at the back, two tufted ossicones, big upright ears, long lashes, a brushy striped mane, dark hooves and a tufted zebra tail.', palette: { body: '#E3B36A', belly: '#F4EBDA', accent: '#2F2B30', eye: '#2B1E16' } },
+  },
+  {
+    id: 'plumdrake', name: 'Plumdrake', niche: 'Gentle-giant cloud dragon', availability: 'shrine', marketSeason: null, unlockChain: null,
+    growth: 'Late', lifespan: 440, gutsRate: 13, lean: 'INT', base: stats(150, 60, 130, 70, 50, 100), grades: grades('A', 'E', 'A', 'D', 'D', 'C'),
+    bonusDrill: 'waterfall-stand', strength: 7, commonness: 6, trait: 'cloud-cushion',
+    art: { plan: 'biped', brief: 'A big, chunky, huggable plum dragon: a pear-shaped body on thick legs, a soft freckled lilac belly, curled cream ram horns, a cloud-white ruff and tail puff, broad wings with dusky-blue membranes, a wide friendly smile with two little fangs and kind amber eyes.', palette: { body: '#7A4E9C', belly: '#D8C4EE', accent: '#5D78B8', eye: '#F2A93B' } },
+  },
 ]
 
 export const BREED_BY_ID = Object.fromEntries(BREEDS.map((b) => [b.id, b])) as Record<BreedId, Breed>

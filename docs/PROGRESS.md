@@ -2,6 +2,67 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Breeds 31–32: Stripeneck and Plumdrake (2026-11-02) · v1.14.0
+
+**Live:**
+- **Stripeneck (31):**
+  - a long-necked giraffe-zebra lookout kicker, a Shrine breed;
+  - Steady growth, 380 weeks, Mixed lean;
+  - stats 100/100/70/110/110/50 (LIF/POW/INT/SKI/SPD/DEF), grades C B D B B E;
+  - **Lookout** trait: opponents' Mid and Far techniques get −6 hit against it;
+  - signature **Stripe Blur Buck**: the card's spinning double back-kick, two hits.
+- **Plumdrake (32):**
+  - a gentle-giant cloud dragon and tanky wind caster, a Shrine breed;
+  - Late growth, 440 weeks, INT lean;
+  - stats 150/60/130/70/50/100, grades A E A D D C;
+  - **Cloud Cushion** trait: Heavy-family techniques deal 35% less damage to it;
+  - its card's wing blast is the Special **Cloud Gust Blast** (Far, knockback); the signature is **Tempest Embrace**, a Close-range whirlwind hug.
+- **Secret variants:**
+  - **Ezgi Stripeneck**: the phrase "ezgi" only; twilight violet with indigo patches; SKI +20, SPD +10.
+  - **Stormcloud Plumdrake**: the phrase "cloud nine"; storm-grey scales and a silver ruff; DEF +20, INT +10.
+- **Every phrase players already know still makes the same monster.**
+  - The Shrine draws among the 30 launch breeds exactly as before, then a separate draw sends about 6% of phrases to the new breeds (GAME_DESIGN §14.1).
+  - Checked against v1.13.3 over 3,000 phrases:
+    - 2,816 gave identical monsters;
+    - 184 now give a new breed with the same stats, likes and nature;
+    - nothing else changed.
+- **Classic drawings** for both and their variants (`parts3.ts`); their 3D models come with the Art 2.1 batch.
+
+**Done**
+- **CONTENT:**
+  - §2 rows, §2.1 traits, §2.2 art briefs from the cards, §2.3 kinds (Stripeneck beast · plant, Plumdrake dragon), §3 technique tables, §12;
+  - the counts: 32 breeds; 288 + 24 = 312 techniques; 23 secrets; Encyclopedist "Own all 32 breeds".
+- **GAME_DESIGN:** §14.1, the added-breed draw.
+- **BUILD_PLAN:** this milestone's task list.
+- **Data and rules:**
+  - breeds, traits, techniques, element defaults, fusion kinds, secrets, palettes;
+  - `traitHitTaken` (Lookout) in both hit rolls;
+  - `family` in the damage-taken context (Cloud Cushion);
+  - `addedBreedFor` in `core/shrine.ts`, with `SHRINE.launchBreedCount` and `addedBreedSalt`.
+- **Tests:**
+  - counts; the two new secret phrases; trait answers;
+  - the added-breed draw (about 6%, never moves another roll);
+  - the golden battles pinned to the launch roster (the record holds);
+  - the fusion spread caps now a share of the pairings (13.4% / 9.7%, the same as at 30 breeds);
+  - **re-pinned deliberately:** the 1,000-phrase Shrine hash (6522060436425020) and the surprise table.
+- **Balance** (`npm run sim:balance`, docs/BALANCE_REPORT.md):
+  - **Mean win share against every breed at 1,000 / 2,000 / 3,000:**
+    - Stripeneck 54.4 / 51.4 / 55.8;
+    - Plumdrake 57.5 / 50.7 / 38.9.
+  - **Pairs inside 30–70:** 94.8% / 99.4% / 94.2%. With 30 breeds they were 94.5% / 99.3% / 95.2%, and the 21 older outliers at 3,000 are unchanged.
+  - **How Plumdrake got there:**
+    - the first design (POW and INT, a POW Heavy, E in SKI and SPD) won only 26.5% late;
+    - it became a tanky wind caster: an INT Heavy (Cumulus Crash, Far), INT moves at Close and Near (Downy Whirl, Flutter Gust), and a grade moved from POW to SPD;
+    - Cloud Cushion went from −25% to −35%, which barely moved it.
+
+**Known issues**
+- **Hard bands:**
+  - Plumdrake is a touch strong early (Puddlepup wins only 24% at 1,000) and a touch weak late (Galeheron 76%, Ashwraith 78% at 3,000).
+  - Ashwraith was already the 3,000 outlier against many breeds.
+- **Classic drawings:** Stripeneck's ossicones read close to its ears at small sizes.
+
+**Next:** the owner's notes on the breeds and the spike; Battle 3D (design, engine and controls first; its art slice after the Art 2.1 approval).
+
 ## Hotfix: the Performance check measures the phone, not itself (2026-11-02) · v1.13.3
 
 **The owner's first S25 Ultra run:**

@@ -4,7 +4,7 @@ import { BIRTH, RANGES, SHRINE } from '../data/tuning.ts'
 import { STAT_KEYS, type BreedId } from '../data/types.ts'
 import { phraseSeed, type PhraseSeed } from './hash.ts'
 import { createMonster, rollLikes, zeroStats, type BirthOffsets, type Likes, type Monster } from './monster.ts'
-import { createRng, type Rng } from './rng.ts'
+import { createRng, scrambleSeed, type Rng } from './rng.ts'
 import { applyBirthPerkMut, secretForPhrase, variantNameOf, variantStatBonus } from './variants.ts'
 
 /**
@@ -34,14 +34,41 @@ export function suggestName(normalizedPhrase: string, variantName: string): stri
   return name.slice(0, RANGES.nameLength.max)
 }
 
+/** Breeds 1–30, the launch roster: the main breed draw picks among them exactly as it always has. */
+const LAUNCH_BREEDS = BREEDS.slice(0, SHRINE.launchBreedCount)
+/** Breeds added after launch (31 Stripeneck, 32 Plumdrake…), reached through their own draw. */
+const ADDED_BREEDS = BREEDS.slice(SHRINE.launchBreedCount)
+const LAUNCH_WEIGHT = LAUNCH_BREEDS.reduce((a, b) => a + b.commonness, 0)
+
+/**
+ * The added-breed draw (GAME_DESIGN §14.1): from its own stream, the phrase lands on an added breed with their
+ * share of all the commonness, picked among them by commonness; otherwise null. It never touches the main RNG.
+ */
+export function addedBreedFor(seed: PhraseSeed): BreedId | null {
+  if (!ADDED_BREEDS.length) return null
+  const own = createRng(scrambleSeed((seed.seed ^ SHRINE.addedBreedSalt) >>> 0))
+  const choices: readonly { id: BreedId | null; weight: number }[] = [
+    { id: null, weight: LAUNCH_WEIGHT },
+    ...ADDED_BREEDS.map((b) => ({ id: b.id, weight: b.commonness })),
+  ]
+  return own.weightedPick(choices, (c) => c.weight).id
+}
+
+/** Step 1: the launch-roster draw always happens (so every later roll stays put), then the added-breed draw may replace it. */
+function pickBreed(rng: Rng, seed: PhraseSeed): BreedId {
+  const launch = rng.weightedPick(LAUNCH_BREEDS, (b) => b.commonness).id
+  return addedBreedFor(seed) ?? launch
+}
+
 export function rollShrine(phrase: string, artist: string, unlocked: readonly BreedId[]): ShrineRoll {
   const seed = phraseSeed(phrase, artist)
   const rng = createRng(seed.seed)
   const secret = secretForPhrase(seed.phrase)
   // A secret phrase names the variant's breed: no breed roll, so the seed goes straight to the offsets.
-  // 1. Breed: weighted by commonness among ALL breeds (locked ones included).
+  // 1. Breed: weighted by commonness among the launch roster (locked ones included); an added breed may replace it
+  //    through its own draw, so every older phrase keeps its monster (GAME_DESIGN §14.1).
   // 2. (Retired in v1.12: the sub breed. It drew from its own h2 stream, so no other roll moved.)
-  const mainBreed: BreedId = secret ? secret.breed : rng.weightedPick(BREEDS, (b) => b.commonness).id
+  const mainBreed: BreedId = secret ? secret.breed : pickBreed(rng, seed)
   const mainLocked = !unlocked.includes(mainBreed)
   // 3. Stat offsets.
   const stats = zeroStats()

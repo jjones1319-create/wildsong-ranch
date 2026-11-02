@@ -455,7 +455,7 @@ export const UI_TEXT = {
       add: 'Add technique',
       addTitle: 'Add a technique',
       allowAny: 'Allow any technique',
-      allowAnyHint: "Off: the breed's own kit and every universal technique. On: all 294.",
+      allowAnyHint: "Off: the breed's own kit and every universal technique. On: all 312.",
       uses: 'Uses',
       level: 'Lv',
       remove: 'Remove',

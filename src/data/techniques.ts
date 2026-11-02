@@ -2,7 +2,7 @@ import { elementOf } from './elements.ts'
 import type { BreedId, Family, JourneySiteId, Songsheet, StatKey, TechEffect, TechLearn, TechRange, TechType, Technique, TournamentGrade } from './types.ts'
 
 /**
- * CONTENT §3: 270 breed techniques (9 per breed) and 24 universal techniques.
+ * CONTENT §3: 288 breed techniques (9 per breed) and 24 universal techniques.
  * Rows are transcribed verbatim from CONTENT.md, including the "How it's learned" text, which is parsed below.
  * Row: [name, family, type, range, guts, force, hit, wither, sharp, anim, effect, learn]
  */
@@ -338,6 +338,28 @@ const BREED_ROWS: Record<BreedId, readonly Row[]> = {
     ['Northern Lights', 'Special', 'INT', 4, 48, 0, -2, 30, 0, 36, 'heal 15% max HP', 'Glacier Bastion: DEF+INT ≥ 820 · grade B+'],
     ['Crystal Lance Rush', 'Chain', 'POW', 2, 25, 25, 20, 8, 11, 30, '—', "Archer's Glade: Icicle Thrust Lv3 + POW ≥ 520"],
     ['Polar Spiral', 'Signature', 'POW', 2, 54, 18, 3, 23, 30, 42, '3 hits', 'Auto at Prime (loyalty ≥ 60)'],
+  ],
+  stripeneck: [
+    ['Hoof Tap', 'Basic', 'POW', 1, 12, 13, 5, 6, 7, 24, '—', 'Starter'],
+    ['Neck Nudge', 'Basic', 'POW', 2, 11, 11, 4, 7, 8, 24, '—', 'Starter'],
+    ['Lookout Jab', 'Hit', 'POW', 3, 18, 15, 18, 8, 8, 27, '—', "Archer's Glade: SKI ≥ 220"],
+    ['Back Hoof Buck', 'Heavy', 'POW', 1, 46, 58, -8, 12, 10, 39, '—', 'Iron Quarry: POW ≥ 360'],
+    ['Dizzy Stripes', 'Wither', 'INT', 3, 27, 14, 1, 40, 6, 30, '—', 'Starfall Observatory: INT ≥ 280'],
+    ['Ossicone Hook', 'Sharp', 'POW', 2, 27, 26, -2, 10, 30, 30, '—', 'Windrun Steppe: SPD+SKI ≥ 520'],
+    ['Stampede Spin', 'Special', 'POW', 3, 47, 18, -2, 18, 10, 36, '2 hits', 'Glacier Bastion: DEF+POW ≥ 820 · grade B+'],
+    ['Long-Neck Lash', 'Chain', 'POW', 3, 22, 20, 16, 8, 10, 27, '—', "Archer's Glade: Lookout Jab Lv3 + SKI ≥ 520"],
+    ['Stripe Blur Buck', 'Signature', 'POW', 1, 54, 32, 3, 22, 14, 42, '2 hits', 'Auto at Prime (loyalty ≥ 60)'],
+  ],
+  plumdrake: [
+    ['Horn Nuzzle', 'Basic', 'POW', 1, 11, 12, 4, 7, 7, 24, '—', 'Starter'],
+    ['Puff Breeze', 'Basic', 'INT', 3, 12, 11, 6, 6, 6, 24, '—', 'Starter'],
+    ['Flutter Gust', 'Hit', 'INT', 2, 18, 16, 15, 8, 7, 27, '—', "Archer's Glade: SKI ≥ 220"],
+    ['Cumulus Crash', 'Heavy', 'INT', 4, 46, 62, -8, 12, 10, 39, '—', 'Iron Quarry: INT ≥ 360'],
+    ['Snooze Drizzle', 'Wither', 'INT', 3, 28, 13, 1, 45, 5, 30, '—', 'Starfall Observatory: INT ≥ 280'],
+    ['Downy Whirl', 'Sharp', 'INT', 1, 27, 25, -3, 10, 28, 30, '—', 'Windrun Steppe: SPD+SKI ≥ 520'],
+    ['Cloud Gust Blast', 'Special', 'INT', 4, 48, 36, -2, 18, 9, 36, 'knockback', 'Glacier Bastion: DEF+INT ≥ 820 · grade B+'],
+    ['Double Downdraft', 'Chain', 'INT', 3, 24, 10, 16, 9, 10, 30, '2 hits', "Archer's Glade: Puff Breeze Lv3 + INT ≥ 520"],
+    ['Tempest Embrace', 'Signature', 'INT', 1, 56, 64, 2, 24, 14, 42, '—', 'Auto at Prime (loyalty ≥ 60)'],
   ],
 }
 

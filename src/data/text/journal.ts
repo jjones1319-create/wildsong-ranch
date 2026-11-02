@@ -98,7 +98,7 @@ export const JOURNAL_TEXT = {
     'Legend of the Vale': 'Win the Wildsong Legend',
     'Grand Breeder': 'Reach breeder rank 10',
     'Lineage Keeper': 'Raise a generation-5 monster',
-    Encyclopedist: 'Own all 30 breeds',
+    Encyclopedist: 'Own all 32 breeds',
     Collector: 'Collect 50 looks',
     'Gentle Heart': 'A monster lives 95% of its nominal lifespan or more',
     'Iron Bond': 'Win a Crown with loyalty 100',

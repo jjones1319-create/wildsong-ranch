@@ -211,11 +211,11 @@ How to read it:
 | Cinematic face sheet 2048² | ≈ 0.5 MB | ≈ 0.4 MB |
 | **One monster, everything** | **≈ 6.9 MB** | **≈ 6.8 MB** |
 | What a battle loads (no cinematic set) | ≈ 4.3 MB | ≈ 4.4 MB |
-| **All 33 looks, everything** | **≈ 230 MB** | ≈ 225 MB |
+| **All 35 looks, everything** (32 breeds + 3 grown forms) | **≈ 240 MB** | ≈ 240 MB |
 
 - The cinematic set loads only when a cutscene or the Monster Card needs it.
 - Every model is runtime-cached and never precached, so a player downloads only the monsters they meet.
-- **Download all art** (P19) must show these totals and offer the in-game sets only (≈ 140 MB) or Lite only (≈ 40 MB).
+- **Download all art** (P19) must show these totals and offer the in-game sets only (≈ 150 MB) or Lite only (≈ 40 MB).
 
 ## 6. Graphics memory
 Estimated for a two-monster battle on Ultra at 2.5×, the battle canvas being 412 × 560 CSS px:
