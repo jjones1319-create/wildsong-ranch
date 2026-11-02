@@ -1092,6 +1092,8 @@ export const PLANNER = {
 /** docs/BATTLE_3D.md §5: Battle 3D's left-thumb stick (CSS px; a flick is fast and far). */
 export const INPUT = {
   stick: { radiusPx: 56, dead: 0.35, flickMs: 180, flickReach: 0.8 },
+  /** Battle 3D: a tap on an in-range card while the monster is busy is kept this long and fires when it can. */
+  tapBufferMs: 500,
 } as const
 
 export const BATTLE_CAMERA = {
@@ -1245,6 +1247,8 @@ export const ART = {
     confine: { wallMargin: 0.45, maxFov: 68, raiseDeg: 6, maxRaiseDeg: 36 },
     /** The fighters' shadows on the arena's baked (unlit) floor: the arena's shadow_catcher disc. */
     shadowOpacity: 0.3,
+    /** A soft dark disc under each monster's feet (m; depthPct = its front-to-back length as a share of its width). */
+    contactShadow: { sizeM: 0.95, depthPct: 120, opacity: 0.45 },
     /** Sharper ground textures at the battle camera's grazing angle. */
     groundAnisotropy: 8,
     /** The far plane (m): the arena's sky domes are 400 m out. */

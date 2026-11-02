@@ -4,7 +4,7 @@ import { BATTLE3D_TEXT as T } from '../../../data/text/battle3d.ts'
 import { fill } from '../../../data/text/format.ts'
 import { BAND_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
-import { BATTLE } from '../../../data/tuning.ts'
+import { BATTLE, INPUT } from '../../../data/tuning.ts'
 import type { Duel3D, DuelCamera, DuelStats } from '../../../art3d/duel/duel3d.ts'
 import { navigate } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
@@ -75,6 +75,8 @@ export function Battle3DScreen() {
   const [stats, setStats] = useState<DuelStats | null>(null)
   const phaseRef = useRef(phase)
   phaseRef.current = phase
+  // a tap on an in-range card while the monster is still busy fires as soon as it can (INPUT.tapBufferMs)
+  const queued = useRef<{ id: string; until: number } | null>(null)
 
   useEffect(() => {
     startDuel()
@@ -135,6 +137,32 @@ export function Battle3DScreen() {
   const a = v?.fighters[0]
   const b = v?.fighters[1]
   const playerSide = !!a && !a.auto && phase === 'fight' && !v?.outcome
+
+  useEffect(() => {
+    const q = queued.current
+    if (!q) return
+    const card = v?.fighters[0].techniques.find((t) => t.id === q.id)
+    if (!card || performance.now() > q.until || v?.fighters[0].auto) queued.current = null
+    else if (card.canFire) {
+      queued.current = null
+      tapTechnique(q.id)
+    }
+  }, [v])
+
+  /** A card: fire now; in range but busy, fire as soon as it can; out of range, Assist walks there and fires. */
+  const tapCard = (id: string) => {
+    const now = view.value
+    const card = now?.fighters[0].techniques.find((t) => t.id === id)
+    if (!now || !card) return
+    queued.current = null
+    if (!card.canFire && card.affordable && card.range === now.band) queued.current = { id, until: performance.now() + INPUT.tapBufferMs }
+    else tapTechnique(id)
+  }
+  /** The stick: letting go doesn't cancel a walk that Assist started for a tapped card. */
+  const onStick = (dir: -1 | 0 | 1, side: -1 | 0 | 1) => {
+    if (dir === 0 && side === 0 && view.value?.fighters[0].assistTech) return
+    moveStick(dir, side)
+  }
   const switchCam = () => {
     const next: DuelCamera = cam === 'side' ? 'behind' : 'side'
     duel.current?.setCamera(next)
@@ -199,6 +227,9 @@ export function Battle3DScreen() {
             ) : null
           })}
 
+          <p class="b3d__range" aria-live="polite">
+            {T.range(BAND_LABELS[v.band as 1 | 2 | 3 | 4], (v.gap / 100).toFixed(1))}
+          </p>
           <section class="tpanel b3d__tpanel" aria-label={B.title}>
             {[1, 2, 3, 4].map((band) => {
               const cards = a.techniques.filter((c) => c.range === band)
@@ -210,9 +241,9 @@ export function Battle3DScreen() {
                       <button
                         key={c.id}
                         type="button"
-                        class={`tcard ${c.canFire && playerSide ? 'tcard--fire' : ''} ${!c.affordable || !playerSide ? 'tcard--dim' : ''}`}
+                        class={`tcard ${c.canFire && playerSide ? 'tcard--fire' : ''} ${!c.affordable || !playerSide ? 'tcard--dim' : ''} ${queued.current?.id === c.id ? 'tcard--queued' : ''} ${a.assistTech === c.id ? 'tcard--assist' : ''}`}
                         disabled={!playerSide}
-                        onClick={() => tapTechnique(c.id)}
+                        onClick={() => tapCard(c.id)}
                       >
                         <span class="tcard__name">{c.name}</span>
                         <span class="tcard__meta">
@@ -229,12 +260,10 @@ export function Battle3DScreen() {
 
           {playerSide && (
             <>
-              <ThumbStick label={T.stickHint} basis={() => duel.current?.basisOnScreen() ?? null} onMove={moveStick} onSidestep={sidestep} onDash={dash} />
-              {v.touching && (
-                <button type="button" class="pad pad--push b3d__push" onClick={pushOpponent}>
-                  {T.push}
-                </button>
-              )}
+              <ThumbStick label={T.stickHint} basis={() => duel.current?.basisOnScreen() ?? null} onMove={onStick} onSidestep={sidestep} onDash={dash} />
+              <button type="button" class="pad pad--push b3d__push" disabled={!v.touching} aria-label={v.touching ? T.push : T.pushHint} onClick={pushOpponent}>
+                {T.push}
+              </button>
             </>
           )}
 

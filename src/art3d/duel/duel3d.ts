@@ -259,12 +259,6 @@ interface Actor {
 
 function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Actor {
   const model = cloneSkinned(asset.scene)
-  // fit to about 1 m tall at the head (the monsters' metres), standing on y = 0
-  const box = new Box3().setFromObject(model)
-  const h = Math.max(0.01, box.max.y - box.min.y)
-  const scale = D.monsterHeightM / h
-  model.scale.setScalar(scale)
-  model.position.y = -box.min.y * scale
   const variantMap = new Map<string, Texture>()
   model.traverse((o) => {
     const m = o as Mesh
@@ -279,6 +273,17 @@ function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Act
       m.visible = false
     }
   })
+  // fit to about 1 m tall at the head (the monsters' metres), standing on y = 0. Only the visible body counts: the
+  // variant holders sit half a metre below the feet, and counting them floated every monster off the floor
+  model.updateMatrixWorld(true)
+  const box = new Box3()
+  model.traverse((o) => {
+    if ((o as Mesh).isMesh && o.visible) box.union(new Box3().setFromObject(o))
+  })
+  const h = Math.max(0.01, box.max.y - box.min.y)
+  const scale = D.monsterHeightM / h
+  model.scale.setScalar(scale)
+  model.position.y = -box.min.y * scale
   const variantBase = variant ? (variantMap.get(variant) ?? null) : null
   if (asset.kind === 'ultra') {
     // Art 2.1: the film materials of the spike (ART_2_DETAIL §3.4), rebuilt from the file's own maps by part, so the
@@ -308,7 +313,7 @@ function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Act
     })
   }
   const root = new Group()
-  root.add(model)
+  root.add(model, contactShadow())
   const mixer = new AnimationMixer(model)
   const actions = new Map<string, AnimationAction>()
   for (const clip of asset.clips) actions.set(clip.name, mixer.clipAction(clip))
@@ -380,6 +385,31 @@ interface Telegraph {
   mesh: Mesh
   born: number
   landAt: number
+}
+
+let contactTexture: CanvasTexture | null = null
+
+/** A soft dark disc under the feet: the arena's floor is baked, so this is what makes a monster stand on it. */
+function contactShadow(): Mesh {
+  if (!contactTexture) {
+    const c = document.createElement('canvas')
+    c.width = c.height = 64
+    const g = c.getContext('2d')!
+    const r = g.createRadialGradient(32, 32, 0, 32, 32, 32)
+    r.addColorStop(0, 'rgba(40,28,18,1)')
+    r.addColorStop(0.45, 'rgba(40,28,18,0.6)')
+    r.addColorStop(1, 'rgba(40,28,18,0)')
+    g.fillStyle = r
+    g.fillRect(0, 0, 64, 64)
+    contactTexture = new CanvasTexture(c)
+    contactTexture.colorSpace = SRGBColorSpace
+  }
+  const mat = new MeshBasicMaterial({ map: contactTexture, transparent: true, opacity: D.contactShadow.opacity, depthWrite: false })
+  const disc = new Mesh(new PlaneGeometry(D.contactShadow.sizeM, D.contactShadow.sizeM * D.contactShadow.depthPct / 100), mat)
+  disc.rotation.x = -Math.PI / 2
+  disc.position.y = 0.006
+  disc.renderOrder = 1
+  return disc
 }
 
 /** A round, soft-edged glow for the sparks (a flat square reads as a pixel, not a spark). */

@@ -11,6 +11,8 @@ export const BATTLE3D_TEXT = {
   cameraLabel: 'Switch camera',
   dodged: 'Dodged!',
   push: 'Push',
+  pushHint: 'Push: walk right up to them first',
+  range: (band: string, metres: string) => `${band} · ${metres} m`,
   leave: 'Leave',
   rematch: 'Rematch',
   skip: 'Skip',

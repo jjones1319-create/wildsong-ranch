@@ -59,6 +59,28 @@
 .b3d__tpanel .tcard {
   min-height: 44px;
 }
+/* a tap waiting for the monster to finish its move, and a card Assist is walking toward */
+.b3d__tpanel .tcard--queued,
+.b3d__tpanel .tcard--assist {
+  outline: 3px solid #ffd45e;
+  outline-offset: -3px;
+}
+/* the current range, just above the cards */
+.b3d__range {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(31dvh + env(safe-area-inset-bottom) + 12px);
+  z-index: 2;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  pointer-events: none;
+}
 /* the stick lives in the lower-left of the 3D view, just above the technique panel (thumb reach) */
 .stick {
   position: absolute;

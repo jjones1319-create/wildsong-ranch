@@ -2,6 +2,25 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Hotfix: Battle 3D feet, Push and tapping (2026-11-02) · v1.15.1
+
+The owner's first phone test: "it was difficult to attack, there was no push, and they seemed to be floating".
+- **Floating:**
+  - The cause: Puddlepup's file keeps Songheart's colour map on a hidden holder half a metre below the feet, and the duel fitted the model to a box that counted it, so both monsters stood 0.5 m above the floor.
+  - Now the fit counts the visible body only.
+  - Each monster has a soft contact shadow (`ART.duel.contactShadow`).
+- **Push:** the button is always there (dimmed until the bodies touch), as in the classic battle. Close range starts well before touching, so before this the button rarely appeared.
+- **Attacking:**
+  - a tap on an in-range card while the monster is still busy fires as soon as it can (`INPUT.tapBufferMs`, 0.5 s);
+  - a card out of range walks there with Assist and fires, and letting go of the stick no longer cancels that walk;
+  - a range chip ("Near · 2.6 m") sits above the cards;
+  - the waiting or walking card is outlined.
+- **Checked:** a scripted player lands the same in both battles (about 11 attacks and 6 hits a match), so the rules were fine and the screen was the problem.
+
+**Known issues:** at the lowest effect level (no anti-aliasing) the fur cards' edges show dark specks. The fix is to pad the card colours in the art pipeline, in the next art pass.
+
+**Next:** the living crowd (Fame fills the stands, cheering, painted cut-outs of every breed), and the duel AI 3.0 (punishing openings, reading habits, using the ring, visible styles, and battle sense from the monster's upbringing).
+
 ## Battle 3D: the lock-on duel, test build (2026-11-02) · v1.15.0
 
 **Live (test only):** Lab → **Battle 3D (test)**. Every other battle (cups, Versus, trials) is the classic one, unchanged, until the owner approves.
