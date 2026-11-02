@@ -23,6 +23,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
    - Keep the disclaimer in Credits and the README: *"Unofficial fan-made game inspired by classic monster-raising sims. Not affiliated with or endorsed by Koei Tecmo. Monster Rancher is a trademark of KOEI TECMO GAMES CO., LTD."*
 2. **Phone first.**
    - Portrait 360–430 px wide, tap targets ≥ 44 px, thumb-reachable controls, safe-area insets, `100dvh`.
+   - Exception: Battle 3D also plays sideways (landscape), and upright still works (the owner's choice, Nov 2; docs/BATTLE_3D.md §5). The rest of the game stays portrait.
    - No hover-only UI, and every animation is skippable.
    - Must work in iOS Safari (16.4+) and Android Chrome, including when installed to the Home Screen.
 3. **Deterministic, pure core.**

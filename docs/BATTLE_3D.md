@@ -144,6 +144,12 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
 | Rookie | 153 | 1 | 0 |
 
 ## 5. Controls (phone)
+- **Sideways or upright** (the owner, Nov 2: "sideways, upright still works"):
+  - A battle that starts upright asks once a session: **Play sideways** or **Stay upright**.
+  - Sideways, where the browser can (Android: the installed app, or a tab in full screen), the game turns the screen itself and turns it back afterwards; elsewhere (iPhone) it asks you to turn the phone.
+  - **Sideways layout:** the bars and buttons along the top, the cards as a 2×2 block down the right edge, the stick under the left thumb, Push just left of the cards. Left-handed mirrors it.
+  - The rest of the game stays upright (the installed app's manifest).
+- **Two thumbs at once:** the cards and Push act on the touch itself, and nothing on the panel starts a pinch or scroll, so a finger can stay on the stick while the other attacks (v1.16.1).
 - **Left thumb, movement:** a stick appears where the thumb lands.
   - Its direction is read against the camera: the part pointing at the opponent on screen walks forward or back, and the part across the screen strafes. So it works the same from any camera.
   - Release to stop.
@@ -158,8 +164,10 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
 - **Left-handed** mirrors the layout.
 
 ## 6. Cameras
-- **Side-on** (the default on Auto and Skip-watching):
-  - a three-quarter view from your monster's side of the line: turned 55° toward your monster and looking down 18°. On a tall phone, a square side view can't fit both monsters from inside the ring;
+- **Side-on** (the default on Auto and Skip-watching), framed for the screen's shape (`framing.ts`, `ART.duel.side`):
+  - upright: a three-quarter view from your monster's side of the line, turned 55° toward your monster and looking down 18°. On a tall phone, a square side view can't fit both monsters from inside the ring;
+  - sideways: nearly square side-on (14°, looking down 12°), with the fight kept left of the cards (right of them when left-handed);
+  - between the two shapes it blends, so turning the phone swings the camera smoothly;
   - your monster on the left and a little nearer;
   - the distance is fitted every frame, so both monsters (whole, feet to ears) sit between the top bar and the technique panel;
   - it swings round smoothly as they circle (a critically damped spring, like today's arena camera).

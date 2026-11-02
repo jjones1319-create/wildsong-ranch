@@ -2,6 +2,28 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Battle 3D sideways (2026-11-02) · v1.17.0
+
+The owner asked "would this be better if the phone was sideways?" and chose "sideways, upright still works".
+- **Asking to turn:**
+  - A battle that starts upright asks once a session: **Play sideways** or **Stay upright**.
+  - On Android (the installed app, or a tab in full screen) the game turns the screen itself and turns it back when you leave; on iPhone it asks you to turn the phone.
+  - The rest of the game stays upright.
+- **Sideways layout:**
+  - the bars and buttons along the top;
+  - the cards as a 2×2 block down the right edge;
+  - the stick under the left thumb, Push just left of the cards;
+  - left-handed mirrors it.
+  - The battle screen now uses the whole width instead of the game's phone column.
+- **The camera** frames for the screen's shape (`framing.ts`): upright the three-quarter view as before, sideways nearly square side-on with both monsters bigger, kept clear of the cards. It blends as the phone turns.
+- **Rules:** CLAUDE.md's phone-first rule notes the exception; BATTLE_3D §5 and §6.
+- **Tests:** `framing.test.ts` (3).
+- **Checked** in headless Chrome at 892 × 412: both monsters side-on, left of the cards, with the crowd behind them; the behind camera works too.
+
+**Known issues**
+- The installed app keeps its upright manifest, so on an iPhone home-screen app turning the phone may not rotate the game. Safari tabs rotate. The phone test will tell.
+- The sideways choice lasts for the session; a saved setting would need a save version.
+
 ## Hotfix: attack while holding the stick (2026-11-02) · v1.16.1
 
 The owner: "when I am controlling it I can't use the joystick and click a skill at the same time. I have to let off the joystick to use an attack."

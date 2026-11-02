@@ -1289,7 +1289,18 @@ export const ART = {
      * base + gap · perGap, kept within min/max) is fitted so both monsters (feet, heads, front and back) sit inside
      * the clear band of the screen in NDC (between the top bar and the technique panel).
      */
-    side: { base: 5, perGap: 1.2, lookY: 0.5, yawDeg: 55, elevationDeg: 18, minDist: 3.5, maxDist: 16, bodyHalfM: 0.42, band: { x: 0.84, top: 0.6, bottom: -0.34 } },
+    side: {
+      base: 5,
+      perGap: 1.2,
+      lookY: 0.5,
+      minDist: 3.5,
+      maxDist: 16,
+      bodyHalfM: 0.42,
+      /** Upright (aspect up to `aspect`): a three-quarter view; the clear band in NDC between the top bar and the cards. */
+      portrait: { aspect: 0.75, yawDeg: 55, elevationDeg: 18, band: { left: -0.84, right: 0.84, top: 0.6, bottom: -0.34 } },
+      /** Sideways (aspect from `aspect`): nearly square side-on, the pair left of the cards along the right edge. */
+      landscape: { aspect: 1.5, yawDeg: 14, elevationDeg: 12, band: { left: -0.9, right: 0.28, top: 0.5, bottom: -0.62 } },
+    },
     /**
      * The Guild arena's crowd starts just past the fence, so every camera stays inside it (ring radius − wallMargin, in
      * metres). When the side-on camera can't back up far enough it widens its lens instead, up to maxFov degrees, and

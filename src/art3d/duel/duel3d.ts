@@ -38,6 +38,7 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { ART, BATTLE } from '../../data/tuning.ts'
 import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
+import { bandNeed, sideFraming } from './framing.ts'
 import { memoryMb, noteTextures } from './memory.ts'
 import { createCrowd, type Crowd, type CrowdStats } from './crowd.ts'
 
@@ -64,6 +65,8 @@ export interface DuelOptions {
   variants: [string | null, string | null]
   lite: boolean
   reduceMotion: boolean
+  /** Left-handed: sideways, the cards sit on the left, so the side camera frames the fight to their right. */
+  leftHanded?: boolean
   /** Prefer WebGPU (the test measured it faster); falls back to WebGL. */
   backend?: Backend
   /** Speed multiplier of the battle (×1/×2/×4) for the clips. */
@@ -579,16 +582,19 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         fov: D.fov,
       }
     }
-    // Side-on, made for a tall phone: turned toward the player's monster and looking down a little, so the line between
-    // them runs diagonally up the screen (the player near, bottom left); the distance is fitted every frame so both
-    // monsters sit in the clear band between the top bar and the technique panel.
+    // Side-on, framed for the screen's shape (framing.ts): upright, a three-quarter view turned toward the player's
+    // monster; sideways, nearly square side-on. The distance is fitted every frame so both monsters sit in the clear
+    // band of the screen (between the top bar and the cards upright; left of the cards sideways).
     void s
     const F = D.side
+    const fr = sideFraming(camera.aspect)
     const n = new Vector3(-u.z, 0, u.x).multiplyScalar(sideSign)
-    const yaw = (F.yawDeg * Math.PI) / 180
+    const yaw = (fr.yawDeg * Math.PI) / 180
     const flat = n.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(u, -Math.sin(yaw)).normalize()
-    const band = F.band
+    const band = o.leftHanded ? { ...fr.band, left: -fr.band.right, right: -fr.band.left } : fr.band
+    const centreX = (band.left + band.right) / 2
     const centreY = (band.top + band.bottom) / 2
+    const right = new Vector3()
     const tMax = Math.tan(((D.confine.maxFov / 2) * Math.PI) / 180)
     // both monsters whole: feet and heads, front and back
     const up = new Vector3(0, D.monsterHeightM, 0)
@@ -600,8 +606,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     fitCam.aspect = camera.aspect
     // how much bigger the view must be for every point to sit in the band, from distance d and lens t
     const need = (): number => {
-      // aim below the middle so the pair sits in the band's centre rather than the screen's
-      look = mid.clone().add(new Vector3(0, F.lookY - d * t * centreY, 0))
+      // aim off the middle so the pair sits in the band's centre rather than the screen's
+      look = mid.clone().add(new Vector3(0, F.lookY - d * t * centreY, 0)).addScaledVector(right, -centreX * d * t * camera.aspect)
       fitCam.fov = (2 * Math.atan(t) * 180) / Math.PI
       fitCam.updateProjectionMatrix()
       fitCam.position.copy(look).addScaledVector(dir, d)
@@ -610,23 +616,24 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       let m = 0
       for (const p of pts) {
         const q = p.clone().project(fitCam)
-        m = Math.max(m, Math.abs(q.x) / band.x, q.y > centreY ? (q.y - centreY) / (band.top - centreY) : (centreY - q.y) / (centreY - band.bottom))
+        m = Math.max(m, bandNeed(q.x, q.y, band))
       }
       return Math.min(1.6, Math.max(0.6, m))
     }
-    for (let el = F.elevationDeg; ; el += D.confine.raiseDeg) {
+    for (let el = fr.elevationDeg; ; el += D.confine.raiseDeg) {
       const e = (el * Math.PI) / 180
       dir.copy(flat).multiplyScalar(Math.cos(e)).add(new Vector3(0, Math.sin(e), 0)).normalize()
+      right.crossVectors(dir.clone().negate(), new Vector3(0, 1, 0)).normalize()
       t = Math.tan(((D.fov / 2) * Math.PI) / 180)
       d = F.base + dist * F.perGap
       for (let i = 0; i < 4; i++) d = Math.min(F.maxDist, Math.max(F.minDist, d * need()))
-      const reach = reachInside(mid, dir)
+      const reach = reachInside(look, dir)
       if (d <= reach) break
       // the crowd is behind: stay inside the fence and widen the lens; if that can't fit them, rise and try again
       t *= d / reach
       d = reach
       for (let i = 0; i < 3; i++) t = Math.min(tMax, t * need())
-      if (need() <= 1.02 || el >= F.elevationDeg + D.confine.maxRaiseDeg) break
+      if (need() <= 1.02 || el >= fr.elevationDeg + D.confine.maxRaiseDeg) break
     }
     need()
     return { pos: look.clone().addScaledVector(dir, d), look, fov: (2 * Math.atan(t) * 180) / Math.PI }

@@ -2,6 +2,9 @@
 .b3d {
   position: relative;
   height: 100dvh;
+  /* the whole screen, not the game's phone-width column: sideways it needs every pixel (§5) */
+  width: 100vw;
+  max-width: none;
   padding: 0;
   overflow: hidden;
   background: #cfe6f5;
@@ -218,4 +221,100 @@
 }
 .b3d__top .b3d__fame {
   font-size: 13px;
+}
+
+/* §5 the sideways card and the turn hint */
+.b3d__sideways {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  width: min(86vw, 360px);
+  background: rgb(255 255 255 / 0.95);
+  border-radius: 16px;
+  padding: 16px 18px;
+  text-align: center;
+}
+.b3d__sidewaysbody {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+.b3d__turn {
+  position: absolute;
+  left: 50%;
+  top: calc(env(safe-area-inset-top) + 118px);
+  transform: translateX(-50%);
+  z-index: 4;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+/*
+ * §5 sideways (the owner, Nov 2): the bars and buttons along the top, the cards as a 2×2 block down the right edge,
+ * the stick under the left thumb, Push just left of the cards. The camera keeps the fight left of the cards
+ * (framing.ts). Left-handed mirrors it all.
+ */
+@media (orientation: landscape) {
+  .b3d__head {
+    top: calc(env(safe-area-inset-top) + 4px);
+    left: calc(env(safe-area-inset-left) + 8px);
+    right: calc(env(safe-area-inset-right) + 8px);
+  }
+  .b3d__top {
+    top: calc(env(safe-area-inset-top) + 48px);
+    left: calc(env(safe-area-inset-left) + 8px);
+    right: calc(35vw + 12px);
+  }
+  .b3d__tpanel {
+    left: auto;
+    right: calc(env(safe-area-inset-right) + 6px);
+    top: calc(env(safe-area-inset-top) + 48px);
+    bottom: calc(env(safe-area-inset-bottom) + 6px);
+    width: 34vw;
+    max-height: none;
+    grid-template-columns: 1fr 1fr;
+    align-content: end;
+  }
+  .stick {
+    left: env(safe-area-inset-left);
+    bottom: 0;
+    width: 44vw;
+    height: 64dvh;
+  }
+  .b3d__push {
+    right: calc(34vw + 18px);
+    bottom: calc(env(safe-area-inset-bottom) + 14px);
+  }
+  .b3d__range {
+    left: 33vw;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+  }
+  .b3d__stats {
+    top: calc(env(safe-area-inset-top) + 152px);
+  }
+  .b3d--left .b3d__top {
+    left: calc(35vw + 12px);
+    right: calc(env(safe-area-inset-right) + 8px);
+  }
+  .b3d--left .b3d__tpanel {
+    right: auto;
+    left: calc(env(safe-area-inset-left) + 6px);
+  }
+  .b3d--left .stick {
+    left: auto;
+    right: env(safe-area-inset-right);
+  }
+  .b3d--left .b3d__push {
+    right: auto;
+    left: calc(34vw + 18px);
+  }
+  .b3d--left .b3d__range {
+    left: 67vw;
+  }
 }

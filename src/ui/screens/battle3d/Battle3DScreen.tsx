@@ -34,9 +34,13 @@ import {
 } from '../../store/battleStore.ts'
 import { currentTier, reduceMotionNow } from '../../store/fxStore.ts'
 import { press } from './press.ts'
+import { goSideways, isPortrait, leaveSideways } from './sideways.ts'
 import { ThumbStick } from './ThumbStick.tsx'
 
 const B = UI_TEXT.battle
+
+/** §5 sideways: asked once a session (a save setting would need a save version). */
+let sidewaysChoice: 'ask' | 'sideways' | 'upright' = 'ask'
 
 type Upbringing = keyof typeof ART.duel.testUpbringing
 const UPBRINGINGS = Object.keys(ART.duel.testUpbringing) as Upbringing[]
@@ -95,6 +99,29 @@ export function Battle3DScreen() {
   const [fame, setFame] = useState<number>(ART.duel.crowd.defaultFame)
   const phaseRef = useRef(phase)
   phaseRef.current = phase
+  // §5 sideways: follow the phone's turn; ask to turn when upright (not in automated runs); undo it on leaving
+  const [portrait, setPortrait] = useState(isPortrait)
+  const [askSideways, setAskSideways] = useState(sidewaysChoice === 'ask' && !navigator.webdriver)
+  const [turnHint, setTurnHint] = useState(false)
+  useEffect(() => {
+    const mq = matchMedia('(orientation: portrait)')
+    const on = () => setPortrait(mq.matches)
+    mq.addEventListener('change', on)
+    if (sidewaysChoice === 'sideways') void goSideways().then((ok) => setTurnHint(!ok))
+    return () => {
+      mq.removeEventListener('change', on)
+      leaveSideways()
+    }
+  }, [])
+  const playSideways = async () => {
+    sidewaysChoice = 'sideways'
+    setAskSideways(false)
+    setTurnHint(!(await goSideways()))
+  }
+  const stayUpright = () => {
+    sidewaysChoice = 'upright'
+    setAskSideways(false)
+  }
   // a tap on an in-range card while the monster is still busy fires as soon as it can (INPUT.tapBufferMs)
   const queued = useRef<{ id: string; until: number } | null>(null)
 
@@ -107,7 +134,7 @@ export function Battle3DScreen() {
         const m = await import('../../../art3d/duel/duel3d.ts')
         if (!alive || !canvas.current) return
         const d = await m.createDuel3D(
-          { canvas: canvas.current, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), speed: () => speed.value, crowdFame: fame },
+          { canvas: canvas.current, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), leftHanded: settings.value.leftHanded, speed: () => speed.value, crowdFame: fame },
           liveBattleState,
         )
         if (!alive) {
@@ -217,6 +244,21 @@ export function Battle3DScreen() {
           </button>
         </div>
       )}
+      {portrait && askSideways && (phase === 'intro' || phase === 'fight') && (
+        <div class="b3d__sideways" role="dialog" aria-label={T.sideways.title}>
+          <p class="b3d__resultline">📱↻ {T.sideways.title}</p>
+          <p class="b3d__sidewaysbody">{T.sideways.body}</p>
+          <div class="b3d__resultbtns">
+            <button type="button" class="btn btn--primary" onClick={() => void playSideways()}>
+              {T.sideways.play}
+            </button>
+            <button type="button" class="btn" onClick={stayUpright}>
+              {T.sideways.stay}
+            </button>
+          </div>
+        </div>
+      )}
+      {portrait && turnHint && <p class="b3d__turn">📱↻ {T.sideways.turn}</p>}
       {phase === 'intro' && (
         <button type="button" class="b3d__skip" onClick={() => duel.current?.skipIntro()}>
           {T.tapToSkip}

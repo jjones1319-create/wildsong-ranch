@@ -11,6 +11,13 @@ export const BATTLE3D_TEXT = {
   cameraLabel: 'Switch camera',
   dodged: 'Dodged!',
   fence: 'Into the fence!',
+  sideways: {
+    title: 'Better sideways',
+    body: 'Turn your phone on its side: the stick under your left thumb, attacks under your right, and a wider view of the fight.',
+    play: 'Play sideways',
+    stay: 'Stay upright',
+    turn: 'Turn your phone sideways',
+  },
   push: 'Push',
   pushHint: 'Push: walk right up to them first',
   range: (band: string, metres: string) => `${band} · ${metres} m`,
