@@ -192,7 +192,7 @@ export function dirFrom(azDeg: number, elDeg: number): Vector3 {
   return new Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e))
 }
 
-export interface Studio { key: DirectionalLight; rim: DirectionalLight; hemi: HemisphereLight; ground: Mesh }
+export interface Studio { key: DirectionalLight; rim: DirectionalLight; rim2: DirectionalLight; hemi: HemisphereLight; ground: Mesh }
 
 /** The pictures' studio light, a soft shadow from the key, a shadow-catching floor and the grey backdrop. */
 export function buildStudio(scene: Scene, environment: Texture | null, focus: Vector3, reach: number): Studio {
@@ -219,13 +219,16 @@ export function buildStudio(scene: Scene, environment: Texture | null, focus: Ve
   const rim = new DirectionalLight(s.rim.color, s.rim.intensity)
   rim.position.copy(dirFrom(s.rim.azDeg, s.rim.elDeg).multiplyScalar(reach * 4)).add(focus)
   rim.target.position.copy(focus)
+  const rim2 = new DirectionalLight(s.rim2.color, s.rim2.intensity)
+  rim2.position.copy(dirFrom(s.rim2.azDeg, s.rim2.elDeg).multiplyScalar(reach * 4)).add(focus)
+  rim2.target.position.copy(focus)
   const hemi = new HemisphereLight(s.sky, s.ground, s.hemi)
   const ground = new Mesh(new PlaneGeometry(reach * 8, reach * 8), new ShadowMaterial({ opacity: 0.22 }))
   ground.rotation.x = -Math.PI / 2
   ground.receiveShadow = true
   ground.userData.isHelper = true
-  scene.add(key, key.target, rim, rim.target, hemi, ground)
-  return { key, rim, hemi, ground }
+  scene.add(key, key.target, rim, rim.target, rim2, rim2.target, hemi, ground)
+  return { key, rim, rim2, hemi, ground }
 }
 
 /** A procedural environment for reflections (no files): three's RoomEnvironment scene, prefiltered by the renderer. */

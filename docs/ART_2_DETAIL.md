@@ -26,7 +26,7 @@ Approval then changes:
   - a 2048² body atlas, plus a 2048² cinematic head set for the Monster Card and cutscenes;
   - soft key-light shadows, ambient occlusion, bloom, colour grading, 4× MSAA and depth of field in cutscenes, no outlines;
   - dynamic resolution and quality that hold 60 fps by lowering the render resolution first, then effects, never the monster's detail.
-- **Download per monster on Ultra:** about **6 MB** with everything, the cinematic set included (§5.3); about 4 MB for what a battle needs.
+- **Download per monster on Ultra:** about **7 MB** with everything, the cinematic set included (§5.3); about 4 MB for what a battle needs.
 - **Graphics memory:** a two-monster battle needs about **0.3 GB** of the 1 GB starting budget (§6), and less with KTX2.
 - **The proof** is the **Performance check** the owner runs on the S25 Ultra (§7): https://jjones1319-create.github.io/wildsong-ranch/perf/. It tests WebGL against WebGPU, then soaks a battle for 10 minutes and reports fps, render resolution, memory and throttling at the start and at the end.
 
@@ -97,8 +97,8 @@ What that means for the design:
 
 | One 2048² cinematic set (colour + normal + ORM) | Download | GPU memory, with mipmaps |
 |---|---|---|
-| WebP (decoded to RGBA8) | 1.57 MB | ≈ 67 MB |
-| KTX2, ETC1S everywhere | 1.77 MB | ≈ 11 MB (ETC2 / ASTC) |
+| WebP (decoded to RGBA8) | 2.02 MB | ≈ 67 MB |
+| KTX2, ETC1S everywhere | 2.06 MB | ≈ 11 MB (ETC2 / ASTC) |
 | KTX2, ETC1S colour + UASTC normals | 3.6 MB | ≈ 14 MB |
 | KTX2, UASTC everywhere | 6.4–7.3 MB | ≈ 17 MB |
 
@@ -156,11 +156,11 @@ Unchanged from revision 1: wet fur, short velvet, long fluffy fur and manes, woo
 ### 4.1 The spike (head, both fins and one front paw; about 45% of a whole Puddlepup's surface)
 | What | Measured |
 |---|---|
-| Source | 1.40 million triangles, 6,880 sculpted lying clumps (top surfaces only) |
+| Source | 2.30 million triangles, 13,238 sculpted wet locks (top surfaces only; round 5) |
 | Game triangles | head 14,000 · eyes 1,056 · fins 3,072 · paw 4,000 · head cards 2,272 (568 cards) · paw cards 504 (126 cards) · tuft 154 (7 locks) = **25,058** |
-| Mesh `.glb` (meshopt, two UV sets on the head, tangents, colours) | 425 KB |
-| Body atlas 1152² | WebP 669 KB · KTX2 ETC1S 727 KB |
-| Cinematic head set 2048² | WebP 1.55 MB · KTX2 ETC1S 1.85 MB |
+| Mesh `.glb` (meshopt, two UV sets on the head, tangents, colours) | 418 KB |
+| Body atlas 1152² | WebP 778 KB · KTX2 ETC1S 754 KB |
+| Cinematic head set 2048² | WebP 2.02 MB · KTX2 ETC1S 2.06 MB |
 
 ### 4.2 The performance stand-in
 The spike's head, four copies of its paw and a grey-box torso and tail built with the same fur pipeline (its own 2048² atlas): **59,548 triangles and 2,806 fur cards**. This is the low end of the Ultra aim, not the rebuilt Puddlepup. Two of them fight in the check's battle.
@@ -206,16 +206,16 @@ How to read it:
 |---|---|---|
 | LOD0 mesh (~70k triangles) + LOD1 | ≈ 1.4 MB | ≈ 1.4 MB |
 | Rig, clips, 24 morph targets | ≈ 0.5 MB | ≈ 0.5 MB |
-| Body atlas 2048² | ≈ 2.2 MB | ≈ 2.1 MB |
-| Cinematic head set 2048² | ≈ 1.8 MB | ≈ 1.6 MB |
+| Body atlas 2048² | ≈ 2.4 MB | ≈ 2.5 MB |
+| Cinematic head set 2048² | ≈ 2.1 MB | ≈ 2.0 MB |
 | Cinematic face sheet 2048² | ≈ 0.5 MB | ≈ 0.4 MB |
-| **One monster, everything** | **≈ 6.4 MB** | **≈ 6.0 MB** |
-| What a battle loads (no cinematic set) | ≈ 4.1 MB | ≈ 4.0 MB |
-| **All 33 looks, everything** | **≈ 210 MB** | ≈ 200 MB |
+| **One monster, everything** | **≈ 6.9 MB** | **≈ 6.8 MB** |
+| What a battle loads (no cinematic set) | ≈ 4.3 MB | ≈ 4.4 MB |
+| **All 33 looks, everything** | **≈ 230 MB** | ≈ 225 MB |
 
 - The cinematic set loads only when a cutscene or the Monster Card needs it.
 - Every model is runtime-cached and never precached, so a player downloads only the monsters they meet.
-- **Download all art** (P19) must show these totals and offer the in-game sets only (≈ 135 MB) or Lite only (≈ 40 MB).
+- **Download all art** (P19) must show these totals and offer the in-game sets only (≈ 140 MB) or Lite only (≈ 40 MB).
 
 ## 6. Graphics memory
 Estimated for a two-monster battle on Ultra at 2.5×, the battle canvas being 412 × 560 CSS px:
@@ -406,13 +406,29 @@ What it asked for, most important first:
   - **Light:** still no visible warm rim; the fins look unlit.
   - **Muzzle:** a stray clump on its right side and a wobbly mouth line.
 
-**Round 5, if the owner wants it** (about an hour):
-- **Fur:** fewer, larger, longer clumps flowing back from the nose, with soft see-through edges.
-  - The coat would carry more fur cards: the Ultra budget allows 6,000 per monster; the spike uses about 700.
-  - The baked clumps would become the undercoat.
-- **Ears:** coral membranes as tall as the head, fanning out from under the flaps, lit through.
-- **Head and muzzle:** lift the skull and take out the jowls and the back bulge. Spread the cream across the cheeks so the blush sits on cream. One thin "w" mouth.
-- **Light:** a warm rim through the specular and sheen, so it shows on the outline.
+**Round 5** (the owner chose the realistic coat and asked for eyes that don't stick out):
+- **Coat:** long narrow wet locks, about 3:1, instead of leaf-shaped clumps (about 1.2:1).
+  - 13,238 locks from 2.3 million source triangles, baked in about 10 minutes.
+  - The card tiles show three or four thin locks each.
+- **Eyes:** a flatter lens set into the face, about 0.9 cm proud instead of 2.4 cm, at the same visible size, with the fur closer to its edge.
+- **Ears and head:**
+  - the membranes are as tall as the head and fan out wider;
+  - the head is shallower front to back;
+  - the cheek fluff is higher, with no jowls;
+  - the cream reaches up the cheeks.
+- **Light:** a second warm rim from the other back side, so the warm edge shows on both outlines.
+
+**Round 5 verdict: detail and design "partly"; 64 px "partly"** (same as round 4).
+- **Better:** the palette, the eye size, the spots and the droopy flaps; the soft blush.
+- **The reviewers disagree:**
+  - on the coat, round 4 saw leaves and round 5 sees fine streaks;
+  - on the nose, round 2 wanted it bigger and round 5 wants it 40% smaller.
+- **Round 6, what both rounds agree on:**
+  - **Muzzle:** one smooth short cream muzzle, not three lobes. One soft smile line. No strands under the nose. The teal comes down in a V between the eyes.
+  - **Eyes:** an upper lash line under a fur lid instead of the full black ring (it reads as goggles).
+  - **Fins:** coral, not bubblegum pink, with darker shaded ribs, narrower at the root, hanging to the jaw angled slightly forward.
+  - **Outline:** no stray cards at the ear roots and cheeks; a smaller teal tuft that doesn't blow out.
+- **The owner's eye decides** whether round 6 runs before the pipeline work.
 
 ## 9. Plan after approval
 - **A1, the pipeline:** generalise the spike into `lib/surface.py` and `lib/bake.py`, with LOD0 / LOD1, the cinematic set, the material sidecar, KTX2 ETC1S encoding and the new `optimize.ts` budgets.

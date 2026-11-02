@@ -55,13 +55,17 @@ MOUTH = '#4A2E35'
 # across a little below the middle of the head, the nose just below the eye line, a small cream muzzle; the ears start
 # on the upper sides of the head and hang out and down to the chin (~0.95 m across their tips).
 HEAD_C = Vector((0.0, -0.37, 0.77))
-HEAD_R = (0.214, 0.19, 0.215)                    # round 4: a little narrower
+HEAD_R = (0.214, 0.182, 0.215)                   # round 4: a little narrower; round 5: shallower front to back
 EYE_C = {s: Vector((0.125 * s, -0.522, 0.755)) for s in (1, -1)}
 EYE_R = 0.061                                    # round 3: +10% (the pictures' eyes read bigger)
+# round 5: the eye is a flatter lens set into the face: (dome height, how far its centre sits behind the surface) in
+# eye radii, and how much wider the lens is so the visible eye keeps its size (round 4 stood 2.4 cm proud)
+EYE_DEPTH = (0.44, 0.30)
+EYE_SPREAD = 1.1
 NOSE_C = Vector((0.0, -0.616, 0.708))
 MUZZLE = ((0.0, -0.578, 0.666), (0.07, 0.056, 0.056))      # the plush, fur-free cream muzzle (centre, radii; round 4: smaller, set back)
 EAR_ROOT = {s: Vector((0.146 * s, -0.37, 0.93)) for s in (1, -1)}
-CHEEK = (0.112, -0.452, 0.668, 0.094)            # the cheek fluff (x, y, z, radius), mirrored
+CHEEK = (0.11, -0.455, 0.68, 0.088)            # the cheek fluff (x, y, z, radius), mirrored
 EAR_GAP = 0.028                                  # the ear hangs this far outside the head and cheeks (the fur between)
 PAW = Vector((0.15, -0.19, 0.0))                 # the front-left paw's ground point
 TOE_DX = (-0.076, 0.0, 0.076)
@@ -94,8 +98,8 @@ def ear_frame(s: int):
 
 
 N_RIBS = 6
-EAR_THETA = (math.radians(34), math.radians(6))                  # outer edge (v=0) → inner edge (v=1), from straight down
-EAR_LEN = (0.40, 0.44)
+EAR_THETA = (math.radians(40), math.radians(4))                  # outer edge (v=0) → inner edge (v=1), from straight down
+EAR_LEN = (0.46, 0.5)
 
 
 def ear_point(s: int, u: float, v: float, rib_relief: float = 0.0) -> Vector:
@@ -399,7 +403,7 @@ def build_eye(name: str, s: int, high: bool) -> bpy.types.Object:
     seg = 48 if high else 24
     bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=seg // 2, radius=1.0)
     for v in bm.verts:
-        v.co = Vector((v.co.x * EYE_R * 0.96, v.co.y * EYE_R * 1.08, v.co.z * EYE_R * 0.62))
+        v.co = Vector((v.co.x * EYE_R * 0.96 * EYE_SPREAD, v.co.y * EYE_R * 1.08 * EYE_SPREAD, v.co.z * EYE_R * EYE_DEPTH[0]))
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
@@ -414,7 +418,7 @@ def build_eye(name: str, s: int, high: bool) -> bpy.types.Object:
     xax = up.cross(look).normalized()
     yax = look.cross(xax).normalized()
     m = Matrix((xax, yax, look)).transposed().to_4x4()
-    ob.matrix_world = Matrix.Translation(c - look * (EYE_R * 0.22)) @ m
+    ob.matrix_world = Matrix.Translation(c - look * (EYE_R * EYE_DEPTH[1])) @ m
     return ob
 
 
@@ -526,25 +530,26 @@ def head_lock_params(p, n):
     """Lying clumps (baked): per point spacing, length, width, lift (radians); NaN spacing = none."""
     z = head_zones(p, n)
     k = len(p)
-    L = np.full(k, 0.052)
-    W = np.full(k, 0.021)
+    # round 5: long narrow wet locks, about 3:1 (round 4's were about as wide as long and read as leaves)
+    L = np.full(k, 0.068)
+    W = np.full(k, 0.0115)
     lift = np.full(k, math.radians(2.0))
-    L = np.where(z['face'], 0.034, L)
-    W = np.where(z['face'], 0.014, W)
-    L = np.where(z['crown'], 0.055, L)
-    W = np.where(z['crown'], 0.022, W)
-    L = np.where(z['cheek'], 0.058, L)
-    W = np.where(z['cheek'], 0.024, W)
-    L = np.where(z['blush'], 0.034, L)
-    L = np.where(z['throat'], 0.065, L)
-    W = np.where(z['throat'], 0.026, W)
-    L = np.where(z['ear'], 0.058, L)
-    W = np.where(z['ear'], 0.022, W)
-    near_eye = smooth(EYE_R * 1.25, EYE_R * 2.0, z['eye_d'])
+    L = np.where(z['face'], 0.044, L)
+    W = np.where(z['face'], 0.008, W)
+    L = np.where(z['crown'], 0.072, L)
+    W = np.where(z['crown'], 0.012, W)
+    L = np.where(z['cheek'], 0.076, L)
+    W = np.where(z['cheek'], 0.013, W)
+    L = np.where(z['blush'], 0.044, L)
+    L = np.where(z['throat'], 0.085, L)
+    W = np.where(z['throat'], 0.014, W)
+    L = np.where(z['ear'], 0.076, L)
+    W = np.where(z['ear'], 0.012, W)
+    near_eye = smooth(EYE_R * 1.12, EYE_R * 1.8, z['eye_d'])
     L = L * (0.5 + 0.5 * near_eye)
     W = W * (0.62 + 0.38 * near_eye)
-    skip = z['muzzle'] | z['nose'] | (z['eye_d'] < EYE_R * 1.22) | z['cut']
-    sp = np.where(skip, np.nan, W * 0.42)
+    skip = z['muzzle'] | z['nose'] | (z['eye_d'] < EYE_R * 1.1) | z['cut']
+    sp = np.where(skip, np.nan, W * 0.55)
     return sp, L, W, lift, z
 
 
@@ -555,8 +560,8 @@ def head_card_params(p, n, layer: int):
     k = len(p)
     back = p[:, 1] > -0.38
     if layer == 0:
-        L = np.full(k, 0.06)
-        W = np.full(k, 0.05)
+        L = np.full(k, 0.07)
+        W = np.full(k, 0.036)
         lift = np.full(k, math.radians(4))
         L = np.where(z['cheek'], 0.066, L)
         L = np.where(z['throat'], 0.058, L)
@@ -566,8 +571,8 @@ def head_card_params(p, n, layer: int):
         chin = (p[:, 2] < 0.64) & (p[:, 1] < -0.44)
         skip = z['face'] | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.1) | z['cut'] | z['tuft'] | chin | z['blush']
     else:
-        L = np.where(z['throat'], 0.068, 0.07)
-        W = np.full(k, 0.055)
+        L = np.where(z['throat'], 0.08, 0.082)
+        W = np.full(k, 0.04)
         lift = np.full(k, math.radians(10))
         sp = np.full(k, 0.045)
         chin = (p[:, 2] < 0.62) & (p[:, 1] < -0.46)
@@ -579,19 +584,19 @@ def head_card_params(p, n, layer: int):
 
 def paw_lock_params(p, n):
     x, y, zz = p[:, 0], p[:, 1], p[:, 2]
-    L = np.where(zz > 0.13, 0.075, 0.034)
-    W = np.where(zz > 0.13, 0.024, 0.018)
+    L = np.where(zz > 0.13, 0.085, 0.04)
+    W = np.where(zz > 0.13, 0.013, 0.01)
     lift = np.full(len(p), math.radians(3))
     toes = (zz < 0.095) & (y < PAW.y - 0.075)
     skip = toes | (zz < 0.04) | (zz > 0.37)
-    return np.where(skip, np.nan, W * 0.42), L, W, lift, None
+    return np.where(skip, np.nan, W * 0.55), L, W, lift, None
 
 
 def paw_card_params(p, n, layer: int):
     x, y, zz = p[:, 0], p[:, 1], p[:, 2]
     k = len(p)
-    L = np.full(k, 0.07)
-    W = np.full(k, 0.05)
+    L = np.full(k, 0.08)
+    W = np.full(k, 0.036)
     lift = np.full(k, math.radians(8 if layer == 0 else 13))
     sp = np.full(k, 0.026 if layer == 0 else 0.045)
     skip = (zz < 0.13) | (zz > 0.37)
@@ -610,7 +615,7 @@ def paw_flow(p, n, zones=None) -> np.ndarray:
 def leaf_width(v: float) -> float:
     """Half-width of a clump along its length: full and rounded across, then a long soft taper to the tip (a damp lock,
     not a round petal and not a hard blade)."""
-    return (0.8 + 0.2 * float(smooth(0.0, 0.25, v))) * math.sqrt(max(0.0, 1.0 - float(smooth(0.35, 1.0, v)) ** 1.2))
+    return (0.85 + 0.15 * float(smooth(0.0, 0.2, v))) * max(0.0, 1.0 - float(smooth(0.25, 1.0, v)) ** 1.5) ** 0.7
 
 
 def leaf_height(v: float) -> float:
@@ -855,7 +860,7 @@ def paint_body_material(name: str) -> bpy.types.Material:
     cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.0, -0.05, 0.27), (0.2, 0.42, 0.13), 0.12))
     cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.0, -0.33, 0.46), (0.16, 0.1, 0.16), 0.12))
     for s in (1, -1):
-        cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.119 * s, -0.53, 0.708), (0.064, 0.06, 0.03), 0.22))
+        cream = nb.math('MAXIMUM', cream, ell(nb, p, (0.122 * s, -0.53, 0.698), (0.076, 0.07, 0.045), 0.22))
     # foot: a cream rim around the sole
     cream = nb.math('MAXIMUM', cream, nb.math('MULTIPLY', ell(nb, p, (PAW.x, PAW.y - 0.07, 0.0), (0.17, 0.2, 0.06), 0.12),
                                              nb.smooth(nb.sep(p)[2], 0.045, 0.02)))
@@ -1110,7 +1115,7 @@ def stage_build(quick: bool) -> dict:
     lo_eyes = [build_eye(f'lo_eye{"L" if s > 0 else "R"}', s, False) for s in (1, -1)]
 
     # fur: soft lying clumps (baked into the maps) on the source; soft cards and the tuft on the game mesh
-    tpl_hi = lock_template(9, 9, 4, strand=0.2, closed=False)
+    tpl_hi = lock_template(7, 11, 3, strand=0.22, closed=False)
     lie_head, _ = scatter_layer('hi_locks_head', hi_head, head_lock_params, head_flow, 11, tpl_hi, quick, LYING['thickness'], LYING['bury'], 1.0)
     lie_paw, _ = scatter_layer('hi_locks_paw', hi_paw, paw_lock_params, paw_flow, 21, tpl_hi, quick, LYING['thickness'], LYING['bury'], 1.0)
     tpl_card = card_template()
@@ -1274,7 +1279,7 @@ def strip_scene():
         verts = np.stack([c + 0.5 + v[:, 0] * 0.5, 0.012 + v[:, 1] * 0.976, v[:, 2] * 0.14], axis=1)[None]
         parts.append(elements_object(f'strip_lock_{c}', verts, tpl, np.zeros((1, 3)), 2.0, rng))
     for c in CARD_CELLS:
-        k = 2 + (c % 2)
+        k = 3 + (c % 2)
         for i in range(k):
             tpl = lock_template(16, 22, 3, strand=0.16)
             v = tpl[0]

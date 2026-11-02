@@ -1184,6 +1184,8 @@ export const ART = {
       key: { color: '#fff3e6', intensity: 2.6, azDeg: -45, elDeg: 42 },
       /** Round 4: stronger and more to the side, so the warm edge shows on the outline in the front and 3/4 views. */
       rim: { color: '#ffd2a6', intensity: 4.0, azDeg: 140, elDeg: 22 },
+      /** Round 5: a second warm rim from the other back side, so the warm edge shows on both outlines in every view. */
+      rim2: { color: '#ffd9b3', intensity: 3.0, azDeg: -150, elDeg: 26 },
       sky: '#dfe9ff',
       ground: '#7c7466',
       /** Round 3: less fill and room light, so the coat keeps its teal and the cream doesn't clip (round 2 read washed out). */
