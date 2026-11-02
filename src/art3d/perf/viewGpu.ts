@@ -13,8 +13,8 @@ import { levelFlags, type Level, type PerfView, type ViewOptions } from './view.
  * materials and effects as the WebGL view, so the A/B on the phone compares like with like.
  */
 export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
-  const f0 = levelFlags('all')
-  const renderer = new WebGPURenderer({ canvas: opts.canvas, antialias: f0.msaa > 0, samples: f0.msaa, powerPreference: 'high-performance', trackTimestamp: true })
+  // MSAA lives in the scene pass; the canvas itself only receives the finished picture (no multisampled canvas)
+  const renderer = new WebGPURenderer({ canvas: opts.canvas, antialias: false, powerPreference: 'high-performance', trackTimestamp: true })
   await renderer.init()
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = NeutralToneMapping
@@ -35,13 +35,18 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
   const focusU = uniform(opts.focus)
   let lastGpu: number | null = null
   let resolving = false
+  // the effect nodes of the current pipeline: disposed on a rebuild, or every level change would leak their targets
+  let owned: { dispose(): void }[] = []
 
   function build(): void {
     if (!scene || !camera) return
     pipeline?.dispose()
+    for (const n of owned) n.dispose()
+    owned = []
     const f = levelFlags(level)
     const p = ART.ultra.post
     const scenePass = pass(scene, camera, { samples: f.msaa })
+    owned.push(scenePass)
     const color = scenePass.getTextureNode('output')
     // TSL's generic node types don't follow a chain of effects; the graph is checked when the pipeline compiles
     let out = vec4(color) as unknown as Node<'vec4'>
@@ -50,14 +55,23 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
       const prePass = pass(scene, camera, { samples: 0 })
       prePass.setMRT(mrt({ output: normalView }))
       const aoPass = ao(prePass.getTextureNode('depth'), prePass.getTextureNode(), camera)
+      owned.push(prePass, aoPass)
       aoPass.resolutionScale = f.aoHalf ? 0.5 : 1
       aoPass.radius.value = p.aoRadius
       aoPass.samples.value = 12
       const occ = mix(float(1), aoPass.getTextureNode().r, float(p.aoIntensity))
       out = vec4(color.rgb.mul(occ), color.a) as unknown as Node<'vec4'>
     }
-    if (f.bloom) out = out.add(bloom(out, p.bloom.strength, p.bloom.radius, p.bloom.threshold) as unknown as Node<'vec4'>) as unknown as Node<'vec4'>
-    if (cinematic) out = dof(out, scenePass.getViewZNode(), focusU, float(0.25), float(1.2)) as unknown as Node<'vec4'>
+    if (f.bloom) {
+      const b = bloom(out, p.bloom.strength, p.bloom.radius, p.bloom.threshold)
+      owned.push(b)
+      out = out.add(b as unknown as Node<'vec4'>) as unknown as Node<'vec4'>
+    }
+    if (cinematic) {
+      const d = dof(out, scenePass.getViewZNode(), focusU, float(0.25), float(1.2))
+      owned.push(d as unknown as { dispose(): void })
+      out = d as unknown as Node<'vec4'>
+    }
     // tone map and encode first, then grade in display space (as the WebGL view's OutputPass + grade pass do)
     const g = p.grade
     const shown = renderOutput(out)
@@ -145,6 +159,7 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
     readPixels: () => (renderer.domElement as HTMLCanvasElement).toDataURL('image/png'),
     dispose() {
       pipeline?.dispose()
+      for (const n of owned) n.dispose()
       environment.dispose()
       renderer.dispose()
     },

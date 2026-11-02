@@ -77,7 +77,10 @@ export function levelFlags(level: Level) {
 }
 
 export function createWebGLView(opts: ViewOptions): PerfView {
-  const renderer = new WebGLRenderer({ canvas: opts.canvas, antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: true, stencil: false })
+  // no preserveDrawingBuffer: on phones it costs a full-screen copy every frame (readPixels renders, then reads at once)
+  const renderer = new WebGLRenderer({ canvas: opts.canvas, antialias: false, powerPreference: 'high-performance', stencil: false })
+  // draw calls are counted over the whole frame (every pass), not just the last pass
+  renderer.info.autoReset = false
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = NeutralToneMapping
   renderer.toneMappingExposure = ART.ultra.studio.exposure
@@ -105,10 +108,13 @@ export function createWebGLView(opts: ViewOptions): PerfView {
   let cinematic = opts.cinematic
   let focus = opts.focus
 
+  /**
+   * The effect chain is built once. Dynamic resolution only resizes it and a quality level only switches passes on or
+   * off: rebuilding it on every change (round 1 on the phone) stalled a frame each time, which the controller read as
+   * slowness and stepped down again, and it leaked every pass's render targets.
+   */
   function build(): void {
     if (!scene || !camera) return
-    composer?.dispose()
-    rt?.dispose()
     const f = levelFlags(level)
     const w = Math.round(size.w * size.dpr)
     const h = Math.round(size.h * size.dpr)
@@ -117,30 +123,40 @@ export function createWebGLView(opts: ViewOptions): PerfView {
     composer.setPixelRatio(1)
     composer.setSize(w, h)
     composer.addPass(new RenderPass(scene, camera))
-    gtao = null
-    if (f.ao) {
-      // fur cards are alpha-tested; the AO normal pass can't cut them out, so it draws without them (layer 1)
-      aoCamera = camera.clone()
-      aoCamera.layers.disable(1)
-      const aw = f.aoHalf ? Math.round(w / 2) : w
-      const ah = f.aoHalf ? Math.round(h / 2) : h
-      gtao = new GTAOPass(scene, aoCamera, aw, ah)
-      gtao.output = GTAOPass.OUTPUT.Default
-      gtao.blendIntensity = ART.ultra.post.aoIntensity
-      gtao.updateGtaoMaterial({ radius: ART.ultra.post.aoRadius, distanceExponent: 1, thickness: 1, scale: 1, samples: 12 })
-      composer.addPass(gtao)
-    }
-    bloom = null
-    if (f.bloom) {
-      const b = ART.ultra.post.bloom
-      bloom = new UnrealBloomPass(new Vector2(w, h), b.strength, b.radius, b.threshold)
-      composer.addPass(bloom)
-    }
+    // fur cards are alpha-tested; the AO normal pass can't cut them out, so it draws without them (layer 1)
+    aoCamera = camera.clone()
+    aoCamera.layers.disable(1)
+    gtao = new GTAOPass(scene, aoCamera, w, h)
+    gtao.output = GTAOPass.OUTPUT.Default
+    gtao.blendIntensity = ART.ultra.post.aoIntensity
+    gtao.updateGtaoMaterial({ radius: ART.ultra.post.aoRadius, distanceExponent: 1, thickness: 1, scale: 1, samples: 12 })
+    composer.addPass(gtao)
+    const b = ART.ultra.post.bloom
+    bloom = new UnrealBloomPass(new Vector2(w, h), b.strength, b.radius, b.threshold)
+    composer.addPass(bloom)
     bokeh = new BokehPass(scene, camera, { focus, aperture: ART.ultra.post.dof.aperture, maxblur: ART.ultra.post.dof.maxBlur })
     bokeh.enabled = cinematic
     composer.addPass(bokeh)
     composer.addPass(new OutputPass())
     composer.addPass(new ShaderPass(GRADE_SHADER))
+    applyLevel()
+  }
+
+  /** The current level on the built chain: passes on or off, the AO's resolution, MSAA samples, the shadow map. */
+  function applyLevel(): void {
+    if (!composer || !gtao || !bloom || !scene) return
+    const f = levelFlags(level)
+    gtao.enabled = f.ao
+    bloom.enabled = f.bloom
+    const w = Math.round(size.w * size.dpr)
+    const h = Math.round(size.h * size.dpr)
+    gtao.setSize(f.aoHalf ? Math.round(w / 2) : w, f.aoHalf ? Math.round(h / 2) : h)
+    for (const t of [composer.renderTarget1, composer.renderTarget2]) {
+      if (t.samples !== f.msaa) {
+        t.samples = f.msaa
+        t.dispose()
+      }
+    }
     const sh = scene.children.find((c) => (c as { isDirectionalLight?: boolean; castShadow?: boolean }).isDirectionalLight && (c as { castShadow: boolean }).castShadow) as
       | { shadow: { mapSize: Vector2; map: { dispose(): void } | null } }
       | undefined
@@ -175,12 +191,13 @@ export function createWebGLView(opts: ViewOptions): PerfView {
       size = { w, h, dpr }
       renderer.setPixelRatio(dpr)
       renderer.setSize(w, h, false)
-      build()
+      composer?.setSize(Math.round(w * dpr), Math.round(h * dpr))
+      applyLevel()
     },
     setLevel(l) {
       if (l === level) return
       level = l
-      build()
+      applyLevel()
     },
     setCinematic(on, f) {
       cinematic = on
@@ -199,6 +216,7 @@ export function createWebGLView(opts: ViewOptions): PerfView {
         if (q) gl.beginQuery(timer.TIME_ELAPSED_EXT, q)
       }
       if (aoCamera && camera) aoCamera.copy(camera, false).layers.disable(1)
+      renderer.info.reset()
       composer.render()
       if (q && timer) {
         gl.endQuery(timer.TIME_ELAPSED_EXT)
@@ -217,8 +235,15 @@ export function createWebGLView(opts: ViewOptions): PerfView {
       const shadow = f.shadowPx * f.shadowPx * 4
       return Math.round(main + comp + ao + bl + shadow)
     },
-    readPixels: () => renderer.domElement.toDataURL('image/png'),
+    readPixels() {
+      // the drawing buffer isn't preserved: draw a frame and read it in the same task
+      composer?.render()
+      return renderer.domElement.toDataURL('image/png')
+    },
     dispose() {
+      gtao?.dispose()
+      bloom?.dispose()
+      bokeh?.dispose()
       composer?.dispose()
       rt?.dispose()
       environment.dispose()

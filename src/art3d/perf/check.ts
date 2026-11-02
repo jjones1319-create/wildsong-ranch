@@ -16,8 +16,9 @@ import { createView, type Backend, type Level, type PerfView } from './view.ts'
 const U = ART.ultra
 const S = U.scaling
 
-export interface Timing { seconds: number; frames: number; fps: number; p95Ms: number; missShare: number; gpuMs: number | null }
-interface SecondLog { t: number; fps: number; dpr: number; level: Level; gpuMs: number | null; missShare: number }
+/** cpuMs: the page's own work per frame (scene update + issuing the draw), the median; high when the CPU is the limit. */
+export interface Timing { seconds: number; frames: number; fps: number; p95Ms: number; missShare: number; gpuMs: number | null; cpuMs: number }
+interface SecondLog { t: number; fps: number; dpr: number; level: Level; gpuMs: number | null; cpuMs: number; missShare: number }
 export interface WindowSummary { fps: number; dpr: number; px: string; level: Level; gpuMs: number | null; memoryMb: number; jsHeapMb: number | null }
 
 export interface CheckResult {
@@ -25,13 +26,20 @@ export interface CheckResult {
   device: Record<string, string | number>
   format: TexFormat
   ab: Partial<Record<Backend, Timing & { frame?: string }>>
+  abDpr: number
   chosen: Backend
+  /** Why that renderer: faster, a tie at the screen's limit, the only one, or ?renderer= in the address. */
+  chosenWhy: string
   card?: Timing
   dash?: Timing
   probeStart?: Timing
   probeEnd?: Timing
   soakStart?: WindowSummary
   soakEnd?: WindowSummary
+  /** How often the controller changed the resolution or the effects, and the resolution range it used. */
+  soakChanges?: { count: number; dprMin: number; dprMax: number }
+  /** Every 30 s of the soak: fps, resolution, effects, GPU and CPU ms, late frames. */
+  soakTimeline?: { t: number; fps: number; dpr: number; level: Level; gpuMs: number | null; cpuMs: number; missPct: number }[]
   soakMinutes: number
   throttle?: number
   pass?: boolean
@@ -81,20 +89,27 @@ function jsHeapMb(): number | null {
 }
 
 /** Play a scene for `seconds`, uncapped or capped at 60 fps, and time every frame. */
-export async function measure(view: PerfView, ps: PerfScene, seconds: number, cap: boolean, onFrame?: (t: number) => void): Promise<Timing> {
+export async function measure(view: PerfView, ps: PerfScene, seconds: number, cap: boolean, onFrame?: (t: number, at: number, cpuMs: number) => void): Promise<Timing> {
   const budget = 1000 / S.targetFps
   const t0 = performance.now()
   let last = t0
   const intervals: number[] = []
   const gpus: number[] = []
+  const cpus: number[] = []
   for (;;) {
     const now = await raf()
     if (now - t0 > seconds * 1000) break
-    if (cap && now - last < budget * 0.9) continue
+    // capped: skip only a display refresh that comes far too early (a 120 Hz screen's in-between frames), never a
+    // 60 Hz refresh that is a little early, or every such jitter would cost a whole frame
+    if (cap && now - last < budget * 0.75) continue
     const t = (now - t0) / 1000
+    const c0 = performance.now()
     ps.update(t)
     view.render()
-    onFrame?.(t)
+    const cpu = performance.now() - c0
+    cpus.push(cpu)
+    // `now` is when the display asked for the frame: timing after the draw would add the draw's own variation
+    onFrame?.(t, now, cpu)
     if (intervals.length || now - last < 1000) intervals.push(now - last)
     last = now
     const g = view.gpuMs()
@@ -109,7 +124,31 @@ export async function measure(view: PerfView, ps: PerfScene, seconds: number, ca
     p95Ms: pct(intervals, 0.95),
     missShare: intervals.filter((i) => i > budget * S.missFactor).length / Math.max(1, frames),
     gpuMs: gpus.length ? median(gpus) : null,
+    cpuMs: median(cpus),
   }
+}
+
+/** The resolution range on this screen: never above the screen's own pixels (rendering past them costs and shows nothing). */
+function dprRange(): { max: number; start: number } {
+  const max = Math.max(S.dprMin, Math.min(S.dprMax, devicePixelRatio || S.dprMax))
+  return { max, start: Math.min(S.dprStart, max) }
+}
+
+/**
+ * Pick the renderer. When both reach the screen's frame limit the frame rate can't tell them apart, so the GPU time
+ * decides; Android Chrome gives no GPU timer for WebGL, so WebGPU wins a tie when its own GPU time leaves room.
+ */
+function pickRenderer(a: Timing | undefined, g: Timing | undefined): { chosen: Backend; why: string } {
+  if (!g) return { chosen: 'webgl', why: 'WebGPU is not available here' }
+  if (!a) return { chosen: 'webgpu', why: 'WebGL is not available here' }
+  const budget = 1000 / S.targetFps
+  const atLimit = (x: Timing) => x.fps >= S.targetFps * 0.95 && x.missShare < 0.02
+  if (atLimit(a) && atLimit(g)) {
+    if (a.gpuMs !== null && g.gpuMs !== null) return a.gpuMs <= g.gpuMs ? { chosen: 'webgl', why: 'a tie at the screen limit; less GPU time' } : { chosen: 'webgpu', why: 'a tie at the screen limit; less GPU time' }
+    if (g.gpuMs !== null && g.gpuMs < budget * 0.8) return { chosen: 'webgpu', why: 'a tie at the screen limit; WebGPU GPU time leaves room (WebGL has no GPU timer here)' }
+    return { chosen: 'webgl', why: 'a tie at the screen limit' }
+  }
+  return g.fps > a.fps * 1.03 ? { chosen: 'webgpu', why: 'faster' } : { chosen: 'webgl', why: 'faster or equal' }
 }
 
 interface Ui { status(text: string): void; live(text: string): void; canvas(): HTMLCanvasElement }
@@ -150,13 +189,19 @@ function summarise(log: SecondLog[], fromS: number, toS: number, view: PerfView,
 }
 
 /** The battle soak with the dynamic resolution and quality controller (ART.ultra.scaling). */
-async function soak(view: PerfView, ps: PerfScene, assets: Assets, minutes: number, ui: Ui): Promise<{ start: WindowSummary; end: WindowSummary; log: SecondLog[] }> {
+async function soak(view: PerfView, ps: PerfScene, assets: Assets, minutes: number, ui: Ui): Promise<{ start: WindowSummary; end: WindowSummary; log: SecondLog[]; changes: NonNullable<CheckResult['soakChanges']> }> {
   const canvas = ui.canvas()
   const w = canvas.clientWidth
   const h = canvas.clientHeight
   const budget = 1000 / S.targetFps
-  let dpr: number = S.dprStart
+  const range = dprRange()
+  let dpr: number = range.start
   let li = 0
+  let changes = 0
+  let dprLow = dpr
+  let dprHigh = dpr
+  // a change (resize, effects) costs a frame or two itself; those seconds aren't read as the phone being slow
+  let graceUntil = 0
   const levels = U.levels
   view.setSize(w, h, dpr)
   view.setLevel(levels[li]!)
@@ -169,40 +214,58 @@ async function soak(view: PerfView, ps: PerfScene, assets: Assets, minutes: numb
   let secondMiss = 0
   const total = minutes * 60
   const t0 = performance.now()
-  await measure(view, ps, total, true, () => {
-    const now = performance.now()
+  let secondCpu: number[] = []
+  await measure(view, ps, total, true, (_, now, cpu) => {
     const t = (now - t0) / 1000
+    secondCpu.push(cpu)
     recent.push(now)
     recent = recent.filter((x) => now - x < 1000)
     secondFrames++
     if (recent.length > 1 && recent[recent.length - 1]! - recent[recent.length - 2]! > budget * S.missFactor) secondMiss++
     if (now - secondStart >= 1000) {
       const missShare = secondMiss / Math.max(1, secondFrames)
-      log.push({ t, fps: (secondFrames * 1000) / (now - secondStart), dpr, level: levels[li]!, gpuMs: view.gpuMs(), missShare })
+      log.push({ t, fps: (secondFrames * 1000) / (now - secondStart), dpr, level: levels[li]!, gpuMs: view.gpuMs(), cpuMs: median(secondCpu), missShare })
+      secondCpu = []
+      const decide = now >= graceUntil
+      const changed = (): void => {
+        changes++
+        dprLow = Math.min(dprLow, dpr)
+        dprHigh = Math.max(dprHigh, dpr)
+        graceUntil = now + S.graceMs
+      }
       ui.live(`${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')} · ${log[log.length - 1]!.fps.toFixed(0)} fps · ${Math.round(w * dpr)}×${Math.round(h * dpr)} px (${dpr.toFixed(2)}×) · ${levels[li]}`)
-      if (missShare > S.missShareDown) {
+      if (!decide) {
+        // the last change's own hitch is still in this second: wait for a clean one
+      } else if (missShare > S.missShareDown) {
         if (dpr - S.dprStepDown >= S.dprMin - 1e-6) {
           dpr = Math.round((dpr - S.dprStepDown) * 100) / 100
           view.setSize(w, h, dpr)
+          changed()
         } else if (li < levels.length - 1) {
           li++
           view.setLevel(levels[li]!)
+          changed()
         }
         lastDown = now
         calmSince = now
-      } else if (missShare === 0 && now - lastDown > S.holdAfterDownMs && now - calmSince > S.calmMsUp) {
+      } else if (missShare <= S.calmMissShare && now - lastDown > S.holdAfterDownMs && now - calmSince > S.calmMsUp) {
         const g = view.gpuMs()
         if (g === null || g < budget * S.gpuShareUp) {
           // undo the last thing given up: effects first (they were dropped last), then resolution
           if (li > 0) {
             li--
             view.setLevel(levels[li]!)
-          } else if (dpr + S.dprStepUp <= S.dprMax + 1e-6) {
+            changed()
+          } else if (dpr + S.dprStepUp <= range.max + 1e-6) {
             dpr = Math.round((dpr + S.dprStepUp) * 100) / 100
             view.setSize(w, h, dpr)
+            changed()
           }
           calmSince = now
         }
+      } else if (missShare > S.calmMissShare) {
+        // not bad enough to step down, but not calm: the calm clock starts again
+        calmSince = now
       }
       secondStart = now
       secondFrames = 0
@@ -210,7 +273,12 @@ async function soak(view: PerfView, ps: PerfScene, assets: Assets, minutes: numb
     }
   })
   const win = Math.min(ART.ultra.check.windowSeconds, total / 3)
-  return { start: summarise(log, 0, win, view, ps, assets, w, h), end: summarise(log, total - win, total, view, ps, assets, w, h), log }
+  return {
+    start: summarise(log, 0, win, view, ps, assets, w, h),
+    end: summarise(log, total - win, total, view, ps, assets, w, h),
+    log,
+    changes: { count: changes, dprMin: dprLow, dprMax: dprHigh },
+  }
 }
 
 export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
@@ -224,7 +292,9 @@ export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
     device: { ua: navigator.userAgent, dpr: devicePixelRatio, screen: `${screen.width}×${screen.height}`, memoryGb: nav.deviceMemory ?? 0, cores: nav.hardwareConcurrency ?? 0 },
     format,
     ab: {},
+    abDpr: Math.max(2, dprRange().max),
     chosen: 'webgl',
+    chosenWhy: '',
     soakMinutes: Q.soakMinutes,
     scene: { triangles: 0, cards: 0, drawCalls: 0, textureMb: 0 },
   }
@@ -233,7 +303,7 @@ export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
     // 1. the renderer A/B at a fixed resolution, uncapped
     for (const b of ['webgl', 'webgpu'] as const) {
       ui.status(T.stages.ab(b === 'webgl' ? 'WebGL' : 'WebGPU'))
-      const s = await stage(b, 'battle', ui, format, 2).catch((e) => {
+      const s = await stage(b, 'battle', ui, format, result.abDpr).catch((e) => {
         ui.live(String(e))
         return null
       })
@@ -247,9 +317,15 @@ export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
       }
       s.view.dispose()
     }
-    const a = result.ab.webgl
-    const g = result.ab.webgpu
-    result.chosen = g && (!a || g.fps > a.fps * 1.03) ? 'webgpu' : 'webgl'
+    const pick = pickRenderer(result.ab.webgl, result.ab.webgpu)
+    const forced = new URLSearchParams(location.search).get('renderer')
+    if ((forced === 'webgl' || forced === 'webgpu') && result.ab[forced]) {
+      result.chosen = forced
+      result.chosenWhy = 'set in the address (?renderer=)'
+    } else {
+      result.chosen = pick.chosen
+      result.chosenWhy = pick.why
+    }
     // 2. the close-up and Meadow Dash
     ui.status(T.stages.card)
     const card = await stage(result.chosen, 'card', ui, format, U.scaling.dprStart, true)
@@ -273,6 +349,8 @@ export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
       const s = await soak(view, ps, assets, Q.soakMinutes, ui)
       result.soakStart = s.start
       result.soakEnd = s.end
+      result.soakChanges = s.changes
+      result.soakTimeline = timeline(s.log, Q.windowSeconds)
       ui.status(T.stages.probe('warm'))
       view.setSize(ui.canvas().clientWidth, ui.canvas().clientHeight, 2)
       view.setLevel('all')
@@ -298,22 +376,38 @@ export async function runCheck(quick: boolean, ui: Ui): Promise<CheckResult> {
   return result
 }
 
+/** The soak's seconds summed into windows of `w` seconds. */
+function timeline(log: SecondLog[], w: number): NonNullable<CheckResult['soakTimeline']> {
+  const out: NonNullable<CheckResult['soakTimeline']> = []
+  for (let from = 0; from < (log[log.length - 1]?.t ?? 0); from += w) {
+    const win = log.filter((l) => l.t >= from && l.t < from + w)
+    if (!win.length) continue
+    const avg = (k: (l: SecondLog) => number) => win.reduce((a, l) => a + k(l), 0) / win.length
+    const g = win.map((l) => l.gpuMs).filter((x): x is number => x !== null)
+    const last = win[win.length - 1]!
+    out.push({ t: from + w, fps: avg((l) => l.fps), dpr: last.dpr, level: last.level, gpuMs: g.length ? median(g) : null, cpuMs: median(win.map((l) => l.cpuMs)), missPct: avg((l) => l.missShare) * 100 })
+  }
+  return out
+}
+
 /** The plain-text report the owner copies into Claude Code. */
 export function reportText(r: CheckResult): string {
   const f = (x: number | null | undefined, d = 1) => (x == null ? 'n/a' : x.toFixed(d))
-  const t = (x?: Timing) => (x ? `${f(x.fps, 0)} fps, 95th ${f(x.p95Ms)} ms, missed ${f(x.missShare * 100)}%, GPU ${f(x.gpuMs)} ms` : 'not run')
+  const t = (x?: Timing) => (x ? `${f(x.fps, 0)} fps, 95th ${f(x.p95Ms)} ms, missed ${f(x.missShare * 100)}%, GPU ${f(x.gpuMs)} ms, CPU ${f(x.cpuMs)} ms` : 'not run')
   const w = (x?: WindowSummary) => (x ? `${f(x.fps, 0)} fps at ${x.px} (${f(x.dpr, 2)}×), effects ${x.level}, GPU ${f(x.gpuMs)} ms, graphics memory ~${x.memoryMb} MB, JS heap ${x.jsHeapMb ?? 'n/a'} MB` : 'not run')
   const lines = [
     `Wildsong Ranch Performance check (Art 2.1 Ultra), ${r.when}`,
     `Device: ${r.device.ua}`,
     `Screen ${r.device.screen} @${r.device.dpr}x, ${r.device.cores} cores, ${r.device.memoryGb || '?'} GB (browser-reported)`,
     `Textures: ${r.format.toUpperCase()} · scene: ${r.scene.triangles.toLocaleString()} triangles, ${r.scene.cards.toLocaleString()} fur cards, ${r.scene.drawCalls} draw calls, textures ~${r.scene.textureMb} MB on the GPU`,
-    `Renderer A/B (battle, 2.0×, uncapped): WebGL ${t(r.ab.webgl)} | WebGPU ${r.ab.webgpu ? t(r.ab.webgpu) : T.notAvailable} → using ${r.chosen}`,
+    `Renderer A/B (battle, ${f(r.abDpr, 2)}×, uncapped): WebGL ${t(r.ab.webgl)} | WebGPU ${r.ab.webgpu ? t(r.ab.webgpu) : T.notAvailable} → using ${r.chosen} (${r.chosenWhy})`,
     `Monster Card close-up: ${t(r.card)}`,
     `Meadow Dash (4): ${t(r.dash)}`,
     `Speed probe cold: ${t(r.probeStart)}`,
     `Battle soak ${r.soakMinutes} min, start: ${w(r.soakStart)}`,
     `Battle soak ${r.soakMinutes} min, end:   ${w(r.soakEnd)}`,
+    `Controller: ${r.soakChanges ? `${r.soakChanges.count} changes, resolution ${f(r.soakChanges.dprMin, 2)}–${f(r.soakChanges.dprMax, 2)}×` : 'n/a'}`,
+    ...(r.soakTimeline ?? []).map((x) => `  ${String(Math.floor(x.t / 60)).padStart(2)}:${String(Math.floor(x.t % 60)).padStart(2, '0')}  ${f(x.fps, 0)} fps  ${f(x.dpr, 2)}×  ${x.level}  GPU ${f(x.gpuMs)}  CPU ${f(x.cpuMs)}  late ${f(x.missPct)}%`),
     `Speed probe warm: ${t(r.probeEnd)}`,
     `Throttling: the same frame took ${f(r.throttle, 2)}× as long at the end (1.00 = no slowdown)`,
     `Result: ${r.pass === undefined ? 'incomplete' : r.pass ? T.pass : T.fail} (pass = ≥ ${ART.ultra.check.passFps} fps with < ${ART.ultra.check.passMissShare * 100}% missed frames over the last ${ART.ultra.check.windowSeconds} s)`,

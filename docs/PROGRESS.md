@@ -2,6 +2,30 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Hotfix: the Performance check measures the phone, not itself (2026-11-02) · v1.13.3
+
+**The owner's first S25 Ultra run:**
+- **Cold:** 60 fps in every scene (WebGPU GPU 10.1 ms at 2.0×).
+- **The 10-minute soak:** fell to 24–29 fps even at 1.3× with every effect off: a FAIL.
+
+**Most of that was the check** (ART_2_DETAIL §7.5):
+- the WebGL effect chain was rebuilt on every resolution or effect change (a hitch the controller read as slowness, so it stepped down again, and a leak);
+- WebGPU level changes leaked;
+- the soak timed frames after drawing them;
+- the A/B gave WebGL a tie at the screen's 60 fps limit;
+- a jittery frame cap, a step-up rule that needed a perfect second, `preserveDrawingBuffer`, and resolution above the screen's own.
+
+**Fixed** (`src/art3d/perf/`):
+- the effect chain is built once and only resized or switched;
+- the soak times frames when the display asks for them;
+- a 1.5 s grace after each change;
+- the A/B runs at the screen's resolution and decides a tie by GPU time (`?renderer=` forces one);
+- the report adds the CPU time per frame, the controller's changes and a 30-second timeline.
+
+**This PC's quick run now:** WebGPU holds 60 fps at 2.6× with every effect for the whole soak (GPU 10 ms, CPU 8–10 ms) and passes. WebGL needs 25 ms for the same frame.
+
+**Next:** the owner re-runs the check on the phone.
+
 ## Art 2.1: the detail spike and the Performance check (2026-11-01) · v1.13.2
 
 **Live:**

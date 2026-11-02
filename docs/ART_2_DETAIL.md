@@ -242,24 +242,32 @@ Estimated for a two-monster battle on Ultra at 2.5×, the battle canvas being 41
 - **Text formats:** add `?tex=webp` to run the same scenes on WebP.
 
 ### 7.2 What it runs (about 14 minutes)
-1. **Renderer A/B:** the battle for 30 s on WebGL, then 30 s on WebGPU, at a fixed 2.0× and uncapped. It keeps a frame from each so the owner can see they look the same, and continues with the faster one.
+1. **Renderer A/B:** the battle for 30 s on WebGL, then 30 s on WebGPU, uncapped, at the screen's own resolution (at least 2.0×). It keeps a frame from each so the owner can see they look the same, and continues with the faster one.
+   - When both reach the screen's frame limit, the GPU time decides.
+   - Android gives WebGL no GPU timer, so WebGPU wins a tie when its own GPU time leaves room.
+   - `?renderer=webgl` or `?renderer=webgpu` in the address forces one.
 2. **Monster Card close-up:** cinematic set and depth of field, 30 s, capped at 60, at 2.5×.
 3. **Meadow Dash:** four stand-ins, 30 s.
 4. **Speed probe, cold:** 5 s, uncapped at a fixed 2.0× with every effect.
-5. **The battle soak:** **10 minutes** with dynamic resolution and quality, capped at 60 fps.
+5. **The battle soak:** **10 minutes** with dynamic resolution and quality, capped at 60 fps. The resolution never goes above the screen's own (2.625× on the owner's S25 Ultra at its default FHD+ setting).
 6. **Speed probe, warm:** the same 5 s again. The ratio warm ÷ cold is the throttling factor.
 
 The screen stays on (Wake Lock).
 
 ### 7.3 What it reports
 - **The device:** the browser, the screen, and the renderers' GPU.
-- **For the A/B, the close-up, Meadow Dash and both probes:** fps, 95th-percentile frame time, the share of late frames, and the GPU time where the browser exposes it.
+- **For the A/B, the close-up, Meadow Dash and both probes:**
+  - fps, the 95th-percentile frame time and the share of late frames;
+  - the GPU time where the browser exposes it;
+  - **the CPU time:** the page's own work per frame. When it's high, the processor is the limit, not the graphics chip.
 - **For the soak's first and last 30 s:**
   - fps;
   - **the render resolution** (pixels and pixel ratio);
   - the effect level it had to drop to;
   - GPU time;
   - **graphics memory** (estimated) and the JavaScript heap.
+- **The controller:** how many times it changed the resolution or effects, and the range it used.
+- **A timeline of the soak:** fps, resolution, effects, GPU and CPU time and late frames for every 30 s.
 - **Throttling:** how much slower the same frame is at the end.
 - **The scene:** triangles, cards and draw calls.
 - **Copy results** puts the whole report on the clipboard for Claude Code. The last result is kept on the phone (`wildsong/perf/last`).
@@ -268,6 +276,31 @@ The screen stays on (Wake Lock).
 - **PASS** = the soak's last 30 s average ≥ 58 fps with < 2% late frames, with dynamic resolution.
 - The report also shows the resolution the phone needed to hold that.
 - 60 fps at only 1.25× and no effects would technically pass but tells us the look needs trimming. The report makes that visible.
+
+### 7.5 The first phone run (Nov 2): the check was wrong, not the phone
+**The S25 Ultra's run:**
+- **Cold, every scene held 60 fps:** the battle at 2.0× on both renderers, the Card close-up, Meadow Dash and the probe. WebGPU's GPU time was 10.1 ms of the 16.7 ms frame.
+- **The soak then reported 29 fps falling to 24, at 1.3–1.5× with every effect off.** That was a FAIL with 2.5× throttling.
+
+**The check itself caused most of it:**
+1. **Rebuilding on every change.**
+   - Every resolution or effect change rebuilt WebGL's whole effect chain. The rebuild's own hitch looked like slowness, so the controller stepped down again, and it reached the bottom within about 20 s.
+   - Every rebuild leaked its render targets.
+   - WebGPU's level changes leaked their effect nodes too.
+2. **Timing after the draw.** The soak timed frames after drawing them, so any frame with more drawing work than the last looked late.
+3. **A tie went to WebGL.** Both renderers sat at the screen's 60 fps limit, so the A/B kept WebGL even though only WebGPU's GPU time was known (and it had room).
+4. **Smaller faults:**
+   - a cap that skipped a frame whenever the display's timing jittered early;
+   - a step-up rule that needed a perfect second;
+   - `preserveDrawingBuffer`, a full-screen copy every frame on phones;
+   - a resolution ceiling above the screen's own.
+
+**After the fixes (v1.13.3), this PC's quick run:**
+- WebGPU holds 60 fps at 2.6× with every effect for the whole soak: GPU 10 ms, CPU 8–10 ms, two controller changes. It passes.
+- WebGL needs 25 ms of GPU for the same frame.
+- **Watch the CPU time on the phone:** about 8–10 ms per frame here. The stand-in draws each monster as about 15 pieces; a finished monster will be about 5.
+
+The phone's re-run decides.
 
 ## 8. The spike, round 2
 ### 8.1 What changed after the owner's notes

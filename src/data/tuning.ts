@@ -1241,12 +1241,16 @@ export const ART = {
       dprStart: 2.5,
       dprMin: 1.25,
       dprStepDown: 0.1,
+      /** After a change, this long before frames count again (the change itself costs a frame or two). */
+      graceMs: 1500,
       dprStepUp: 0.05,
       /** A frame counts as missed when it arrives this much later than one 60 fps frame. */
       missFactor: 1.15,
       /** Lower when more than this share of the last second's frames missed; raise after this long with none. */
       missShareDown: 0.05,
       calmMsUp: 5000,
+      /** A second counts as calm with at most this share of late frames (one in 60: phones drop the odd frame). */
+      calmMissShare: 0.02,
       holdAfterDownMs: 6000,
       /** With a GPU timer: raise only while a frame costs less than this share of the frame budget. */
       gpuShareUp: 0.7,
