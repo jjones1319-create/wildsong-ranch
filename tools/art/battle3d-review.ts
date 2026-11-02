@@ -20,7 +20,7 @@ import { FFMPEG } from '../audio/opus.ts'
 /** What the Battle 3D screen exposes for this script (src/ui/screens/battle3d/Battle3DScreen.tsx). */
 declare global {
   interface Window {
-    __battle3d?: { phase: string; setCamera(c: 'side' | 'behind'): void; skipIntro(): void; stats(): unknown; auto(on: boolean): void; speed(x: 1 | 2 | 4): void }
+    __battle3d?: { phase: string; setCamera(c: 'side' | 'behind'): void; skipIntro(): void; stats(): unknown; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number }
   }
 }
 

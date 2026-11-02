@@ -2,6 +2,17 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Hotfix: attack while holding the stick (2026-11-02) · v1.16.1
+
+The owner: "when I am controlling it I can't use the joystick and click a skill at the same time. I have to let off the joystick to use an attack."
+- **Why:**
+  - Phones make no click for a second finger while the first is down, and the cards listened for clicks.
+  - The technique panel scrolls, so a second finger landing there could also start a pinch, which cancelled the finger on the stick.
+- **Fix:**
+  - the cards and Push act on the touch itself (`press.ts`; a keyboard still works);
+  - the panel, Push and the top buttons never start a pinch or scroll (`touch-action: none`).
+- **Checked** in Chrome with two emulated fingers: a finger holds the stick while a second taps a ready card, three times in a row. Each tap fires and the stick stays held.
+
 ## Battle 3D round 2: AI 3.0 and a living crowd (2026-11-02) · v1.16.0
 
 The owner's notes on v1.15: "the auto seemed relatively elementary and battle AI could be improved"; "adding people cheering and movement with some detail and random monsters in there (more people based on your popularity would be cool)"; "if you aren't in range it would just not work". For the AI they chose "a mix of all of these", plus: "an untrained pet or spoiled pet might fight worse by making worse decisions".

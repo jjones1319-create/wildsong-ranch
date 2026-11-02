@@ -33,6 +33,7 @@ import {
   type FighterView,
 } from '../../store/battleStore.ts'
 import { currentTier, reduceMotionNow } from '../../store/fxStore.ts'
+import { press } from './press.ts'
 import { ThumbStick } from './ThumbStick.tsx'
 
 const B = UI_TEXT.battle
@@ -80,7 +81,7 @@ function Bars({ f, right }: { f: FighterView; right?: boolean }) {
 declare global {
   interface Window {
     /** For the review recordings (tools/art/battle3d-review.ts). */
-    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; crowdFame(fame: number): Promise<void> }
+    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; crowdFame(fame: number): Promise<void> }
   }
 }
 
@@ -140,6 +141,7 @@ export function Battle3DScreen() {
         if ((view.value?.fighters[0].auto ?? false) !== on) toggleAuto()
       },
       speed: (x) => setSpeed(x),
+      playerFires: () => liveBattleState()?.log.filter((e) => e.kind === 'fire' && e.side === 0).length ?? 0,
       async crowdFame(n) {
         setFame(n)
         await duel.current?.setCrowdFame(n)
@@ -289,7 +291,7 @@ export function Battle3DScreen() {
                         type="button"
                         class={`tcard ${c.canFire && playerSide ? 'tcard--fire' : ''} ${!c.affordable || !playerSide ? 'tcard--dim' : ''} ${queued.current?.id === c.id ? 'tcard--queued' : ''}`}
                         disabled={!playerSide}
-                        onClick={() => tapCard(c.id)}
+                        {...press(() => tapCard(c.id))}
                       >
                         <span class="tcard__name">{c.name}</span>
                         <span class="tcard__meta">
@@ -307,7 +309,7 @@ export function Battle3DScreen() {
           {playerSide && (
             <>
               <ThumbStick label={T.stickHint} basis={() => duel.current?.basisOnScreen() ?? null} onMove={moveStick} onSidestep={sidestep} onDash={dash} />
-              <button type="button" class="pad pad--push b3d__push" disabled={!v.touching} aria-label={v.touching ? T.push : T.pushHint} onClick={pushOpponent}>
+              <button type="button" class="pad pad--push b3d__push" disabled={!v.touching} aria-label={v.touching ? T.push : T.pushHint} {...press(pushOpponent)}>
                 {T.push}
               </button>
             </>

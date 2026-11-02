@@ -59,6 +59,16 @@
 .b3d__tpanel .tcard {
   min-height: 44px;
 }
+/*
+ * A second finger on a card or button must not start a pinch or a scroll: that cancels the finger on the stick (the
+ * owner, Nov 2). The panel is a scroll container, so .b3d's touch-action doesn't reach inside it on its own.
+ */
+.b3d__tpanel,
+.b3d__tpanel *,
+.b3d__push,
+.b3d__top .btn {
+  touch-action: none;
+}
 /* a tap waiting for the monster to finish its move */
 .b3d__tpanel .tcard--queued {
   outline: 3px solid #ffd45e;
