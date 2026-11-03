@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
 import { dateOf } from '../../../core/calendar.ts'
-import { freezerFull } from '../../../core/legacy.ts'
+import { nextHome } from '../../../core/creation.ts'
 import { marketStock, type MarketOffer } from '../../../core/market.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { fill } from '../../../data/text/format.ts'
@@ -51,7 +51,7 @@ export function MarketScreen() {
             <span class="tile__name">{BREED_BY_ID[o.breed].name}</span>
             <span class="muted small">{BREED_BY_ID[o.breed].niche}</span>
             {o.seasonal && <span class="muted small">{t.seasonal}</span>}
-            <button type="button" class="btn btn--small btn--primary" disabled={g.money < o.price || (!toRanch && freezerFull(g))} onClick={() => setAsking(o)}>
+            <button type="button" class="btn btn--small btn--primary" disabled={g.money < o.price || nextHome(g).placed === null} onClick={() => setAsking(o)}>
               {fill(t.buy, { price: gold(o.price) })}
             </button>
           </div>

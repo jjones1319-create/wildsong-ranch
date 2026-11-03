@@ -13,7 +13,7 @@ function sleepingPhrase(): string {
 }
 
 describe('the Shrine in play (§14.1)', () => {
-  it('a newborn takes the empty ranch, the next goes to the Freezer, and a full Freezer refuses', () => {
+  it('a newborn takes the empty ranch, the next a free pen, then the Freezer, and a full Freezer refuses', () => {
     const state = createGameState({ monster: null })
     const first = awaken(state, 'River Song', 'the valley choir', 'id1')
     expect(first.kind).toBe('born')
@@ -26,9 +26,13 @@ describe('the Shrine in play (§14.1)', () => {
     const second = awaken(first.state, 'river song', 'the valley choir', 'id2')
     expect(second.kind).toBe('born')
     if (second.kind !== 'born') return
-    expect(second.placed).toBe('freezer')
-    expect(second.state.freezer.map((m) => m.id)).toEqual(['id2'])
+    expect(second.placed).toBe('pen')
+    expect(second.state.ranchmates.map((r) => r.monster.id)).toEqual(['id2'])
+    expect(second.state.ranchmates[0]!.order).toEqual({ kind: 'play' })
     expect(second.state.encyclopedia.phrases).toHaveLength(1) // the same song is listed once
+    const third = awaken(second.state, 'river song', 'the valley choir', 'id4')
+    expect(third.kind === 'born' && third.placed).toBe('freezer')
+    expect(third.state.freezer.map((m) => m.id)).toEqual(['id4'])
     const full = structuredClone(second.state)
     full.freezer = Array.from({ length: FREEZER.slots }, (_, i) => makeMonster({ id: `f${i}` }))
     const r = awaken(full, 'river song', 'the valley choir', 'id3')
@@ -69,7 +73,7 @@ describe('the Shrine in play (§14.1)', () => {
     if (born.kind !== 'born') throw new Error('expected a birth')
     const r = recreate(born.state, 0, 'id2')
     expect(r.refused).toBeNull()
-    expect(r.placed).toBe('freezer')
+    expect(r.placed).toBe('pen')
     expect(r.state.money).toBe(born.state.money - SHRINE.encyclopediaPrice)
     expect({ ...r.monster!, id: '' }).toEqual({ ...born.monster, id: '' })
     expect(recreate({ ...born.state, money: 10 }, 0, 'id3').refused).toBe('money')
@@ -78,7 +82,7 @@ describe('the Shrine in play (§14.1)', () => {
 })
 
 describe('the Market in play (§14.2)', () => {
-  it('sells the starters for 1,500G and the season’s breed for 2,500G, to the ranch or the Freezer', () => {
+  it('sells the starters for 1,500G and the season’s breed for 2,500G, to the ranch, a pen or the Freezer', () => {
     const state = createGameState({ monster: null })
     const r = buyFromMarket(state, 'puddlepup', 'id1')
     expect(r.refused).toBeNull()
@@ -88,7 +92,9 @@ describe('the Market in play (§14.2)', () => {
     expect(r.state.monster?.mainBreed).toBe('puddlepup')
     const seasonal = buyFromMarket({ ...r.state, money: 5000 }, 'nimbusheep', 'id2') // January: Winter
     expect(seasonal.price).toBe(MARKET.seasonalPrice)
-    expect(seasonal.placed).toBe('freezer')
+    expect(seasonal.placed).toBe('pen')
+    const third = buyFromMarket({ ...seasonal.state, money: 5000 }, 'puddlepup', 'id4')
+    expect(third.placed).toBe('freezer')
     expect(buyFromMarket(state, 'cobblemaw', 'id3').refused).toBe('notStocked')
     expect(buyFromMarket({ ...state, money: 100 }, 'puddlepup', 'id3').refused).toBe('money')
   })

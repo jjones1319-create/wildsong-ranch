@@ -34,7 +34,7 @@ describe("Wren's report (CONTENT §15)", () => {
     const m = makeMonster()
     m.name = 'Nib'
     const events: WeekEvent[] = [
-      { kind: 'food', food: 'turnips', relation: 'disliked', bored: true, effect: {}, price: 20 },
+      { kind: 'food', food: 'turnips', relation: 'disliked', bored: true, effect: {}, price: 20, mouths: 1 },
       { kind: 'rest', fatigue: -40, stress: -10 },
       { kind: 'aging', event: { kind: 'prime' } },
       { kind: 'aging', event: { kind: 'warning', which: 'w10' } },

@@ -227,7 +227,7 @@ export function reefclawArrival(input: GameState): { state: GameState; placed: P
 /** Has any monster of this ranch reached the grade (the active one, or anyone remembered)? */
 export function reachedGrade(state: GameState, grade: TournamentGrade): boolean {
   const gi = TOURNAMENT_GRADES.indexOf(grade)
-  const monsters: Monster[] = [...(state.monster ? [state.monster] : []), ...state.freezer, ...state.elderGrove, ...state.memorial.map((e) => e.monster), ...state.hallOfFame.map((h) => h.monster)]
+  const monsters: Monster[] = [...(state.monster ? [state.monster] : []), ...state.ranchmates.map((r) => r.monster), ...state.freezer, ...state.elderGrove, ...state.memorial.map((e) => e.monster), ...state.hallOfFame.map((h) => h.monster)]
   return monsters.some((m) => TOURNAMENT_GRADES.indexOf(m.grade) >= gi || TOURNAMENT_GRADES.indexOf(m.records.highestGrade) >= gi)
 }
 

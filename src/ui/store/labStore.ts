@@ -11,6 +11,7 @@ import { now } from '../lib/clock.ts'
 import { newId } from '../lib/ids.ts'
 import { findEntry, library, upsertEntry } from './appStore.ts'
 import { game, replaceMonster, replaceStored } from './gameStore.ts'
+import { replaceRanchmate } from './herdStore.ts'
 
 /** Monster Lab screen state (§19): the Library view, what is selected, and the editor's draft. */
 
@@ -126,8 +127,11 @@ export function selectedListed(): Listed | null {
 /* ---------- the editor draft ---------- */
 
 export interface EditorDraft {
-  /** Where Save goes back to. A preset, a Memorial copy or a brand-new monster is saved as a new Library entry; `active` is the ranch's monster; `freezer` a stored one. */
-  origin: 'library' | 'preset' | 'new' | 'active' | 'freezer'
+  /**
+   * Where Save goes back to. A preset, a Memorial copy or a brand-new monster is saved as a new Library entry; `active`
+   * is the ranch's star; `pen` a ranch-mate (v16); `freezer` a stored one.
+   */
+  origin: 'library' | 'preset' | 'new' | 'active' | 'pen' | 'freezer'
   original: Monster
   monster: Monster
   history: EditHistoryEntry[]
@@ -167,6 +171,12 @@ export function startEditActive(monster: Monster, history: EditHistoryEntry[]): 
     preview: 'auto',
     openSection: 'stats',
   }
+}
+
+/** §19 v16: editing a ranch-mate (its sheet or its Card). Save goes straight back to its pen, with its own history for Restore. */
+export function startEditMate(monster: Monster, history: EditHistoryEntry[]): void {
+  startEditActive(monster, history)
+  if (draft.value) draft.value = { ...draft.value, origin: 'pen' }
 }
 
 export function startNew(monster: Monster): void {
@@ -219,6 +229,11 @@ export async function saveDraft(asCopy: boolean): Promise<Monster | null> {
   cleaned.techniques = cleaned.techniques.filter((t) => !removals.includes(t.id))
   if (d.origin === 'active' && !asCopy) {
     replaceMonster(cleaned)
+    draft.value = null
+    return cleaned
+  }
+  if (d.origin === 'pen' && !asCopy) {
+    replaceRanchmate(cleaned)
     draft.value = null
     return cleaned
   }

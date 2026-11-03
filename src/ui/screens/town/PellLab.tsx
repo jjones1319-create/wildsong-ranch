@@ -3,7 +3,9 @@ import { useState } from 'preact/hooks'
 import { catalystEffect, compatTier, compatibility, fusionOutcomes, outcomeKnown, type FusionResult } from '../../../core/fusion.ts'
 import { countOf } from '../../../core/items.ts'
 import { duplicateMonster } from '../../../core/lab.ts'
-import { canReceiveHeartstone, elderMentorUsedThisMonth, elderSite, freezerFull, fusionCandidates, heartstoneCap, heartstoneGrant, ranchBusy, findStored } from '../../../core/legacy.ts'
+import { canReceiveHeartstone, elderMentorUsedThisMonth, elderSite, freezerFull, freezerSlots, fusionCandidates, heartstoneCap, heartstoneGrant, ranchBusy, findStored } from '../../../core/legacy.ts'
+import { nextHome } from '../../../core/creation.ts'
+import { penRoom } from '../../../core/farm.ts'
 import { canVisitGarden } from '../../../core/upgrades.ts'
 import { totalStats, type Monster } from '../../../core/monster.ts'
 import { say } from '../../../core/report.ts'
@@ -14,10 +16,11 @@ import { ITEMS, ITEM_BY_ID } from '../../../data/items.ts'
 import { TRAIT_BY_ID } from '../../../data/traits.ts'
 import { JOURNEY_SITE_BY_ID } from '../../../data/journeys.ts'
 import { fill } from '../../../data/text/format.ts'
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { FAMILY_LABELS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { WREN } from '../../../data/text/wren.ts'
-import { FREEZER, FUSION, HEARTSTONE, JOURNEY, RANGES, UPGRADES } from '../../../data/tuning.ts'
+import { FUSION, HEARTSTONE, JOURNEY, RANGES, UPGRADES } from '../../../data/tuning.ts'
 import { STAT_KEYS, type BreedId } from '../../../data/types.ts'
 import { Badge, Chips, Confirm, Field, Select, Sheet, TopBar } from '../../components/Controls.tsx'
 import { MonsterCard } from '../../components/MonsterCard.tsx'
@@ -28,7 +31,9 @@ import { newId } from '../../lib/ids.ts'
 import { navigateFrom } from '../../router.ts'
 import { showToast, upsertEntry } from '../../store/appStore.ts'
 import { editMemorial, freezeActive, fuse, game, giveBlueprint, giveHeartstone, makeActive, releaseStored, visitGarden } from '../../store/gameStore.ts'
-import { listFreezer, selected, startEdit, startEditActive, type Listed } from '../../store/labStore.ts'
+import { freezerToPen } from '../../store/herdStore.ts'
+import { listFreezer, selected, startEdit, startEditActive, startEditMate, type Listed } from '../../store/labStore.ts'
+import { FreeSheet } from '../ranch/FreeSheet.tsx'
 
 type Tab = 'freezer' | 'fusion' | 'memorial' | 'heartstones' | 'elders'
 
@@ -43,7 +48,7 @@ export function PellLabScreen() {
   if (!g) return null
   const elders = g.difficulty === 'Gentle' || g.elderGrove.length > 0
   const tabs: { value: Tab; label: string }[] = [
-    { value: 'freezer', label: `${t.tabs.freezer} ${g.freezer.length}/${FREEZER.slots}` },
+    { value: 'freezer', label: `${t.tabs.freezer} ${g.freezer.length}/${freezerSlots(g)}` },
     { value: 'fusion', label: t.tabs.fusion },
     { value: 'memorial', label: `${t.tabs.memorial} ${g.memorial.length}` },
     { value: 'heartstones', label: `${t.tabs.heartstones} ${g.heartstones.length}` },
@@ -70,8 +75,16 @@ export function PellLabScreen() {
 function StoredSheet({ listed, onClose }: { listed: Listed | null; onClose: () => void }) {
   const g = game.value
   const [confirmActive, setConfirmActive] = useState(false)
+  const [freeing, setFreeing] = useState(false)
   if (!listed || !g) return null
   const m = listed.monster
+  // v16: a frozen monster (not an Elder) can take a free pen, or be set free.
+  const frozen = listed.badge !== 'elder'
+  const toPen = () => {
+    const refused = freezerToPen(m.id)
+    onClose()
+    showToast(refused === 'full' ? HERD_TEXT.move.pensFull : refused ? HERD_TEXT.star.refused.notFound : fill(HERD_TEXT.move.toPen, { name: m.name }))
+  }
   const go = (target: 'labView' | 'labEdit' | 'labExport') => {
     selected.value = { source: 'freezer', id: m.id }
     if (target === 'labEdit') startEdit(listed)
@@ -95,11 +108,16 @@ function StoredSheet({ listed, onClose }: { listed: Listed | null; onClose: () =
   }
   return (
     <>
-      <Sheet open={!confirmActive} title={m.name} onClose={onClose}>
+      <Sheet open={!confirmActive && !freeing} title={m.name} onClose={onClose}>
         <div class="sheet__actions">
           <button type="button" class="btn btn--primary" onClick={() => setConfirmActive(true)}>
             {t.actions.makeActive}
           </button>
+          {frozen && (
+            <button type="button" class="btn" disabled={penRoom(g) === 0} onClick={toPen}>
+              {HERD_TEXT.move.toPenButton}
+            </button>
+          )}
           <button type="button" class="btn" onClick={() => go('labView')}>
             {t.actions.view}
           </button>
@@ -112,11 +130,24 @@ function StoredSheet({ listed, onClose }: { listed: Listed | null; onClose: () =
           <button type="button" class="btn btn--ghost" onClick={() => void toLibrary()}>
             {t.actions.toLibrary}
           </button>
+          {frozen && (
+            <button type="button" class="btn btn--ghost" onClick={() => setFreeing(true)}>
+              {HERD_TEXT.sheet.free}
+            </button>
+          )}
           <button type="button" class="btn btn--ghost" onClick={onClose}>
             {t.actions.cancel}
           </button>
         </div>
       </Sheet>
+      <FreeSheet
+        monster={freeing ? m : null}
+        onDone={() => {
+          setFreeing(false)
+          onClose()
+        }}
+        onCancel={() => setFreeing(false)}
+      />
       <Confirm
         open={confirmActive}
         text={g.monster ? fill(t.makeActiveAsk, { name: m.name, current: g.monster.name }) : fill(t.makeActiveAskEmpty, { name: m.name })}
@@ -155,7 +186,8 @@ function FreezerTab({ g }: { g: GameState }) {
     <>
       <SpeakerCard speaker={UI_TEXT.pell} tone="muted">
         <p>{t.welcome}</p>
-        <p class="muted small">{fill(t.slots, { n: g.freezer.length, max: FREEZER.slots })}</p>
+        <p class="muted small">{fill(t.slots, { n: g.freezer.length, max: freezerSlots(g) })}</p>
+        {g.freezer.length > freezerSlots(g) && <p class="muted small">{HERD_TEXT.move.freezerOver}</p>}
       </SpeakerCard>
       {hasBlueprint && (
         <button type="button" class="btn btn--primary" onClick={() => setAskBlueprint(true)}>
@@ -207,7 +239,7 @@ function FusionTab({ g }: { g: GameState }) {
   const [picking, setPicking] = useState<1 | 2 | null>(null)
   const [catalyst, setCatalyst] = useState<string>('none')
   const [confirm, setConfirm] = useState(false)
-  const [born, setBorn] = useState<{ result: FusionResult; placed: 'ranch' | 'freezer' } | null>(null)
+  const [born, setBorn] = useState<{ result: FusionResult; placed: 'ranch' | 'pen' | 'freezer' } | null>(null)
   const m1 = cands.find((c) => c.monster.id === id1)?.monster ?? null
   const m2 = cands.find((c) => c.monster.id === id2)?.monster ?? null
   const catalysts = ITEMS.filter((i) => i.category === 'catalyst' && (g.inventory[i.id] ?? 0) > 0)
@@ -221,8 +253,8 @@ function FusionTab({ g }: { g: GameState }) {
   const known = (o: (typeof outcomes)[number]) => outcomeKnown(o, g.fusionFinds)
   const nameOf = (o: (typeof outcomes)[number]) => (known(o) ? BREED_BY_ID[o.breed].name : t.hidden)
   const sealWasted = seal && m1 !== null && !g.unlocked.includes(m1.mainBreed)
-  const toRanch = g.monster === null && !g.ended
-  const whereText = toRanch ? t.whereRanch : t.whereFreezer
+  const home = nextHome(g).placed
+  const whereText = home === 'ranch' ? t.whereRanch : home === 'pen' ? HERD_TEXT.placed.where : t.whereFreezer
 
   const doFuse = () => {
     setConfirm(false)
@@ -243,7 +275,9 @@ function FusionTab({ g }: { g: GameState }) {
     const id = born.result.baby.id
     const current = game.value
     if (!current) return
+    const mate = current.ranchmates.find((r) => r.monster.id === id)
     if (current.monster?.id === id) startEditActive(current.monster, [])
+    else if (mate) startEditMate(mate.monster, mate.history)
     else {
       const stored = findStored(current, id)
       if (!stored) return
@@ -272,7 +306,7 @@ function FusionTab({ g }: { g: GameState }) {
           {headStartTotal > 0 && <p class="muted small">{fill(t.headStart, { n: headStartTotal })}</p>}
           {inheritedName && <p class="muted small">{fill(t.inheritedTrait, { trait: inheritedName })}</p>}
           {born.result.newFind && <p class="notice">{fill(t.newRecipe, { a: BREED_BY_ID[a].name, b: BREED_BY_ID[b].name, breed: BREED_BY_ID[baby.mainBreed].name })}</p>}
-          <p class="muted small">{fill(t.bornAt, { where: born.placed === 'ranch' ? t.bornRanch : t.bornFreezer })}</p>
+          <p class="muted small">{fill(t.bornAt, { where: born.placed === 'ranch' ? t.bornRanch : born.placed === 'pen' ? HERD_TEXT.placed.bornPen : t.bornFreezer })}</p>
         </SpeakerCard>
         <SpeakerCard speaker={UI_TEXT.wren} tone="muted">
           <p>{born.result.outcome.source === 'surprise' ? say('fusedSurprise', WREN.fusedSurprise, baby).text : say('fused', WREN.fused, baby).text}</p>
@@ -439,10 +473,10 @@ function MemorialTab({ g }: { g: GameState }) {
       <div class="list">
         {g.memorial.map((e) => (
           <button key={e.monster.id} type="button" class="memorial" onClick={() => start(e)}>
-            <MonsterPortrait monster={e.monster} size={72} animate={false} expression={e.cause === 'retired' ? 'happy' : 'sleepy'} />
+            <MonsterPortrait monster={e.monster} size={72} animate={false} expression={e.cause === 'retired' || e.cause === 'freed' ? 'happy' : 'sleepy'} />
             <span class="memorial__body">
               <span class="memorial__name">
-                {e.monster.name} <Badge>{e.cause === 'fused' ? `🧬 ${t.cause.fused}` : `🕯️ ${t.cause[e.cause]}`}</Badge>
+                {e.monster.name} <Badge>{e.cause === 'fused' ? `🧬 ${t.cause.fused}` : e.cause === 'freed' ? `🕊️ ${t.cause.freed}` : `🕯️ ${t.cause[e.cause]}`}</Badge>
               </span>
               <span class="muted small">
                 {variantNameOf(e.monster)} · {fill(t.livedShort, { n: e.monster.ageWeeks, total: e.monster.lifespanTotal })}

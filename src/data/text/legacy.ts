@@ -111,7 +111,7 @@ export const LEGACY_TEXT = {
     pctRow: '{pct}%',
     /* Memorial */
     memorialEmpty: 'No names on the wall yet.',
-    cause: { passed: 'Passed away', retired: 'Retired', fused: 'Fused', neglected: 'Left alone', wandered: 'Went back to the wild' },
+    cause: { passed: 'Passed away', retired: 'Retired', fused: 'Fused', neglected: 'Left alone', wandered: 'Went back to the wild', freed: 'Set free' },
     livedShort: 'Lived {n} of {total} weeks',
     editEntry: 'Edit name and epitaph',
     nameLabel: 'Name',

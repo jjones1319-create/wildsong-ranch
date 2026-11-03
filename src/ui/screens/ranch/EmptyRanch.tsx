@@ -1,13 +1,22 @@
+import { useState } from 'preact/hooks'
 import type { GameState } from '../../../core/state.ts'
 import { fill } from '../../../data/text/format.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { WREN } from '../../../data/text/wren.ts'
 import { CalendarStrip, SpeakerCard } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
+import { HerdStrip } from './HerdStrip.tsx'
+import { HomecomingCard } from './HomecomingCard.tsx'
+import { WhoNext } from './WhoNext.tsx'
 
-/** §21 the ranch with nobody on it (after a farewell or a freeze): the weeks wait until a monster is home. */
+/**
+ * §21 the ranch with nobody on it (after a farewell or a freeze): the weeks wait until a monster is home. v16: the
+ * herd strip, and "Who will you raise next?" while ranch-mates wait in their pens.
+ */
 export function EmptyRanch({ g }: { g: GameState }) {
   const t = UI_TEXT.emptyRanch
+  const [later, setLater] = useState(false)
+  const homecoming = g.homecoming.welcome.length > 0
   const stored = g.freezer.length + g.elderGrove.length
   const rows = [
     { icon: '🧊', name: fill(t.freezer, { n: stored }), hint: UI_TEXT.town.pellHint, go: () => navigate('pell') },
@@ -23,9 +32,13 @@ export function EmptyRanch({ g }: { g: GameState }) {
         <p class="stage__caption">{t.title}</p>
         <p class="stage__hint">{t.time}</p>
       </section>
-      <SpeakerCard speaker={UI_TEXT.wren}>
-        <p>{WREN.emptyRanch}</p>
-      </SpeakerCard>
+      <HerdStrip g={g} />
+      {!later && <WhoNext g={g} onLater={() => setLater(true)} />}
+      {(later || g.ranchmates.length === 0) && (
+        <SpeakerCard speaker={UI_TEXT.wren}>
+          <p>{WREN.emptyRanch}</p>
+        </SpeakerCard>
+      )}
       <div class="list">
         {rows.map((r) => (
           <button key={r.name} type="button" class="townrow" onClick={r.go}>
@@ -45,6 +58,7 @@ export function EmptyRanch({ g }: { g: GameState }) {
           {UI_TEXT.ranch.actions.town}
         </button>
       </div>
+      {homecoming && <HomecomingCard g={g} />}
     </main>
   )
 }

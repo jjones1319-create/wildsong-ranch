@@ -2,7 +2,8 @@ import * as v from 'valibot'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
 import { UI_TEXT } from '../data/text/ui.ts'
-import { AUDIO, BOND, FREEZER, FUSION, HEARTSTONE, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { AUDIO, BOND, FARM, FREEZER, FRIENDS, FUSION, HEARTSTONE, HERD, LAB, PLANNER, RANGES, SONGBOOK, TEXT_SIZES } from '../data/tuning.ts'
+import { FARM_PENS } from '../data/farm.ts'
 import { EVENT_BY_ID } from '../data/calendar.ts'
 import { STARTING_UNLOCKED } from '../data/breeds.ts'
 import { SECRET_BY_ID } from '../data/secrets.ts'
@@ -11,7 +12,9 @@ import { EXPEDITION } from '../data/tuning.ts'
 import { clamp } from '../core/mathx.ts'
 import { buildMap } from '../core/expedition.ts'
 import { clampMonsterMut, type Monster } from '../core/monster.ts'
-import type { ExpeditionLoot, GameState } from '../core/state.ts'
+import { farmTallyOf, penCapacity, seedFarm, startTally } from '../core/farm.ts'
+import { welcomeHome } from '../core/homecoming.ts'
+import type { ExpeditionLoot, Friendship, GameState, Ranchmate } from '../core/state.ts'
 import { retireMixName } from './legacyMix.ts'
 import { isRawSave, migrate, SAVE_VERSION } from './migrate.ts'
 
@@ -221,6 +224,8 @@ const WeekActionSchema = v.fallback(
 
 /* ---------- M8: the planner ---------- */
 
+const DRILL_OUTCOMES = ['Perfect', 'Superb', 'Great', 'Good', 'Success', 'Cheat', 'Fail', 'Slacked'] as const
+
 const PlannerStepSchema = v.variant('kind', [v.object({ kind: v.literal('drill'), drill: v.picklist(DRILL_IDS) }), v.object({ kind: v.literal('rest') })])
 
 const PLANNER_STOPS = [
@@ -245,12 +250,13 @@ const PLANNER_STOPS = [
   'fatigue',
   'stress',
   'invalid',
+  'ranchmate',
 ] as const
 
 const PlannerLogSchema = v.object({
   week: int(0, 1_000_000, 0),
   step: PlannerStepSchema,
-  outcome: v.fallback(v.nullable(v.picklist(['Perfect', 'Superb', 'Great', 'Good', 'Success', 'Cheat', 'Fail', 'Slacked'] as const)), null),
+  outcome: v.fallback(v.nullable(v.picklist(DRILL_OUTCOMES)), null),
   gains: v.fallback(v.record(v.picklist(STAT_KEYS), int(-100_000, 100_000, 0)), {}),
   pay: int(0, 1_000_000_000, 0),
 })
@@ -339,7 +345,7 @@ const JourneysBySiteSchema = v.fallback(
 
 const MemorialSchema = v.object({
   monster: MonsterSchema,
-  cause: oneOf(['passed', 'retired', 'fused', 'neglected', 'wandered'] as const, 'passed'),
+  cause: oneOf(['passed', 'retired', 'fused', 'neglected', 'wandered', 'freed'] as const, 'passed'),
   epitaph: text('', 80),
   week: int(0, 1_000_000, 0),
 })
@@ -402,7 +408,7 @@ const ExpeditionSchema = v.object({
   loot: listOf(v.object({ id: v.string(), qty: int(1, 1000, 1) })),
   sheets: v.fallback(v.array(v.string()), []),
   keyFound: v.fallback(v.nullable(v.string()), null),
-  lootlidPlaced: v.fallback(v.nullable(v.picklist(['ranch', 'freezer', 'none'] as const)), null),
+  lootlidPlaced: v.fallback(v.nullable(v.picklist(['ranch', 'pen', 'freezer', 'none'] as const)), null),
   ended: v.fallback(v.nullable(v.picklist(['camp', 'retreat', 'exhausted'] as const)), null),
   log: v.fallback(v.array(text('', 400)), []),
 })
@@ -441,6 +447,52 @@ const JournalRecordsSchema = v.fallback(
 )
 
 const SleepingStoneSchema = v.object({ phrase: text('', 200), artist: text('', 200), breed: v.picklist(BREED_IDS), week: int(0, 1_000_000, 0) })
+
+/* ---------- v16: the herd, friendships, the farm and the homecoming ---------- */
+
+const MateOrderSchema = v.fallback(
+  v.variant('kind', [v.object({ kind: v.literal('drill'), drill: v.picklist(DRILL_IDS) }), v.object({ kind: v.literal('rest') }), v.object({ kind: v.literal('play') })]),
+  { kind: HERD.defaultOrder },
+)
+
+const MateLastSchema = v.fallback(
+  v.nullable(
+    v.variant('kind', [
+      v.object({
+        kind: v.literal('drill'),
+        drill: v.picklist(DRILL_IDS),
+        outcome: v.picklist(DRILL_OUTCOMES),
+        gains: v.fallback(v.record(v.picklist(STAT_KEYS), int(-100_000, 100_000, 0)), {}),
+        pay: int(0, 1_000_000_000, 0),
+      }),
+      v.object({ kind: v.literal('rest') }),
+      v.object({ kind: v.literal('play') }),
+      v.object({ kind: v.literal('autoRest'), reason: v.picklist(['sick', 'injured', 'tired', 'stressed', 'noYard'] as const) }),
+      v.object({ kind: v.literal('away'), reason: v.picklist(['missing', 'clinic', 'cocoon'] as const) }),
+    ]),
+  ),
+  null,
+)
+
+/** A ranch-mate: strict on its monster (a broken one is dropped); its order, last week and history fall back. */
+const RanchmateSchema = v.object({ monster: MonsterSchema, order: MateOrderSchema, last: MateLastSchema, history: listOf(HistoryEntrySchema) })
+
+const FriendshipSchema = v.object({ a: v.pipe(v.string(), v.minLength(1)), b: v.pipe(v.string(), v.minLength(1)), points: int(0, FRIENDS.maxPoints, 0) })
+
+const count = () => int(0, 1_000_000_000, 0)
+const FarmTallySchema = v.fallback(
+  v.nullable(v.object({ titles: count(), cupsWon: count(), journeys: count(), expeditions: count(), breeds: int(0, BREED_IDS.length, 0), rank: int(1, 10, 1) })),
+  null,
+)
+
+/** The farm; anything unreadable is null, and tidyGame seeds it again from the save's history. */
+const FarmSchema = v.fallback(v.nullable(v.object({ xp: int(0, FARM.maxXp, 0), pensBought: int(0, FARM_PENS.length, 0), tally: FarmTallySchema })), null)
+
+/** A broken homecoming is `done`: it must never run twice. */
+const HomecomingSchema = v.fallback(
+  v.object({ status: v.picklist(['due', 'done'] as const), welcome: v.fallback(v.array(v.fallback(v.string(), '')), []) }),
+  { status: 'done' as const, welcome: [] },
+)
 
 const CountersSchema = v.fallback(
   v.object({ sweetsEaten: int(0, 1_000_000_000, 0), sheetsLearned: int(0, 1_000_000_000, 0), drillsDone: int(0, 1_000_000_000, 0), restsTaken: int(0, 1_000_000_000, 0) }),
@@ -526,6 +578,11 @@ export const GameStateSchema = v.object({
     ),
     [],
   ),
+  // v16 (tidyGame checks the ids, the pen capacity and the pairs; welcomeHome runs a `due` homecoming).
+  ranchmates: listOf(RanchmateSchema),
+  friendships: listOf(FriendshipSchema),
+  farm: FarmSchema,
+  homecoming: HomecomingSchema,
 })
 
 const MetaSchema = v.fallback(v.object({ savedAt: stamp(), appVersion: text('', 32) }), { savedAt: 0, appVersion: '' })
@@ -799,9 +856,17 @@ function tidyGame(game: GameState): GameState {
   // M6 legacy lists: broken entries are already dropped; tidy the monsters, keep ids unique, honour the caps.
   const uniqueMonsters = (list: (Monster | null)[], seen: Set<string>): Monster[] =>
     list.filter((m): m is Monster => m !== null && !seen.has(m.id) && (seen.add(m.id), true)).map(tidyMonster)
+  // v16: ids are unique across the star, the pens, the Freezer and the Grove (in that order of claim). Ranch-mates
+  // past the pen capacity move to the Freezer, and the Freezer keeps up to hardMax, so the homecoming's extras
+  // survive a reload.
   const ids = new Set<string>()
   if (game.monster) ids.add(game.monster.id)
-  game.freezer = uniqueMonsters(game.freezer as (Monster | null)[], ids).slice(0, FREEZER.slots)
+  const mates = (game.ranchmates as (Ranchmate | null)[])
+    .filter((r): r is Ranchmate => r !== null && !ids.has(r.monster.id) && (ids.add(r.monster.id), true))
+    .map((r) => ({ ...r, monster: tidyMonster(r.monster), history: tidyHistory(r.history as (HistoryEntry | null)[]) }))
+  const cap = penCapacity({ farm: { xp: 0, pensBought: game.farm?.pensBought ?? 0, tally: startTally() } })
+  game.ranchmates = mates.slice(0, cap)
+  game.freezer = [...uniqueMonsters(game.freezer as (Monster | null)[], ids), ...mates.slice(cap).map((r) => r.monster)].slice(0, FREEZER.hardMax)
   game.elderGrove = uniqueMonsters(game.elderGrove as (Monster | null)[], ids)
   game.memorial = (game.memorial as (GameState['memorial'][number] | null)[]).filter((e): e is GameState['memorial'][number] => e !== null).map((e) => ({ ...e, monster: tidyMonster(e.monster) }))
   const stoneIds = new Set<string>()
@@ -845,7 +910,24 @@ function tidyGame(game: GameState): GameState {
     game.pendingRequest = null
     game.weekPhase = 'start'
   }
+  // A life can only end for a monster that is there (an `ended` empty ranch would loop the Farewell).
+  if (!game.monster) game.ended = null
+  tidyFarmAndFriends(game)
   return game
+}
+
+/** v16: friendships keep owned, sorted, distinct pairs; a missing farm (or tally) is seeded from the save's history. */
+function tidyFarmAndFriends(game: GameState): void {
+  const owned = new Set<string>([...(game.monster ? [game.monster.id] : []), ...game.ranchmates.map((r) => r.monster.id), ...game.freezer.map((m) => m.id), ...game.elderGrove.map((m) => m.id)])
+  const pairs = new Set<string>()
+  game.friendships = (game.friendships as (Friendship | null)[])
+    .flatMap((f) => (f === null || f.a === f.b ? [] : [f.a < f.b ? f : { a: f.b, b: f.a, points: f.points }]))
+    .filter((f) => owned.has(f.a) && owned.has(f.b) && !pairs.has(`${f.a}|${f.b}`) && (pairs.add(`${f.a}|${f.b}`), true))
+    .slice(0, FRIENDS.maxPairs)
+  const farm = game.farm as GameState['farm'] | null
+  if (!farm) game.farm = seedFarm(game)
+  else if (!farm.tally) farm.tally = farmTallyOf(game)
+  game.homecoming.welcome = [...new Set(game.homecoming.welcome)].filter((id) => owned.has(id))
 }
 
 function describeIssue(issue: v.BaseIssue<unknown>): string {
@@ -876,7 +958,8 @@ export function validateSave(raw: unknown): SaveValidation {
     return { ok: false, error: fill(UI_TEXT.errors.saveInvalid, { detail: describeIssue(parsed.issues[0]) }) }
   }
   const output = parsed.output as unknown as SaveFile
-  output.game = tidyGame(output.game)
+  // v16: the one-time homecoming runs here, after the tidy, on every load and import (it does nothing once done).
+  output.game = welcomeHome(tidyGame(output.game))
   return { ok: true, save: output }
 }
 

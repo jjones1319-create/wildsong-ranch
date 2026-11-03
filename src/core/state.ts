@@ -5,6 +5,7 @@ import type { Inventory } from './items.ts'
 import type { JourneyProgress } from './journey.ts'
 import type { EditHistoryEntry } from './lab.ts'
 import type { Monster } from './monster.ts'
+import { seedFarm } from './farm.ts'
 import type { DrillOutcome, MonsterRequest } from './training.ts'
 import { variantNameOf } from './variants.ts'
 
@@ -81,6 +82,8 @@ export type PlannerStop =
   | 'fatigue'
   | 'stress'
   | 'invalid'
+  /** v16: notable news from the pens (§6.11). */
+  | 'ranchmate'
 
 export interface PlannerLogEntry {
   week: number
@@ -193,7 +196,8 @@ export interface MailItem {
 
 /* ---------- legacy (§14.1, §15, §16) ---------- */
 
-export type MemorialCause = 'passed' | 'retired' | 'fused' | 'neglected' | 'wandered'
+/** How a monster left the ranch for the Memorial wall; `freed` (v16) is "Set free" (no Heartstone). */
+export type MemorialCause = 'passed' | 'retired' | 'fused' | 'neglected' | 'wandered' | 'freed'
 
 export interface MemorialEntry {
   /** The monster as it was at the end; its id stays the monster's id (the family tree points at it). */
@@ -270,7 +274,7 @@ export interface ExpeditionState {
   /** 'lootlid' or 'brass-blueprint' once found. */
   keyFound: string | null
   /** Where the Lootlid went when the trip ended. */
-  lootlidPlaced: 'ranch' | 'freezer' | 'none' | null
+  lootlidPlaced: 'ranch' | 'pen' | 'freezer' | 'none' | null
   ended: ExpeditionEnd | null
   /** Tomas's narration keys with their fill-ins, newest last (bounded). */
   log: string[]
@@ -304,6 +308,62 @@ export interface JournalRecords {
   expeditionsDone: number
   stonesWoken: number
   highestGeneration: number
+}
+
+/* ---------- v16: the herd, friendships, the farm and the homecoming (§6.11, §9.1, §6.10) ---------- */
+
+/** A ranch-mate's standing order (§6.11). */
+export type MateOrder = { kind: 'drill'; drill: DrillId } | { kind: 'rest' } | { kind: 'play' }
+
+/** Why a ranch-mate rested by itself instead of following its order. */
+export type MateRestReason = 'sick' | 'injured' | 'tired' | 'stressed' | 'noYard'
+
+/** What a ranch-mate did last week (the herd strip's badge). */
+export type MateLast =
+  | { kind: 'drill'; drill: DrillId; outcome: DrillOutcome; gains: Partial<Stats>; pay: number }
+  | { kind: 'rest' }
+  | { kind: 'play' }
+  | { kind: 'autoRest'; reason: MateRestReason }
+  | { kind: 'away'; reason: 'missing' | 'clinic' | 'cocoon' }
+
+/** A monster living in a pen beside the star: it follows its order, eats, ages and grows (§6.11). */
+export interface Ranchmate {
+  monster: Monster
+  order: MateOrder
+  /** Last week's result; null until its first week in the pen. */
+  last: MateLast | null
+  /** §19 its edit history, oldest first, at most LAB.historyLimit (so ✏️ Restore works in a pen too). */
+  history: EditHistoryEntry[]
+}
+
+/** Two owned monsters' friendship: ids sorted (`a < b`), points 0–FRIENDS.maxPoints. */
+export interface Friendship {
+  a: string
+  b: string
+  points: number
+}
+
+/** The counts the farm last gave XP for; each week's growth past them earns XP once (§9.1). */
+export interface FarmTally {
+  titles: number
+  cupsWon: number
+  journeys: number
+  expeditions: number
+  breeds: number
+  rank: number
+}
+
+export interface FarmState {
+  xp: number
+  /** Pens bought beyond FARM.basePens (CONTENT §11). */
+  pensBought: number
+  tally: FarmTally
+}
+
+/** §6.10 the one-time v16 homecoming: `due` until it has run once; `welcome` lists who came home, for the card. */
+export interface Homecoming {
+  status: 'due' | 'done'
+  welcome: string[]
 }
 
 /** A phrase whose main breed was still asleep (§14.1). It wakes for free once the breed unlocks. */
@@ -397,6 +457,13 @@ export interface GameState {
   planner: PlannerState
   /** §15 surprise recipes bred on this ranch (Fusion 2): `coilfang+galeheron>hearthwing`. */
   fusionFinds: string[]
+  /** §6.11 the ranch-mates in their pens (at most the pen capacity). */
+  ranchmates: Ranchmate[]
+  /** §6.11 friendships between owned monsters (they grow from v1.21.0). */
+  friendships: Friendship[]
+  /** §9.1 the farm level's XP, the pens bought and the achievement tally. */
+  farm: FarmState
+  homecoming: Homecoming
 }
 
 export interface NewGameOptions {
@@ -430,7 +497,7 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     if (first.variantId) encyclopedia.variants.push(first.variantId)
     encyclopedia.combos.push(variantNameOf(first))
   }
-  return {
+  const state: GameState = {
     week: 0,
     money: ECONOMY.startMoney,
     difficulty,
@@ -484,7 +551,13 @@ export function createGameState(opts: NewGameOptions = {}): GameState {
     memorialVisitMonth: null,
     planner: emptyPlanner(),
     fusionFinds: [],
+    ranchmates: [],
+    friendships: [],
+    farm: { xp: 0, pensBought: 0, tally: { titles: 0, cupsWon: 0, journeys: 0, expeditions: 0, breeds: 0, rank: 1 } },
+    homecoming: { status: 'done', welcome: [] },
   }
+  state.farm = seedFarm(state)
+  return state
 }
 
 export function emptyPlanner(): PlannerState {

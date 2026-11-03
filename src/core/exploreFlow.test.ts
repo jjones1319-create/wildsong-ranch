@@ -56,9 +56,9 @@ describe('exploration end to end (M7)', () => {
     }
     if (!state.expedition!.ended) state = retreat(state).state
     expect(state.expedition!.keyFound).toBe('lootlid')
-    expect(state.expedition!.lootlidPlaced).toBe('freezer')
+    expect(state.expedition!.lootlidPlaced).toBe('pen')
     expect(state.unlocked).toContain('lootlid')
-    expect(state.freezer.map((m) => m.mainBreed)).toEqual(['lootlid'])
+    expect(state.ranchmates.map((r) => r.monster.mainBreed)).toEqual(['lootlid'])
     expect(state.monster!.fatigue).toBe(40)
     const loot = state.expedition!.loot
     for (const l of loot) expect(ITEM_BY_ID[l.id]).toBeDefined()

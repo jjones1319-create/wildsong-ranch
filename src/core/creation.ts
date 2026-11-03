@@ -1,36 +1,60 @@
-import { SHRINE } from '../data/tuning.ts'
+import { HERD, SHRINE } from '../data/tuning.ts'
 import type { BreedId } from '../data/types.ts'
+import { penRoom } from './farm.ts'
 import { normalizePhrase } from './hash.ts'
 import { freezerFull, placeOnRanch, ranchBusy, recordInEncyclopedia } from './legacy.ts'
 import { marketMonster, marketStock } from './market.ts'
 import type { Monster } from './monster.ts'
 import { monsterFromRoll, rollShrine, type ShrineRoll } from './shrine.ts'
-import type { GameState } from './state.ts'
+import type { GameState, Ranchmate } from './state.ts'
 import { dateOf } from './calendar.ts'
 
 /**
  * Where new monsters come from during a game (§14): the Shrine (free; Sleeping Stones when the breed is
  * asleep; the Encyclopedia's paid re-creation) and the Market. A newborn lives on the ranch when it is empty,
- * otherwise it goes to the Freezer. Pure.
+ * otherwise in a free pen (v16), otherwise in the Freezer. Pure.
  */
 
-export type Placed = 'ranch' | 'freezer'
+export type Placed = 'ranch' | 'pen' | 'freezer'
 
 export type PlaceRefusal = 'freezerFull' | 'busy'
 
-/** Puts a newborn on the ranch or in the Freezer. */
-export function placeNewMonster(input: GameState, m: Monster): { state: GameState; placed: Placed | null; refused: PlaceRefusal | null } {
-  const toRanch = input.monster === null && !input.ended
-  if (toRanch && ranchBusy(input)) return { state: input, placed: null, refused: 'busy' }
-  if (!toRanch && freezerFull(input)) return { state: input, placed: null, refused: 'freezerFull' }
-  const state = structuredClone(input)
-  if (toRanch) {
-    placeOnRanch(state, m)
-    return { state, placed: 'ranch', refused: null }
+export type Home = { placed: Placed; refused: null } | { placed: null; refused: PlaceRefusal }
+
+/** A ranch-mate fresh in its pen: the default order, no last week, no edit history. */
+export function newRanchmate(m: Monster): Ranchmate {
+  return { monster: m, order: { kind: HERD.defaultOrder }, last: null, history: [] }
+}
+
+/** Where a new monster would go now: an empty ranch, then a free pen, then the Freezer. */
+export function nextHome(state: GameState): Home {
+  if (state.monster === null && !state.ended) return ranchBusy(state) ? { placed: null, refused: 'busy' } : { placed: 'ranch', refused: null }
+  if (penRoom(state) > 0) return { placed: 'pen', refused: null }
+  if (!freezerFull(state)) return { placed: 'freezer', refused: null }
+  return { placed: null, refused: 'freezerFull' }
+}
+
+/** Places a new monster in `state` itself (the caller owns the copy) and records it in the Encyclopedia. */
+export function placeMut(state: GameState, m: Monster): Home {
+  const home = nextHome(state)
+  if (home.placed === 'ranch') placeOnRanch(state, m)
+  else if (home.placed === 'pen') {
+    state.ranchmates.push(newRanchmate(m))
+    recordInEncyclopedia(state, m)
+  } else if (home.placed === 'freezer') {
+    state.freezer.push(m)
+    recordInEncyclopedia(state, m)
   }
-  state.freezer.push(m)
-  recordInEncyclopedia(state, m)
-  return { state, placed: 'freezer', refused: null }
+  return home
+}
+
+/** Puts a newborn on the ranch, in a pen or in the Freezer. */
+export function placeNewMonster(input: GameState, m: Monster): { state: GameState; placed: Placed | null; refused: PlaceRefusal | null } {
+  const home = nextHome(input)
+  if (!home.placed) return { state: input, placed: null, refused: home.refused }
+  const state = structuredClone(input)
+  placeMut(state, m)
+  return { state, placed: home.placed, refused: null }
 }
 
 export type AwakenResult =

@@ -15,6 +15,7 @@ import { navigate } from '../../router.ts'
 import { showToast } from '../../store/appStore.ts'
 import { playSfx } from '../../../audio/player.ts'
 import { game, useItems } from '../../store/gameStore.ts'
+import { TargetChips, useTarget } from './TargetChips.tsx'
 
 const USABLE = new Set(['recovery', 'mood', 'form', 'sweet', 'potential', 'tonic', 'fruit', 'toy'])
 
@@ -36,17 +37,21 @@ function refusalText(r: UseRefusal, name: string): string {
   }
 }
 
-/** §8 the Bag: every owned item by category, Use ×1 / ×5 / ×10 / Max, with the Pearl's stat picker and warnings. */
+/**
+ * §8 the Bag: every owned item by category, Use ×1 / ×5 / ×10 / Max, with the Pearl's stat picker and warnings.
+ * v16: "For" picks the star or a ranch-mate (the Card's monster by default); the Pearl's picker follows it.
+ */
 export function BagScreen() {
   const g = game.value
   const t = UI_TEXT.bag
   const [using, setUsing] = useState<Item | null>(null)
   const [stat, setStat] = useState<StatKey>('POW')
+  const [target, setTarget] = useTarget(g)
   useEffect(() => {
     if (!g || !g.monster) navigate('ranch')
   }, [g === null])
-  if (!g || !g.monster) return null
-  const m = g.monster
+  if (!g || !g.monster || !target) return null
+  const m = target.monster
   const owned = Object.keys(g.inventory)
     .filter((id) => countOf(g.inventory, id) > 0 && ITEM_BY_ID[id])
     .map((id) => ITEM_BY_ID[id]!)
@@ -54,7 +59,7 @@ export function BagScreen() {
 
   const confirm = (n: number) => {
     if (!using) return
-    const r = useItems(using.id, n, using.effect.kind === 'potentialGrade' ? stat : undefined)
+    const r = useItems(using.id, n, using.effect.kind === 'potentialGrade' ? stat : undefined, target.id)
     setUsing(null)
     if (r.used === 0) {
       showToast(r.result?.refused ? refusalText(r.result.refused, m.name) : t.notNow)
@@ -79,6 +84,7 @@ export function BagScreen() {
   return (
     <main class="screen">
       <TopBar title={t.title} />
+      <TargetChips g={g} target={target} onPick={setTarget} />
       {groups.length === 0 && <p class="empty">{t.empty}</p>}
       {groups.map(({ c, items }) => (
         <section class="card" key={c}>

@@ -5,7 +5,7 @@ import { EXPEDITION, UNLOCKS } from '../data/tuning.ts'
 import { STAT_KEYS, TOURNAMENT_GRADES, type ExpeditionSite, type ExpeditionSiteId, type LootEntry, type NodeKind } from '../data/types.ts'
 import { availability } from './aging.ts'
 import { dateOf } from './calendar.ts'
-import { placeNewMonster } from './creation.ts'
+import { placeMut } from './creation.ts'
 import { addItems, countOf } from './items.ts'
 import { addCondition, createMonster, rollLikes, type Monster } from './monster.ts'
 import { createRng, type Rng } from './rng.ts'
@@ -439,14 +439,8 @@ function conclude(state: GameState, how: ExpeditionEnd): void {
   if (e.keyFound === 'lootlid') {
     if (!state.unlocked.includes('lootlid')) state.unlocked.push('lootlid')
     const lootlid = createMonster({ id: `lootlid-${e.seed}`, mainBreed: 'lootlid', likes: rollLikes(createRng(UNLOCKS.lootlidSeed + e.seed)), name: 'Lootlid' })
-    const placed = placeNewMonster(state, lootlid)
-    if (placed.placed) {
-      // placeNewMonster returns a fresh copy; carry its changes back into this state.
-      state.freezer = placed.state.freezer
-      state.monster = placed.state.monster
-      state.encyclopedia = placed.state.encyclopedia
-      e.lootlidPlaced = placed.placed
-    } else e.lootlidPlaced = 'none'
+    // A pen first, then the Freezer (the star is away on this trip, so never the ranch itself).
+    e.lootlidPlaced = placeMut(state, lootlid).placed ?? 'none'
   }
   const after = EXPEDITION.after
   const mm = state.monster!

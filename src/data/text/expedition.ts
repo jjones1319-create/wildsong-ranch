@@ -57,7 +57,7 @@ export const EXPEDITION_TEXT = {
     afterEffects: 'Fatigue +{fatigue} · Stress {stress}',
     sheets: 'Songsheets for the Songbook',
     lootlid: 'A Lootlid came home with you! It unlocks the breed at the Shrine.',
-    lootlidWhere: { ranch: 'It is waiting on the ranch.', freezer: 'It went into the Freezer.', none: 'There was no room, so it scuttled off. The Shrine knows its song now.' },
+    lootlidWhere: { ranch: 'It is waiting on the ranch.', pen: 'It moved into a pen.', freezer: 'It went into the Freezer.', none: 'There was no room, so it scuttled off. The Shrine knows its song now.' },
     blueprint: 'The Brass Blueprint! Dr. Pell will want to see this.',
     done: 'Back to the ranch',
     sellHint: 'Treasures sell at Basil’s.',

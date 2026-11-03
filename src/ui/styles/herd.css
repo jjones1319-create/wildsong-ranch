@@ -1,0 +1,253 @@
+/* v16 the herd (GAME_DESIGN §6.11, §21): the strip under the stage, a ranch-mate's sheet, the homecoming card and
+   "Who will you raise next?". Phone-first: every tap target is at least 44 px; the strip scrolls sideways. */
+
+.herd {
+  margin: -6px -16px 0;
+}
+
+.herd__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 64px;
+  padding: 4px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.herd__row::-webkit-scrollbar {
+  display: none;
+}
+
+.herd__tile {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 56px;
+  min-height: 56px;
+  max-width: 190px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.herd__tile:active {
+  filter: brightness(1.15);
+}
+
+.herd__tile:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.herd__tile[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.herd__tile--star {
+  padding: 4px;
+  border-color: rgb(242 181 68 / 0.6);
+  background: rgb(242 181 68 / 0.1);
+}
+
+.herd__tile--empty {
+  justify-content: center;
+  padding: 4px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.5em;
+}
+
+.herd__pic {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: visible;
+}
+
+.herd__pic > * {
+  width: 44px;
+  height: 44px;
+}
+
+.herd__corner {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.herd__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.herd__name {
+  overflow: hidden;
+  font-weight: 700;
+  font-size: 0.9em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.herd__badge {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 0 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.herd__badge--good {
+  background: rgb(127 175 90 / 0.2);
+  color: var(--moss);
+}
+
+.herd__badge--bad {
+  background: rgb(232 106 124 / 0.18);
+  color: var(--danger);
+}
+
+.herd__label {
+  flex: 0 0 auto;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+/* A ranch-mate's sheet */
+.herdsheet__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.herdsheet__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.herdsheet__last {
+  margin: 10px 0;
+}
+
+.herdsheet__drill {
+  margin-top: 10px;
+}
+
+.herdsheet__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.herdsheet__wide {
+  grid-column: 1 / -1;
+}
+
+.herdsheet__actions p {
+  margin: -4px 0 0;
+  text-align: center;
+}
+
+/* The homecoming card */
+.homecoming {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.homecoming__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.homecoming__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Who will you raise next? */
+.whonext {
+  display: grid;
+  gap: 10px;
+}
+
+.whonext .sheet__title {
+  margin: 0;
+}
+
+/* A ranch-mate's goodbye card in the week summary */
+.goodbye {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goodbye__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The Bag's and Songbook's "For" row */
+.target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.target .field__label {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.target .chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}

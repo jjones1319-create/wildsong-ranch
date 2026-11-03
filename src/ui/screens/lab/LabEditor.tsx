@@ -13,6 +13,7 @@ import { ITEM_BY_ID } from '../../../data/items.ts'
 import { TECHNIQUE_BY_ID } from '../../../data/techniques.ts'
 import { TRAITS } from '../../../data/traits.ts'
 import { fill } from '../../../data/text/format.ts'
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { GROWTH_WORDS, STAGE_NAMES, STAT_NAMES, STYLE_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { RANGES, SONGBOOK, STAGES, STAT_CAP_BY_GRADE } from '../../../data/tuning.ts'
@@ -212,10 +213,11 @@ export function LabEditorScreen() {
   const save = async (asCopy: boolean) => {
     const name = m.name
     const active = d.origin === 'active' && !asCopy
+    const pen = d.origin === 'pen' && !asCopy
     const saved = await saveDraft(asCopy)
     if (saved) {
-      showToast(fill(active ? t.savedActive : asCopy ? t.savedCopy : t.saved, { name: saved.name || name }))
-      if (active || (d.origin === 'freezer' && !asCopy)) goBack()
+      showToast(fill(active ? t.savedActive : pen ? HERD_TEXT.edit.saved : asCopy ? t.savedCopy : t.saved, { name: saved.name || name }))
+      if (active || pen || (d.origin === 'freezer' && !asCopy)) goBack()
       else navigate('labView')
     }
   }
@@ -238,7 +240,7 @@ export function LabEditorScreen() {
   return (
     <main class="screen">
       <TopBar
-        title={d.origin === 'new' ? t.titleNew : d.origin === 'active' ? fill(t.titleActive, { name: d.original.name }) : t.title}
+        title={d.origin === 'new' ? t.titleNew : d.origin === 'active' || d.origin === 'pen' ? fill(t.titleActive, { name: d.original.name }) : t.title}
         onBack={leave}
         right={
           <button
@@ -443,12 +445,12 @@ export function LabEditorScreen() {
         )}
       </Section>
 
-      <p class="muted small center">{d.origin === 'active' ? t.activeNote : t.editedNote}</p>
+      <p class="muted small center">{d.origin === 'active' ? t.activeNote : d.origin === 'pen' ? HERD_TEXT.edit.note : t.editedNote}</p>
       <div class="actionbar">
         <button type="button" class="btn btn--primary btn--half" onClick={() => void save(false)}>
           {t.save}
         </button>
-        {(d.origin === 'library' || d.origin === 'active' || d.origin === 'freezer') && (
+        {(d.origin === 'library' || d.origin === 'active' || d.origin === 'pen' || d.origin === 'freezer') && (
           <button type="button" class="btn btn--half" onClick={() => void save(true)}>
             {t.saveCopy}
           </button>

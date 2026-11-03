@@ -4,7 +4,7 @@ import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { UNLOCKS } from '../data/tuning.ts'
 import { STAT_KEYS } from '../data/types.ts'
 import { weekIndexOf } from './calendar.ts'
-import { buyFromMarket } from './creation.ts'
+import { buyFromMarket, newRanchmate } from './creation.ts'
 import { actionMenu, answerEvent, beginWeek, chooseAction, finishWeek } from './game.ts'
 import { concludeLife, trainedGains } from './legacy.ts'
 import { marketStock } from './market.ts'
@@ -319,26 +319,29 @@ describe('5. Gearhoot: the Brass Blueprint', () => {
 })
 
 describe('6. Reefclaw: the Tide Pool', () => {
-  it('moves in on June week 1 after the Tide Pool (to the Freezer when the ranch is taken) and joins the summer Market', () => {
+  it('moves in on June week 1 after the Tide Pool (to a pen, then the Freezer, when the ranch is taken) and joins the summer Market', () => {
     const s0 = gameAt(at(1, 6, 1), makeMonster())
     s0.upgrades.tidePool = true
     const begun = beginWeek(s0, createRng(1))
-    expect(begun.events).toContainEqual({ kind: 'reefclaw', placed: 'freezer' })
+    expect(begun.events).toContainEqual({ kind: 'reefclaw', placed: 'pen' })
     const s = begun.state
-    expect(s.freezer.map((m) => m.mainBreed)).toEqual(['reefclaw'])
+    expect(s.ranchmates.map((r) => r.monster.mainBreed)).toEqual(['reefclaw'])
     expect(s.unlocked).toContain('reefclaw')
     expect(s.unlocks.reefclawArrived).toBe(true)
     expect(s.mail.some((m) => m.kind === 'reefclaw')).toBe(true)
     expect(marketStock(7, s.unlocked).some((o) => o.breed === 'reefclaw' && o.seasonal)).toBe(true)
     expect(marketStock(1, s.unlocked).some((o) => o.breed === 'reefclaw')).toBe(false)
     expect(reefclawArrival(s).placed).toBe('freezer')
-    expect(beginWeek({ ...s, week: at(2, 6, 1), weekPhase: 'start' }, createRng(1)).state.freezer).toHaveLength(1)
+    const next = beginWeek({ ...s, week: at(2, 6, 1), weekPhase: 'start' }, createRng(1)).state
+    expect(next.ranchmates).toHaveLength(1)
+    expect(next.freezer).toEqual([])
   })
 
   it('with no room anywhere it waits for next June', () => {
     const s0 = gameAt(at(1, 6, 1), makeMonster())
     s0.upgrades.tidePool = true
     s0.freezer = Array.from({ length: 20 }, (_, i) => makeMonster({ id: `f${i}` }))
+    s0.ranchmates = [newRanchmate(makeMonster({ id: 'pen1' }))]
     const begun = beginWeek(s0, createRng(1))
     expect(begun.events).toContainEqual({ kind: 'reefclaw', placed: null })
     const s = begun.state

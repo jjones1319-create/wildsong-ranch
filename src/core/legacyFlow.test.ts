@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { STAT_KEYS } from '../data/types.ts'
 import { makeSave, validateSave } from '../save/schema.ts'
-import { awaken, buyFromMarket } from './creation.ts'
+import { awaken, buyFromMarket, newRanchmate } from './creation.ts'
 import { fuse, findRelative } from './fusion.ts'
 import { concludeLife, giveHeartstone, heartstoneGrant } from './legacy.ts'
 import { createRng } from './rng.ts'
@@ -56,7 +56,8 @@ describe('a whole legacy: life → farewell → Heartstone → the Shrine → Fu
     expect(state.monster!.heirloom).toBe('Basic')
     expect(state.heartstones).toEqual([])
 
-    // Two songs at the Shrine go to the Freezer (the ranch is taken) and fuse.
+    // Two songs at the Shrine go to the Freezer (the ranch and the one pen are taken) and fuse.
+    state = { ...state, ranchmates: [newRanchmate(makeMonster({ id: 'mate' }))] }
     const a = awaken(state, 'river song', '', 'a')
     const b = awaken(a.state, 'twinkle twinkle', 'little star', 'b')
     if (a.kind !== 'born' || b.kind !== 'born') throw new Error('expected two births')
@@ -95,6 +96,7 @@ describe('a whole legacy: life → farewell → Heartstone → the Shrine → Fu
     if (born.kind !== 'born') throw new Error('expected a birth')
     state = born.state
     expect(state.monster?.id).toBe('two')
+    state = { ...state, ranchmates: [newRanchmate(makeMonster({ id: 'mate' }))] }
     const frozen = awaken(state, 'a third song', '', 'three')
     if (frozen.kind !== 'born') throw new Error('expected a birth')
     state = frozen.state

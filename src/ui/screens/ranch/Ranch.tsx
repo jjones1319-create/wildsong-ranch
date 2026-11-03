@@ -41,6 +41,8 @@ import { EmptyRanch } from './EmptyRanch.tsx'
 import { trialGateOpen } from './gates.ts'
 import { TrialCard } from './TrialCard.tsx'
 import { FoodPrompt } from './FoodPrompt.tsx'
+import { HerdStrip } from './HerdStrip.tsx'
+import { HomecomingCard } from './HomecomingCard.tsx'
 import { RequestCard } from './RequestCard.tsx'
 import { TrainSheet } from './TrainSheet.tsx'
 import { WeekSummary } from './WeekSummary.tsx'
@@ -86,8 +88,10 @@ export function RanchScreen() {
   if (!g.monster) return <EmptyRanch g={g} />
   const m = g.monster
   const mn = menu.value!
-  const arrivalOpen = a !== null && f.kind === 'idle' && !running
-  const quiet = f.kind === 'idle' && !running && !summaryOpen && !arrivalOpen
+  // §6.10 v16 the one-time homecoming card comes before anything else on the ranch.
+  const homecomingOpen = g.homecoming.welcome.length > 0 && f.kind === 'idle' && !running
+  const arrivalOpen = a !== null && f.kind === 'idle' && !running && !homecomingOpen
+  const quiet = f.kind === 'idle' && !running && !summaryOpen && !arrivalOpen && !homecomingOpen
   const ranchTip = quiet ? tipFor({ screen: 'ranch' }) : null
   const showFood = needsFoodChoice(g) && !ranchTip && quiet
   const showRequest = g.pendingRequest !== null && (forced === 'request' || (quiet && !showFood))
@@ -139,6 +143,7 @@ export function RanchScreen() {
         <p class="stage__caption">{fill(t.stage, { stage: STAGE_NAMES[stageOf(m) - 1], name: m.name })}</p>
         <p class="stage__hint">{fill(t.tapHint, { name: m.name })}</p>
       </button>
+      <HerdStrip g={g} disabled={running || f.kind !== 'idle'} />
 
       <section class="bubble" aria-live="polite">
         <p class="speaker">{UI_TEXT.wren}</p>
@@ -250,6 +255,7 @@ export function RanchScreen() {
       <TrainSheet open={f.kind === 'train'} />
       {f.kind === 'bond' && <BondGame f={f} m={m} money={g.money} />}
       {arrivalOpen && <ArrivalScene a={a!} m={m} />}
+      {homecomingOpen && <HomecomingCard g={g} />}
       {f.kind === 'result' && <DrillResult f={f} />}
       {f.kind === 'summary' && <WeekSummary f={f} />}
     </main>

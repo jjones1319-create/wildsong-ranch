@@ -50,19 +50,18 @@ export function PickerSheet({ open, onClose, onPick }: { open: boolean; onClose:
   const t = UI_TEXT.versus
   const g = game.value
   const frozen = listFreezer()
-  const [source, setSource] = useState<Source>(g?.monster ? 'active' : frozen.length ? 'freezer' : 'library')
+  const [source, setSource] = useState<Source>(g?.monster || g?.ranchmates.length ? 'active' : frozen.length ? 'freezer' : 'library')
   const rows: Listed[] =
     source === 'active'
-      ? g?.monster
-        ? [{ id: g.monster.id, monster: g.monster, source: 'library', history: [], createdAt: 0, updatedAt: 0 }]
-        : []
+      ? // the star and the ranch-mates (docs/GAME_DESIGN.md §6.11)
+        [...(g?.monster ? [g.monster] : []), ...(g?.ranchmates ?? []).map((r) => r.monster)].map((m) => ({ id: m.id, monster: m, source: 'library' as const, history: [], createdAt: 0, updatedAt: 0 }))
       : source === 'library'
         ? library.value.entries.map((e) => ({ id: e.monster.id, monster: e.monster, source: 'library' as const, history: e.history, createdAt: e.createdAt, updatedAt: e.updatedAt }))
         : source === 'freezer'
           ? frozen
           : listPresets()
   const options: { value: Source; label: string }[] = [
-    ...(g?.monster ? [{ value: 'active' as const, label: t.sources.active }] : []),
+    ...(g?.monster || g?.ranchmates.length ? [{ value: 'active' as const, label: t.sources.active }] : []),
     ...(g && frozen.length ? [{ value: 'freezer' as const, label: UI_TEXT.versusSources.freezer }] : []),
     { value: 'library', label: t.sources.library },
     { value: 'presets', label: t.sources.presets },

@@ -316,7 +316,7 @@ export interface RanchUpgrade {
 }
 
 /** Every kind of letter the Mailbox can hold. */
-export const MAIL_KINDS = ['sale', 'crown', 'legend', 'promotion', 'rank', 'info', 'expedition', 'rumor', 'vigil', 'upgrades', 'masquerade', 'reefclaw', 'wyrm'] as const
+export const MAIL_KINDS = ['sale', 'crown', 'legend', 'promotion', 'rank', 'info', 'expedition', 'rumor', 'vigil', 'upgrades', 'masquerade', 'reefclaw', 'wyrm', 'farm', 'homecoming'] as const
 export type MailKind = (typeof MAIL_KINDS)[number]
 
 export interface BreedArt {

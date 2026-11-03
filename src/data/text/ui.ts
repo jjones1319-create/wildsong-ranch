@@ -1,5 +1,6 @@
 /** Player-facing strings for the app shell, the ranch, Town, the Monster Lab and Settings. Wren's voice is warm and simple; Basil gossips; Ines is formal; Dr. Pell is brisk and kind. */
 import { EXPEDITION_TEXT } from './expedition.ts'
+import { HERD_TEXT } from './herd.ts'
 import { JOURNAL_TEXT } from './journal.ts'
 import { LEGACY_TEXT } from './legacy.ts'
 
@@ -1009,6 +1010,8 @@ export const UI_TEXT = {
       masquerade: 'A masked invitation',
       reefclaw: 'Something in the Tide Pool',
       wyrm: 'A gift from the Guild',
+      farm: HERD_TEXT.mail.kinds.farm,
+      homecoming: HERD_TEXT.mail.kinds.homecoming,
     },
     bodies: {
       sale: 'The mentors are running a sale: every Journey costs 1,000G during {month}.',
@@ -1024,6 +1027,8 @@ export const UI_TEXT = {
       masquerade: 'A card with no name: "The Masquerade Cup. October, week 1. Grade B or better. Come unmasked."',
       reefclaw: 'Wren: "Something moved into the Tide Pool overnight. A Reefclaw! It says it lives here now."',
       wyrm: 'Ines: "Four Crowns. The Guild has not presented a Wyrm Scale in living memory. Offer it at the Shrine; the legend says a golden wyrm answers only to champions."',
+      farm: HERD_TEXT.mail.bodies.farm,
+      homecoming: HERD_TEXT.mail.bodies.homecoming,
     },
     openOffers: 'See the offers',
   },

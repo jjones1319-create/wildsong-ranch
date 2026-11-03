@@ -5,6 +5,7 @@ import { techniquesOfBreed, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
 import { FUSION } from '../data/tuning.ts'
 import { BREED_IDS, STAT_KEYS, type BreedId } from '../data/types.ts'
 import { babyRanks, babyStatOffsets, catalystEffect, compatTier, compatibility, findKey, findRelative, fuse, fusionOutcomes, fusionSurprises, inheritedGrades, inheritedTechniques, inheritedTraitFor, makeBaby, pairKey, rarityK, type FusionOutcome } from './fusion.ts'
+import { newRanchmate } from './creation.ts'
 import { cyrb53 } from './hash.ts'
 import { divRound } from './mathx.ts'
 import { breedBirth } from './monster.ts'
@@ -316,8 +317,13 @@ describe('fuse at Dr. Pell’s (§15)', () => {
     expect(fuse(state, 'p1', 'p2', 'power-shard', 'baby', createRng(7)).result!.baby).toEqual(r.result!.baby)
   })
 
-  it('with a monster on the ranch the baby goes to the Freezer; refusals are explicit', () => {
+  it('with a monster on the ranch the baby takes a free pen, then the Freezer; refusals are explicit', () => {
     const state = setup(true)
+    const penned = fuse(state, 'p1', 'p2', null, 'baby', createRng(1))
+    expect(penned.placed).toBe('pen')
+    expect(penned.state.ranchmates.map((m) => m.monster.id)).toEqual(['baby'])
+    expect(penned.state.freezer).toEqual([])
+    state.ranchmates = [newRanchmate(makeMonster({ id: 'pen1' }))]
     const r = fuse(state, 'p1', 'p2', null, 'baby', createRng(1))
     expect(r.placed).toBe('freezer')
     expect(r.state.freezer.map((m) => m.id)).toEqual(['baby'])
@@ -329,6 +335,7 @@ describe('fuse at Dr. Pell’s (§15)', () => {
     const elders = setup(true)
     elders.elderGrove = elders.freezer
     elders.freezer = Array.from({ length: 20 }, (_, i) => makeMonster({ id: `f${i}` }))
+    elders.ranchmates = [newRanchmate(makeMonster({ id: 'pen1' }))]
     expect(fuse(elders, 'p1', 'p2', null, 'b', createRng(1)).refused).toBe('freezerFull')
     const locked = setup(false)
     locked.unlocked = []

@@ -2,6 +2,7 @@ import { JOURNEY_SITES } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { CALENDAR, FREEZER, HEARTSTONE, RANGES } from '../data/tuning.ts'
 import { FAMILIES, STAT_KEYS, type Family, type JourneySiteId, type StatKey, type Stats } from '../data/types.ts'
+import { hasPerk } from './farm.ts'
 import { finishEdit } from './lab.ts'
 import { divRound } from './mathx.ts'
 import { addTrained, breedBirth, trainedOf, zeroStats, type Monster } from './monster.ts'
@@ -21,12 +22,51 @@ export interface Stored {
   monster: Monster
 }
 
+/** The Freezer's slots: FREEZER.slots, or deepSlots with the farm's Deep Freezer. Only the homecoming fills past them. */
+export function freezerSlots(state: Pick<GameState, 'farm'>): number {
+  return hasPerk(state, 'deepFreezer') ? FREEZER.deepSlots : FREEZER.slots
+}
+
 export function freezerRoom(state: GameState): number {
-  return Math.max(0, FREEZER.slots - state.freezer.length)
+  return Math.max(0, freezerSlots(state) - state.freezer.length)
 }
 
 export function freezerFull(state: GameState): boolean {
-  return state.freezer.length >= FREEZER.slots
+  return state.freezer.length >= freezerSlots(state)
+}
+
+/** Where an owned monster lives: the ranch (the star), a pen, the Freezer or the Elder Grove. */
+export type OwnedWhere = 'star' | 'pen' | StoredWhere
+
+export interface Owned {
+  where: OwnedWhere
+  index: number
+  monster: Monster
+}
+
+/** Finds any monster this ranch owns by id (the Memorial is not owned). */
+export function findOwned(state: GameState, id: string): Owned | null {
+  if (state.monster?.id === id) return { where: 'star', index: 0, monster: state.monster }
+  const p = state.ranchmates.findIndex((r) => r.monster.id === id)
+  if (p >= 0) return { where: 'pen', index: p, monster: state.ranchmates[p]!.monster }
+  return findStored(state, id)
+}
+
+/** Every owned monster's id: the star, the pens, the Freezer and the Elder Grove. */
+export function ownedIds(state: GameState): Set<string> {
+  const ids = new Set<string>()
+  if (state.monster) ids.add(state.monster.id)
+  for (const r of state.ranchmates) ids.add(r.monster.id)
+  for (const m of state.freezer) ids.add(m.id)
+  for (const m of state.elderGrove) ids.add(m.id)
+  return ids
+}
+
+/** Friendships last while both monsters are owned: passing, being freed or fused ends them (§6.11). */
+export function pruneFriendshipsMut(state: GameState): void {
+  if (state.friendships.length === 0) return
+  const ids = ownedIds(state)
+  state.friendships = state.friendships.filter((f) => ids.has(f.a) && ids.has(f.b))
 }
 
 /** A cup, a Journey, a waiting Trial or an expedition keeps the active monster where it is. */
@@ -95,7 +135,7 @@ export type SendRefusal = 'full' | 'duplicate'
 /** Sends a monster (a Lab creation, a newborn) into the Freezer. Its id must be new to this ranch. */
 export function sendToFreezer(input: GameState, m: Monster): { state: GameState; refused: SendRefusal | null } {
   if (freezerFull(input)) return { state: input, refused: 'full' }
-  if (findStored(input, m.id) || input.monster?.id === m.id) return { state: input, refused: 'duplicate' }
+  if (ownedIds(input).has(m.id)) return { state: input, refused: 'duplicate' }
   const state = structuredClone(input)
   state.freezer.push(structuredClone(m))
   recordInEncyclopedia(state, m)
@@ -127,6 +167,7 @@ export function releaseStored(input: GameState, id: string): GameState {
   if (!found) return input
   const state = structuredClone(input)
   ;(found.where === 'freezer' ? state.freezer : state.elderGrove).splice(found.index, 1)
+  pruneFriendshipsMut(state)
   return state
 }
 
@@ -175,9 +216,16 @@ export function trainedGains(m: Monster): Stats {
   return out
 }
 
-export function heartstoneFrom(m: Monster, week: number): Heartstone {
+/**
+ * The Heartstone a monster leaves. Its id is `hs-<monster id>`, made unique against the stones already on the shelf
+ * (`-2`, `-3`…): since v16 a monster can come home and leave a second stone one day.
+ */
+export function heartstoneFrom(m: Monster, week: number, shelf: readonly Pick<Heartstone, 'id'>[] = []): Heartstone {
+  const taken = new Set(shelf.map((h) => h.id))
+  let id = `hs-${m.id}`
+  for (let n = 2; taken.has(id); n++) id = `hs-${m.id}-${n}`
   return {
-    id: `hs-${m.id}`,
+    id,
     donorId: m.id,
     donorName: m.name,
     donorBreed: m.mainBreed,
@@ -205,16 +253,16 @@ export function canReceiveHeartstone(m: Monster): { ok: true } | { ok: false; re
 
 export type GiveRefusal = 'noStone' | 'noTarget' | ReceiveRefusal
 
-/** Gives a stored Heartstone to the active monster (or a stored one by id). */
+/** Gives a stored Heartstone to the active monster (or any owned one by id: a ranch-mate, a frozen one, an Elder). */
 export function giveHeartstone(input: GameState, stoneId: string, targetId?: string): { state: GameState; refused: GiveRefusal | null; grant: Stats | null } {
   const stone = input.heartstones.find((h) => h.id === stoneId)
   if (!stone) return { state: input, refused: 'noStone', grant: null }
-  const target = targetId ? (findStored(input, targetId)?.monster ?? (input.monster?.id === targetId ? input.monster : null)) : input.monster
+  const target = targetId ? (findOwned(input, targetId)?.monster ?? null) : input.monster
   if (!target) return { state: input, refused: 'noTarget', grant: null }
   const can = canReceiveHeartstone(target)
   if (!can.ok) return { state: input, refused: can.reason, grant: null }
   const state = structuredClone(input)
-  const found = targetId ? (findStored(state, targetId)?.monster ?? state.monster!) : state.monster!
+  const found = targetId ? findOwned(state, targetId)!.monster : state.monster!
   // Heartstone points are trained points: they stop at each stat's grade cap (v1.11). The grant is what landed.
   const grant = heartstoneGrant(stone)
   for (const k of STAT_KEYS) grant[k] = addTrained(found, k, grant[k])
@@ -244,12 +292,25 @@ export function concludeLife(input: GameState, epitaph: string): ConcludeResult 
   const state = structuredClone(input)
   const m = state.monster!
   const cause: MemorialCause = state.ended!
+  const kept = retireToMemorialMut(state, m, cause, epitaph)
+  clearRanch(state)
+  pruneFriendshipsMut(state)
+  return { state, cause, ...kept }
+}
+
+/**
+ * The end of a life, wherever it was lived (the star's Farewell, or a ranch-mate's quiet passing in the week): the
+ * monster joins the Memorial with its epitaph (and the Elder Grove when it retired), leaves a Heartstone if there is
+ * room, the Vigil is called and the oldest record checked. The caller takes the monster out of its old place and
+ * then prunes friendships. Mutates `state`.
+ */
+export function retireToMemorialMut(state: GameState, m: Monster, cause: MemorialCause, epitaph: string): { heartstone: Heartstone | null; heartstoneLost: boolean } {
   state.memorial.unshift({ monster: structuredClone(m), cause, epitaph: epitaph.trim().slice(0, 80), week: state.week })
   if (cause === 'retired') state.elderGrove.push(structuredClone(m))
   let heartstone: Heartstone | null = null
   let heartstoneLost = false
   if (state.heartstones.length < heartstoneCap(state)) {
-    heartstone = heartstoneFrom(m, state.week)
+    heartstone = heartstoneFrom(m, state.week, state.heartstones)
     state.heartstones.unshift(heartstone)
   } else heartstoneLost = true
   // CONTENT §11: Sister Mara's Lantern Vigil follows any natural death or retirement, with the next week 1.
@@ -258,8 +319,7 @@ export function concludeLife(input: GameState, epitaph: string): ConcludeResult 
     state.records.oldestWeeks = m.ageWeeks
     state.records.oldestName = m.name
   }
-  clearRanch(state)
-  return { state, cause, heartstone, heartstoneLost }
+  return { heartstone, heartstoneLost }
 }
 
 /** Edits a Memorial entry's name and epitaph in place (§16). */
@@ -311,7 +371,7 @@ export type AdoptRefusal = 'busy' | 'full' | 'duplicate' | 'ended'
 export function adopt(input: GameState, m: Monster): { state: GameState; refused: AdoptRefusal | null } {
   if (input.ended) return { state: input, refused: 'ended' }
   if (ranchBusy(input)) return { state: input, refused: 'busy' }
-  if (findStored(input, m.id) || input.monster?.id === m.id) return { state: input, refused: 'duplicate' }
+  if (ownedIds(input).has(m.id)) return { state: input, refused: 'duplicate' }
   if (input.monster && freezerFull(input)) return { state: input, refused: 'full' }
   const state = structuredClone(input)
   if (state.monster) state.freezer.push(state.monster)

@@ -13,8 +13,9 @@ import { acceptStormChase } from './unlocks.ts'
 import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
 import { bondCharmId, canEnterSite, isJourneyDone, isSiteOpen, journeyCost, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
 import { elderMentorFor, monthIndexOf } from './legacy.ts'
+import { calmHerdMut, feedHerdMut, tickHerdMut, type MateReport } from './herd.ts'
 import { addCondition } from './monster.ts'
-import type { Rng } from './rng.ts'
+import { createRng, type Rng } from './rng.ts'
 import type { GameState, WeekAction } from './state.ts'
 import { applyReaction, denyRequest, playMonster, resolveDrill, restMonster, rollRequest, type DrillOutcome, type DrillResult, type MonsterRequest, type Reaction } from './training.ts'
 
@@ -32,7 +33,8 @@ export type WeekPhase = 'startOfWeek' | 'requestCheck' | 'action' | 'endOfWeek'
 
 export type WeekEvent =
   | { kind: 'phase'; phase: WeekPhase }
-  | { kind: 'food'; food: FoodId; relation: FoodRelation; bored: boolean; effect: FoodEffect; price: number }
+  /** The star's food (relation, boredom, effect); `price` is the whole ranch's bill for `mouths` monsters (v16). */
+  | { kind: 'food'; food: FoodId; relation: FoodRelation; bored: boolean; effect: FoodEffect; price: number; mouths: number }
   | { kind: 'charm'; stress: number }
   | { kind: 'upgradeOffer' }
   | { kind: 'request'; request: MonsterRequest }
@@ -78,6 +80,8 @@ export type WeekEvent =
   | { kind: 'expeditionWeek'; weekNo: number }
   | { kind: 'expeditionHome'; site: ExpeditionSiteId }
   | { kind: 'titles'; titles: string[] }
+  /** §6.11 the ranch-mates' week (after the star's); only present when there is a herd. */
+  | { kind: 'herd'; reports: MateReport[] }
 
 export interface StartWeekResult {
   state: GameState
@@ -98,9 +102,10 @@ export function startWeek(input: GameState, rng: Rng, food?: FoodId): StartWeekR
     const fed = applyMonthlyFood(m, state.foodChoice)
     m = fed.monster
     // §9: food is an expense; the Guild Loan covers it when money runs out, so it is never refused.
-    const price = FOOD_BY_ID[state.foodChoice].price
+    // v16: one food for the whole ranch, price × mouths (the ranch-mates eat too; no randomness).
+    const price = FOOD_BY_ID[state.foodChoice].price + feedHerdMut(state)
     state.money -= price
-    events.push({ kind: 'food', food: state.foodChoice, relation: fed.relation, bored: fed.bored, effect: fed.effect, price })
+    events.push({ kind: 'food', food: state.foodChoice, relation: fed.relation, bored: fed.bored, effect: fed.effect, price, mouths: 1 + state.ranchmates.length })
     const comfort = charmValue(state.inventory, 'comfort')
     if (comfort > 0) {
       m.stress = addCondition(m.stress, -comfort)
@@ -109,6 +114,7 @@ export function startWeek(input: GameState, rng: Rng, food?: FoodId): StartWeekR
   }
   if (state.upgrades.cozyBarn) m.stress = addCondition(m.stress, -UPGRADES.cozyBarnStress)
   if (state.upgrades.tidePool && seasonOf(dateOf(state.week).month) === 'Summer') m.stress = addCondition(m.stress, -UPGRADES.tidePoolSummerStress)
+  calmHerdMut(state)
   if (isUpgradeOfferWeek(state.week)) events.push({ kind: 'upgradeOffer' })
   state.monster = m
 
@@ -140,13 +146,20 @@ export function respondToRequest(input: GameState, request: MonsterRequest, acce
   return { state, forcedAction: null, events }
 }
 
-/** A free action: use items from the Bag at any time. Honors the optional one-per-week rule. */
-export function useItemInGame(input: GameState, itemId: string, qty: number, stat?: StatKey): { state: GameState; used: number; result: UseItemResult | null } {
+/**
+ * A free action: use items from the Bag at any time, on the star or (v16) a ranch-mate by id. Honors the optional
+ * one-per-week rule, which counts for the whole ranch.
+ */
+export function useItemInGame(input: GameState, itemId: string, qty: number, stat?: StatKey, targetId?: string): { state: GameState; used: number; result: UseItemResult | null } {
   if (!input.monster) return { state: input, used: 0, result: null }
-  const r = useItem(input.monster, input.inventory, itemId, qty, { stat, onePerWeek: input.settings.onePerWeek, usedThisWeek: input.itemsUsedThisWeek })
+  const mate = targetId !== undefined && targetId !== input.monster.id ? input.ranchmates.findIndex((r) => r.monster.id === targetId) : -1
+  if (targetId !== undefined && targetId !== input.monster.id && mate < 0) return { state: input, used: 0, result: null }
+  const target = mate >= 0 ? input.ranchmates[mate]!.monster : input.monster
+  const r = useItem(target, input.inventory, itemId, qty, { stat, onePerWeek: input.settings.onePerWeek, usedThisWeek: input.itemsUsedThisWeek })
   if (r.used === 0) return { state: input, used: 0, result: r }
   const state = structuredClone(input)
-  state.monster = r.monster
+  if (mate >= 0) state.ranchmates[mate]!.monster = r.monster
+  else state.monster = r.monster
   state.inventory = r.inventory
   state.itemsUsedThisWeek += r.used
   return { state, used: r.used, result: r }
@@ -311,7 +324,12 @@ export function reactToDrill(input: GameState, outcome: DrillOutcome, reaction: 
   return state
 }
 
-/** Phase 4: aging, checks, next week's weather, autosave; then the calendar moves on. */
+/**
+ * Phase 4: aging, checks, next week's weather, autosave; then the calendar moves on. v16: then the herd's week
+ * (§6.11), only when there are ranch-mates, from a sub-stream seeded by ONE number from the game's RNG. With no
+ * ranch-mates nothing more is drawn, so every one-monster game is exactly as before; with them, the star's week
+ * (and next week's weather) is the same as without, and only the following weeks see the one extra draw.
+ */
 export function endWeek(input: GameState, rng: Rng): { state: GameState; events: WeekEvent[] } {
   const state = structuredClone(input)
   const events: WeekEvent[] = [{ kind: 'phase', phase: 'endOfWeek' }]
@@ -336,6 +354,15 @@ export function endWeek(input: GameState, rng: Rng): { state: GameState; events:
   state.week += 1
   state.weather = rollWeather(rng, dateOf(state.week).month)
   events.push({ kind: 'weather', weather: state.weather })
+  if (state.ranchmates.length > 0) {
+    const reports = tickHerdMut(state, createRng(rng.nextU32()))
+    events.push({ kind: 'herd', reports })
+    // The ranch-mates' breakdown fees join the ranch's one fee line.
+    const fees = reports.reduce((sum, r) => sum + r.fees, 0)
+    const line = events.find((e) => e.kind === 'fees')
+    if (line && line.kind === 'fees') line.amount += fees
+    else if (fees > 0) events.push({ kind: 'fees', amount: fees })
+  }
   events.push({ kind: 'autosave' })
   return { state, events }
 }

@@ -814,8 +814,59 @@ export const DISTRACTION_POINTS: readonly (readonly [number, number])[] = [
 
 /* ---------- M6: legacy (GAME_DESIGN §14.1, §15, §16, §7) ---------- */
 
-/** §16 the Freezer. */
-export const FREEZER = { slots: 20 } as const
+/**
+ * §16 the Freezer: `slots` (`deepSlots` with the farm's Deep Freezer). `hardMax` is the most a save keeps: only the
+ * v16 homecoming may fill past the slots, and a reload never drops those extras.
+ */
+export const FREEZER = { slots: 20, deepSlots: 30, hardMax: 120 } as const
+
+/**
+ * §6.11 the herd: ranch-mates live on standing orders beside the star. They rest by themselves at these levels (or
+ * when sick, injured, or ordered to a Training Yard drill without the Yard), earn this share of a drill's pay, and a
+ * new ranch-mate starts on this order.
+ */
+export const HERD = {
+  autoRest: { fatigue: 60, stress: 50 },
+  payPct: 50,
+  defaultOrder: 'play' as const,
+} as const
+
+/**
+ * §6.11 friendships (their weekly growth and effects arrive in v1.21.0): points per week together (+ Play, + the
+ * Campfire Circle), the cap, the tiers (Friends, Close, Best), the weekly calm by the best friend's tier, the training
+ * partner's bonus on good drills, and the most pairs a save keeps.
+ */
+export const FRIENDS = {
+  perWeek: 1,
+  playBonus: 1,
+  campfireBonus: 1,
+  maxPoints: 100,
+  tiers: [12, 36, 72] as readonly number[],
+  stressByTier: [1, 1, 2] as readonly number[],
+  buddyGain: 2,
+  maxPairs: 400,
+} as const
+
+/**
+ * §6.11 / §9.1 the farm level. `levelXp[i]` is the XP that reaches level i + 1 (levels 1–10). Weekly XP: the star and
+ * each ranch-mate; once per new achievement: a title, a cup won, a Journey, an expedition, a breed, a breeder rank.
+ * Pens add to `basePens` (CONTENT §11 prices and levels in data/farm.ts); the Feed Shed feeds ranch-mates at
+ * `feedShedPct` of the price. `perksLive` stays off until v1.21.0 shows the farm card.
+ */
+export const FARM = {
+  basePens: 1,
+  levelXp: [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200] as readonly number[],
+  xp: { star: 2, mate: 1, title: 20, cup: 10, journey: 5, expedition: 15, breed: 5, rank: 30 },
+  maxXp: 100_000_000,
+  feedShedPct: 60,
+  perksLive: false,
+} as const
+
+/**
+ * §6.10 the v16 homecoming: a runaway coming home gets at least `minWeeksLeft` weeks of life, and its stress is
+ * brought down to `stress` at most.
+ */
+export const HOMECOMING = { minWeeksLeft: 24, stress: 20 } as const
 
 /** §15 Fusion at Dr. Pell's Lab. */
 export const FUSION = {

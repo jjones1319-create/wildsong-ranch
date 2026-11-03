@@ -14,6 +14,7 @@ import { newId } from '../lib/ids.ts'
 import { navigate } from '../router.ts'
 import { showToast, upsertEntry } from '../store/appStore.ts'
 import { concludeLife, game } from '../store/gameStore.ts'
+import { WhoNext } from './ranch/WhoNext.tsx'
 
 const EPITAPH_MAX = 80
 
@@ -49,11 +50,15 @@ export function FarewellScreen() {
           <p>{fill(retired ? t.elderNow : wild ? t.wildNow : t.restsNow, { name })}</p>
           {result.heartstone ? <p class="notice notice--ok">{fill(t.heartstone, { name })}</p> : result.heartstoneLost ? <p class="notice">{fill(t.heartstoneLost, { n: heartstoneCap(result.state) })}</p> : null}
         </section>
+        {/* v16: ranch-mates waiting in their pens can step up now; Later leaves the ranch empty. */}
+        <WhoNext g={g} onPicked={() => navigate('ranch')} onLater={() => navigate('ranch')} />
         <div class="spacer" />
         <div class="actionbar actionbar--stack">
-          <button type="button" class="btn btn--primary" onClick={() => navigate('ranch')}>
-            {t.backToRanch}
-          </button>
+          {g.ranchmates.length === 0 && (
+            <button type="button" class="btn btn--primary" onClick={() => navigate('ranch')}>
+              {t.backToRanch}
+            </button>
+          )}
           <button type="button" class="btn" onClick={() => navigate('pell')}>
             {t.visitPell}
           </button>

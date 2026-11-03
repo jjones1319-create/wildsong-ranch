@@ -18,10 +18,13 @@ export function updateRecordsMut(state: GameState): void {
   if (m) {
     // Older saves never wrote their first monster into the Encyclopedia; the weekly pass catches that up.
     recordInEncyclopedia(state, m)
-    const total = totalStats(m.stats)
+  }
+  // The best total counts the star and the ranch-mates (they train too, §6.11).
+  for (const k of [...(m ? [m] : []), ...state.ranchmates.map((x) => x.monster)]) {
+    const total = totalStats(k.stats)
     if (total > r.bestTotal) {
       r.bestTotal = total
-      r.bestTotalName = m.name
+      r.bestTotalName = k.name
     }
   }
   for (const k of knownMonsters(state)) {

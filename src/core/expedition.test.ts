@@ -3,6 +3,7 @@ import { EXPEDITION_SITES, EXPEDITION_SITE_BY_ID } from '../data/expeditions.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
 import { EXPEDITION } from '../data/tuning.ts'
 import { EXPEDITION_SITE_IDS, STAT_KEYS, type ExpeditionSiteId, type Stats } from '../data/types.ts'
+import { newRanchmate } from './creation.ts'
 import { weekIndexOf } from './calendar.ts'
 import { buildMap, canStartExpedition, detour, expeditionMap, fogLostPct, movesFrom, moveTo, retreat, spineCost, staminaFor, startExpedition, turnBack, type ExpeditionMap } from './expedition.ts'
 import { actionMenu, beginWeek, chooseAction, finishWeek } from './game.ts'
@@ -288,8 +289,9 @@ describe('the special stops (CONTENT §8, §11)', () => {
       expect(third.expedition!.keyFound).toBe('lootlid')
       const home = retreat(third).state
       expect(home.unlocked).toContain('lootlid')
-      expect(home.expedition!.lootlidPlaced).toBe('freezer')
-      expect(home.freezer.map((m) => m.mainBreed)).toEqual(['lootlid'])
+      // v16: a free pen first (the star is on the trip).
+      expect(home.expedition!.lootlidPlaced).toBe('pen')
+      expect(home.ranchmates.map((r) => r.monster.mainBreed)).toEqual(['lootlid'])
     }
 
     const awake = onMap('thornwood-ruins', 5, thresholdStats('thornwood-ruins', { LIF: 400 }), 3)
@@ -299,9 +301,15 @@ describe('the special stops (CONTENT §8, §11)', () => {
     expect(again.expedition!.loot.length).toBeGreaterThan(0)
   })
 
-  it('a Lootlid with nowhere to go still wakes the breed', () => {
+  it('a Lootlid goes to the Freezer when the pens are full, and with nowhere to go still wakes the breed', () => {
+    const p = onMap('thornwood-ruins', 8, thresholdStats('thornwood-ruins', { LIF: 400 }), 3)
+    p.ranchmates = [newRanchmate(makeMonster({ id: 'pen1' }))]
+    const frozen = retreat(walkSpine(p, createRng(1))).state
+    expect(frozen.expedition!.lootlidPlaced).toBe('freezer')
+    expect(frozen.freezer.map((m) => m.mainBreed)).toEqual(['lootlid'])
     const s = onMap('thornwood-ruins', 8, thresholdStats('thornwood-ruins', { LIF: 400 }), 3)
     s.freezer = Array.from({ length: 20 }, (_, i) => makeMonster({ id: `f${i}` }))
+    s.ranchmates = [newRanchmate(makeMonster({ id: 'pen1' }))]
     const home = retreat(walkSpine(s, createRng(1))).state
     expect(home.unlocked).toContain('lootlid')
     expect(home.expedition!.lootlidPlaced).toBe('none')

@@ -46,7 +46,7 @@ const UNLOCK_TITLES: readonly (readonly [TitleId, BreedId])[] = [
 
 /** Every monster this ranch remembers. */
 export function knownMonsters(state: GameState): Monster[] {
-  return [...(state.monster ? [state.monster] : []), ...state.freezer, ...state.elderGrove, ...state.memorial.map((e) => e.monster), ...state.hallOfFame.map((h) => h.monster)]
+  return [...(state.monster ? [state.monster] : []), ...state.ranchmates.map((r) => r.monster), ...state.freezer, ...state.elderGrove, ...state.memorial.map((e) => e.monster), ...state.hallOfFame.map((h) => h.monster)]
 }
 
 /** How much of its breed's nominal lifespan a monster has lived, in percent. */

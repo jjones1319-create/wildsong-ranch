@@ -1,3 +1,4 @@
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { useMemo, useState } from 'preact/hooks'
 import type { AwakenResult } from '../../../core/creation.ts'
 import { findStored } from '../../../core/legacy.ts'
@@ -134,7 +135,7 @@ export function ShrineScreen() {
               </div>
               <p class="center muted">{variantNameOf(result.monster)}</p>
               <SpeakerCard speaker={t.mara} tone="muted">
-                <p>{fill(result.placed === 'ranch' ? t.bornRanch : t.bornFreezer, { name: result.monster.name })}</p>
+                <p>{fill(result.placed === 'ranch' ? t.bornRanch : result.placed === 'pen' ? HERD_TEXT.placed.pen : t.bornFreezer, { name: result.monster.name })}</p>
               </SpeakerCard>
               <div class="spacer" />
               <div class="actionbar actionbar--stack">
@@ -205,7 +206,7 @@ export function ShrineScreen() {
                     onClick={() => {
                       const r = wakeStone(i)
                       if (!r || r.refused) showToast(r?.refused === 'freezerFull' ? t.freezerFull : UI_TEXT.pellLab.freezeBusy)
-                      else showToast(fill(r.placed === 'ranch' ? t.bornRanch : t.bornFreezer, { name: r.monster!.name }))
+                      else showToast(fill(r.placed === 'ranch' ? t.bornRanch : r.placed === 'pen' ? HERD_TEXT.placed.pen : t.bornFreezer, { name: r.monster!.name }))
                     }}
                   >
                     {awake ? t.wake : t.stillAsleep}

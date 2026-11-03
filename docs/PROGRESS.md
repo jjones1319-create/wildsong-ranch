@@ -2,6 +2,51 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Ranch-mates and the homecoming (2026-11-03) · v1.20.0
+
+The owner: "make the ranch be able to hold more than 1 monster, start with 2 and as your farm grows levels you can hold more and set training or free them"; then "bring back any monsters that ran away… this is a one time thing". They chose "one star, others on orders… and they can grow closer together", and farm levels by experience where "some things can be bought and others need it to be leveled". Plan: BUILD_PLAN "Ranch-mates and the farm"; design GAME_DESIGN §6.11.
+
+**Live:**
+- **Two monsters on the ranch:**
+  - the **star** plays the whole week as before;
+  - a **ranch-mate** in a pen trains, rests or plays on a standing order, rests by itself when tired, sick or stressed, eats the month's food and ages alongside.
+- **The herd strip** under the stage: tap a ranch-mate for its sheet (orders, Monster Card, ✏️ Edit, ⭐ Make star, ❄️ To the Freezer, 🕊️ Set free). An empty pen's "+" moves a monster in from the Freezer.
+- **Who uses an item:** the Bag and the Songbook have a "For:" chooser. The Monster Card shows any monster on the ranch.
+- **The one-time homecoming:**
+  - every monster that ever ran away (the away clock's "Left alone" or "Went back to the wild") comes home, exactly as it was;
+  - one nearly out of life gets 24 weeks back;
+  - a "Welcome home!" card says where each one went (the ranch, a pen, or the Freezer when the pens are full).
+- **When the star's life ends** with ranch-mates at home: "Who will you raise next?".
+- **New monsters** go to an empty ranch, then a free pen, then the Freezer.
+- **The food prompt** shows how many mouths it feeds and the total.
+- **Week summary:** only a ranch-mate's notable news (illness, running off, Prime, a passing). Routine results are badges on the strip.
+
+**Done**
+- **Core:** `core/herd.ts`, `herdMoves.ts`, `farm.ts` (XP counts silently until v1.21), `homecoming.ts`; ranch → pen → Freezer placement; targets for items and Songsheets.
+- **Save v16:** the migration; `tidyGame` (unique ids across the ranch, the Freezer holds up to 120 so homecoming extras survive); the homecoming runs once in `validateSave`.
+- **The random sub-stream rule (GAME_DESIGN §3):** with no ranch-mates nothing extra is drawn. **The golden record, lifeSim, breedLives, raiseSim and cupSim are unchanged.**
+- **UI:** `HerdStrip`, `HerdSheet`, `PenSheet`, `FreeSheet`, `HomecomingCard`, `MateGoodbye`, `WhoNext`, `TargetChips`; Pell's Lab (Freezer count, "Move to a pen", "Set free", the Memorial's "Set free" cause); placement text for pens.
+- **Tests:**
+  - herd, herdMoves, farm, farmPerks, homecoming, and save v16;
+  - the placement tests now expect `'pen'`;
+  - **e2e `herd.spec.ts`** (Pixel 7 and iPhone 14 profiles): a runaway comes home, the strip, a sheet, making a ranch-mate the star. Screenshots go to art-review/herd/.
+- **Docs:** GAME_DESIGN §2, §3, §6.10, §6.11, §14.1, §15, §16, §19, §20, §21, §28; CONTENT §11 and §15.
+
+**Decisions** (the owner delegates details):
+- the away clock is for the star only;
+- one food for the ranch (price × mouths);
+- ranch-mates earn half the chore pay;
+- a ranch-mate's passing gets a gentle card, not a Farewell;
+- returnees leave the Memorial (they're alive again; their Heartstones and titles stay);
+- Classic's one item per week stays ranch-wide.
+
+**Known issues**
+- **At 360 px**, the herd strip pushes Wren's bubble partly under the action bar. The ranch scrolls, but it's snug.
+- **Capacity is fixed** at the star + 1 until pens can be bought (v1.21).
+- **Farm perks are wired but off** (`FARM.perksLive`) until v1.21, so long-time players don't silently get them early.
+
+**Next (v1.21.0):** growing the farm (the farm card, pens to buy, level perks, level-ups) and friendships. Then the owner's order: Battle 3D attack visuals and 20% faster attacks, 3D for every breed, and the 3D duel as the real battle.
+
 ## Battle 3D feel: attacks that visibly reach (2026-11-02) · v1.19.0
 
 The owner: "the battles feel clunky… I do not think I could ever beat my opponent if I took it over as the attacks do not seem to land… something is slightly off with the manual battles."

@@ -1,3 +1,4 @@
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { signal } from '@preact/signals'
 import { dateOf } from '../../../core/calendar.ts'
 import { encyclopediaRows, journeysDone, titleRows, variantRows } from '../../../core/journal.ts'
@@ -118,7 +119,7 @@ function StonesPage() {
                 onClick={() => {
                   const r = wakeStone(i)
                   if (!r || r.refused) showToast(r?.refused === 'freezerFull' ? s.freezerFull : UI_TEXT.pellLab.freezeBusy)
-                  else showToast(fill(r.placed === 'ranch' ? s.bornRanch : s.bornFreezer, { name: r.monster!.name }))
+                  else showToast(fill(r.placed === 'ranch' ? s.bornRanch : r.placed === 'pen' ? HERD_TEXT.placed.pen : s.bornFreezer, { name: r.monster!.name }))
                 }}
               >
                 {awake ? s.wake : s.stillAsleep}

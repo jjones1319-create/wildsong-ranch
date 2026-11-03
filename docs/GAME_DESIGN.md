@@ -56,6 +56,7 @@ Shrine / Market ─► NEW MONSTER
  │             · Tournament (if held) · Expedition (if invited)   │
  │ optional: one item · free town visits                          │
  │ end of week: aging, condition checks, autosave                 │
+ │ ranch-mates: their orders, food and aging (§6.11) · farm XP    │
  └────────────────────────────────────────────────────────────────┘
         │ repeat ~250–480 weeks
         ▼
@@ -64,6 +65,8 @@ Shrine / Market ─► NEW MONSTER
         ▼
  Freezer & Fusion → stronger next generation → Crowns → Legend Cup → Hall of Fame
 ```
+
+**The herd (v16, §6.11).** The ranch holds more than one monster. The **star** plays the whole week above, exactly as a lone monster always has. The **ranch-mates** in their pens train, rest or play on standing orders, eat the month's food and age alongside, without asking for a tap. The player can make any ranch-mate the star in any week, and set one free. Every week, and every achievement, earns the farm XP; farm levels open pens to buy and bring perks (§9.1).
 
 **Session targets (phone):**
 - A normal week takes 1–3 taps and under 10 seconds with animations skipped.
@@ -81,19 +84,21 @@ Shrine / Market ─► NEW MONSTER
 
 **Order of operations for each week (strict; unit-test this order):**
 1. **Start of week.**
-   - In week 1: monthly food prompt (defaults to last month's choice), passive charm effects, ranch-upgrade offer (May week 4 only).
+   - In week 1: monthly food prompt (defaults to last month's choice), passive charm effects, ranch-upgrade offer (May week 4 only). One food feeds the whole ranch: it costs its price for each mouth, the star and every ranch-mate (each still likes or dislikes it on its own; v16, §6.11). The Cozy Barn and the Tide Pool calm the ranch-mates too.
    - Deliver mail: event notices, invitations, rumors, sale notices.
 2. **Request check** (§6.7).
 3. **The player picks ONE action:** Light drill, Heavy drill, **Bond** (fetch, hide-and-seek or a shopping trip; §6.9), Rest, Journey (takes 4 weeks), Tournament (if one is held this week and the monster is eligible), or Expedition (if invited).
 4. **Resolve the action.** Drills trigger the praise/scold prompt.
 5. **Items.** Use **as many items as you like**, any time during the week (a free action). The optional **One item per week** rule (in Settings; on by default only in Classic difficulty) restores the old-school limit.
-6. **End of week.** Aging tick (§7), illness and breakdown checks (§6.6), weather roll for next week, **autosave**.
+6. **End of week.** Aging tick (§7), illness and breakdown checks (§6.6), weather roll for next week, then the ranch-mates' week (§6.11), then **autosave**.
+   - **The random sub-stream rule (v16).** The ranch-mates never draw from the game's random stream directly. Only when there is at least one ranch-mate, the end of the week draws **one** number from it, after the star's tick and the weather, and seeds a separate stream for the whole herd. With no ranch-mates nothing more is drawn, so a one-monster game (and every seeded test, sim and the golden record) is exactly as before; with them, the star's week and next week's weather are unchanged, and only later weeks see the one extra draw.
+   - The farm's XP for the week (§9.1) is added by the turn controller after the week ends; it uses no randomness.
 
 **Free actions (never use a turn):** town visits (Shop, Market, Shrine, Lab, Guild), reading info, the Journal, using items (any number), learning techniques from Songsheets, editing in the Monster Lab, settings, saving and loading, Odd Jobs (each job pays once per week; §9), and petting your monster or giving it a treat when it says hello (§6.10).
 
 **Planner** (SHOULD):
 - Queue up to 8 weeks of actions (drills and rests). Queued drills get no praise or scold, and a month start keeps last month's food.
-- Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
+- Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, notable news from the pens (a ranch-mate falls ill, runs off or collapses, comes back, reaches Prime or learns its Signature, gets a 48- or 10-weeks-left warning, or passes away; v16), or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
 - A "Repeat last week" button sits on the ranch screen.
 
 **Calendar screen** (SHOULD; `core/calendarView.ts`, `screens/ranch/Calendar.tsx`):
@@ -425,8 +430,34 @@ Real time is measured in the UI (core never reads the clock): the save is writte
 
 - **Vacation mode** (Settings → This ranch) turns the away check off; turning it off restarts the clock.
 - **The clock starts fresh** on a save's first launch of v1.9 (Wren explains the rule first: the `awayRule` tip), for a new game, after an import, and after Vacation mode. An old save is never punished on its first launch, and a clock that runs backwards counts as no time.
-- It applies only to the active monster on the ranch (frozen monsters sleep). A return during a battle is checked when the ranch shows again. The consequences apply before the scene plays, so closing the app mid-scene changes nothing.
+- It applies only to the star (frozen monsters sleep, and the ranch-mates in their pens are looked after, §6.11). A return during a battle is checked when the ranch shows again. The consequences apply before the scene plays, so closing the app mid-scene changes nothing.
 - **Scenes:** Blender-rendered scenery clips (`tools/blender/`, `public/baked/scenes/`) with the monster drawn over them in code; tap to skip; with Reduce motion, or offline before a clip is cached, a still picture. Settings → Sandbox → *Preview arrival scenes* plays each one with nothing changed.
+- **The homecoming (v16, once; numbers in `tuning.ts` `HOMECOMING`, tested; `core/homecoming.ts`).** Every monster that ran off because of the away clock ("Gone": `neglected`, or `wandered` on Gentle) comes home, exactly as it was, because the Memorial kept the whole monster. It runs once, from the save validator after the tidy (the one path every load and import takes), while `homecoming.status` is `due` (a v15 save's migration sets it; a new game or a broken value is `done`, so it can never repeat). It is pure and deterministic.
+  1. **A runaway still waiting for its Farewell** (`ended` is a runaway) is cancelled: it stays as the star.
+  2. **The Memorial wall**, newest first: for each monster id only its newest entry counts, and it comes home when that entry is a runaway and the id isn't owned. It takes the empty ranch (as the star), else a free pen, else the Freezer up to `FREEZER.hardMax` (past the usual slots); past that it stays on the wall, never lost.
+  3. **Each returnee** has its illness, missing, clinic (and cocoon) timers cleared, fatigue 0, stress at most 20, at least 24 weeks of life (when it had fewer), and its lifespan warnings set again to match.
+  4. **Returnees leave the Memorial** (they are alive again; an exception to "never deleted"). Their Heartstones and titles stay. Old-age passings, retirements, fusions and "Set free" entries are left alone.
+  5. **Then:** the farm is seeded from the save's history (§9.1), Ines writes a letter when anyone came home, the away clock is un-armed (it starts fresh at the next launch, so nobody can run off again at once), and the welcome card lists who came home and where they are.
+
+### 6.11 The herd: ranch-mates on orders (v16; numbers in `tuning.ts` `HERD`, tested; `core/herd.ts`, `core/herdMoves.ts`)
+
+- **One star, the others on orders.** The star (`GameState.monster`) keeps the whole week of §3, and every star-only system stays as it was: requests, the planner, cups, Journeys, Trials, expeditions, events, the cocoon, the away clock, Bond weeks. The other monsters on the ranch are **ranch-mates** in pens (`ranchmates`), each with a standing **order**: train a drill, rest, or play (a new ranch-mate starts on Play).
+- **Capacity.** One pen at the start (`FARM.basePens`), so the ranch holds the star + 1. Bought pens add more, up to 6 ranch-mates (CONTENT §11, from v1.21.0).
+- **Where new monsters go:** an empty ranch first, then a free pen, then the Freezer (§14.1, §14.2, §15, the Lootlid, the Reefclaw).
+- **Their week** runs after the star's, from its own random sub-stream (§3). For each ranch-mate, in pen order:
+  1. **Away** while missing or at the clinic: no action.
+  2. **A rest by itself** when sick or injured, at fatigue ≥ 60 or stress ≥ 50, or when ordered to a Training Yard drill without the Yard.
+  3. **Otherwise its order.** A drill resolves as the star's would, with no praise or scold (the Farmhand perk praises good ones) and **half the pay** (`HERD.payPct`, so cheap monsters can't be farmed for gold). Rest and Play work as for the star (the Bedding charm helps the rest).
+  4. The bond boost fades, then the aging tick (§7): illness, breakdowns (their fees join the ranch's fee line), warnings, Prime. The keepsakes calm it too.
+  5. **The Signature at Prime** (§10.4), as for the star.
+  6. **The end of its life:** a gentle line in the week summary (no blocking Farewell), the Memorial entry with a default epitaph that can be edited later, a Heartstone when there is room, the Elder Grove when it retires (Gentle), and the Vigil.
+- **Food:** one monthly food for the whole ranch, price × mouths (§3); each monster's own likes and dislikes apply. The Cozy Barn and the Tide Pool calm everyone.
+- **The week summary** tells only the notable news (`mateNews`: illness, running off or collapsing and coming back, Prime and the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone; v1.21.0 adds friendship tiers and farm levels); routine results are badges on the herd strip, so a normal week stays 1–3 taps. The planner stops for the same news (§3).
+- **Make star** (any week): the star and the ranch-mate swap places, each with its edit history. The old star's pending request and event and "last week" are cleared, and it takes its last drill or rest as its standing order. Refused while a life has ended, while the ranch is busy (a cup, a Journey, a Trial, an expedition) or while a cocoon hangs in the barn. With no star (after a Farewell or "Later"), the ranch-mate simply steps onto the ranch; "Later" leaves the ranch empty and the weeks wait, as before.
+- **Moving and freeing.** A ranch-mate can go to the Freezer and a frozen monster to a free pen (Elders stay in the Grove). **Set free** works for ranch-mates and frozen monsters (the star must be swapped first): the monster leaves for good, its name goes on the Memorial ("Set free", `freed`), and it leaves no Heartstone. The UI can keep a copy in the Library first.
+- **Free actions reach them.** Items, Songsheets and forgetting take a target (the star by default); Classic's one item per week counts for the whole ranch. A young ranch-mate can take a Heartstone. ✏️ Edit works for ranch-mates, with their own history (§19).
+- **The ranch remembers them:** titles' known monsters, the grades reached (the Masquerade), the Journal's best total, and family trees (living relatives first).
+- **Friendships (coming in v1.21.0; `FRIENDS`).** Monsters living together grow closer: every pair at home gains 1 point a week (+1 if either is on Play, +1 with the Campfire Circle), up to 100. Tiers: Friends at 12, Close at 36, Best at 72. Small effects, nothing in battle: weekly stress −1, −1 or −2 by the best friend's tier, and the star's **training partner** (a Friends-or-better ranch-mate on the same drill gives +2 on good outcomes, with a line from Wren). v1.20.0 already saves the pairs and prunes them when a monster passes away, is set free or is fused.
 
 ### 6.8 Transparency setting (MUST)
 
@@ -505,11 +536,20 @@ lifespanTotal = round(breed.lifespan · 1.10)
 ## 9. Economy (MUST)
 
 - **Start:** 3,000G. The first monster is free: a Guild gift from the Market, or a Shrine creation.
-- **Income:** tournament purses (§13), chore pay (§6.1), Journey trial bonuses, selling expedition loot, and Odd Jobs.
+- **Income:** tournament purses (§13), chore pay (§6.1; ranch-mates earn half, §6.11), Journey trial bonuses, selling expedition loot, and Odd Jobs.
 - **Odd Jobs** (SHOULD): Basil's board of short mini-games (Turnip Sort, Echo Stones, Meadow Dash), each paying once per in-game week as a free action, by score with **no cap**: past the old 150G mark each job turns endless and harder (overtime, the fifth stone, faster heats). A free Practice mode replays any job without pay (CONTENT §13).
-- **Expenses:** food, items (including Stat Sweets and Songsheets), Journeys (2,000G; 1,000G in sale months), Fusion fee (1,000G), Encyclopedia re-creation (500G), ranch upgrades, breakdown fees.
+- **Expenses:** food (per mouth, §3), items (including Stat Sweets and Songsheets), Journeys (2,000G; 1,000G in sale months), Fusion fee (1,000G), Encyclopedia re-creation (500G), ranch upgrades, farm pens, breakdown fees.
 - **Money is the only limit on items**, so purses matter. Officials still pay little; regular cups and item prizes are where the rewards are.
 - **No game over for money.** If money would go below 0 the Guild Loan covers it, up to 5,000G with a 10% fee. While in debt, 50% of every prize goes to repayment and only food and Recovery items can be bought.
+
+### 9.1 The farm level (v16; numbers in `tuning.ts` `FARM`, pens and perks in CONTENT §11; `core/farm.ts`, tested)
+
+- **XP every week:** +2 for the star and +1 for each ranch-mate.
+- **XP once per achievement:** each new title +20, each cup won +10, each Journey +5, each expedition +15, each new breed in the Encyclopedia +5, each breeder rank +30. The farm keeps a tally of the counts it has already rewarded, so nothing pays twice (and counts that drop pay nothing).
+- **Levels 1–10** at 0, 100, 250, 450, 700, 1,000, 1,400, 1,900, 2,500 and 3,200 XP.
+- **A fair start** (`seedFarm`): a save from before v16 (or one whose farm fails validation) gets the XP its star would have earned (+2 for every week played) plus every achievement so far, once. A new game starts at 0 (its first breed and rank 1 are not achievements).
+- **Pens** cost gold and need a level (some things are bought, others need the level); **perks** come with a level by themselves (CONTENT §11). The breeder-rank upgrades are unchanged.
+- **Phasing:** v1.20.0 earns the XP silently (the turn controller adds it after each week; the sims' week loop doesn't) and keeps one pen; v1.21.0 shows the farm card, sells the pens, switches the perks on (`FARM.perksLive`) and sends Ines's letter at each new level.
 
 ---
 
@@ -1081,13 +1121,14 @@ So "Hello,  World!" equals "hello world".
 **Other buttons and behavior:**
 - **Randomize** generates a random phrase from a word list and shows it.
 - **Encyclopedia:** any monster ever created can be re-created for 500G.
-- **Cost:** creation is free. If a monster is already active, the new one goes to the Freezer, or the player releases one.
+- **Cost:** creation is free. A newborn takes the ranch when it is empty, else a free pen (as a ranch-mate, §6.11), else the Freezer; with no room anywhere it is refused (the player can free a slot first). v16 added the pen step.
 
 ### 14.2 Market (MUST)
 
 - Four starters are always available (Puddlepup, Tumblefox, Quillion and Pluckrex), plus one seasonal breed (CONTENT §2).
 - The first monster is free; after that 1,500G, or 2,500G for the seasonal breed.
 - Market monsters use fixed seeds (so they are the same for everyone) with zero offsets.
+- A purchase goes where a Shrine newborn would: the empty ranch, a free pen, then the Freezer (§14.1).
 
 ### 14.3 One breed per monster (MUST, v1.12)
 
@@ -1114,7 +1155,7 @@ The 23 secret variants (CONTENT §12) stay as special looks of their breed.
 ## 15. Fusion at Dr. Pell's Lab (MUST)
 
 - **Inputs:** two **frozen** monsters plus a 1,000G fee, and optionally one catalyst item.
-- **Output:** the baby goes to the Freezer, or becomes active if the ranch is empty.
+- **Output:** the baby becomes the star if the ranch is empty, else takes a free pen (v16, §6.11), else goes to the Freezer (two frozen parents free two slots for it). The parents still come from the Freezer and the Elder Grove only.
 - **The parents become Ancestors.** They move to the Memorial with a "Fused" badge and are never deleted. The baby's Monster Card shows the family tree.
 
 **Outcome odds (Fusion 2, v1.10.0).** The baby is always **one whole breed**, like every monster since v1.12 (§14.3).
@@ -1182,16 +1223,17 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 
 ## 16. Freezer, Memorial, Heartstones, Hall of Fame (MUST)
 
-- **Freezer:** 20 slots. Freezing and thawing are free and instant; time stops for frozen monsters. Frozen monsters can be used in Fusion, Versus and the Battle Lab, and can be exported.
-- **Memorial:** every monster that passed away, retired or fused. It shows:
+- **Freezer:** 20 slots (`freezerSlots`: 30 with the farm's Deep Freezer, §9.1). Freezing and thawing are free and instant; time stops for frozen monsters. Frozen monsters can be used in Fusion, Versus and the Battle Lab, can be exported, can move to a free pen, and can be set free (§6.11). Only the v16 homecoming may fill it past its slots, up to `FREEZER.hardMax` (120); a save keeps those extras on reload, and nothing new goes in until there is room again.
+- **Memorial:** every monster that passed away, retired, fused, was left alone, or was set free. It shows:
   - portrait, name and variant;
   - lifespan lived vs. total;
   - records and titles;
-  - cause (old age, fused, retired, or Classic-mode injury);
+  - cause (old age, fused, retired, left alone, went back to the wild, **Set free** (v16, `freed`), or Classic-mode injury);
   - the epitaph.
-  Name and epitaph can be edited in place. "Duplicate to edit" makes a fully editable copy in the Library; the Memorial record itself stays as it was.
+  Name and epitaph can be edited in place. "Duplicate to edit" makes a fully editable copy in the Library; the Memorial record itself stays as it was. Entries are never deleted, with one exception: a runaway that comes home in the v16 homecoming leaves the wall, because it is alive again (§6.10).
 - **Heartstone:**
-  - Created when a monster passes away or retires. At most 10 are stored (15 with the Lantern Garden).
+  - Created when a monster passes away or retires (the star at its Farewell, a ranch-mate in its last week). Nothing is left by a monster that is set free. At most 10 are stored (15 with the Lantern Garden).
+  - **Its id** is `hs-<monster id>`, made unique against the stones on the shelf (`-2`, `-3`…), because since v16 a monster that came home can one day leave a second stone.
   - It can be given to one monster aged under 48 weeks that has not received one.
   - It grants +15% of the donor's trained gains (trained points − breed base; Stat Sweets don't count, v1.11) per stat, capped at +60 per stat and at the receiver's grade caps.
   - It also grants the **Heirloom**: +3 hit for techniques of the donor's most-used family.
@@ -1256,8 +1298,10 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 - **Except:** mid-battle, on an expedition map, or while a Journey sequence is playing. The button is greyed out with a reason ("Finish the battle first").
 - **One tap gets you there:**
   - Ranch → tap your monster → Monster Card → **✏️ Edit**.
+  - A ranch-mate (v16, §6.11): tap it on the herd strip → **✏️ Edit** in its sheet, or **Card** → ✏️ Edit. Ranch-mates are never busy, so they can always be edited; each keeps its own edit history for Restore.
   - Right after creating a monster (Shrine result, Market purchase, Fusion baby): **Edit before you start**.
   - Freezer → a monster → **Edit**, or Monster Lab → Library → any monster → **Edit**.
+  - A ranch-mate's sheet or Card → **✏️ Edit** (v16, §6.11): it saves back to the pen with the ranch-mate's own edit history, exactly like the star (`replaceRanchmate`).
 - **No strings attached:** editing is free, needs no special mode, and never locks you out of anything.
 - Saving edits to your active monster updates the save slot immediately (autosave), and the ranch shows the change right away.
 
@@ -1341,6 +1385,12 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
   - Show a backup reminder every 7 real days or 8 in-game weeks (dismissible, with "Export now").
 - **Export/import a full save:** the same code, file and share paths as monsters, with `kind: "save"`.
 - **Determinism:** the RNG state is saved. Reloading an autosave and replaying the week can give a different result only if the player chooses differently. We don't fight save-scumming; it's a single-player game.
+- **Save v16 (ranch-mates and the homecoming; `save/migrate.ts`, `save/schema.ts`):**
+  - New fields: `ranchmates` (each with its monster, order, last week's result and edit history), `friendships` (sorted id pairs and points), `farm` (XP, pens bought, the achievement tally) and `homecoming` (`status`, and the `welcome` list for the card). Memorial causes gain `freed`, a Lootlid may be placed in a `pen`, and the planner may stop for `ranchmate` news.
+  - **The 15→16 step** adds the defaults before the saved game: no ranch-mates, no friendships, `farm: null` (seeded from the save's history on load), and `homecoming: due`. Monster files and Libraries only take the version bump.
+  - **Validation:** every new field falls back safely. A broken ranch-mate is dropped; a broken order becomes Play and a broken last week none; a broken farm is seeded again (a broken tally alone is rebuilt and the XP kept); a broken homecoming is `done`, so it can never run twice.
+  - **The tidy:** ids are unique across the star, the pens, the Freezer and the Grove (claimed in that order); ranch-mates past the pen capacity move to the Freezer; the Freezer keeps up to `FREEZER.hardMax`; friendships keep only owned, distinct pairs; the welcome list keeps only owned ids; and an empty ranch can't have an ended life (`ended` is cleared, which also ends an old Farewell loop).
+  - **Then the homecoming** (§6.10) runs on every load and import while it is due: `validateSave` returns `welcomeHome(tidyGame(game))`.
 
 ---
 
@@ -1356,7 +1406,7 @@ With the Fusion 2 odds, K is 0.5 for a parent's breed (35%), 0.6 and 0.7 for the
 |---|---|
 | Title | Continue · New Game · Load · Monster Lab · Settings · Credits/Disclaimer · version |
 | New Game | Breeder name, ranch name, difficulty, first monster (Market gift or Shrine) |
-| Ranch (home) | Monster on stage with idle animation and expression cues · calendar strip (date, weather, upcoming events; tap it for the Calendar; a "Next: {event} · in N wks" line, ★ for a starred one) · Wren's weekly report bubble · action bar: Train · Rest · Journey · Battle · Town · item button · "Repeat last week" |
+| Ranch (home) | Monster on stage with idle animation and expression cues · **herd strip** under the stage (v16, §6.11): ⭐ the star, each ranch-mate with its order icon (🏋️ / 💤 / 🌼) and status and last-week badges, a "+" on an empty pen; tap one for its sheet (orders, Card, ✏️ Edit, ⭐ Make star, ❄️ To the Freezer, 🕊️ Set free) · a "Welcome home!" card for the v16 homecoming · "Who will you raise next?" when the star is gone and ranch-mates live · calendar strip (date, weather, upcoming events; tap it for the Calendar; a "Next: {event} · in N wks" line, ★ for a starred one) · Wren's weekly report bubble · action bar: Train · Rest · Journey · Battle · Town · item button · "Repeat last week" |
 | Train sheet | Light and Heavy tabs. Drill cards show stat arrows, stars, odds (by transparency mode) and the bonus/liked tags |
 | Drill result | Short vignette (skippable) · banner (Great!/Success/Cheated…/Failed/Slacked off) · stat deltas · praise/scold gesture |
 | Monster Card | Portrait · stats with grade letters and bars (plus "from sweets") · life bar · condition (per transparency) · techniques (by range, mastery) · personality · records · lineage tree · buttons: **Use item** · **Learn technique** (Songbook) · **✏️ Edit** |
@@ -1511,6 +1561,6 @@ A Python prototype of §6, §7 and §12 was run before writing this spec:
 - Local 2-player Versus on one phone.
 - Online or asynchronous leagues; share codes cover friend battles for now.
 - Cloud sync.
-- A second "trainee" stall from rank B, for two active monsters.
+- ~~A second "trainee" stall from rank B, for two active monsters.~~ Delivered differently in v16 as the herd (§6.11): one star plays the full week while ranch-mates train on standing orders, and the farm level (§9.1) opens more pens.
 - Optional coach touch mini-games for drills. Each would be ≤ 15 s, skippable, at most once or twice a month, and able to move the result up by at most one tier.
 - Localization: keep all strings in `src/data/text/`.

@@ -2,6 +2,7 @@ import { PLANNER } from '../data/tuning.ts'
 import { availability } from './aging.ts'
 import { isMonthStart } from './calendar.ts'
 import { beginWeek, chooseAction, finishWeek, react } from './game.ts'
+import { mateNews } from './herd.ts'
 import type { Rng } from './rng.ts'
 import type { GameState, PlannerLogEntry, PlannerStep, PlannerStop } from './state.ts'
 import type { WeekEvent } from './week.ts'
@@ -13,8 +14,8 @@ export type { PlannerLogEntry, PlannerStep, PlannerStop } from './state.ts'
  * the same controller the ranch uses (beginWeek → chooseAction → react → finishWeek). It keeps last month's
  * food, says nothing after a drill (so it never changes balance), and stops the moment something needs the
  * player: before a week on a request, a pending event, a trial or new mail (invitations included); after a
- * week on illness, a breakdown, a lifespan warning, a forced rest, the Signature, a grow-up, prime, or
- * fatigue / stress at the PLANNER thresholds. Ordinary cups never stop it: almost every week holds one, and
+ * week on illness, a breakdown, a lifespan warning, a forced rest, the Signature, a grow-up, prime, notable
+ * ranch-mate news (v16), or fatigue / stress at the PLANNER thresholds. Ordinary cups never stop it: almost every week holds one, and
  * the ranch lists them, so entering a cup is a choice the player makes between runs.
  *
  */
@@ -108,6 +109,8 @@ function stopAfterFinish(state: GameState, events: readonly WeekEvent[]): Planne
   if (events.some((e) => e.kind === 'signature')) return 'signature'
   if (events.some((e) => e.kind === 'aging' && e.event.kind === 'prime')) return 'prime'
   if (events.some((e) => e.kind === 'aging' && (e.event.kind === 'warning' || e.event.kind === 'pastPrime'))) return 'warning'
+  // v16: notable news from the pens (illness, running off, Prime, a passing…); routine weeks never stop a run.
+  if (events.some((e) => e.kind === 'herd' && e.reports.some((r) => mateNews(r).length > 0))) return 'ranchmate'
   const m = state.monster
   if (m && m.fatigue >= PLANNER.stopFatigue) return 'fatigue'
   if (m && m.stress >= PLANNER.stopStress) return 'stress'

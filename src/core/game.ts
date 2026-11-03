@@ -7,6 +7,7 @@ import { availability } from './aging.ts'
 import type { BattleResult } from './battle/types.ts'
 import { WEEKS_PER_YEAR, dateOf, isMonthStart } from './calendar.ts'
 import { weeklyEvents } from './events.ts'
+import { farmWeek } from './farm.ts'
 import { addItems, type UseItemResult } from './items.ts'
 import { updateRecordsMut } from './journal.ts'
 import { awardTitles } from './titles.ts'
@@ -243,6 +244,9 @@ export function finishWeek(input: GameState, rng: Rng): StepResult {
     r.state = awarded.state
     r.events.push({ kind: 'titles', titles: awarded.titles })
   }
+  // §9.1 the farm's XP for the week and anything new (silent in v1.20.0; v1.21.0 announces the levels). The sims'
+  // runWeek never comes through here, and no randomness is used.
+  r.state = farmWeek(r.state).state
   return { state: r.state, events: r.events }
 }
 
@@ -300,32 +304,52 @@ export function readMail(input: GameState, id: string): GameState {
   return state
 }
 
-/** Uses items from the Bag (any number, any time the week is in play). */
-export function useItems(input: GameState, itemId: string, qty: number, stat?: StatKey): UseResult {
+/**
+ * Uses items from the Bag (any number, any time the week is in play) on the star, or on a ranch-mate by id (v16).
+ * The one-per-week rule (Classic) counts for the whole ranch.
+ */
+export function useItems(input: GameState, itemId: string, qty: number, stat?: StatKey, targetId?: string): UseResult {
   if (input.weekPhase !== 'action' || !input.monster || input.ended) return { state: input, used: 0, result: null }
-  const r = useItemInGame(input, itemId, qty, stat)
+  const r = useItemInGame(input, itemId, qty, stat, targetId)
   if (r.used > 0 && ITEM_BY_ID[itemId]?.category === 'sweet') r.state.counters.sweetsEaten += r.used
   return r
 }
 
-/** Learns a technique from the Songbook, forgetting `forgetId` first when the monster already knows 12. */
-export function learnFromSongbook(input: GameState, techId: string, forgetId?: string): { state: GameState; status: LearnStatus | 'notOwned' } {
-  const m = input.monster
-  if (!m || input.ended) return { state: input, status: 'unknownTechnique' }
+/** The star (no id, or its id) or a ranch-mate: the monsters the Bag and the Songbook can reach. */
+function homeMonster(state: GameState, targetId?: string): { monster: Monster; pen: number } | null {
+  if (!state.monster) return null
+  if (targetId === undefined || targetId === state.monster.id) return { monster: state.monster, pen: -1 }
+  const pen = state.ranchmates.findIndex((r) => r.monster.id === targetId)
+  return pen >= 0 ? { monster: state.ranchmates[pen]!.monster, pen } : null
+}
+
+function putHomeMonster(state: GameState, pen: number, m: Monster): void {
+  if (pen >= 0) state.ranchmates[pen]!.monster = m
+  else state.monster = m
+}
+
+/**
+ * Learns a technique from the Songbook, forgetting `forgetId` first when the monster already knows 12. The star by
+ * default, or a ranch-mate by id (v16).
+ */
+export function learnFromSongbook(input: GameState, techId: string, forgetId?: string, targetId?: string): { state: GameState; status: LearnStatus | 'notOwned' } {
+  const target = homeMonster(input, targetId)
+  if (!target || input.ended) return { state: input, status: 'unknownTechnique' }
   if (!input.songbook.includes(techId)) return { state: input, status: 'notOwned' }
-  const r = forgetId ? learnReplacing(m, techId, forgetId) : learnTechnique(m, techId)
+  const r = forgetId ? learnReplacing(target.monster, techId, forgetId) : learnTechnique(target.monster, techId)
   if (r.status !== 'learned') return { state: input, status: r.status }
   const state = structuredClone(input)
-  state.monster = r.monster
+  putHomeMonster(state, target.pen, r.monster)
   state.counters.sheetsLearned += 1
   return { state, status: 'learned' }
 }
 
-/** Forgetting is free and can be undone through the Songbook (§10.5). */
-export function forgetFromCard(input: GameState, techId: string): GameState {
-  if (!input.monster) return input
+/** Forgetting is free and can be undone through the Songbook (§10.5). The star by default, or a ranch-mate by id. */
+export function forgetFromCard(input: GameState, techId: string, targetId?: string): GameState {
+  const target = homeMonster(input, targetId)
+  if (!target) return input
   const state = structuredClone(input)
-  state.monster = forgetTechnique(state.monster!, techId)
+  putHomeMonster(state, target.pen, forgetTechnique(target.monster, techId))
   return state
 }
 

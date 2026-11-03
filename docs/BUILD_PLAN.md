@@ -603,6 +603,17 @@ Spec: docs/BATTLE_3D.md §4 (AI 3.0), §5 (controls), §8.2 (the crowd). The own
 - [x] 7. The Crown Amphitheatre (our own, Roman; the candidates sheet in art-review/arena-candidates/): the build, the bake, Lite, the seats and a painted far crowd, the review sheet; then the arena switch in the test (v1.18.0).
 - [x] 8. Sideways battles (the owner: "sideways, upright still works"), v1.17.0; two thumbs at once, v1.16.1.
 
+## Ranch-mates and the farm (v1.20.0–v1.21.0)
+
+Spec: GAME_DESIGN §6.10–§6.11, §9.1, §14.1, §15, §16, §19, §21 and CONTENT §11, §15. The owner chose "one star, others on orders… they can grow closer together", and farm levels by experience with pens bought (gold plus a level) and perks by level only, plus a one-time homecoming for runaways.
+
+- [x] 1. v16 save: ranch-mates, friendships (data), the farm, the homecoming; migration, `tidyGame` and tests.
+- [x] 2. Core: the herd's weekly tick on its own random sub-stream (nothing extra drawn without ranch-mates), orders, auto-rest, half pay, aging, the Signature, passings; Make star, pen ↔ Freezer, Set free; ranch → pen → Freezer placement; item and Songsheet targets; silent farm XP.
+- [x] 3. The homecoming: runaways in the Memorial (and a pending runaway) come home once, with life back if needed.
+- [x] 4. UI: the herd strip and sheet, the Card and ✏️ Edit for ranch-mates, Bag and Songbook targets, the food prompt, week summary news, the homecoming card, "Who will you raise next?", Pell's Lab.
+- [x] 5. v1.20.0: verify, e2e `herd.spec.ts`, commit, deploy.
+- [ ] 6. v1.21.0: the farm card in Upgrades (level, XP, pens to buy, perks), level-up letters, `FARM.perksLive`; friendships (growth, tiers, calm, the training partner, lines); `sim/herdSim` targets.
+
 ## LATER (after v1.0)
 
-Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · a second trainee stall · online friend leagues (would need a backend) · cloud sync · localization.
+Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · online friend leagues (would need a backend) · cloud sync · localization.

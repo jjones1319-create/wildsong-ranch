@@ -127,8 +127,9 @@ describe('schema version 5 (M6)', () => {
     const r = validateSave(raw)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    expect(r.save.game.freezer).toHaveLength(20)
-    expect(new Set(r.save.game.freezer.map((m) => m.id)).size).toBe(20)
+    // v16: duplicates go, but the Freezer keeps up to FREEZER.hardMax (the homecoming's extras survive a reload).
+    expect(r.save.game.freezer).toHaveLength(23)
+    expect(new Set(r.save.game.freezer.map((m) => m.id)).size).toBe(23)
     expect(r.save.game.memorial).toHaveLength(1)
     expect(r.save.game.memorial[0]!.cause).toBe('passed')
     expect(r.save.game.memorial[0]!.epitaph).toHaveLength(80)
@@ -501,5 +502,131 @@ describe('schema version 15 (Art P0: one breed per monster)', () => {
     }
     const hs = validateSave(migrate({ schemaVersion: 14, kind: 'save', game: { ...JSON.parse(JSON.stringify(createGameState({ monster: m }))), heartstones: [{ ...heartstoneFrom(m, 1), donorSub: 'nope' }] }, rng: 1 }))
     expect(hs.ok && hs.save.game.heartstones).toHaveLength(1)
+  })
+})
+
+describe('schema version 16 (ranch-mates and the homecoming)', () => {
+  /** A v15 save as v1.19 wrote it: no herd, no farm, no homecoming. */
+  const v15 = (game: Record<string, unknown>) => {
+    for (const k of ['ranchmates', 'friendships', 'farm', 'homecoming']) delete game[k]
+    return { schemaVersion: 15, kind: 'save', game, rng: 5, meta: { savedAt: 1, appVersion: '1.19.0' } }
+  }
+
+  it('migrates a v15 save: the runaways come home once, the farm is seeded and the away clock waits', () => {
+    const star = makeMonster({ id: 'star' })
+    const runaway = makeMonster({ id: 'run', fatigue: 90 })
+    const game = createGameState({ monster: star })
+    game.week = 120
+    game.titles = ['Collector']
+    game.memorial = [{ monster: runaway, cause: 'neglected', epitaph: 'Waited by the gate', week: 80 }]
+    game.away = { armedAt: 5, lastGreetAt: 6 }
+    const raw = v15(JSON.parse(JSON.stringify(game)))
+    const up = migrate(JSON.parse(JSON.stringify(raw))) as { schemaVersion: number; game: Record<string, unknown> }
+    expect(up.schemaVersion).toBe(16)
+    expect(up.game).toMatchObject({ ranchmates: [], friendships: [], farm: null, homecoming: { status: 'due', welcome: [] } })
+    const r = validateSave(raw)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const g = r.save.game
+    expect(g.monster!.id).toBe('star')
+    expect(g.ranchmates.map((m) => m.monster.id)).toEqual(['run'])
+    expect(g.ranchmates[0]!.monster.fatigue).toBe(0)
+    expect(g.memorial).toEqual([])
+    expect(g.homecoming).toEqual({ status: 'done', welcome: ['run'] })
+    expect(g.mail[0]).toMatchObject({ kind: 'homecoming', ref: '1' })
+    expect(g.farm.xp).toBe(120 * 2 + 20)
+    expect(g.away).toEqual({ armedAt: null, lastGreetAt: 6 })
+    // The next load changes nothing: it never runs twice.
+    const again = validateSave(JSON.parse(JSON.stringify(makeSave(g, 5))))
+    expect(again.ok && again.save.game).toEqual(g)
+  })
+
+  it('handles garbage in every new field without failing the save', () => {
+    const game = JSON.parse(JSON.stringify(createGameState({ monster: makeMonster({ id: 'star' }) })))
+    const mate = JSON.parse(JSON.stringify(makeMonster({ id: 'mate' })))
+    game.ranchmates = [null, 'junk', { monster: { mainBreed: 'nope' } }, { monster: mate, order: 'sideways', last: { kind: 'drill', drill: 'nope' }, history: 'x' }]
+    game.friendships = [5, { a: 'x' }, { a: 'star', b: 'star', points: 3 }, { a: 'star', b: 'mate', points: 999 }, { a: 'mate', b: 'star', points: 1 }, { a: 'star', b: 'ghost', points: 9 }]
+    game.farm = 'a big farm'
+    game.homecoming = { status: 'maybe', welcome: ['star'] }
+    const r = validateSave({ schemaVersion: 16, kind: 'save', game, rng: 1, meta: { savedAt: 1, appVersion: '1.20.0' } })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    const g = r.save.game
+    expect(g.ranchmates).toEqual([{ monster: makeMonster({ id: 'mate' }), order: { kind: 'play' }, last: null, history: [] }])
+    expect(g.friendships).toEqual([{ a: 'mate', b: 'star', points: 100 }])
+    expect(g.farm).toEqual(createGameState({ monster: makeMonster() }).farm)
+    expect(g.homecoming).toEqual({ status: 'done', welcome: [] })
+    // A broken tally alone is rebuilt; the XP stays.
+    const tally = JSON.parse(JSON.stringify(createGameState({ monster: makeMonster() })))
+    tally.farm = { xp: 640, pensBought: 1, tally: 'lost' }
+    const t = validateSave({ schemaVersion: 16, kind: 'save', game: tally, rng: 1, meta: { savedAt: 1, appVersion: '' } })
+    expect(t.ok && t.save.game.farm).toEqual({ xp: 640, pensBought: 1, tally: { titles: 0, cupsWon: 0, journeys: 0, expeditions: 0, breeds: 1, rank: 1 } })
+  })
+
+  it('keeps ids unique across the star, the pens, the Freezer and the Grove; extra ranch-mates go to the Freezer', () => {
+    const game = createGameState({ monster: makeMonster({ id: 'star' }) })
+    game.ranchmates = ['star', 'a', 'b', 'c'].map((id) => ({ monster: makeMonster({ id }), order: { kind: 'rest' as const }, last: null, history: [] }))
+    game.freezer = [makeMonster({ id: 'a' }), makeMonster({ id: 'f' })]
+    game.elderGrove = [makeMonster({ id: 'f' }), makeMonster({ id: 'e' })]
+    const r = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.ranchmates.map((m) => m.monster.id)).toEqual(['a'])
+    expect(r.save.game.freezer.map((m) => m.id)).toEqual(['f', 'b', 'c'])
+    expect(r.save.game.elderGrove.map((m) => m.id)).toEqual(['e'])
+  })
+
+  it('a herd round-trips exactly: orders, last week’s drill, edit histories, friendships and the farm', () => {
+    const game = createGameState({ monster: makeMonster({ id: 'star' }) })
+    game.ranchmates = [
+      {
+        monster: makeMonster({ id: 'mate' }),
+        order: { kind: 'drill', drill: 'plow-pull' },
+        last: { kind: 'drill', drill: 'plow-pull', outcome: 'Superb', gains: { POW: 14, LIF: 6, SPD: -3 }, pay: 45 },
+        history: [{ monster: makeMonster({ id: 'mate', stress: 9 }), savedAt: 77 }],
+      },
+    ]
+    game.friendships = [{ a: 'mate', b: 'star', points: 40 }]
+    game.farm = { xp: 1234, pensBought: 2, tally: { titles: 3, cupsWon: 9, journeys: 4, expeditions: 1, breeds: 5, rank: 4 } }
+    game.homecoming = { status: 'done', welcome: ['mate'] }
+    const r = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+    expect(r.ok && r.save.game).toEqual(game)
+    for (const last of [{ kind: 'autoRest', reason: 'noYard' }, { kind: 'away', reason: 'clinic' }, { kind: 'rest' }, { kind: 'play' }] as const) {
+      game.ranchmates[0]!.last = last
+      const again = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+      expect(again.ok && again.save.game.ranchmates[0]!.last).toEqual(last)
+    }
+  })
+
+  it('a Freezer over 20 (the homecoming’s extras) survives a reload, up to the hard maximum', () => {
+    const game = createGameState({ monster: makeMonster({ id: 'star' }) })
+    game.freezer = Array.from({ length: 130 }, (_, i) => makeMonster({ id: `f${i}` }))
+    const r = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+    expect(r.ok && r.save.game.freezer).toHaveLength(120)
+    game.freezer = game.freezer.slice(0, 31)
+    const s = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+    expect(s.ok && s.save.game.freezer).toHaveLength(31)
+  })
+
+  it('keeps the new values and fixes an ended empty ranch', () => {
+    const game = createGameState({ monster: null })
+    game.ended = 'passed'
+    game.memorial = [{ monster: makeMonster({ id: 'gone' }), cause: 'freed', epitaph: 'Free', week: 2 }]
+    game.planner.lastStop = 'ranchmate'
+    const r = validateSave(JSON.parse(JSON.stringify(makeSave(game, 1))))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.save.game.ended).toBeNull()
+    expect(r.save.game.memorial[0]!.cause).toBe('freed')
+    expect(r.save.game.planner.lastStop).toBe('ranchmate')
+  })
+
+  it('v15 monster files and Libraries still load', () => {
+    const m = makeMonster({ id: 'lib' })
+    const file = validateAny({ schemaVersion: 15, kind: 'monster', monster: JSON.parse(JSON.stringify(m)), history: [] })
+    expect(file.ok && file.kind === 'monster' && file.file.monster).toEqual(m)
+    const lib = validateLibrary({ schemaVersion: 15, kind: 'library', entries: [{ monster: JSON.parse(JSON.stringify(m)), history: [], createdAt: 1, updatedAt: 2 }] })
+    expect(lib.ok && lib.library.schemaVersion).toBe(16)
+    expect(lib.ok && lib.library.entries[0]!.monster).toEqual(m)
   })
 })

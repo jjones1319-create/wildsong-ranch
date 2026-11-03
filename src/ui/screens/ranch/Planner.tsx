@@ -10,7 +10,7 @@ import type { PlannerLogEntry, PlannerStep } from '../../../core/state.ts'
 import { wrenVars } from '../../../core/report.ts'
 import { Sheet } from '../../components/Controls.tsx'
 import { gold } from '../../components/RanchBits.tsx'
-import { game, plannerAdd, plannerClear, plannerDismissSummary, plannerRemove, plannerRun, plannerView } from '../../store/gameStore.ts'
+import { game, plannerAdd, plannerClear, plannerDismissSummary, plannerHerdNews, plannerRemove, plannerRun, plannerView } from '../../store/gameStore.ts'
 
 const t = UI_TEXT.planner
 
@@ -114,6 +114,9 @@ export function PlannerSummary() {
         <section class="card card--muted">
           <p class="speaker">{UI_TEXT.wren}</p>
           <p>{fill(WREN.planner[stop], wrenVars(g.monster))}</p>
+          {plannerHerdNews.value.map((l) => (
+            <p key={l.key}>{l.text}</p>
+          ))}
         </section>
         {g.planner.log.length === 0 ? (
           <p class="muted small center">{t.noWeeks}</p>

@@ -1,3 +1,5 @@
+import { HERD_TEXT } from './herd.ts'
+
 /**
  * Wren's lines (CONTENT §15 and the GAME_DESIGN moments). {name} is the monster's name, {them}/{their}/{they} its
  * pronoun, {technique} a technique name, {food} a food name. Keep the voice: upbeat, observant, a little dramatic
@@ -94,6 +96,7 @@ export const WREN = {
     fatigue: '{name} is getting tired. I stopped before it got worse.',
     stress: "{name} seems stressed. Let's pause and sort that out.",
     invalid: "That drill isn't available right now, so I skipped it.",
+    ranchmate: HERD_TEXT.plannerStop,
     running: 'Week {n} of {total}… {what}.',
     plan: "Line up a few weeks and I'll run them. I stop the moment {name} needs you, and I won't praise or scold for you.",
   },

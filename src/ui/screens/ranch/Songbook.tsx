@@ -12,6 +12,7 @@ import { Sheet, TopBar } from '../../components/Controls.tsx'
 import { navigate } from '../../router.ts'
 import { showToast } from '../../store/appStore.ts'
 import { forget, game, learn } from '../../store/gameStore.ts'
+import { TargetChips, useTarget } from './TargetChips.tsx'
 
 function techMeta(tech: Technique): string {
   return `${FAMILY_LABELS[tech.family]} · ${tech.type} · ${RANGE_LABELS[tech.range]} · ${tech.cost} guts`
@@ -22,11 +23,13 @@ export function SongbookScreen() {
   const g = game.value
   const t = UI_TEXT.songbook
   const [makingRoomFor, setMakingRoomFor] = useState<Technique | null>(null)
+  // v16 the star or a ranch-mate (the Card's monster by default).
+  const [target, setTarget] = useTarget(g)
   useEffect(() => {
     if (!g || !g.monster) navigate('ranch')
   }, [g === null])
-  if (!g || !g.monster) return null
-  const m = g.monster
+  if (!g || !g.monster || !target) return null
+  const m = target.monster
   const learnable = learnableFromSongbook(m, g.songbook)
   const known = m.techniques.map((s) => ({ slot: s, tech: TECHNIQUE_BY_ID[s.id] })).filter((x) => x.tech)
   const knownIds = new Set(m.techniques.map((s) => s.id))
@@ -36,7 +39,7 @@ export function SongbookScreen() {
     .map((tech) => ({ tech, why: canLearn(m, tech.id) }))
 
   const doLearn = (tech: Technique, forgetId?: string) => {
-    const status = learn(tech.id, forgetId)
+    const status = learn(tech.id, forgetId, target.id)
     setMakingRoomFor(null)
     if (status === 'learned') {
       showToast(learnedLine(m, tech.id).text)
@@ -54,6 +57,14 @@ export function SongbookScreen() {
   return (
     <main class="screen">
       <TopBar title={t.title} />
+      <TargetChips
+        g={g}
+        target={target}
+        onPick={(id) => {
+          setMakingRoomFor(null)
+          setTarget(id)
+        }}
+      />
       <section class="card">
         <p class="field__label">{fill(t.known, { n: m.techniques.length, max: SONGBOOK.maxTechniques })}</p>
         {known.length === 0 && <p class="muted">{UI_TEXT.lab.view.none}</p>}
@@ -69,7 +80,7 @@ export function SongbookScreen() {
               type="button"
               class="btn btn--small"
               onClick={() => {
-                forget(slot.id)
+                forget(slot.id, target.id)
                 showToast(forgotLine(m, slot.id).text)
               }}
             >

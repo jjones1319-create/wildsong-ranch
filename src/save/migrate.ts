@@ -37,8 +37,13 @@ import { STARTING_UNLOCKED } from '../data/breeds.ts'
  *   `donorSub`; Encyclopedia phrases lose `subBreed`. A mixed monster becomes its main breed and keeps its stats,
  *   grades, techniques, guts and lifespan. The validator does the work (schema.ts, legacyMix.ts), because bare monster
  *   imports never pass through here: it drops the old fields and gives an untouched mix name the breed's name.
+ * - v16 (Ranch-mates and the homecoming): the herd (`ranchmates`, each with its order, last week and edit history),
+ *   `friendships`, the farm (`farm`: XP, pens bought, the achievement tally; seeded from the save's history when it
+ *   loads) and the one-time `homecoming`, set `due` here so the runaways come home on the first load (validateSave
+ *   runs it after tidyGame). Memorial entries may be "Set free" (`freed`), a Lootlid may go to a pen, and the
+ *   Freezer may hold up to FREEZER.hardMax. Monster files and Libraries only take the version bump.
  */
-export const SAVE_VERSION = 15
+export const SAVE_VERSION = 16
 
 type RawSave = Record<string, unknown>
 
@@ -170,6 +175,12 @@ const MIGRATIONS: Record<number, Migration> = {
   },
   13: (raw) => ({ ...raw, schemaVersion: 14 }),
   14: (raw) => ({ ...raw, schemaVersion: 15 }),
+  15: (raw) => {
+    const next: RawSave = { ...raw, schemaVersion: 16 }
+    // `farm: null` is seeded from the save's history by tidyGame (and again by the homecoming).
+    if (raw.kind === 'save' && isRawSave(raw.game)) next.game = { ranchmates: [], friendships: [], farm: null, homecoming: { status: 'due', welcome: [] }, ...raw.game }
+    return next
+  },
 }
 
 export function isRawSave(raw: unknown): raw is RawSave {

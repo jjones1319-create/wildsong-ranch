@@ -8,8 +8,11 @@ import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { TipCard, gold } from '../../components/RanchBits.tsx'
 import { navigate } from '../../router.ts'
 import { dismissTip, game, nextWeek, tipFor, type SummaryFlow } from '../../store/gameStore.ts'
+import { MateGoodbye } from './MateGoodbye.tsx'
 
 const DRAMATIC = new Set(['breakdownRunAway', 'breakdownCollapse', 'sick', 'tenWeeksLeft', 'farewell', 'retire'])
+/** v16 ranch-mate news that reads as a notice (the keys are `mate-<id>-<news>`). */
+const MATE_DRAMATIC = /-(illness|ranOff|collapsed|w10)$/
 
 /** The end of the week: aging events, fees, next week's weather, the grow-up moment, and the farewell hand-off. */
 export function WeekSummary({ f }: { f: SummaryFlow }) {
@@ -24,6 +27,10 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
     else if (f.aging.some((e) => e.kind === 'prime')) playSfx('prime')
   }, [])
   const title = f.ended ? t.farewell : breakdown ? t.breakdown : f.grewUp ? t.grewUp : t.title
+  // §6.11 a ranch-mate that passed or retired gets its own gentle card, with its lines; the rest join Wren's.
+  const goneKeys = f.departed.map((d) => `mate-${d.id}-`)
+  const herd = f.herd.filter((l) => !goneKeys.some((k) => l.key.startsWith(k)))
+  const quiet = f.lines.length === 0 && herd.length === 0
   return (
     <div class="overlay" role="dialog" aria-label={title}>
       <div class="overlay__inner">
@@ -35,15 +42,23 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
         </div>
         <section class="card">
           <p class="speaker">{UI_TEXT.wren}</p>
-          {f.lines.length === 0 && <p>{t.quiet}</p>}
+          {quiet && <p>{t.quiet}</p>}
           {f.lines.map((l, i) => (
             <p key={`${l.key}-${i}`} class={DRAMATIC.has(l.key) ? 'notice' : ''}>
+              {l.text}
+            </p>
+          ))}
+          {herd.map((l) => (
+            <p key={l.key} class={MATE_DRAMATIC.test(l.key) ? 'notice' : ''}>
               {l.text}
             </p>
           ))}
           {f.fees > 0 && <p class="notice">{fill(t.fees, { n: gold(f.fees) })}</p>}
           {!f.ended && <p class="muted small">{fill(t.nextWeather, { weather: WEATHER_LABELS[g.weather].toLowerCase() })}</p>}
         </section>
+        {f.departed.map((d) => (
+          <MateGoodbye key={d.id} g={g} mate={d} lines={f.herd.filter((l) => l.key.startsWith(`mate-${d.id}-`))} />
+        ))}
         {tip && <TipCard text={tipText(g, tip)} onDismiss={() => dismissTip(tip)} />}
         <div class="spacer" />
         {f.ended ? (

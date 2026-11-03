@@ -59,7 +59,7 @@ import { newId } from '../lib/ids.ts'
 import type { UseItemResult } from '../../core/items.ts'
 import type { Monster } from '../../core/monster.ts'
 import { markTipSeen, nextTip, type TipContext, type TipId } from '../../core/onboarding.ts'
-import { drillLine, eventLines, growsUpAtPrime, type WrenLine } from '../../core/report.ts'
+import { drillLine, eventLines, growsUpAtPrime, herdLines, type WrenLine } from '../../core/report.ts'
 import { createRng, type Rng } from '../../core/rng.ts'
 import type { LearnStatus } from '../../core/songbook.ts'
 import { createGameState, type GameState, type LifeEnd, type NewGameOptions, type WeekAction } from '../../core/state.ts'
@@ -94,9 +94,19 @@ export interface ResultFlow {
   reaction: Reaction | null
 }
 
+/** v16 a ranch-mate whose life ended this week: a gentle card in the summary (its lines go on the card). */
+export interface DepartedMate {
+  id: string
+  name: string
+  how: 'passed' | 'retired'
+}
+
 export interface SummaryFlow {
   kind: 'summary'
   lines: WrenLine[]
+  /** §6.11 Wren's notable news from the pens (routine weeks are badges on the herd strip). */
+  herd: WrenLine[]
+  departed: DepartedMate[]
   aging: AgingEvent[]
   fees: number
   grewUp: boolean
@@ -406,17 +416,19 @@ function finish(state: GameState, events: WeekEvent[]): void {
   const all = [...events, ...r.events]
   const m = r.state.monster ?? state.monster
   const lines = m ? eventLines(all, m) : []
+  const herd = herdLines(all)
+  const departed = all.flatMap((e) => (e.kind === 'herd' ? e.reports.flatMap((x) => (x.ended ? [{ id: x.id, name: x.name, how: x.ended }] : [])) : []))
   const aging = all.flatMap((e) => (e.kind === 'aging' ? [e.event] : []))
   const fees = all.reduce((sum, e) => (e.kind === 'fees' ? sum + e.amount : sum), 0)
   const grewUp = m !== null && aging.some((e) => e.kind === 'prime') && growsUpAtPrime(m)
   weekNews.value = []
   commit(r.state)
-  if (lines.length === 0 && fees === 0 && !r.state.ended) {
+  if (lines.length === 0 && herd.length === 0 && fees === 0 && !r.state.ended) {
     flow.value = { kind: 'idle' }
     settle()
     return
   }
-  flow.value = { kind: 'summary', lines, aging, fees, grewUp, ended: r.state.ended }
+  flow.value = { kind: 'summary', lines, herd, departed, aging, fees, grewUp, ended: r.state.ended }
   playSfx('wrenReport')
 }
 
@@ -454,6 +466,8 @@ export const menu = computed(() => (game.value ? actionMenu(game.value) : null))
 export const plannerRunning = signal(false)
 /** The sheet is the ranch's own state; the summary shows after a run. */
 export const plannerView = signal<'summary' | null>(null)
+/** v16: Wren's news from the pens in the week the run stopped on (the planner's summary shows it). */
+export const plannerHerdNews = signal<WrenLine[]>([])
 let plannerTimer: ReturnType<typeof setTimeout> | null = null
 
 export function plannerAdd(step: PlannerStep): void {
@@ -483,6 +497,7 @@ export function plannerRun(): void {
   if (!g || plannerRunning.value || flow.value.kind !== 'idle') return
   plannerRunning.value = true
   plannerView.value = null
+  plannerHerdNews.value = []
   commit(startRun(g))
   plannerStepOnce()
 }
@@ -495,6 +510,7 @@ function plannerStepOnce(): void {
   if (m && r.acted) weekNews.value = eventLines(r.events, m)
   commit(r.state)
   if (r.stop) {
+    plannerHerdNews.value = herdLines(r.events)
     plannerFinish()
     return
   }
@@ -523,10 +539,11 @@ export function plannerDismissSummary(): void {
 
 /* ---------- free actions ---------- */
 
-export function useItems(itemId: string, qty: number, stat?: StatKey): { used: number; result: UseItemResult | null } {
+/** Uses items on the star, or on a ranch-mate by id (v16). */
+export function useItems(itemId: string, qty: number, stat?: StatKey, targetId?: string): { used: number; result: UseItemResult | null } {
   const g = game.value
   if (!g) return { used: 0, result: null }
-  const r = useItemsCore(g, itemId, qty, stat)
+  const r = useItemsCore(g, itemId, qty, stat, targetId)
   if (r.used > 0) commit(r.state)
   return { used: r.used, result: r.result }
 }
@@ -547,18 +564,18 @@ export function buySongsheet(techId: string): { cost: number; refused: SheetRefu
   return { cost: r.cost, refused: r.refused }
 }
 
-export function learn(techId: string, forgetId?: string): LearnStatus | 'notOwned' {
+export function learn(techId: string, forgetId?: string, targetId?: string): LearnStatus | 'notOwned' {
   const g = game.value
   if (!g) return 'unknownTechnique'
-  const r = learnFromSongbook(g, techId, forgetId)
+  const r = learnFromSongbook(g, techId, forgetId, targetId)
   if (r.status === 'learned') commit(r.state)
   return r.status
 }
 
-export function forget(techId: string): void {
+export function forget(techId: string, targetId?: string): void {
   const g = game.value
   if (!g) return
-  commit(forgetFromCard(g, techId))
+  commit(forgetFromCard(g, techId, targetId))
 }
 
 /** The Lab editor saved the active monster. */

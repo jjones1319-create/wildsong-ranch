@@ -2,11 +2,13 @@ import { BREED_BY_ID } from '../data/breeds.ts'
 import { BREED_KINDS, FUSION_RECIPES, FUSION_RULES } from '../data/fusionRecipes.ts'
 import { ITEM_BY_ID } from '../data/items.ts'
 import { startersOf, techniquesOfBreed, TECHNIQUE_BY_ID, UNIVERSAL_TECHNIQUES } from '../data/techniques.ts'
-import { FREEZER, FUSION, SONGBOOK } from '../data/tuning.ts'
+import { FUSION, SONGBOOK } from '../data/tuning.ts'
 import { BREED_IDS, FAMILIES, STAT_KEYS, type BreedId, type Grades, type Kind, type Stats, type TraitId } from '../data/types.ts'
 import { cyrb53 } from './hash.ts'
 import { countOf } from './items.ts'
-import { findStored, placeOnRanch, ranchBusy, recordInEncyclopedia } from './legacy.ts'
+import { placeMut, type Placed } from './creation.ts'
+import { penRoom } from './farm.ts'
+import { findOwned, findStored, freezerSlots, pruneFriendshipsMut, ranchBusy } from './legacy.ts'
 import { divRound } from './mathx.ts'
 import { breedBirth, createMonster, gradeIndex, rollLikes, stepGrade, trainedOf, traitOf, zeroStats, type Monster, type TechniqueSlot } from './monster.ts'
 import type { Rng } from './rng.ts'
@@ -298,7 +300,7 @@ export type FuseRefusal = 'notFound' | 'sameMonster' | 'money' | 'freezerFull' |
 export interface FuseOutput {
   state: GameState
   result: FusionResult | null
-  placed: 'ranch' | 'freezer' | null
+  placed: Placed | null
   refused: FuseRefusal | null
 }
 
@@ -315,11 +317,12 @@ export function fuse(input: GameState, id1: string, id2: string, catalystId: str
   if (!s1 || !s2) return none('notFound')
   if (input.money < FUSION.fee) return none('money')
   if (catalystId && countOf(input.inventory, catalystId) <= 0) return none('noCatalyst')
+  // The baby's home: an empty ranch, then a free pen, then the Freezer, where two frozen parents free two slots
+  // (Elders free none) and the baby needs one.
   const toRanch = input.monster === null && !input.ended
   if (toRanch && ranchBusy(input)) return none('busy')
-  // Two frozen parents free two slots; Elders free none. The baby needs one.
   const freed = (s1.where === 'freezer' ? 1 : 0) + (s2.where === 'freezer' ? 1 : 0)
-  if (!toRanch && input.freezer.length - freed + 1 > FREEZER.slots) return none('freezerFull')
+  if (!toRanch && penRoom(input) === 0 && input.freezer.length - freed + 1 > freezerSlots(input)) return none('freezerFull')
   const catalyst = catalystEffect(catalystId)
   const outcomes = fusionOutcomes(s1.monster, s2.monster, input.unlocked, catalyst.lineageSeal)
   if (outcomes.length === 0) return none('noOutcome')
@@ -341,19 +344,15 @@ export function fuse(input: GameState, id1: string, id2: string, catalystId: str
   }
   state.freezer = state.freezer.filter((m) => m.id !== id1 && m.id !== id2)
   state.elderGrove = state.elderGrove.filter((m) => m.id !== id1 && m.id !== id2)
-  let placed: 'ranch' | 'freezer'
-  if (toRanch) {
-    placeOnRanch(state, result.baby)
-    placed = 'ranch'
-  } else {
-    state.freezer.push(result.baby)
-    recordInEncyclopedia(state, result.baby)
-    placed = 'freezer'
-  }
+  pruneFriendshipsMut(state)
+  const placed = placeMut(state, result.baby).placed!
   return { state, result, placed, refused: null }
 }
 
-/** The names on a fused monster's family tree, looked up on this ranch (the Memorial, the Freezer, the Grove, the ranch). */
+/**
+ * The names on a fused monster's family tree, looked up on this ranch: the living first (the ranch, the pens, the
+ * Freezer, the Grove; since v16 a parent may have come home), then the Memorial.
+ */
 export function findRelative(state: GameState, id: string): Monster | null {
-  return state.memorial.find((e) => e.monster.id === id)?.monster ?? findStored(state, id)?.monster ?? (state.monster?.id === id ? state.monster : null)
+  return findOwned(state, id)?.monster ?? state.memorial.find((e) => e.monster.id === id)?.monster ?? null
 }

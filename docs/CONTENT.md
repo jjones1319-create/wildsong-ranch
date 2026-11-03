@@ -1040,10 +1040,10 @@ None of these can be permanently missed. Each starts with a rumor, and the Journ
    - Give it to Dr. Pell. From then on the Market sells Gearhoot (2,500G) and the Shrine can make it. Title: "Tinkerer".
 6. **Reefclaw (tide pool).**
    - Buy the **Tide Pool** ranch upgrade.
-   - The next June week 1, a Reefclaw moves in. It is free to adopt (it goes to the Freezer if your ranch is occupied) and is then available at the Shrine and as the Market's summer pick.
+   - The next June week 1, a Reefclaw moves in. It is free to adopt (it goes to a free pen, or the Freezer, if your ranch is occupied) and is then available at the Shrine and as the Market's summer pick.
 7. **Lootlid (strange chest).**
    - In Thornwood Ruins, the Strange Chest node has a 35% chance to be a Lootlid that wants to come home. It is guaranteed on your 3rd visit.
-   - It goes to the Freezer and unlocks the breed. Title: "Treasure Hunter".
+   - It moves into a free pen (or the Freezer when the pens are full) and unlocks the breed. Title: "Treasure Hunter".
 8. **Aurelwyrm (four crowns).**
    - Rumor from Ines: "Legend says a golden wyrm answers only to champions."
    - Win all four Crowns (any years, any monsters). The Guild presents the **Wyrm Scale**; offer it at the Shrine to unlock Aurelwyrm.
@@ -1056,6 +1056,29 @@ None of these can be permanently missed. Each starts with a rumor, and the Journ
 | Training Yard | 10,000G | Rank 3 | +5 Great weight on drills; unlocks Quarry Haul |
 | Tide Pool | 12,000G | Rank 4 | Unlocks Reefclaw; summer stress −1 per week |
 | Lantern Garden | 6,000G | First Memorial entry | Visiting the Memorial (free action, once a month) gives stress −5; +5 Heartstone slots |
+
+**The farm (v16; GAME_DESIGN §9.1).** The farm level (1–10) grows with XP from every week and every achievement. Some things are bought and need a level; others come with the level by themselves. The ranch starts with one pen (the star + 1 ranch-mate).
+
+*Pens* (each holds one ranch-mate; bought in order):
+
+| Pen | Price | Farm level |
+|---|---|---|
+| 2nd pen | 3,000G | Lv 2 |
+| 3rd pen | 6,000G | Lv 4 |
+| 4th pen | 10,000G | Lv 6 |
+| 5th pen | 15,000G | Lv 8 |
+| 6th pen | 20,000G | Lv 10 |
+
+*Perks* (no gold; they come with the level):
+
+| Perk | Farm level | Effect |
+|---|---|---|
+| Feed Shed | Lv 3 | Ranch-mates eat at 60% of the food's price |
+| Farmhand | Lv 5 | Ranch-mates' good drills (Fine and up) get praised |
+| Deep Freezer | Lv 7 | The Freezer holds 30 |
+| Campfire Circle | Lv 9 | Friendships grow 1 point faster each week |
+
+v1.20.0 earns the XP silently and keeps the one pen; v1.21.0 sells the pens, switches the perks on and adds Ines's letter at each new level.
 
 ---
 
@@ -1161,3 +1184,15 @@ Town → Odd Jobs is Basil's board. It lists every job with its status, its pay 
 | Learned from a Songsheet | "{name} hummed the tune twice… and now knows {technique}!" |
 | Ate a Stat Sweet | "Mmm! {name} looks stronger already." |
 | Farewell | "Thank you for everything, {name}. We'll take good care of your Heartstone." |
+| Ranch-mate news: ran off | "{name} slipped out of the pen and ran off! I left the gate open and a bowl by the fence." |
+| Ranch-mate news: Prime | "{name} is in their prime out in the pen. Look at them go!" |
+| Ranch-mate passed away | "{name} passed away quietly in the pen this week, with friends close by. They had a good life here." |
+| Set free | "{name} trotted off over the hill, looked back once, and was gone. Go well, {name}." |
+| The homecoming | "You won't believe who just walked up the lane. Look who came home!" |
+| Planner stop: the pens | "There's news from the pens. I stopped so you can see." |
+
+**Ines's letters (v16; formal):**
+- **The farm grows:** "The Guild has entered your farm at level {n}. New pens may now be built, and some comforts come with the rank. See the farm card at Ranch Upgrades." (from v1.21.0)
+- **The homecoming:** "The Guild is pleased to record a homecoming at your ranch (returned: {n}). The Memorial wall has been corrected accordingly. Welcome back."
+
+All the herd, farm and homecoming lines live in `src/data/text/herd.ts`.

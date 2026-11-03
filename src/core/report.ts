@@ -5,10 +5,12 @@ import { KEEPSAKE_BY_ID } from '../data/keepsakes.ts'
 import { JOURNEY_SITE_BY_ID } from '../data/journeys.ts'
 import { TECHNIQUE_BY_ID } from '../data/techniques.ts'
 import { fill } from '../data/text/format.ts'
+import { HERD_TEXT } from '../data/text/herd.ts'
 import { WREN } from '../data/text/wren.ts'
 import { REPORT } from '../data/tuning.ts'
 import { availability, type AgingEvent } from './aging.ts'
 import { pinnedItems } from './calendarView.ts'
+import { mateNews } from './herd.ts'
 import type { Monster } from './monster.ts'
 import type { GameState } from './state.ts'
 import type { DrillResult } from './training.ts'
@@ -235,6 +237,29 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
         break
       default:
         break
+    }
+  }
+  return dedupe(lines)
+}
+
+/**
+ * §6.11 Wren's lines about the ranch-mates' week: notable news only (illness, running off and coming back, Prime and
+ * the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone). Routine weeks are badges.
+ */
+export function herdLines(events: readonly WeekEvent[]): WrenLine[] {
+  const t = HERD_TEXT.wren
+  const lines: WrenLine[] = []
+  for (const e of events) {
+    if (e.kind !== 'herd') continue
+    for (const r of e.reports) {
+      const line = (news: string, template: string, extra: Record<string, string | number> = {}) =>
+        lines.push({ key: `mate-${r.id}-${news}`, text: fill(template, wrenVars({ name: r.name }, { They: 'They', Their: 'Their', ...extra })) })
+      for (const news of mateNews(r)) {
+        if (news === 'signature') line(news, t.signature, { technique: TECHNIQUE_BY_ID[r.signature!]?.name ?? r.signature! })
+        else line(news, t[news])
+      }
+      if (r.heartstone) line('heartstone', t.heartstone)
+      else if (r.ended && r.heartstoneLost) line('heartstoneLost', t.heartstoneLost)
     }
   }
   return dedupe(lines)
