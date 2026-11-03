@@ -2,6 +2,19 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Hotfix: Play sideways actually turns the screen (2026-11-02) · v1.18.1
+
+The owner: "It would not rotate into landscape mode."
+- **Why:**
+  - Browsers only let a page turn the screen while it is full screen (MDN, ScreenOrientation.lock).
+  - In the installed app the game skipped full screen and asked straight away, so Chrome refused.
+  - The app's manifest keeps it upright, so turning the phone by hand did nothing either.
+- **Fix:**
+  - **Play sideways** always enters full screen first, then turns the screen, and undoes both on leaving or if refused.
+  - Full screen needs a tap, so the card now asks each battle that starts upright ("Stay upright" is remembered for the session).
+- **Tests:** `sideways.test.ts` (3): full screen before turning in the installed app; a refusal backs out; no API, no asking.
+- **If it still won't turn on the phone:** the next step is to drop the manifest's upright lock. That changes the whole app (menus would follow the phone's auto-rotate), so it needs the owner's OK.
+
 ## The Crown Amphitheatre (2026-11-02) · v1.18.0
 
 The owner: "make another, gladiator size, huge, for tournaments and more popular fights". They saw the candidates (art-review/arena-candidates/sheet.png) and chose "#1, make own, style Roman".

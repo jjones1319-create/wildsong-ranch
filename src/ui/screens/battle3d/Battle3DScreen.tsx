@@ -43,8 +43,11 @@ const B = UI_TEXT.battle
 const ARENAS: ArenaId[] = ['guild', 'crown']
 let arenaChoice: ArenaId = typeof location !== 'undefined' && new URLSearchParams(location.search).get('arena') === 'crown' ? 'crown' : 'guild'
 
-/** §5 sideways: asked once a session (a save setting would need a save version). */
-let sidewaysChoice: 'ask' | 'sideways' | 'upright' = 'ask'
+/**
+ * §5 sideways: the card asks each battle that starts upright, because turning the screen needs full screen and that
+ * needs a tap; "Stay upright" is remembered for the session (a save setting would need a save version).
+ */
+let uprightChosen = false
 
 type Upbringing = keyof typeof ART.duel.testUpbringing
 const UPBRINGINGS = Object.keys(ART.duel.testUpbringing) as Upbringing[]
@@ -106,25 +109,23 @@ export function Battle3DScreen() {
   phaseRef.current = phase
   // §5 sideways: follow the phone's turn; ask to turn when upright (not in automated runs); undo it on leaving
   const [portrait, setPortrait] = useState(isPortrait)
-  const [askSideways, setAskSideways] = useState(sidewaysChoice === 'ask' && !navigator.webdriver)
+  const [askSideways, setAskSideways] = useState(!uprightChosen && !navigator.webdriver)
   const [turnHint, setTurnHint] = useState(false)
   useEffect(() => {
     const mq = matchMedia('(orientation: portrait)')
     const on = () => setPortrait(mq.matches)
     mq.addEventListener('change', on)
-    if (sidewaysChoice === 'sideways') void goSideways().then((ok) => setTurnHint(!ok))
     return () => {
       mq.removeEventListener('change', on)
       leaveSideways()
     }
   }, [])
   const playSideways = async () => {
-    sidewaysChoice = 'sideways'
     setAskSideways(false)
     setTurnHint(!(await goSideways()))
   }
   const stayUpright = () => {
-    sidewaysChoice = 'upright'
+    uprightChosen = true
     setAskSideways(false)
   }
   // a tap on an in-range card while the monster is still busy fires as soon as it can (INPUT.tapBufferMs)

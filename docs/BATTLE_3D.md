@@ -145,8 +145,9 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
 
 ## 5. Controls (phone)
 - **Sideways or upright** (the owner, Nov 2: "sideways, upright still works"):
-  - A battle that starts upright asks once a session: **Play sideways** or **Stay upright**.
-  - Sideways, where the browser can (Android: the installed app, or a tab in full screen), the game turns the screen itself and turns it back afterwards; elsewhere (iPhone) it asks you to turn the phone.
+  - A battle that starts upright asks: **Play sideways** or **Stay upright**. "Stay upright" is remembered for the session; "Play sideways" asks again next battle, because turning the screen needs a tap.
+  - **Play sideways** puts the game in full screen and then turns the screen (Android Chrome, the installed app or a tab), and turns it back afterwards. Browsers only turn the screen in full screen: v1.17–v1.18 skipped full screen in the installed app, so it didn't rotate (fixed in v1.18.1).
+  - Where turning isn't possible at all (iPhone), it asks you to turn the phone.
   - **Sideways layout:** the bars and buttons along the top, the cards as a 2×2 block down the right edge, the stick under the left thumb, Push just left of the cards. Left-handed mirrors it.
   - The rest of the game stays upright (the installed app's manifest).
 - **Two thumbs at once:** the cards and Push act on the touch itself, and nothing on the panel starts a pinch or scroll, so a finger can stay on the stick while the other attacks (v1.16.1).
