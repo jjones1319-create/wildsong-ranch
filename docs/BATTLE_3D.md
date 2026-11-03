@@ -191,6 +191,12 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
   - A **sweep** paints a wide arc or ring, which tells you not to bother sidestepping.
 - **Sidestep:** the `sidestep_l` / `sidestep_r` clip; on a full dodge, a "Dodged!" float.
 - **Impact:** at the landing tick (no more visual delays: the engine and the picture agree).
+- **Attacks that visibly reach** (v1.19; the owner: "the attacks do not seem to land"). The rules were fine: a simple player lands 60% of its attacks against Songheart and wins most fights. The picture wasn't, because strikes played in place across a 2–3 m gap. Now (`attacks.ts`, `ART.duel.attack`):
+  - a melee technique leans in over the end of its wind-up, reaches the target on the landing, holds a moment and comes back;
+  - a ranged technique sends a glowing bolt (warm for POW, cool for INT) that arrives on the landing;
+  - a hit squashes the target for a moment and nudges the camera (not with Reduce motion);
+  - walking clips hold at least 0.22 s, so small back-and-forth steps don't flicker;
+  - the side camera only comes closer for a big change in distance (more than 15%), so it no longer breathes in and out as you walk.
 - Hits, KO and win use the monster's clips (`hit`, `hit_heavy`, `ko`, `win`). Effects are drawn in 3D: sparks and dust at the impact point.
 
 ## 8. The test build

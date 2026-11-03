@@ -38,6 +38,7 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { ART, BATTLE } from '../../data/tuning.ts'
 import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
+import { Bolts, lungeFor, lungeReach, type Lunge } from './attacks.ts'
 import { bandNeed, sideFraming } from './framing.ts'
 import { memoryMb, noteTextures } from './memory.ts'
 import { createCrowd, type Crowd, type CrowdStats } from './crowd.ts'
@@ -54,6 +55,7 @@ import { createCrowd, type Crowd, type CrowdStats } from './crowd.ts'
 const BASE = import.meta.env.BASE_URL
 const TO_M = 1 / 10_000
 const D = ART.duel
+const AT = ART.duel.attack
 
 export type DuelCamera = 'side' | 'behind'
 
@@ -274,6 +276,10 @@ interface Actor {
   /** When the next blink plays (the blink clip keys only the lids, so it layers over any clip). */
   nextBlink: number
   blinks: number
+  /** §7: a melee lunge in progress, a hit's squash until this time, and when the current walking clip began. */
+  lunge: Lunge | null
+  squashUntil: number
+  loopSince: number
 }
 
 function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Actor {
@@ -344,7 +350,7 @@ function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Act
     const imp = c.markers?.find((m) => m.name === 'impact' || m.name === 'release')
     if (imp) impactAt[name] = imp.t
   }
-  const a: Actor = { side, root, model, mixer, actions, current: '', holdUntil: 0, oneShot: null, pos: new Vector3(), yaw: 0, height: D.monsterHeightM, rootSpeed, impactAt, nextBlink: 1.2 + side * 0.9, blinks: side * 2 }
+  const a: Actor = { side, root, model, mixer, actions, current: '', holdUntil: 0, oneShot: null, pos: new Vector3(), yaw: 0, height: D.monsterHeightM, rootSpeed, impactAt, nextBlink: 1.2 + side * 0.9, blinks: side * 2, lunge: null, squashUntil: 0, loopSince: 0 }
   play(a, 'battle_idle', { loop: true })
   return a
 }
@@ -529,6 +535,9 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const actors: [Actor, Actor] = [makeActor(asset, 0, o.variants[0]), makeActor(asset, 1, o.variants[1])]
   for (const a of actors) scene.add(a.root)
   const sparks = new Sparks(scene)
+  const bolts = new Bolts(scene)
+  // §7: a hit nudges the camera until this time (not with Reduce motion)
+  let shakeUntil = 0
   const telegraphs: Telegraph[] = []
   await v.init(scene, camera)
   // compile the materials' shaders now, so the entrance's first frames don't stall on it (where the renderer can)
@@ -554,6 +563,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const camPos = new Vector3(0, 3, 9)
   const camLook = new Vector3(0, 0.6, 0)
   let camFov: number = D.fov
+  // the side camera's last distance, for the zoom hysteresis (§7)
+  let lastSideD = 0
   // the side-on camera's fitting camera (reused every frame)
   const fitCam = new PerspectiveCamera(D.fov, 1, 0.05, D.far)
   /** The entrance's own clock (`t`, seconds): it follows real time, so a slow first frame can't stretch it. */
@@ -665,6 +676,9 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       const highEnough = look.y + dir.y * d >= D.minCameraHeightM
       if ((fits && highEnough) || el >= fr.elevationDeg + D.confine.maxRaiseDeg) break
     }
+    // §7: don't breathe in and out as they walk: come closer only for a big change (backing out is always at once)
+    if (lastSideD > 0 && d < lastSideD && d * 100 > lastSideD * AT.zoomInPct && lastSideD <= reachInside(look, dir)) d = lastSideD
+    lastSideD = d
     need()
     return { pos: look.clone().addScaledVector(dir, d), look, fov: (2 * Math.atan(t) * 180) / Math.PI }
   }
@@ -714,11 +728,18 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       a.pos.lerp(target, 1 - Math.exp(-dt * 22))
       const face = worldOf(opp).sub(a.pos)
       a.yaw = Math.atan2(face.x, face.z)
-      a.root.position.copy(a.pos)
+      const fwd = new Vector3(Math.sin(a.yaw), 0, Math.cos(a.yaw))
+      // §7: a melee lunge carries the body across the gap to the target and back (picture only)
+      const reach = a.lunge ? lungeReach(now, a.lunge) : 0
+      if (a.lunge && now >= a.lunge.end) a.lunge = null
+      const gap = Math.max(0, actors[(1 - a.side) as Side].pos.distanceTo(a.pos) - AT.contactM)
+      a.root.position.copy(a.pos).addScaledVector(fwd, reach * gap)
       a.root.rotation.y = a.yaw
+      // §7: a hit squashes the target for a moment
+      const sq = a.squashUntil > now ? ((a.squashUntil - now) / AT.squashSec) * (AT.squashPct / 100) : 0
+      a.root.scale.set(1 + sq * 0.66, 1 - sq, 1 + sq * 0.66)
       // the clip
       const vel = a.pos.clone().sub(prev).divideScalar(Math.max(1e-3, dt))
-      const fwd = new Vector3(Math.sin(a.yaw), 0, Math.cos(a.yaw))
       const left = new Vector3(fwd.z, 0, -fwd.x)
       const vf = vel.dot(fwd)
       const vl = vel.dot(left)
@@ -732,14 +753,23 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         const name = f.sidestepDir > 0 ? 'sidestep_l' : 'sidestep_r'
         if (a.current !== resolveClip(a, name)) play(a, name, { loop: false, rate: o.speed() })
       } else if (!busyOneShot) {
-        if (f.dashTicks > 0) play(a, 'dash', { loop: true, rate: o.speed() })
-        else if (speed > 0.08) {
+        let name = 'battle_idle'
+        let rate = 1
+        if (f.dashTicks > 0) {
+          name = 'dash'
+          rate = o.speed()
+        } else if (speed > 0.08) {
           const strafing = Math.abs(vl) > Math.abs(vf)
-          const name = strafing ? (vl > 0 ? 'strafe_l' : 'strafe_r') : vf >= 0 ? 'step_fwd' : 'step_back'
+          name = strafing ? (vl > 0 ? 'strafe_l' : 'strafe_r') : vf >= 0 ? 'step_fwd' : 'step_back'
           const rs = a.rootSpeed[resolveClip(a, name) ?? ''] ?? 0
-          const rate = rs > 0 ? Math.min(2.4, Math.max(0.5, speed / rs)) : 1
+          rate = rs > 0 ? Math.min(2.4, Math.max(0.5, speed / rs)) : 1
+        }
+        // §7: walking clips hold a moment, so small back-and-forth steps don't flicker between them
+        const want = resolveClip(a, name)
+        if (want === a.current || a.oneShot !== null || name === 'dash' || now - a.loopSince >= AT.minLoopSec) {
+          if (want !== a.current) a.loopSince = now
           play(a, name, { loop: true, rate })
-        } else play(a, 'battle_idle', { loop: true })
+        }
       }
       blink(a, f.hp > 0)
       a.mixer.update(dt)
@@ -770,6 +800,13 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         const imp = a.impactAt[resolveClip(a, clip) ?? ''] ?? 0.4
         const rate = windupSec > 0.01 ? Math.min(2.6, Math.max(0.7, imp / windupSec)) : o.speed()
         play(a, clip, { loop: false, rate })
+        // §7: melee lunges across the gap; ranged sends a bolt that arrives on the landing
+        const foe = actors[(1 - e.side) as Side]
+        if (!ranged) a.lunge = lungeFor(now, windupSec)
+        else {
+          const chest = (x: Actor) => () => x.root.position.clone().add(new Vector3(0, x.height * 0.55, 0))
+          bolts.launch(chest(a), chest(foe), now, windupSec, tech?.type === 'INT')
+        }
         if (e.lands !== undefined && e.path) addTelegraph(s, e.side, e.path, tech?.type === 'INT', e.lands)
         if (tech && (tech.family === 'Special' || tech.family === 'Signature')) {
           startCine(a, now)
@@ -780,6 +817,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         const heavy = e.crit || e.damage * 8 >= s.fighters[e.target].maxHp
         if (s.fighters[e.target].hp > 0) play(t, heavy ? 'hit_heavy' : 'hit', { loop: false, rate: o.speed() })
         sparks.burst(t.pos.clone().add(new Vector3(0, t.height * 0.55, 0)), heavy ? 28 : 16, now, e.t % 7)
+        t.squashUntil = now + AT.squashSec
+        if (!o.reduceMotion) shakeUntil = now + AT.shakeSec * (heavy ? 1.6 : 1)
         crowd?.cheer(heavy ? 'big' : 'small')
       } else if (e.kind === 'ko') {
         startCine(actors[(1 - e.side) as Side], now)
@@ -995,6 +1034,12 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
           camFov += (goal.fov - camFov) * k
         }
         camera.position.copy(camPos)
+        if (now < shakeUntil) {
+          // a short, fading jolt; picture only
+          const k = ((shakeUntil - now) / AT.shakeSec) * AT.shakeM
+          camera.position.x += Math.sin(now * 91) * k
+          camera.position.y += Math.cos(now * 77) * k * 0.6
+        }
         camera.lookAt(camLook)
         setFov(camFov)
       }
@@ -1007,6 +1052,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     crowd?.update(dt, now, { x: (actors[0].pos.x + actors[1].pos.x) / 2, z: (actors[0].pos.z + actors[1].pos.z) / 2 })
     updateTelegraphs()
     sparks.update(now, camera)
+    bolts.update(now)
     v.render()
     cpuMs = performance.now() - c0
     scale(frameMs)
@@ -1074,6 +1120,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       disposed = true
       cancelAnimationFrame(raf)
       crowd?.dispose()
+      bolts.dispose()
       for (const t of telegraphs) {
         t.mesh.geometry.dispose()
         ;(t.mesh.material as Material).dispose()

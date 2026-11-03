@@ -1316,6 +1316,31 @@ export const ART = {
     /** With a ring barrier inside the camera's floor, the side camera keeps out of the strip from barrierClearInM inside the ring's edge to barrierClearM beyond it (m). */
     barrierClearM: 3.6,
     barrierClearInM: 0.5,
+    /**
+     * §7 attacks that visibly reach (the owner: "the attacks do not seem to land"): a melee attacker leans in over the
+     * last lungeSec of the wind-up to contactM short of the target, holds, and returns; a ranged one sends a bolt that
+     * travels the last boltTravelSec. A hit squashes the target and nudges the camera (not with Reduce motion).
+     * Walking clips hold at least minLoopSec (no flicker on small steps); the side camera only zooms in when it would
+     * come closer than zoomInPct of its distance (no breathing as you walk).
+     */
+    attack: {
+      contactM: 0.85,
+      lungeSec: 0.3,
+      lungeHoldSec: 0.06,
+      lungeBackSec: 0.28,
+      boltTravelSec: 0.24,
+      boltFadeSec: 0.18,
+      boltSizeM: 0.16,
+      boltArcM: 0.25,
+      powColor: '#ffb066',
+      intColor: '#8fd3ff',
+      squashSec: 0.16,
+      squashPct: 9,
+      shakeSec: 0.14,
+      shakeM: 0.05,
+      minLoopSec: 0.22,
+      zoomInPct: 85,
+    },
     /** Frames drawn behind the loading card before the entrance starts (texture uploads, first draws). */
     warmupFrames: 2,
     /** A soft dark disc under each monster's feet (m; depthPct = its front-to-back length as a share of its width). */

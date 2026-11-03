@@ -2,6 +2,29 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Battle 3D feel: attacks that visibly reach (2026-11-02) · v1.19.0
+
+The owner: "the battles feel clunky… I do not think I could ever beat my opponent if I took it over as the attacks do not seem to land… something is slightly off with the manual battles."
+- **Measured first:** the rules are fair. A simple scripted player (walks in, fires whenever a card is ready, never sidesteps) against Songheart:
+  - wins 23 of 30;
+  - lands 60% of its attacks (the cards show 64%);
+  - is sidestepped about once a match.
+  So the picture was the problem:
+  - **Strikes played in place across a 2–3 m gap,** so even hits looked like swings at the air.
+  - **Ranged moves had nothing travelling** between the monsters.
+  - **The side camera re-zoomed with every step,** so walking felt floaty.
+  - **Small back-and-forth steps flickered** between walking clips.
+- **Fix** (`attacks.ts`, `ART.duel.attack`; BATTLE_3D §7):
+  - melee lunges across the gap and back, reaching the target exactly on the landing;
+  - ranged techniques send a glowing bolt;
+  - a hit squashes the target and nudges the camera (gentle with Reduce motion);
+  - walking clips hold a moment;
+  - the side camera only comes closer for a big change.
+- **Tests:** `attacks.test.ts` (2).
+- **Checked** in Chrome sideways: frames 80 ms apart show the attacker reaching the target as the damage lands.
+
+**Next:** the owner's feel test. If movement still feels slow, the walking speed and the stick's dead zone are the next levers (the rules' walking speed is a design number, so that needs an OK).
+
 ## Hotfix: Play sideways actually turns the screen (2026-11-02) · v1.18.1
 
 The owner: "It would not rotate into landscape mode."
