@@ -28,7 +28,7 @@ export function MailboxScreen() {
   }
   const open = (m: (typeof g.mail)[number]) => {
     commit(readMail(g, m.id))
-    if (m.kind === 'upgrades') navigate('upgrades')
+    if (m.kind === 'upgrades' || m.kind === 'farm') navigate('upgrades')
     else if (m.kind === 'rumor') navigate('journal')
   }
   return (

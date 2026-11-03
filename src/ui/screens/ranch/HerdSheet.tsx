@@ -18,6 +18,7 @@ import { game } from '../../store/gameStore.ts'
 import { cardId, makeStar, penToFreezer, setOrder } from '../../store/herdStore.ts'
 import { startEditMate } from '../../store/labStore.ts'
 import { FreeSheet } from './FreeSheet.tsx'
+import { StarFriendship } from './FriendsBits.tsx'
 import { defaultDrill, lastLine, mateStatus } from './herdBits.ts'
 
 const t = HERD_TEXT.sheet
@@ -76,6 +77,7 @@ export function HerdSheet({ id, onClose }: { id: string | null; onClose: () => v
         <p class="herdsheet__last">
           <span class="field__label">{t.lastWeek}</span> {lastLine(mate.last)}
         </p>
+        <StarFriendship g={g} id={m.id} />
         <p class="field__label">{t.order}</p>
         <Segmented
           label={t.order}

@@ -64,7 +64,7 @@ export function farmLevelOf(state: Pick<GameState, 'farm'>): number {
 
 /**
  * The end of a week (from the controller's finishWeek, never the sims' runWeek): XP for the star, each ranch-mate,
- * and the tally's growth. Returns the new level when it went up, so v1.21.0 can announce it (v1.20.0 is silent).
+ * and the tally's growth. Returns the new level when it went up (the controller sends Ines's letter and tells Wren).
  */
 export function farmWeek(input: GameState): { state: GameState; leveledTo: number | null } {
   const tally = farmTallyOf(input)
@@ -119,7 +119,7 @@ export function perkAtLevel(id: FarmPerkId, level: number): boolean {
   return level >= FARM_PERK_BY_ID[id].level
 }
 
-/** Is the perk working on this ranch? Perks switch on with v1.21.0's farm card (FARM.perksLive). */
+/** Is the perk working on this ranch? (FARM.perksLive: on since v1.21.0's farm card.) */
 export function hasPerk(state: Pick<GameState, 'farm'>, id: FarmPerkId): boolean {
   return FARM.perksLive && perkAtLevel(id, farmLevelOf(state))
 }
@@ -146,4 +146,9 @@ export function farmView(state: GameState): FarmView {
     pens: { capacity: penCapacity(state), used: state.ranchmates.length, next: nextPen(state), canBuy: can.ok, blocked: can.ok ? null : can.reason },
     perks: FARM_PERKS.map((perk) => ({ perk, unlocked: perkAtLevel(perk.id, level) })),
   }
+}
+
+/** What a new level brings by itself (its perks) and opens for purchase (its pens): the level-up celebration. */
+export function levelBrings(level: number): { perks: FarmPerk[]; pens: FarmPen[] } {
+  return { perks: FARM_PERKS.filter((p) => p.level === level), pens: FARM_PENS.filter((p) => p.level === level) }
 }

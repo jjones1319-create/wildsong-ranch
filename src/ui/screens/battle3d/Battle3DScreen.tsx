@@ -92,7 +92,7 @@ function Bars({ f, right }: { f: FighterView; right?: boolean }) {
 declare global {
   interface Window {
     /** For the review recordings (tools/art/battle3d-review.ts). */
-    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; arena(id: ArenaId): void; crowdFame(fame: number): Promise<void> }
+    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; arena(id: ArenaId): void; crowdFame(fame: number): Promise<void>; preview(tech: string, side: 0 | 1, outcome: 'hit' | 'miss'): number; pause(on: boolean): void; slowMo(k: number): void; clock(): number }
   }
 }
 
@@ -180,6 +180,11 @@ export function Battle3DScreen() {
         setArenaId(id)
       },
       playerFires: () => liveBattleState()?.log.filter((e) => e.kind === 'fire' && e.side === 0).length ?? 0,
+      // §7 review: any technique's effects, picture only (tools/art/attack-fx-review.ts)
+      preview: (tech, side, outcome) => duel.current?.preview(tech, side, outcome) ?? 0,
+      slowMo: (k) => duel.current?.setTimeScale(k),
+      clock: () => duel.current?.clock() ?? 0,
+      pause: (on) => setPaused(on),
       async crowdFame(n) {
         setFame(n)
         await duel.current?.setCrowdFame(n)

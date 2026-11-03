@@ -52,6 +52,32 @@ export const HERD_TEXT = {
     star: '{name}, the star. Open the Monster Card.',
     mate: '{name}. Order: {order}. {status}',
     emptyPen: 'An empty pen. Move a monster in.',
+    /** "Pens 1/2 · Farm Lv 3". */
+    count: 'Pens {used}/{max} · Farm Lv {n}',
+    newPen: '+ pen',
+    newPenLabel: 'Build another pen at Ranch Upgrades.',
+    lockedPenLabel: 'The next pen opens at farm level {n}. See Ranch Upgrades.',
+  },
+  /** §6.11 friendships: monsters at home together grow closer. {a} and {b} are names. */
+  friends: {
+    tiers: ['Getting to know each other', 'Friends', 'Close friends', 'Best friends'],
+    /** Wren's week-summary line when a pair reaches a tier (index 1–3). */
+    reached: [
+      '',
+      '{a} and {b} are friends now! They keep finding reasons to sit together.',
+      '{a} and {b} are close friends now! I caught them sharing a snack by the fence.',
+      '{a} and {b} are best friends now! Where one goes, the other follows.',
+    ],
+    /** The herd sheet: the ranch-mate's friendship with the star. */
+    withStar: 'With {name}',
+    /** The Monster Card's section. */
+    title: 'Friends',
+    none: '{name} hasn’t made friends yet. Monsters who live at home together grow closer every week.',
+    points: '{n} pts',
+    /** The drill result, when the training partner joined in. */
+    buddy: '{buddy} trained right alongside! {name} worked extra hard to keep up.',
+    /** The Train sheet's tag on a drill a friend is ready to share. */
+    partner: '🤝 {name} joins in',
   },
   /** A ranch-mate's sheet (tap its tile on the strip). */
   sheet: {
@@ -134,7 +160,7 @@ export const HERD_TEXT = {
     market: 'It will move into a pen beside the star.',
   },
   /** The planner stopped for ranch-mate news. */
-  plannerStop: 'There’s news from the pens. I stopped so you can see.',
+  plannerStop: 'There’s news from the pens and the farm. I stopped so you can see.',
   /** The one-time homecoming card. */
   homecoming: {
     title: 'Welcome home!',
@@ -156,14 +182,25 @@ export const HERD_TEXT = {
   /** The farm card (Ranch Upgrades) and its perks. */
   farm: {
     title: 'The farm',
+    intro: 'The farm grows with every week and every success. Pens are bought; comforts come with the level.',
     level: 'Farm Lv {n}',
+    xpLabel: 'XP',
     xp: '{xp} / {next} XP',
     max: 'Top level',
-    pens: 'Pens {used}/{max}',
+    pensBuilt: 'Pens built: {n} of {max}',
     nextPen: 'Next pen: {price}G at Lv {level}',
     allBuilt: 'Every pen is built.',
-    buyPen: 'Build a pen',
+    buyPen: 'Build a pen ({price})',
+    ask: 'Build pen {n} for {price}? One more ranch-mate will fit.',
+    built: 'The new pen is built! There’s room for one more ranch-mate.',
+    refused: { allBuilt: 'Every pen is built.', level: 'The farm needs to reach Lv {n} first.', money: 'Not enough gold yet.' },
+    perksTitle: 'Comforts',
     locked: '🔒 Lv {n}',
+    /** The week summary's little celebration, and Wren's line. */
+    levelUp: 'Farm Lv {n}!',
+    levelUpLine: 'The farm reached level {n}! Ines sent a letter from the Guild.',
+    brings: 'New: {list}',
+    newPen: 'a pen to build',
     perks: {
       feedShed: 'Ranch-mates eat at 60% of the price.',
       farmhand: 'A farmhand praises ranch-mates’ good drills.',

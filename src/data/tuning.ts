@@ -519,6 +519,11 @@ export const BATTLE = {
     strafePct: 80,
     /** The wind-up before a technique lands, by family, in ticks (30 per second): the telegraph a sidestep answers. */
     windup: { Basic: 6, Hit: 7, Heavy: 12, Wither: 9, Sharp: 8, Special: 10, Chain: 8, Signature: 12 },
+    /**
+     * The owner (Nov 3): "speed them up a bit, probably by 20%". In the duel a technique's wind-up and its recovery
+     * (`anim`) are this percent of the table above and of the technique's own `anim`, rounded to whole ticks.
+     */
+    paceTicksPct: 80,
     /** A sidestep: how long it takes (ticks), how far it goes sideways (units), its guts and its cooldown (ticks). */
     sidestep: { ticks: 8, units: 180, cost: 4, cooldown: 45 },
     /** A straight-line technique misses a defender standing farther than this from its line (units: a body radius and a little). */
@@ -832,9 +837,9 @@ export const HERD = {
 } as const
 
 /**
- * §6.11 friendships (their weekly growth and effects arrive in v1.21.0): points per week together (+ Play, + the
+ * §6.11 friendships (v1.21.0; core/friends.ts): points per week together at home (+ a ranch-mate on Play, + the
  * Campfire Circle), the cap, the tiers (Friends, Close, Best), the weekly calm by the best friend's tier, the training
- * partner's bonus on good drills, and the most pairs a save keeps.
+ * partner's bonus on good drills (added to the main gain before the bond boost), and the most pairs a save keeps.
  */
 export const FRIENDS = {
   perWeek: 1,
@@ -851,7 +856,7 @@ export const FRIENDS = {
  * §6.11 / §9.1 the farm level. `levelXp[i]` is the XP that reaches level i + 1 (levels 1–10). Weekly XP: the star and
  * each ranch-mate; once per new achievement: a title, a cup won, a Journey, an expedition, a breed, a breeder rank.
  * Pens add to `basePens` (CONTENT §11 prices and levels in data/farm.ts); the Feed Shed feeds ranch-mates at
- * `feedShedPct` of the price. `perksLive` stays off until v1.21.0 shows the farm card.
+ * `feedShedPct` of the price. `perksLive` switched on with v1.21.0's farm card (v1.20.0 kept them off).
  */
 export const FARM = {
   basePens: 1,
@@ -859,7 +864,7 @@ export const FARM = {
   xp: { star: 2, mate: 1, title: 20, cup: 10, journey: 5, expedition: 15, breed: 5, rank: 30 },
   maxXp: 100_000_000,
   feedShedPct: 60,
-  perksLive: false,
+  perksLive: true,
 } as const
 
 /**
@@ -1369,8 +1374,8 @@ export const ART = {
     barrierClearInM: 0.5,
     /**
      * §7 attacks that visibly reach (the owner: "the attacks do not seem to land"): a melee attacker leans in over the
-     * last lungeSec of the wind-up to contactM short of the target, holds, and returns; a ranged one sends a bolt that
-     * travels the last boltTravelSec. A hit squashes the target and nudges the camera (not with Reduce motion).
+     * last lungeSec of the wind-up to contactM short of the target, holds, and returns; a ranged one's projectile (fx
+     * below) travels the last boltTravelSec. A hit squashes the target and nudges the camera (not with Reduce motion).
      * Walking clips hold at least minLoopSec (no flicker on small steps); the side camera only zooms in when it would
      * come closer than zoomInPct of its distance (no breathing as you walk).
      */
@@ -1380,17 +1385,46 @@ export const ART = {
       lungeHoldSec: 0.06,
       lungeBackSec: 0.28,
       boltTravelSec: 0.24,
-      boltFadeSec: 0.18,
-      boltSizeM: 0.16,
-      boltArcM: 0.25,
-      powColor: '#ffb066',
-      intColor: '#8fd3ff',
       squashSec: 0.16,
       squashPct: 9,
       shakeSec: 0.14,
       shakeM: 0.05,
       minLoopSec: 0.22,
       zoomInPct: 85,
+    },
+    /**
+     * §7 attack effects (src/art3d/duel/fx*.ts; the owner, Nov 3: "build in the visuals for the attacks"): every
+     * technique looks like its element and shape. Metres and seconds (at ×1). familyPct sizes everything and scales the
+     * particle counts (Basic small → Heavy big → Special and Signature grand); quality gives each graphics setting its
+     * particle share and whether the grand moves flash; maxQuads is each of the two pools (glowing, solid: one draw
+     * each); lifeBySpeed shortens the effects at ×1, ×2, ×4 so they don't pile up.
+     */
+    fx: {
+      familyPct: { Basic: 70, Hit: 80, Sharp: 90, Chain: 100, Wither: 95, Heavy: 130, Special: 155, Signature: 185 },
+      quality: { full: { particlePct: 100, flash: true }, lite: { particlePct: 50, flash: false }, reduced: { particlePct: 60, flash: false } },
+      maxQuads: 640,
+      lifeBySpeed: [1, 0.8, 0.6],
+      /** Base particles: an impact burst, a trail per second, the motes a grand wind-up draws in, the drain wisps. */
+      burst: 14,
+      trailPerSec: 40,
+      chargeMotes: 10,
+      wisps: 6,
+      /** Sizes: the projectile's core, the wind-up glow at its brightest, the grand flash, a slash, a shockwave. */
+      projectileM: 0.28,
+      chargeM: 0.32,
+      flashM: 2.0,
+      slashM: 1.15,
+      shockwaveM: 1.5,
+      /** Times: the flash, a multi-hit's stagger, a whiff flying on past, the wisps' trip back. */
+      flashSec: 0.13,
+      hitGapSec: 0.07,
+      overshootSec: 0.32,
+      wispSec: 0.5,
+      /** A miss veers this far to the side; a sweep's wave front spreads this many degrees either side of the target. */
+      missOffsetM: 0.75,
+      /** An impact sits this far in front of the target, toward the camera, so the target's own body doesn't hide it. */
+      impactFrontM: 0.35,
+      waveFrontDeg: 55,
     },
     /** Frames drawn behind the loading card before the entrance starts (texture uploads, first draws). */
     warmupFrames: 2,
@@ -1405,8 +1439,12 @@ export const ART = {
     /** Camera springs (per second): normal, and gentler with Reduce motion. */
     spring: 5,
     springReduced: 2.2,
-    /** Cinematic cuts for Specials, Signatures and KOs: a low three-quarter on the attacker. */
-    cine: { enabled: true, ahead: 1.6, side: 1.3, height: 0.55, seconds: 1.5 },
+    /**
+     * Cinematic cuts for Specials, Signatures and KOs: a low three-quarter on the attacker (ahead, side, height, m).
+     * A Special or Signature (v1.21) looks over the attacker's shoulder instead (`attack`: back, side, height, m; the
+     * look point lookPct of the way to the target), so its effects and their impact are in the shot.
+     */
+    cine: { enabled: true, ahead: 1.6, side: 1.3, height: 0.55, seconds: 1.5, attack: { back: 2.9, side: 1.5, height: 1.2, lookPct: 60 } },
     /**
      * The entrance: the fly-in along the arena's timed camera path (its times scaled to flySeconds), the walk-on from
      * outside the gates to the start marks, then the face-off until `seconds`.

@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { FARM_PENS, FARM_PERKS } from '../data/farm.ts'
 import { FARM, FREEZER } from '../data/tuning.ts'
 import { newRanchmate } from './creation.ts'
-import { buyPen, canBuyPen, farmLevel, farmView, farmWeek, hasPerk, penCapacity, perkAtLevel, seedFarm, startTally, tallyXp } from './farm.ts'
+import { fill } from '../data/text/format.ts'
+import { HERD_TEXT } from '../data/text/herd.ts'
+import { buyPen, canBuyPen, farmLevel, farmView, farmWeek, hasPerk, levelBrings, penCapacity, perkAtLevel, seedFarm, startTally, tallyXp } from './farm.ts'
 import { finishWeek } from './game.ts'
 import { freezerSlots } from './legacy.ts'
+import { runPlanner } from './planner.ts'
+import { herdLines } from './report.ts'
 import { createRng } from './rng.ts'
 import { createGameState, type GameState } from './state.ts'
 import { makeMonster } from './test-helpers.ts'
@@ -52,10 +56,31 @@ describe('farm levels (§9.1)', () => {
     expect(tallyXp(busy.farm.tally, { ...busy.farm.tally, titles: 0 })).toBe(0)
   })
 
-  it('reports a level-up (silent in v1.20.0)', () => {
+  it('reports a level-up', () => {
     const g = game()
     g.farm.xp = FARM.levelXp[1]! - 1
     expect(farmWeek(g).leveledTo).toBe(2)
+  })
+
+  it('a new level brings Ines’s letter, a summary line, and a planner stop (v1.21.0)', () => {
+    const g = game()
+    g.weekPhase = 'action'
+    g.farm.xp = FARM.levelXp[2]! - 1
+    const r = finishWeek(g, createRng(4))
+    expect(r.events).toContainEqual({ kind: 'farmLevel', level: 3 })
+    expect(r.state.mail[0]).toMatchObject({ kind: 'farm', ref: '3', read: false })
+    expect(herdLines(r.events).map((l) => l.text)).toContain(fill(HERD_TEXT.farm.levelUpLine, { n: 3 }))
+    expect(levelBrings(3).perks.map((p) => p.id)).toEqual(['feedShed'])
+    expect(levelBrings(2).pens.map((p) => p.price)).toEqual([3000])
+    // The planner stops after that week.
+    const p = { ...structuredClone(g), weekPhase: 'start' as const }
+    p.planner.queue = [{ kind: 'rest' }, { kind: 'rest' }]
+    const run = runPlanner(p, createRng(4))
+    expect(run.stop).toBe('ranchmate')
+    expect(run.weeks).toBe(1)
+    // An ordinary week stays quiet.
+    g.farm.xp = 0
+    expect(finishWeek(g, createRng(4)).events.some((e) => e.kind === 'farmLevel')).toBe(false)
   })
 
   it('finishWeek earns the week’s XP without touching the random stream', () => {
@@ -129,14 +154,15 @@ describe('pens and perks (CONTENT §11)', () => {
     ])
   })
 
-  it('perks come with their level, and stay off until v1.21.0 switches them on', () => {
+  it('perks come with their level (switched on since v1.21.0)', () => {
     expect(perkAtLevel('feedShed', 2)).toBe(false)
     expect(perkAtLevel('feedShed', 3)).toBe(true)
     expect(perkAtLevel('campfire', 10)).toBe(true)
     const top = { ...game(), farm: { xp: FARM.maxXp, pensBought: 0, tally: startTally() } }
-    expect(FARM.perksLive).toBe(false)
-    expect(hasPerk(top, 'deepFreezer')).toBe(false)
-    expect(freezerSlots(top)).toBe(FREEZER.slots)
+    expect(FARM.perksLive).toBe(true)
+    expect(hasPerk(top, 'deepFreezer')).toBe(true)
+    expect(freezerSlots(top)).toBe(FREEZER.deepSlots)
+    expect(hasPerk(game(), 'feedShed')).toBe(false)
     const view = farmView(top)
     expect(view.level).toBe(10)
     expect(view.levelTo).toBeNull()

@@ -73,7 +73,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 ```
 src/
   core/      pure rules: rng, hash, calendar, monster, training, aging, food, items, journey,
-             tournament, npc, fusion, shrine, expedition, events, herd/herdMoves (ranch-mates), farm, homecoming,
+             tournament, npc, fusion, shrine, expedition, events, herd/herdMoves (ranch-mates), friends, farm, homecoming,
              battle/{engine,formulas,ai,specials,geometry,duelAi,duelSense,duelRead}
   data/      tuning.ts (ALL numbers) · breeds · techniques · drills · foods · items · calendar ·
              journeys · expeditions · rivals · secrets (hashed) · text/ (all player-facing strings)

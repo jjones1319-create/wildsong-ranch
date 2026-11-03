@@ -244,9 +244,14 @@ export function finishWeek(input: GameState, rng: Rng): StepResult {
     r.state = awarded.state
     r.events.push({ kind: 'titles', titles: awarded.titles })
   }
-  // §9.1 the farm's XP for the week and anything new (silent in v1.20.0; v1.21.0 announces the levels). The sims'
-  // runWeek never comes through here, and no randomness is used.
-  r.state = farmWeek(r.state).state
+  // §9.1 the farm's XP for the week and anything new; a new level brings Ines's letter and a line in the summary.
+  // The sims' runWeek never comes through here, and no randomness is used.
+  const farmed = farmWeek(r.state)
+  r.state = farmed.state
+  if (farmed.leveledTo !== null) {
+    r.state.mail.unshift({ id: `${r.state.week}-farm-${farmed.leveledTo}`, week: r.state.week, kind: 'farm', ref: String(farmed.leveledTo), read: false })
+    r.events.push({ kind: 'farmLevel', level: farmed.leveledTo })
+  }
   return { state: r.state, events: r.events }
 }
 

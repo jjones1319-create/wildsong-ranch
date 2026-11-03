@@ -111,6 +111,8 @@ function stopAfterFinish(state: GameState, events: readonly WeekEvent[]): Planne
   if (events.some((e) => e.kind === 'aging' && (e.event.kind === 'warning' || e.event.kind === 'pastPrime'))) return 'warning'
   // v16: notable news from the pens (illness, running off, Prime, a passing…); routine weeks never stop a run.
   if (events.some((e) => e.kind === 'herd' && e.reports.some((r) => mateNews(r).length > 0))) return 'ranchmate'
+  // v1.21.0: a friendship tier or a new farm level (with Ines's letter) is news worth stopping for, too.
+  if (events.some((e) => e.kind === 'friends' || e.kind === 'farmLevel')) return 'ranchmate'
   const m = state.monster
   if (m && m.fatigue >= PLANNER.stopFatigue) return 'fatigue'
   if (m && m.stress >= PLANNER.stopStress) return 'stress'

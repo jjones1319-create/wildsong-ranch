@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-// v1.21.0 switches the perks on with the farm card; these tests check their wiring ahead of that.
+// The perks are on since v1.21.0 (FARM.perksLive); the mock keeps these tests about the perks themselves either way.
 vi.mock('../data/tuning.ts', async (importOriginal) => {
   const real = await importOriginal<typeof import('../data/tuning.ts')>()
   return { ...real, FARM: { ...real.FARM, perksLive: true } }

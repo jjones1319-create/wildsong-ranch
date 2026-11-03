@@ -46,16 +46,24 @@
   - in line mode every helper reduces to the original arithmetic.
 
 ## 3. Wind-ups, paths and the sidestep
-**Wind-up.** In the duel, a technique is **fired** (cost paid, animation started, `fire` event with `lands` and `path`) and **lands** after its family's wind-up (`BATTLE.duel.windup`, ticks at 30 per second):
+**Wind-up.** In the duel, a technique is **fired** (cost paid, animation started, `fire` event with `lands` and `path`) and **lands** after its family's wind-up (ticks at 30 per second).
+
+**The duel's pace** (v1.21; the owner, Nov 3: "speed them up a bit, probably by 20%"): in the duel the wind-up and the attacker's recovery are **80%** (`BATTLE.duel.paceTicksPct`) of the base table (`BATTLE.duel.windup`) and of the technique's own `anim`, rounded to whole ticks (`src/core/battle/pace.ts`). The line battle keeps its own timing, bit for bit.
 
 | Family | Basic | Hit | Sharp | Chain | Wither | Special | Heavy | Signature |
 |---|---|---|---|---|---|---|---|---|
-| Wind-up (ticks) | 6 | 7 | 8 | 8 | 9 | 10 | 12 | 12 |
-| Seconds | 0.20 | 0.23 | 0.27 | 0.27 | 0.30 | 0.33 | 0.40 | 0.40 |
+| Base wind-up (ticks) | 6 | 7 | 8 | 8 | 9 | 10 | 12 | 12 |
+| **Duel wind-up (ticks)** | **5** | **6** | **6** | **6** | **7** | **8** | **10** | **10** |
+| Seconds | 0.17 | 0.20 | 0.20 | 0.20 | 0.23 | 0.27 | 0.33 | 0.33 |
+
+| `anim` (ticks) | 24 | 27 | 30 | 36 | 39 | 42 |
+|---|---|---|---|---|---|---|
+| Duel recovery (ticks) | 19 | 22 | 24 | 29 | 31 | 34 |
 
 - The hit roll, damage and effects all happen at the landing, from the state at that moment.
-- The animation still runs its full `anim`, counted from the fire, so the attacker's pacing is unchanged.
+- The recovery is counted from the fire, as before; the 3D picture times its clips, lunges and projectiles from each `fire` event's `lands`, so it follows the new pace on its own.
 - On the line, both happen on the same tick, exactly as before.
+- **What it changes in play:** the player's own attacks come about 20% quicker one after another. The CPU attacks only a little more often (attacks per match +2–3%), because its pause between techniques (§12.10's tier cooldowns) is unchanged; that is the lever if the CPU should speed up too.
 
 **Paths** (`src/data/paths.ts`, `pathOf`). Each technique is a **straight line** or a **wide sweep**:
 1. no force (a pure heal) or the Wither family (clouds, auras, roars) → sweep;
@@ -72,7 +80,7 @@ About a third of the 312 techniques are sweeps.
   - the hit roll gets the existing **disadvantage**, h = h²/100 (a 70% hit becomes 49%);
   - if the defender is more than **110 units** (a body radius and a little) from the technique's line when it lands, it **misses** (`miss` with `dodged`). The line runs from the attacker at the fire to where the defender stood then.
 - **Against a sweep:** nothing.
-- **What that means in play:** escaping completely needs about 5 ticks of sideways movement before the landing, so only the long wind-ups can be escaped. Heavies, Signatures and most Specials can be, with a quick reaction. Quick Basics and Hits can only be made harder to land. A sidestep **helps but never replaces stats**: the defender's SPD still sets the odds, and a sidestep costs guts and leaves a cooldown.
+- **What that means in play:** escaping completely needs about 5 ticks of sideways movement before the landing, so only the long wind-ups can be escaped. At the duel's pace a Heavy or Signature leaves about 5 ticks (0.17 s) to react, a Special about 3 (it was 7 and 5 before v1.21); quick Basics, Hits, Sharps and Chains can only be made harder to land. A sidestep **helps but never replaces stats**: the defender's SPD still sets the odds, and a sidestep costs guts and leaves a cooldown.
 
 ## 4. The CPU and Auto: AI 3.0 (`src/core/battle/duelAi.ts`, `duelSense.ts`, `duelRead.ts`)
 The range plan of §12.10 (bands, techniques, dashes and pushes) still decides where to stand and what to fire. AI 3.0 is the duel's own layer on top of it; the owner asked for "a mix of all of these" (Nov 2), plus: **an untrained or spoiled pet makes worse decisions**. Every rule below happens in duel mode only, so line battles replay bit for bit.
@@ -180,7 +188,7 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
   - When the fight is by the wall on its side, it also rises until both fit.
   - All of these numbers are in `ART.duel` (`side`, `behind`, `confine`).
 - **Cinematic cuts:**
-  - for a **Special**, a **Signature** or a **KO**, a short cut (1.2–1.8 s) to a low three-quarter angle on the attacker, then back;
+  - for a **Special** or **Signature**, a short cut (1.2–1.8 s) over the attacker's shoulder toward the target, so the move's effects and impact are in the shot (v1.21, §7.1); for a **KO**, a low three-quarter angle on the winner; then back;
   - the battle keeps running: cuts never pause the simulation, and inputs still count.
 - **One button** cycles side-on ⇄ behind. In the test build the cinematic cuts are a tuning switch (`ART.duel.cine.enabled`); a Settings toggle comes with the full release (it changes the save's settings, so it needs a save version).
 - **Reduce motion:** gentle cuts (cross-fades, no swoops or shake), and the side-on camera turns slower.
@@ -197,7 +205,68 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
   - a hit squashes the target for a moment and nudges the camera (not with Reduce motion);
   - walking clips hold at least 0.22 s, so small back-and-forth steps don't flicker;
   - the side camera only comes closer for a big change in distance (more than 15%), so it no longer breathes in and out as you walk.
-- Hits, KO and win use the monster's clips (`hit`, `hit_heavy`, `ko`, `win`). Effects are drawn in 3D: sparks and dust at the impact point.
+- Hits, KO and win use the monster's clips (`hit`, `hit_heavy`, `ko`, `win`).
+
+### 7.1 Every attack looks like what it is (v1.21)
+The owner (Nov 3): "we need to build in the visuals for the attacks". Each technique now shows its **element** and its **shape**, in 3D only (`src/art3d/duel/`).
+
+**Where the look comes from.** The classic battle's effect mapping, so the two battles agree:
+- the technique's element (CONTENT §3, `Technique.element`);
+- the element's colours and projectile from `src/fx/elements.ts`;
+- the hit layer per element from `src/fx/recipes.ts`.
+
+`fxRecipe.ts` turns a technique into a recipe (pure and tested).
+
+| Element | Projectile (ranged) | Impact |
+|---|---|---|
+| Fire | an orb trailing flames | flames licking up, embers, smoke |
+| Water | a drop trailing droplets | droplets, a splash ring on the floor |
+| Ice | a lance trailing glints | shards, cold mist |
+| Lightning | a bolt trailing sparks | forks crackling out, a flicker of light |
+| Wind | a spinning blade and gust | gusts curling round the target |
+| Earth | a tumbling boulder trailing dust | the floor cracks, rocks and dust, a ground ring |
+| Nature | a whirl of three leaves | leaves whirling round the target |
+| Light | a bright orb trailing stars | stars, a bloom of light, a ring |
+| Dark | a smoky orb with a violet heart | a dark core that gathers in, then smoke |
+| Sound | a note in a ring | notes floating up, rings pulsing out |
+| Physical | a plain orb | an impact ring, streaks, dust at the feet |
+
+**The shape** comes from the rules' own data:
+- **Melee** techniques lunge (§7 above) and trail the element's bits behind the attacker.
+- **Sweeps** (§3) roll a wave across the floor from the attacker: a front of crescents, about 110° wide, that reaches the target on the landing, throwing up the element's bits as it passes.
+- **The family sets the size** (`ART.duel.fx.familyPct`): Basic 70%, Hit 80%, Sharp 90%, Wither 95%, Chain 100%, Heavy 130%, Special 155%, Signature 185%.
+  - **Special and Signature:** motes drawn in during the wind-up, a brief flash and a wide ring on the floor at the impact. The impact's extra layer grows only with the square root of the size, so the grand moves don't swallow the target in the close-up cut (and Basics stay readable).
+  - **Signature:** the biggest of all (185%), with a second burst and ring on the impact.
+- **Sharp:** a slash arc across the target.
+- **Multi-hit:** smaller impacts, a beat (0.07 s) apart; a ranged one sends that many smaller projectiles (up to 4).
+- **Knockback:** a shockwave ring standing across the blow, and one on the floor.
+- **Wither and drain:** wisps fly back from the target to the attacker.
+- **Heal:** sparkles rise round the healer.
+- **Knocked into the fence:** dust and grit at the feet.
+
+**Timing** (the stage clock, so it follows the speed and the v1.21 pace):
+- **The wind-up:** a ring closes in on the attacker while a glow builds (with the wind-up's length), from the fire to the release.
+- **The release and travel:** a projectile flies the last 0.24 s (or the whole wind-up, if shorter); a lunge takes the last 0.3 s.
+- **The impact:** it comes from the engine's `hit` event, so it lands exactly on the landing tick. It sits 0.35 m in front of the target, on the camera's side (`impactFrontM`), so the target's own body doesn't hide it.
+- **A miss** has no impact. A projectile veers 0.75 m aside and flies on past; a melee blow swishes beside the target.
+- **A sidestep** during the wind-up leaves the projectile flying to where the defender stood, so a dodge shows as a near miss.
+
+**The look in daylight.** A first pass drew the effects as added light, and on the sunlit floor they washed out. So the main shapes are **solid and inked**, like the monsters' cel look. Each shape in the atlas has a grey rim, which the tint turns into a darker shade of the particle's own colour, so a flame, drop or leaf reads against the sand in any light. Added light is kept for accents only: glows, halos and the flash, which also bloom in Full.
+
+**The cinematic cut** for a Special or Signature (§6) now looks over the attacker's shoulder toward the target (`ART.duel.cine.attack`), so the grand moves' effects and their impact are in the shot. The KO cut is unchanged. Before, the cut looked back at the attacker from between the fighters, so the impact happened behind the camera.
+
+**Budget:**
+- **Two draws for all the effects:** one glowing and one solid, each a pool of 640 quads (`fxBatch.ts`) whose corners are written on the CPU. Plain `MeshBasicMaterial` with vertex colours, so WebGL and WebGPU draw the same.
+- **No allocation while the battle runs:** one fixed pool of particles (`fxParticles.ts`).
+- **The old effects are gone:** the v1.19 spark mesh and bolts.
+- **Lite:** half the particles, no flash. **Reduce motion:** 60% of the particles, no flash.
+- **Faster speeds** shorten the effects: ×0.8 at ×2, ×0.6 at ×4.
+- **The texture** is one 256 px atlas of 16 shapes drawn in code (`fxShapes.ts`). No assets.
+- **Measured** in the review (the headless PC proxy, Guild and Crown, sideways and upright): at most 124 quads at once (a three-hit Signature), within the two draws; 0.1–0.3 ms of CPU a frame (one 4.8 ms sample with only 6 quads on screen was the page stalling, not the effects).
+
+**Review:** `node tools/art/attack-fx-review.ts [--no-build] [--arena crown] [--upright]`.
+- It pauses the test fight, fires chosen techniques with the picture-only preview (`window.__battle3d.preview`, in slow motion), and keeps frames at set times around each landing: two in the wind-up, then 0.01–0.5 s after.
+- It writes `art-review/attack-fx/sheet.png` and `sheet-2.png`, with `rows.txt` listing what each row is.
 
 ## 8. The test build
 - **Where:** Lab → **Battle 3D (test)** (`#lab/battle3d`).
@@ -317,7 +386,13 @@ Command: `npm run sim:balance -- --only battle --mode duel --out docs/BALANCE_DU
 | Classic (line) | 94.8% | 99.4% | 94.2% |
 | Duel, first run | **97.0%** | 98.2% | 88.1% |
 | Duel, after the two adjustments below | 96.4% | 98.2% | 90.3% |
-| Duel with AI 3.0 (§4; the committed report) | 96.6% | 98.0% | **92.7%** |
+| Duel with AI 3.0 (§4) | 96.6% | 98.0% | **92.7%** |
+| Duel at the v1.21 pace (§3, 80%; the committed report) | **97.6%** | 98.0% | 92.7% |
+
+**The v1.21 pace** (wind-ups and recovery at 80%, Nov 3) left the balance as it was, a little better at 1,000: no adjustment.
+- A breed's mean moved 1.0–1.1 points on average (the run-to-run noise is about ±1.5). The most: at 1,000 Coilfang and Rammerjack +2.3, Lootlid +1.9; at 2,000 Plumdrake −3.4, Grumblestone +2.3; at 3,000 Quillion −3.3, Tumblefox −2.7, Nibblegrub +2.2.
+- The means' spread barely changed: at 3,000 from 33.1–62.7 to 31.2–62.7. Gloomgrin is still the weakest late (33.1 → 31.2); Velvesper (62.7), Coilfang (61.3) and Zipwisp (60.5) the strongest.
+- Attacks per monster per match rose 2–3% (at 3,000 from 8.7 to 8.9; range 6.4–11.6), since the CPU's pause between techniques is unchanged. Coilfang at 1,000 is at 12.6 (it was 12.2), just over the 4–12 band.
 
 **What moved** (mean win share against every breed, at the 3,000 total):
 - **Fast, skilful breeds gain:** they circle and sidestep well, because SPD shortens the reflex and evasion is already SPD.
@@ -343,15 +418,16 @@ Command: `npm run sim:balance -- --only battle --mode duel --out docs/BALANCE_DU
 Together they took the 3,000 total from 88.1% to 90.3%.
 
 **Open, for after the owner has played it:**
-- if the late game should be closer, shorten the Heavy and Signature wind-ups (12 → 10 ticks), or give slow breeds a longer reflex window;
-- the wind-up table is the main lever.
+- if the late game should be closer: the v1.21 pace already took the Heavy and Signature wind-ups from 12 to 10 ticks without closing it (slow heavy hitters still trail), so the next lever is a longer reflex window for slow breeds;
+- the wind-up table and `paceTicksPct` are the main levers; if the CPU should attack faster too, scale its tier cooldowns in the duel.
 
 ## 10. Files
 - **Core:**
-  - `src/core/battle/geometry.ts` (the ring), `duelAi.ts`, and `engine.ts` (the `mode` option, the fire / land split, sidesteps, strafing);
+  - `src/core/battle/geometry.ts` (the ring), `duelAi.ts`, `pace.ts` (the duel's 80% pace, §3), and `engine.ts` (the `mode` option, the fire / land split, sidesteps, strafing);
   - `types.ts` (`BattleMode`, `PendingFire`, the `sidestep` action and event, `move.side`);
   - `src/data/paths.ts`;
   - `tuning.ts` (`BATTLE.duel`, `AI.duel`).
 - **The picture:** `src/art3d/duel/duel3d.ts`; the crowd in `crowd.ts`, `crowdPlan.ts` (pure), `crowdPose.ts`, `crowdParts.ts` and `cutouts.ts` (`ART.duel.crowd`); the arena's seats from `tools/blender/arenas/guild.py` (`crowd_spots`).
-- **Tests:** `src/core/battle/duel.test.ts`; every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers).
+- **The attack effects (§7.1):** `attackFx.ts` (events → effects), `fxRecipe.ts` (technique → recipe, pure), `fxSpawn.ts` (impacts), `fxDelivery.ts` (wind-up, projectiles, waves, wisps, slash, shockwave), `fxParticles.ts` (the pool), `fxBatch.ts` (the two draws), `fxAtlas.ts` and `fxShapes.ts` (the texture); `attacks.ts` (lunges); `ART.duel.fx`.
+- **Tests:** `src/core/battle/duel.test.ts`; every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers); `src/art3d/duel/fxRecipe.test.ts` and `fxParticles.test.ts` (the mapping, the pool, the two draws); the pace in `duel.test.ts`.
 - **Balance:** `scripts/balance.ts` `--mode duel`.

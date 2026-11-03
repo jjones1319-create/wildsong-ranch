@@ -15,6 +15,7 @@ import { settings } from '../../store/appStore.ts'
 import { dismissTip, game, tipFor } from '../../store/gameStore.ts'
 import { cardId } from '../../store/herdStore.ts'
 import { startEdit, startEditActive, startEditMate } from '../../store/labStore.ts'
+import { FriendsSection } from './FriendsBits.tsx'
 
 /**
  * §21 the Monster Card in play, with the owner's three buttons: Use item · Learn technique · ✏️ Edit. v16: it shows
@@ -71,6 +72,7 @@ export function MonsterCardScreen() {
           )}
         </section>
       )}
+      <FriendsSection g={g} id={m.id} name={m.name} />
       <div class="actionbar">
         {canUse && (
           <button type="button" class="btn btn--half" onClick={() => navigateFrom('ranchCard', 'bag')}>

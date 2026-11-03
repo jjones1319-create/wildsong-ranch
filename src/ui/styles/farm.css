@@ -1,0 +1,166 @@
+/* v1.21.0 growing the farm (GAME_DESIGN §9.1, §6.11): the next-pen tile on the herd strip, the farm card at Ranch
+   Upgrades, friendship hearts, and the small level-up celebration in the week summary. Tap targets ≥ 44 px. */
+
+.herd__tile--next {
+  justify-content: center;
+  padding: 4px 12px;
+  border-style: dashed;
+  background: rgb(242 181 68 / 0.08);
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.herd__tile--locked {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.farmcard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bar--xp .bar__fill {
+  background: var(--accent);
+}
+
+.farmcard__pens {
+  margin-top: 8px;
+}
+
+.farmcard__buy {
+  margin-top: 8px;
+}
+
+.farmcard__perks {
+  margin-top: 16px;
+}
+
+.farmcard__list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.farmcard__perk {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.farmcard__perk--locked {
+  opacity: 0.7;
+}
+
+.farmcard__mark {
+  flex: 0 0 auto;
+  min-width: 56px;
+  font-weight: 700;
+  color: var(--moss, var(--accent));
+}
+
+.farmcard__perk--locked .farmcard__mark {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Friendships: hearts and the tier name (the herd sheet and the Monster Card). */
+.friends {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.friends__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.friends__hearts {
+  flex: 0 0 auto;
+  color: #e86a7c;
+  letter-spacing: 2px;
+}
+
+.herdsheet__friend {
+  margin: 8px 0 0;
+}
+
+/* The level-up celebration: a short pop and a few sparkles; tap to skip, and Reduce motion turns it off. */
+.farmup {
+  position: relative;
+  /* The summary is a flex column: never let it squeeze the card. */
+  flex: 0 0 auto;
+  overflow: hidden;
+  text-align: center;
+  border-color: rgb(242 181 68 / 0.6);
+  background: rgb(242 181 68 / 0.12);
+  animation: ws-pop 420ms ease-out both;
+  cursor: pointer;
+}
+
+.farmup__title {
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.farmup__spark {
+  position: absolute;
+  top: 60%;
+  font-size: 1.1em;
+  pointer-events: none;
+  animation: ws-farm-spark 1.2s ease-out both;
+}
+
+.farmup__spark:nth-child(1) {
+  left: 12%;
+}
+
+.farmup__spark:nth-child(2) {
+  left: 46%;
+  animation-delay: 120ms;
+}
+
+.farmup__spark:nth-child(3) {
+  left: 80%;
+  animation-delay: 240ms;
+}
+
+.farmup--done .farmup__spark {
+  display: none;
+}
+
+@keyframes ws-farm-spark {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-48px) scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* The strip's "Pens n/max · Farm Lv N" sits above the tiles (v1.21.0), not at the end of the scrolling row. */
+.herd__label--top {
+  margin: 0;
+  padding: 2px 18px 0;
+  text-align: right;
+  line-height: 1.3;
+}

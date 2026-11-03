@@ -1,9 +1,11 @@
 import { useState } from 'preact/hooks'
+import { trainingPartner } from '../../../core/friends.ts'
 import { starsFor } from '../../../core/monster.ts'
 import { drillOdds } from '../../../core/odds.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { DRILLS } from '../../../data/drills.ts'
 import { fill } from '../../../data/text/format.ts'
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { ODDS_WORDS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { DRILL } from '../../../data/tuning.ts'
@@ -74,6 +76,8 @@ export function TrainSheet({ open }: { open: boolean }) {
           const stars = starsFor(m.stats[d.main])
           const odds = drillOdds(m, d.id, { trainingYard: g.upgrades.trainingYard })
           const pay = costs.pay
+          // §6.11 a friend on the same standing order is ready to train alongside.
+          const partner = locked ? null : trainingPartner(g, d.id)
           return (
             <button key={d.id} type="button" class={`drill ${locked ? 'drill--locked' : ''}`} disabled={locked} onClick={() => pick(d)}>
               <span class="drill__head">
@@ -94,6 +98,7 @@ export function TrainSheet({ open }: { open: boolean }) {
                 {m.likes.dislikedDrill === d.id && <span class="drill__tag drill__tag--down">✗ {t.disliked}</span>}
                 {bonusDrill === d.id && <span class="drill__tag drill__tag--love">{t.bonus}</span>}
                 {(m.status.tonics[d.main] ?? 0) > 0 && <span class="drill__tag drill__tag--love">{t.tonic}</span>}
+                {partner && <span class="drill__tag drill__tag--love">{fill(HERD_TEXT.friends.partner, { name: partner.monster.name })}</span>}
               </span>
               <span class="drill__meta">
                 {locked && <span class="drill__tag">{t.locked}</span>}

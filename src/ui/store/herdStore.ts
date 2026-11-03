@@ -11,6 +11,7 @@ import {
   type OrderRefusal,
   type StarRefusal,
 } from '../../core/herd.ts'
+import { buyPen as buyPenCore, type PenRefusal } from '../../core/farm.ts'
 import { dismissHomecoming as dismissHomecomingCore } from '../../core/homecoming.ts'
 import type { Monster } from '../../core/monster.ts'
 import type { MateOrder } from '../../core/state.ts'
@@ -93,4 +94,13 @@ export function dismissHomecoming(): void {
   if (!g) return
   const next = dismissHomecomingCore(g)
   if (next !== g) commit(next)
+}
+
+/** §9.1 builds the next pen (gold plus the farm level); returns the refusal for a kind toast. */
+export function buyPen(): PenRefusal | null {
+  const g = game.value
+  if (!g) return 'allBuilt'
+  const r = buyPenCore(g)
+  if (!r.refused) commit(r.state)
+  return r.refused
 }

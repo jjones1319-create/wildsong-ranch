@@ -244,12 +244,22 @@ export function eventLines(events: readonly WeekEvent[], m: Monster): WrenLine[]
 
 /**
  * §6.11 Wren's lines about the ranch-mates' week: notable news only (illness, running off and coming back, Prime and
- * the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone). Routine weeks are badges.
+ * the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone; v1.21.0 friendship tiers and a new
+ * farm level). Routine weeks are badges.
  */
 export function herdLines(events: readonly WeekEvent[]): WrenLine[] {
   const t = HERD_TEXT.wren
   const lines: WrenLine[] = []
   for (const e of events) {
+    // v1.21.0: friendship tiers reached, and a new farm level.
+    if (e.kind === 'friends') {
+      for (const n of e.news) lines.push({ key: `friends-${n.aId}-${n.bId}-${n.tier}`, text: fill(HERD_TEXT.friends.reached[n.tier], { a: n.a, b: n.b }) })
+      continue
+    }
+    if (e.kind === 'farmLevel') {
+      lines.push({ key: `farm-${e.level}`, text: fill(HERD_TEXT.farm.levelUpLine, { n: e.level }) })
+      continue
+    }
     if (e.kind !== 'herd') continue
     for (const r of e.reports) {
       const line = (news: string, template: string, extra: Record<string, string | number> = {}) =>

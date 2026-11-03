@@ -111,6 +111,8 @@ export interface SummaryFlow {
   fees: number
   grewUp: boolean
   ended: LifeEnd | null
+  /** §9.1 v1.21.0 the farm's new level this week (a small celebration), or null. */
+  farmLevel: number | null
 }
 
 /** §6.9 a Bond week's game is being played (the shopping trip carries what it found). */
@@ -421,6 +423,7 @@ function finish(state: GameState, events: WeekEvent[]): void {
   const aging = all.flatMap((e) => (e.kind === 'aging' ? [e.event] : []))
   const fees = all.reduce((sum, e) => (e.kind === 'fees' ? sum + e.amount : sum), 0)
   const grewUp = m !== null && aging.some((e) => e.kind === 'prime') && growsUpAtPrime(m)
+  const farmLevel = all.reduce<number | null>((n, e) => (e.kind === 'farmLevel' ? e.level : n), null)
   weekNews.value = []
   commit(r.state)
   if (lines.length === 0 && herd.length === 0 && fees === 0 && !r.state.ended) {
@@ -428,7 +431,7 @@ function finish(state: GameState, events: WeekEvent[]): void {
     settle()
     return
   }
-  flow.value = { kind: 'summary', lines, herd, departed, aging, fees, grewUp, ended: r.state.ended }
+  flow.value = { kind: 'summary', lines, herd, departed, aging, fees, grewUp, ended: r.state.ended, farmLevel }
   playSfx('wrenReport')
 }
 

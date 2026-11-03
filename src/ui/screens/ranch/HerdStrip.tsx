@@ -1,10 +1,10 @@
 import { useState } from 'preact/hooks'
-import { penCapacity } from '../../../core/farm.ts'
+import { farmLevelOf, nextPen, penCapacity } from '../../../core/farm.ts'
 import type { GameState } from '../../../core/state.ts'
 import { fill } from '../../../data/text/format.ts'
 import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
-import { navigate } from '../../router.ts'
+import { navigate, navigateFrom } from '../../router.ts'
 import { cardId } from '../../store/herdStore.ts'
 import { HerdSheet } from './HerdSheet.tsx'
 import { orderIcon, orderLabel, tileBadge } from './herdBits.ts'
@@ -13,7 +13,8 @@ import { PenSheet } from './PenSheet.tsx'
 /**
  * §21 v16 the herd strip under the stage: a ⭐ tile for the star (its Monster Card), a tile per ranch-mate (its sheet:
  * orders, Card, Edit, Make star, the Freezer, Set free) with its order icon and a status or last-week badge, a "+" on
- * each empty pen (move a monster in from the Freezer), and the pens count. One compact row that scrolls sideways.
+ * each empty pen (move a monster in from the Freezer), the next pen to build ("+ pen", or "🔒 Lv N" until the farm
+ * reaches its level; both open Ranch Upgrades), with "Pens n/max · Farm Lv N" above. One compact row that scrolls sideways.
  */
 export function HerdStrip({ g, disabled }: { g: GameState; disabled?: boolean }) {
   const [open, setOpen] = useState<string | null>(null)
@@ -21,8 +22,12 @@ export function HerdStrip({ g, disabled }: { g: GameState; disabled?: boolean })
   const t = HERD_TEXT.strip
   const capacity = penCapacity(g)
   const empty = Math.max(0, capacity - g.ranchmates.length)
+  const level = farmLevelOf(g)
+  const next = nextPen(g)
   return (
     <section class="herd" aria-label={t.label}>
+      {/* Above the row, so it never scrolls out of sight behind the tiles. */}
+      <p class="herd__label herd__label--top">{fill(t.count, { used: g.ranchmates.length, max: capacity, n: level })}</p>
       <div class="herd__row">
         {g.monster && (
           <button
@@ -72,7 +77,17 @@ export function HerdStrip({ g, disabled }: { g: GameState; disabled?: boolean })
             <span aria-hidden="true">＋</span>
           </button>
         ))}
-        <span class="herd__label">{fill(HERD_TEXT.farm.pens, { used: g.ranchmates.length, max: capacity })}</span>
+        {next && (
+          <button
+            type="button"
+            class={`herd__tile herd__tile--next ${level < next.level ? 'herd__tile--locked' : ''}`}
+            disabled={disabled}
+            aria-label={level < next.level ? fill(t.lockedPenLabel, { n: next.level }) : t.newPenLabel}
+            onClick={() => navigateFrom('ranch', 'upgrades')}
+          >
+            <span aria-hidden="true">{level < next.level ? fill(HERD_TEXT.farm.locked, { n: next.level }) : t.newPen}</span>
+          </button>
+        )}
       </div>
       <HerdSheet id={open} onClose={() => setOpen(null)} />
       <PenSheet open={penOpen} onClose={() => setPenOpen(false)} />

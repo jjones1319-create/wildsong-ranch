@@ -6,6 +6,7 @@ import { npcMonster } from '../npc.ts'
 import { makeMonster } from '../test-helpers.ts'
 import { createBattle, currentBand, gapUnits, runBattle, step, timerTicksFor, type Battle } from './engine.ts'
 import { WALL } from './geometry.ts'
+import { duelPaced, duelWindup } from './pace.ts'
 import type { BattleEvent, BattleInput, FighterSetup } from './types.ts'
 
 /** docs/BATTLE_3D.md: the lock-on duel (Battle 3D). */
@@ -46,7 +47,7 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
     const b = setup()
     walkTo(b, 1)
     const fired = act(b, 0, { kind: 'fire', tech: 'puddlepup.belly-flop' }).find((e) => e.kind === 'fire')
-    expect(fired).toMatchObject({ kind: 'fire', lands: b.state.tick + BATTLE.duel.windup.Heavy, path: 'line' })
+    expect(fired).toMatchObject({ kind: 'fire', lands: b.state.tick + duelWindup('Heavy'), path: 'line' })
     const land = (fired as { lands: number }).lands
     while (b.state.tick < land - 1) {
       step(b)
@@ -54,6 +55,17 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
     }
     const events = step(b)
     expect(events.some((e) => (e.kind === 'hit' || e.kind === 'miss') && e.side === 0)).toBe(true)
+  })
+
+  it('runs at the duel pace: wind-ups and recovery are 80% (the owner, Nov 3)', () => {
+    expect(BATTLE.duel.paceTicksPct).toBe(80)
+    const table = Object.fromEntries(Object.keys(BATTLE.duel.windup).map((f) => [f, duelWindup(f as keyof typeof BATTLE.duel.windup)]))
+    expect(table).toEqual({ Basic: 5, Hit: 6, Heavy: 10, Wither: 7, Sharp: 6, Special: 8, Chain: 6, Signature: 10 })
+    expect([24, 27, 30, 36, 39, 42].map(duelPaced)).toEqual([19, 22, 24, 29, 31, 34])
+    const b = setup()
+    walkTo(b, 1)
+    act(b, 0, { kind: 'fire', tech: 'puddlepup.belly-flop' })
+    expect(b.state.fighters[0].busyTicks).toBe(duelPaced(39)) // Belly Flop: anim 39 → 31
   })
 
   it('a sidestep timed in the wind-up carries the defender out of a straight-line technique: it misses', () => {
@@ -64,7 +76,7 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
     const ss = act(b, 1, { kind: 'sidestep', dir: 1 })
     expect(ss.some((e) => e.kind === 'sidestep' && e.side === 1)).toBe(true)
     expect(b.state.fighters[1].guts).toBeLessThanOrEqual(before - BATTLE.duel.sidestep.cost + 1)
-    for (let i = 0; i < BATTLE.duel.windup.Heavy; i++) step(b)
+    for (let i = 0; i < duelWindup('Heavy'); i++) step(b)
     const out = b.state.log.filter((e) => (e.kind === 'hit' || e.kind === 'miss') && e.side === 0)
     expect(out).toHaveLength(1)
     expect(out[0]).toMatchObject({ kind: 'miss', dodged: true })
@@ -76,7 +88,7 @@ describe('the duel (docs/BATTLE_3D.md)', () => {
     const fired = act(b, 0, { kind: 'fire', tech: 'puddlepup.soggy-cloud' }).find((e) => e.kind === 'fire')
     expect(fired).toMatchObject({ path: 'sweep' })
     act(b, 1, { kind: 'sidestep', dir: -1 })
-    for (let i = 0; i < BATTLE.duel.windup.Wither + 1; i++) step(b)
+    for (let i = 0; i < duelWindup('Wither') + 1; i++) step(b)
     expect(b.state.log.some((e) => e.kind === 'miss' && e.dodged)).toBe(false)
     expect(b.state.log.some((e) => (e.kind === 'hit' || e.kind === 'miss') && e.side === 0)).toBe(true)
   })

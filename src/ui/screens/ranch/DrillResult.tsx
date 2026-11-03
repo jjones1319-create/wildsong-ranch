@@ -8,6 +8,7 @@ import { fatigueLabel, stressLabel } from '../../../core/aging.ts'
 import { tipText } from '../../../core/onboarding.ts'
 import { DRILL_BY_ID } from '../../../data/drills.ts'
 import { fill } from '../../../data/text/format.ts'
+import { HERD_TEXT } from '../../../data/text/herd.ts'
 import { OUTCOME_BANNERS, STAT_NAMES } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { UI } from '../../../data/tuning.ts'
@@ -128,6 +129,7 @@ export function DrillResult({ f }: { f: ResultFlow }) {
         <section class="card card--muted">
           <p class="speaker">{UI_TEXT.wren}</p>
           <p>{f.line.text}</p>
+          {f.drill.buddy && <p>{fill(HERD_TEXT.friends.buddy, { buddy: f.drill.buddy, name: m.name })}</p>}
         </section>
         <div class="deltas">
           {deltas.length === 0 && <span class="muted">{t.noGains}</span>}

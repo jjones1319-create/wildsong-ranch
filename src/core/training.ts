@@ -1,6 +1,6 @@
 import { BREED_BY_ID } from '../data/breeds.ts'
 import { DRILL_BY_ID } from '../data/drills.ts'
-import { DRILL, OUTCOME, PLAY, REACTIONS, REQUEST, REST, TRAIT_EFFECTS, UPGRADES } from '../data/tuning.ts'
+import { DRILL, FRIENDS, OUTCOME, PLAY, REACTIONS, REQUEST, REST, TRAIT_EFFECTS, UPGRADES } from '../data/tuning.ts'
 import type { DrillId, Grade, Stats, ToyId } from '../data/types.ts'
 import { clamp, divRound } from './mathx.ts'
 import {
@@ -38,6 +38,8 @@ export type LevelWeights = Record<RolledOutcome, number>
 
 export interface TrainingSetting {
   trainingYard: boolean
+  /** §6.11 the training partner's name: a Friends-or-better ranch-mate on the same drill (core/friends.ts). */
+  buddy?: string | null
 }
 
 export const DEFAULT_TRAINING: TrainingSetting = { trainingYard: false }
@@ -154,6 +156,8 @@ export interface DrillResult {
   stress: number
   form: number
   pay: number
+  /** §6.11 the training partner who added FRIENDS.buddyGain to the main gain (good outcomes only). */
+  buddy?: string
 }
 
 /**
@@ -198,6 +202,7 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
     if (isGoodOutcome(outcome)) {
       if (BREED_BY_ID[m.mainBreed].bonusDrill === drillId) main += g.breedBonusDrill
       if ((m.status.tonics[drill.main] ?? 0) > 0) main += g.tonicBonus
+      if (setting.buddy) main += FRIENDS.buddyGain
     }
     // The bond boost (a Bond week: ×1.75, then 0.25 less each week) multiplies the whole gain, last.
     const boost = m.status.bondPct
@@ -231,7 +236,9 @@ export function resolveDrill(input: Monster, drillId: DrillId, rng: Rng, setting
     if (hasTrait(m, 'gilded')) pay *= TRAIT_EFFECTS.gildedChorePayMul
   }
 
-  return { monster: m, result: { drill: drillId, outcome, stars, gains, fatigue, stress, form, pay } }
+  const result: DrillResult = { drill: drillId, outcome, stars, gains, fatigue, stress, form, pay }
+  if (setting.buddy && isGoodOutcome(outcome)) result.buddy = setting.buddy
+  return { monster: m, result }
 }
 
 export type Reaction = 'praise' | 'scold' | 'skip'

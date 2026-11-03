@@ -1078,7 +1078,9 @@ None of these can be permanently missed. Each starts with a rumor, and the Journ
 | Deep Freezer | Lv 7 | The Freezer holds 30 |
 | Campfire Circle | Lv 9 | Friendships grow 1 point faster each week |
 
-v1.20.0 earns the XP silently and keeps the one pen; v1.21.0 sells the pens, switches the perks on and adds Ines's letter at each new level.
+v1.20.0 earned the XP silently and kept the one pen; v1.21.0 sells the pens (the farm card at the top of Ranch Upgrades), switches the perks on and adds Ines's letter at each new level.
+
+*Friendships* (v1.21.0; GAME_DESIGN §6.11): monsters at home together grow closer every week. Tiers: **Friends** (12 points), **Close friends** (36), **Best friends** (72), shown as ♥♡♡ / ♥♥♡ / ♥♥♥. They calm a little stress each week, and a Friends-or-better ranch-mate on the star's drill trains alongside (+2 on a good drill).
 
 ---
 
@@ -1189,10 +1191,15 @@ Town → Odd Jobs is Basil's board. It lists every job with its status, its pay 
 | Ranch-mate passed away | "{name} passed away quietly in the pen this week, with friends close by. They had a good life here." |
 | Set free | "{name} trotted off over the hill, looked back once, and was gone. Go well, {name}." |
 | The homecoming | "You won't believe who just walked up the lane. Look who came home!" |
-| Planner stop: the pens | "There's news from the pens. I stopped so you can see." |
+| Planner stop: the pens and the farm | "There's news from the pens and the farm. I stopped so you can see." |
+| Friends (12 points) | "{a} and {b} are friends now! They keep finding reasons to sit together." |
+| Close friends (36) | "{a} and {b} are close friends now! I caught them sharing a snack by the fence." |
+| Best friends (72) | "{a} and {b} are best friends now! Where one goes, the other follows." |
+| The training partner joined in | "{buddy} trained right alongside! {name} worked extra hard to keep up." |
+| A new farm level | "The farm reached level {n}! Ines sent a letter from the Guild." |
 
 **Ines's letters (v16; formal):**
-- **The farm grows:** "The Guild has entered your farm at level {n}. New pens may now be built, and some comforts come with the rank. See the farm card at Ranch Upgrades." (from v1.21.0)
+- **The farm grows:** "The Guild has entered your farm at level {n}. New pens may now be built, and some comforts come with the rank. See the farm card at Ranch Upgrades." (since v1.21.0; the letter opens Ranch Upgrades)
 - **The homecoming:** "The Guild is pleased to record a homecoming at your ranch (returned: {n}). The Memorial wall has been corrected accordingly. Welcome back."
 
 All the herd, farm and homecoming lines live in `src/data/text/herd.ts`.

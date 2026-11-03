@@ -98,7 +98,7 @@ Shrine / Market ─► NEW MONSTER
 
 **Planner** (SHOULD):
 - Queue up to 8 weeks of actions (drills and rests). Queued drills get no praise or scold, and a month start keeps last month's food.
-- Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, notable news from the pens (a ranch-mate falls ill, runs off or collapses, comes back, reaches Prime or learns its Signature, gets a 48- or 10-weeks-left warning, or passes away; v16), or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
+- Execution auto-stops on any request, warning, event, invitation or other mail, illness, breakdown, a forced rest, the Signature, a grow-up, prime, notable news from the pens (a ranch-mate falls ill, runs off or collapses, comes back, reaches Prime or learns its Signature, gets a 48- or 10-weeks-left warning, or passes away; v16), a friendship tier or a new farm level (v1.21.0), or fatigue ≥ 60 or stress ≥ 50. Ordinary cups never stop it (almost every week holds one; the ranch lists them).
 - A "Repeat last week" button sits on the ranch screen.
 
 **Calendar screen** (SHOULD; `core/calendarView.ts`, `screens/ranch/Calendar.tsx`):
@@ -442,7 +442,7 @@ Real time is measured in the UI (core never reads the clock): the save is writte
 ### 6.11 The herd: ranch-mates on orders (v16; numbers in `tuning.ts` `HERD`, tested; `core/herd.ts`, `core/herdMoves.ts`)
 
 - **One star, the others on orders.** The star (`GameState.monster`) keeps the whole week of §3, and every star-only system stays as it was: requests, the planner, cups, Journeys, Trials, expeditions, events, the cocoon, the away clock, Bond weeks. The other monsters on the ranch are **ranch-mates** in pens (`ranchmates`), each with a standing **order**: train a drill, rest, or play (a new ranch-mate starts on Play).
-- **Capacity.** One pen at the start (`FARM.basePens`), so the ranch holds the star + 1. Bought pens add more, up to 6 ranch-mates (CONTENT §11, from v1.21.0).
+- **Capacity.** One pen at the start (`FARM.basePens`), so the ranch holds the star + 1. Bought pens add more, up to 6 ranch-mates (CONTENT §11, §9.1; since v1.21.0).
 - **Where new monsters go:** an empty ranch first, then a free pen, then the Freezer (§14.1, §14.2, §15, the Lootlid, the Reefclaw).
 - **Their week** runs after the star's, from its own random sub-stream (§3). For each ranch-mate, in pen order:
   1. **Away** while missing or at the clinic: no action.
@@ -452,12 +452,18 @@ Real time is measured in the UI (core never reads the clock): the save is writte
   5. **The Signature at Prime** (§10.4), as for the star.
   6. **The end of its life:** a gentle line in the week summary (no blocking Farewell), the Memorial entry with a default epitaph that can be edited later, a Heartstone when there is room, the Elder Grove when it retires (Gentle), and the Vigil.
 - **Food:** one monthly food for the whole ranch, price × mouths (§3); each monster's own likes and dislikes apply. The Cozy Barn and the Tide Pool calm everyone.
-- **The week summary** tells only the notable news (`mateNews`: illness, running off or collapsing and coming back, Prime and the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone; v1.21.0 adds friendship tiers and farm levels); routine results are badges on the herd strip, so a normal week stays 1–3 taps. The planner stops for the same news (§3).
+- **The week summary** tells only the notable news (`mateNews`: illness, running off or collapsing and coming back, Prime and the Signature, the 48- and 10-weeks-left warnings, a passing and its Heartstone; since v1.21.0 also friendship tiers and a new farm level); routine results are badges on the herd strip, so a normal week stays 1–3 taps. The planner stops for the same news (§3).
 - **Make star** (any week): the star and the ranch-mate swap places, each with its edit history. The old star's pending request and event and "last week" are cleared, and it takes its last drill or rest as its standing order. Refused while a life has ended, while the ranch is busy (a cup, a Journey, a Trial, an expedition) or while a cocoon hangs in the barn. With no star (after a Farewell or "Later"), the ranch-mate simply steps onto the ranch; "Later" leaves the ranch empty and the weeks wait, as before.
 - **Moving and freeing.** A ranch-mate can go to the Freezer and a frozen monster to a free pen (Elders stay in the Grove). **Set free** works for ranch-mates and frozen monsters (the star must be swapped first): the monster leaves for good, its name goes on the Memorial ("Set free", `freed`), and it leaves no Heartstone. The UI can keep a copy in the Library first.
 - **Free actions reach them.** Items, Songsheets and forgetting take a target (the star by default); Classic's one item per week counts for the whole ranch. A young ranch-mate can take a Heartstone. ✏️ Edit works for ranch-mates, with their own history (§19).
 - **The ranch remembers them:** titles' known monsters, the grades reached (the Masquerade), the Journal's best total, and family trees (living relatives first).
-- **Friendships (coming in v1.21.0; `FRIENDS`).** Monsters living together grow closer: every pair at home gains 1 point a week (+1 if either is on Play, +1 with the Campfire Circle), up to 100. Tiers: Friends at 12, Close at 36, Best at 72. Small effects, nothing in battle: weekly stress −1, −1 or −2 by the best friend's tier, and the star's **training partner** (a Friends-or-better ranch-mate on the same drill gives +2 on good outcomes, with a line from Wren). v1.20.0 already saves the pairs and prunes them when a monster passes away, is set free or is fused.
+- **Friendships (v1.21.0; `FRIENDS`, `core/friends.ts`, no randomness).** Monsters living together grow closer. At the end of each week, after the herd's tick (§3):
+  - **Who is at home:** the star, unless it is on a Journey or an expedition, missing, at the clinic, in a cocoon, or its life has ended; and every ranch-mate that isn't away (missing, at the clinic, in a cocoon). Sick and injured monsters are at home. With fewer than 2 at home nothing happens, so a one-monster game is unchanged.
+  - **Growth:** every pair at home gains 1 point (+1 if either is a ranch-mate on Play, +1 with the Campfire Circle), up to 100. "On Play" means the standing order; the star has no order, so its own week doesn't add the bonus. Frozen monsters and Elders keep their points; a pair ends when either monster passes away, is set free or is fused.
+  - **Tiers:** Friends at 12, Close at 36, Best at 72. Reaching one is a line in the week summary ("{a} and {b} are friends / close friends / best friends now!") and a planner stop.
+  - **Calm:** each monster at home then loses weekly stress by its best present friend's tier: −1 (Friends), −1 (Close), −2 (Best).
+  - **The training partner:** when the star drills and a ranch-mate at home has **the same drill** as its standing order (and will really train this week, not rest by itself) and is Friends or better with the star, a good outcome (Fine and up) adds +2 to the main gain, before the bond boost and the grade cap (`TrainingSetting.buddy`; the closest friend wins). The drill result says so ("Fern trained right alongside!"), and the Train sheet tags the drill with the friend's name. Nothing in battle.
+  - **Shown:** the herd sheet shows the ranch-mate's friendship with the star (hearts and the tier); the Monster Card has a Friends section for any owned monster (points in Breeder's Lens).
 
 ### 6.8 Transparency setting (MUST)
 
@@ -549,7 +555,10 @@ lifespanTotal = round(breed.lifespan · 1.10)
 - **Levels 1–10** at 0, 100, 250, 450, 700, 1,000, 1,400, 1,900, 2,500 and 3,200 XP.
 - **A fair start** (`seedFarm`): a save from before v16 (or one whose farm fails validation) gets the XP its star would have earned (+2 for every week played) plus every achievement so far, once. A new game starts at 0 (its first breed and rank 1 are not achievements).
 - **Pens** cost gold and need a level (some things are bought, others need the level); **perks** come with a level by themselves (CONTENT §11). The breeder-rank upgrades are unchanged.
-- **Phasing:** v1.20.0 earns the XP silently (the turn controller adds it after each week; the sims' week loop doesn't) and keeps one pen; v1.21.0 shows the farm card, sells the pens, switches the perks on (`FARM.perksLive`) and sends Ines's letter at each new level.
+- **The farm card** (v1.21.0) sits at the top of Ranch Upgrades: the level and its XP bar, the pens built (of 6), the next pen (its price and level, Build with a confirm; a refusal says why: every pen built, the level, or the gold), and the perks (✓, or 🔒 Lv N). The breeder-rank upgrades stay below it.
+- **The herd strip** follows the capacity: each empty pen is a "+", the next pen to build is "+ pen" once its level is reached or "🔒 Lv N" before (both open Ranch Upgrades), and the label reads "Pens n/max · Farm Lv N".
+- **A new level** (the turn controller, after each week; the sims' week loop doesn't earn XP): Ines's letter (mail kind `farm`, which opens Ranch Upgrades), Wren's line in the week summary with a small, skippable celebration (what the level brings), and a planner stop.
+- **Phasing:** v1.20.0 earned the XP silently and kept one pen; v1.21.0 shows the farm card, sells the pens, switches the perks on (`FARM.perksLive`) and announces each new level.
 
 ---
 
@@ -1525,6 +1534,16 @@ These come from the pre-build simulations (§27). Implement them as Vitest "sim 
 - Good care should reach grade S (about 2,450–2,900) by years 5–7 for strong breeds, and grade A for average ones.
 
 **Drill outcome rates over a Good-care life:** Great and up 17–25% (Perfect 2–8%), Fine and Good 52–65%, Cheat 7–12%, Fail 8–14%.
+
+**The herd** (v1.21.0, `src/core/sim/herdSim.ts`, 40 seeds each; a whole ranch with a Good-care star, ranch-mates on standing orders and friendships, a passed star or ranch-mate replaced at once; money is not a limit, as in the raising sims):
+
+| Target | Range | v1.21.0 result |
+|---|---|---|
+| The star with a ranch-mate stays in its Good band | 76–88% of its life; about 700 / 1,450 / 2,350 at years 1 / 3 / 5 (±20%) | 82.4%; 686 / 1,474 / 2,593 (alone: 81.1%; 681 / 1,487 / 2,561) |
+| A ranch-mate on drill orders (a light or a heavy drill) | 62–80% of its life | light 73.1%, heavy 62.3% |
+| A resting ranch-mate | ≥ 85% of its life | 103.5% (the Hearty Stew months add weeks) |
+| An active farm by year 5 (each pen built as soon as its level opens it, and a typical year of 5 cups won, a Journey, a breeder rank and, from year 2, an expedition) | farm level 6–9 | 7 (pens only: 6; one pen and nothing else: 5) |
+| The ranch-mates' own gold (half pay − their food − breakdown fees), reported | under 0, above −300G a month | about −100 to −150G per ranch-mate per month before the Feed Shed |
 
 **Battle** (AI 2.0 Expert vs Expert since M10, with stats from the NPC generator, alternating sides, at least 200 seeds per cell):
 

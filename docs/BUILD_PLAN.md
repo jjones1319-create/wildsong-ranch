@@ -612,7 +612,7 @@ Spec: GAME_DESIGN §6.10–§6.11, §9.1, §14.1, §15, §16, §19, §21 and CON
 - [x] 3. The homecoming: runaways in the Memorial (and a pending runaway) come home once, with life back if needed.
 - [x] 4. UI: the herd strip and sheet, the Card and ✏️ Edit for ranch-mates, Bag and Songbook targets, the food prompt, week summary news, the homecoming card, "Who will you raise next?", Pell's Lab.
 - [x] 5. v1.20.0: verify, e2e `herd.spec.ts`, commit, deploy.
-- [ ] 6. v1.21.0: the farm card in Upgrades (level, XP, pens to buy, perks), level-up letters, `FARM.perksLive`; friendships (growth, tiers, calm, the training partner, lines); `sim/herdSim` targets.
+- [x] 6. v1.21.0: the farm card in Upgrades (level, XP, pens to buy, perks), level-up letters, `FARM.perksLive`; friendships (growth, tiers, calm, the training partner, lines); `sim/herdSim` targets. With it, Battle 3D attacks 20% faster (duel only) and per-technique 3D effects (BATTLE_3D §3, §7.1).
 
 ## LATER (after v1.0)
 

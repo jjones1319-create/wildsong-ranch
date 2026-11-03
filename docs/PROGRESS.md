@@ -2,6 +2,56 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Growing the farm, friendships, and faster attacks with effects (2026-11-03) · v1.21.0
+
+The owner chose step 1 of the roadmap: v1.21 (farm levels, pens, friendships) and the Battle 3D request "build in the visuals for the attacks and speed them up a bit, probably by 20%".
+
+**Live:**
+- **The farm grows (GAME_DESIGN §9.1):**
+  - farm XP from weeks raised and achievements gives farm levels 1–10;
+  - **the Farm card** (Town → Upgrades) shows the level and XP, pens to build (gold plus a farm level: 3,000G at Lv 2 up to 20,000G at Lv 10, for 6 ranch-mates at most), and the perks by level (Feed Shed, Farmhand, Deep Freezer, Campfire Circle);
+  - locked pens show their level on the herd strip;
+  - a level-up brings Ines's letter and a small celebration.
+- **Friendships (§6.11):**
+  - monsters home together become friends (12), close friends (36) and best friends (72); Play and the Campfire speed it up;
+  - friends calm each other a little each week;
+  - the star trains a little better beside a friend on the same drill ("Fern trained right alongside!");
+  - Wren announces new tiers;
+  - hearts on the herd sheet, and a Friends section on the Monster Card.
+- **Battle 3D:**
+  - attacks are **20% faster** (wind-ups and recovery at 80%, duel only);
+  - **every technique has its own look**, by element (fire, water, lightning, ice, earth, wind, nature, light, dark, sound) and shape:
+    - wind-up glow, a projectile or lunge, an element impact;
+    - sweeps roll a wave, Sharp slashes, multi-hits, knockback shockwaves, drain wisps;
+    - Specials and Signatures grand with a flash;
+    - misses veer off;
+  - the Special/Signature cut now looks over the attacker's shoulder at the hit.
+
+**Done**
+- **Farm and friendships:**
+  - `core/friends.ts` (no RNG; nothing changes with fewer than 2 monsters home);
+  - the training partner in `training.ts`; the farm level-up in `game.ts`;
+  - `FarmCard`, `FriendsBits`, `FarmLevelUp`; `FARM.perksLive` on.
+- **The herd sim (`sim/herdSim`):**
+  - a star with a ranch-mate lives 82.4% (Good band 76–88);
+  - ranch-mates live 62–73% on drill orders and ≥ 100% resting;
+  - farm level 7 by year 5 on every seed;
+  - a ranch-mate costs about 100–150G a month net before the Feed Shed.
+  - The golden record, lifeSim, breedLives, raiseSim and cupSim are unchanged.
+- **Battle 3D:**
+  - `core/battle/pace.ts` (`BATTLE.duel.paceTicksPct 80`); line mode bit-identical;
+  - effects in `src/art3d/duel/fx*.ts` and `attackFx.ts`, sharing the classic battle's element colours and shapes (`src/fx/elements.ts`, `recipes.ts`): 2 draws, about 0.1–0.3 ms a frame, gentler in Lite and Reduce motion;
+  - review tool `node tools/art/attack-fx-review.ts` writes art-review/attack-fx/.
+- **Duel balance** (docs/BALANCE_DUEL.md): pairs inside 30–70 at 97.6% / 98.0% / 92.7% (was 96.6 / 98.0 / 92.7). Nothing needed adjusting.
+- **Tests:** friends, farm, herdStore, herdSim, fxRecipe, fxParticles, the duel pace; e2e `farm.spec.ts` (building a pen, a second ranch-mate).
+
+**Known issues**
+- **The CPU's pace** between attacks is unchanged, so it attacks only 2–3% more often while you attack about 20% faster. Whether the CPU should speed up too is the owner's call.
+- **Effects:** a Basic fire hit is small at Near range in the side view; a missed projectile is easy to overlook; the telegraph lanes compete with the effects; in the upright cut the attacker is mostly out of frame.
+- **Layout:** at small heights the action bar covers the bottom of the herd tiles (older layout).
+
+**Next** (the owner's roadmap): Puddlepup's fixes and approval, then 3D for every breed in batches (shared skeletons per body shape; full, farm-weight and Lite versions), then the walkable 3D farm, event scenes, and the 3D duel as the real battle.
+
 ## Ranch-mates and the homecoming (2026-11-03) · v1.20.0
 
 The owner: "make the ranch be able to hold more than 1 monster, start with 2 and as your farm grows levels you can hold more and set training or free them"; then "bring back any monsters that ran away… this is a one time thing". They chose "one star, others on orders… and they can grow closer together", and farm levels by experience where "some things can be bought and others need it to be leveled". Plan: BUILD_PLAN "Ranch-mates and the farm"; design GAME_DESIGN §6.11.

@@ -1,5 +1,4 @@
 import {
-  AdditiveBlending,
   AnimationMixer,
   Box3,
   BufferGeometry,
@@ -8,19 +7,15 @@ import {
   CircleGeometry,
   Color,
   CylinderGeometry,
-  DoubleSide,
   Group,
-  InstancedMesh,
   LoopOnce,
   LoopRepeat,
-  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
-  Quaternion,
   RingGeometry,
   SRGBColorSpace,
   Scene,
@@ -38,7 +33,11 @@ import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { ART, BATTLE } from '../../data/tuning.ts'
 import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
-import { Bolts, lungeFor, lungeReach, type Lunge } from './attacks.ts'
+import { lungeFor, lungeReach, type Lunge } from './attacks.ts'
+import { AttackFx } from './attackFx.ts'
+import { isRangedTech } from './fxRecipe.ts'
+import { duelWindup } from '../../core/battle/pace.ts'
+import { pathOf } from '../../data/paths.ts'
 import { bandNeed, sideFraming } from './framing.ts'
 import { memoryMb, noteTextures } from './memory.ts'
 import { createCrowd, type Crowd, type CrowdStats } from './crowd.ts'
@@ -96,6 +95,8 @@ export interface DuelStats {
   heapMb: number | null
   /** The Guild arena's crowd (people, cut-outs, its draws, triangles and CPU ms), or null without it. */
   crowd: CrowdStats | null
+  /** §7 the attack effects last frame: quads drawn, their draws (at most two) and CPU ms. */
+  fx: { quads: number; draws: number; ms: number }
 }
 
 export interface Duel3D {
@@ -115,6 +116,11 @@ export interface Duel3D {
   basisOnScreen(): { fwd: { x: number; y: number }; left: { x: number; y: number } }
   /** Refill the stands for another Fame (the test screen's chip). */
   setCrowdFame(fame: number): Promise<void>
+  /** Review only (picture, not rules): show a technique fired by `side` that hits or misses as the duel would time it; returns the stage seconds until it lands. */
+  preview(tech: string, side: Side, outcome: 'hit' | 'miss'): number
+  /** Review only: run the picture slower (1 = normal), and the stage clock (s). */
+  setTimeScale(k: number): void
+  clock(): number
   stats(): DuelStats
   dispose(): void
 }
@@ -437,62 +443,6 @@ function contactShadow(): Mesh {
   return disc
 }
 
-/** A round, soft-edged glow for the sparks (a flat square reads as a pixel, not a spark). */
-function softDot(): CanvasTexture {
-  const c = document.createElement('canvas')
-  c.width = c.height = 32
-  const g = c.getContext('2d')!
-  const r = g.createRadialGradient(16, 16, 0, 16, 16, 16)
-  r.addColorStop(0, 'rgba(255,255,255,1)')
-  r.addColorStop(0.3, 'rgba(255,236,190,0.75)')
-  r.addColorStop(1, 'rgba(255,200,120,0)')
-  g.fillStyle = r
-  g.fillRect(0, 0, 32, 32)
-  const t = new CanvasTexture(c)
-  t.colorSpace = SRGBColorSpace
-  return t
-}
-
-class Sparks {
-  readonly mesh: InstancedMesh
-  private live: { at: Vector3; v: Vector3; born: number }[] = []
-  private readonly m = new Matrix4()
-  private readonly q = new Quaternion()
-  private readonly s = new Vector3()
-  private readonly max: number
-  constructor(scene: Scene, max = 160) {
-    this.max = max
-    const mat = new MeshBasicMaterial({ color: '#ffd89a', map: softDot(), transparent: true, blending: AdditiveBlending, depthWrite: false, side: DoubleSide })
-    this.mesh = new InstancedMesh(new PlaneGeometry(0.07, 0.07), mat, max)
-    this.mesh.frustumCulled = false
-    this.mesh.count = 0
-    scene.add(this.mesh)
-  }
-  burst(at: Vector3, n: number, now: number, seed: number): void {
-    for (let i = 0; i < n; i++) {
-      // a fixed spread per index (no randomness: the picture repeats exactly with the battle)
-      const a = (i * 2.399963 + seed) % (Math.PI * 2)
-      const up = 0.6 + ((i * 7919) % 97) / 97
-      this.live.push({ at: at.clone(), v: new Vector3(Math.cos(a) * 1.4, up * 1.6, Math.sin(a) * 1.4), born: now })
-    }
-    if (this.live.length > this.max) this.live.splice(0, this.live.length - this.max)
-  }
-  update(now: number, camera: PerspectiveCamera): void {
-    this.live = this.live.filter((p) => now - p.born < 0.45)
-    this.q.copy(camera.quaternion)
-    this.live.forEach((p, i) => {
-      const t = now - p.born
-      const pos = p.at.clone().addScaledVector(p.v, t).add(new Vector3(0, -2.2 * t * t, 0))
-      const k = 1 - t / 0.45
-      this.s.setScalar(0.6 + 1.6 * k)
-      this.m.compose(pos, this.q, this.s)
-      this.mesh.setMatrixAt(i, this.m)
-    })
-    this.mesh.count = this.live.length
-    this.mesh.instanceMatrix.needsUpdate = true
-  }
-}
-
 /* ---------------------------------------------------------------------------------------------- the stage */
 
 /** Engine (x, y) → three (x, 0, −y): mirrored so the engine's "left" (+side) is the monster's own left on screen. */
@@ -534,8 +484,10 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const wallR = arena.info?.cameraRadius ?? (arena.info?.ringRadius ? arena.info.ringRadius - D.confine.wallMargin : Infinity)
   const actors: [Actor, Actor] = [makeActor(asset, 0, o.variants[0]), makeActor(asset, 1, o.variants[1])]
   for (const a of actors) scene.add(a.root)
-  const sparks = new Sparks(scene)
-  const bolts = new Bolts(scene)
+  // §7: every technique's effects (its element and shape), two draws from one pool
+  const fx = new AttackFx(scene, { lite: o.lite, reduceMotion: o.reduceMotion, speed: o.speed })
+  // review only: a previewed technique's result, waiting for its landing (picture only; the rules never see it)
+  const previews: { at: number; e: BattleEvent }[] = []
   // §7: a hit nudges the camera until this time (not with Reduce motion)
   let shakeUntil = 0
   const telegraphs: Telegraph[] = []
@@ -570,6 +522,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   /** The entrance's own clock (`t`, seconds): it follows real time, so a slow first frame can't stretch it. */
   let intro: { t: number; resolve: () => void; skip: boolean } | null = null
   let now = 0
+  // review only: slow motion for the effects sheets (the battle itself is paused then)
+  let timeScale = 1
   let last = performance.now()
   let raf = 0
   let disposed = false
@@ -709,13 +663,18 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     return p
   }
 
-  function startCine(attacker: Actor, now: number): void {
+  /** A cut to `attacker`: over its shoulder toward the target for a technique (§7: its effects in the shot), else on it. */
+  function startCine(attacker: Actor, now: number, technique = false): void {
     if (!D.cine.enabled) return
     const opp = actors[1 - attacker.side]!
     const u = opp.pos.clone().sub(attacker.pos).normalize()
     const n = new Vector3(-u.z, 0, u.x)
-    const from = insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead).addScaledVector(n, D.cine.side * sideSign).add(new Vector3(0, D.cine.height, 0)))
-    cine = { until: now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds), from, look: attacker.pos.clone().add(new Vector3(0, 0.55, 0)) }
+    const C = D.cine.attack
+    const from = technique
+      ? insideFence(attacker.pos.clone().addScaledVector(u, -C.back).addScaledVector(n, C.side * sideSign).add(new Vector3(0, C.height, 0)))
+      : insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead).addScaledVector(n, D.cine.side * sideSign).add(new Vector3(0, D.cine.height, 0)))
+    const look = technique ? attacker.pos.clone().lerp(opp.pos, C.lookPct / 100).add(new Vector3(0, 0.45, 0)) : attacker.pos.clone().add(new Vector3(0, 0.55, 0))
+    cine = { until: now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds), from, look }
   }
 
   function updateActors(s: BattleState, dt: number): void {
@@ -793,40 +752,45 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       if (e.kind === 'fire') {
         const a = actors[e.side]
         const tech = TECHNIQUE_BY_ID[e.tech]
-        const ranged = tech ? tech.type === 'INT' || tech.range >= 3 : false
+        const ranged = tech ? isRangedTech(tech) : false
         const clip = ranged ? 'cast' : 'strike'
         // time the clip so its impact lands with the engine's landing tick
         const windupSec = (((e.lands ?? e.t) - e.t) / BATTLE.ticksPerSecond) / Math.max(1, o.speed())
         const imp = a.impactAt[resolveClip(a, clip) ?? ''] ?? 0.4
         const rate = windupSec > 0.01 ? Math.min(2.6, Math.max(0.7, imp / windupSec)) : o.speed()
         play(a, clip, { loop: false, rate })
-        // §7: melee lunges across the gap; ranged sends a bolt that arrives on the landing
-        const foe = actors[(1 - e.side) as Side]
+        // §7: melee lunges across the gap; the technique's own effects (wind-up glow, projectile, wave) land with it
         if (!ranged) a.lunge = lungeFor(now, windupSec)
-        else {
-          const chest = (x: Actor) => () => x.root.position.clone().add(new Vector3(0, x.height * 0.55, 0))
-          bolts.launch(chest(a), chest(foe), now, windupSec, tech?.type === 'INT')
-        }
+        if (tech) fx.fire(e.side, tech, now, windupSec)
         if (e.lands !== undefined && e.path) addTelegraph(s, e.side, e.path, tech?.type === 'INT', e.lands)
         if (tech && (tech.family === 'Special' || tech.family === 'Signature')) {
-          startCine(a, now)
+          startCine(a, now, true)
           crowd?.cheer('big')
         }
       } else if (e.kind === 'hit') {
         const t = actors[e.target]
         const heavy = e.crit || e.damage * 8 >= s.fighters[e.target].maxHp
         if (s.fighters[e.target].hp > 0) play(t, heavy ? 'hit_heavy' : 'hit', { loop: false, rate: o.speed() })
-        sparks.burst(t.pos.clone().add(new Vector3(0, t.height * 0.55, 0)), heavy ? 28 : 16, now, e.t % 7)
+        const tech = TECHNIQUE_BY_ID[e.tech]
+        if (tech) fx.hit(e.side, tech, e.hitNo, e.of, e.crit, now)
         t.squashUntil = now + AT.squashSec
         if (!o.reduceMotion) shakeUntil = now + AT.shakeSec * (heavy ? 1.6 : 1)
         crowd?.cheer(heavy ? 'big' : 'small')
+      } else if (e.kind === 'miss') {
+        // §7: a miss whiffs past (no impact)
+        const tech = TECHNIQUE_BY_ID[e.tech]
+        if (tech) fx.miss(e.side, tech, e.hitNo, now)
+      } else if (e.kind === 'sidestep') {
+        fx.sidestep(e.side)
+      } else if (e.kind === 'heal') {
+        fx.healed(e.side, e.why, now)
       } else if (e.kind === 'ko') {
         startCine(actors[(1 - e.side) as Side], now)
         crowd?.cheer('huge')
       } else if (e.kind === 'fence') {
         // §4.5 knocked into the fence: a burst at its feet and a jolt
         const t = actors[e.side]
-        sparks.burst(t.pos.clone().add(new Vector3(0, 0.2, 0)), 24, now, e.t % 5)
+        fx.fenced(e.side, now)
         play(t, 'hit_heavy', { loop: false, rate: o.speed() })
         crowd?.cheer('big')
       }
@@ -1004,7 +968,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const tNow = performance.now()
     const frameMs = tNow - last
     last = tNow
-    const dt = Math.min(0.1, frameMs / 1000)
+    const dt = Math.min(0.1, frameMs / 1000) * timeScale
     now += dt
     frameTimes.push(frameMs)
     if (frameTimes.length > 120) frameTimes.shift()
@@ -1051,8 +1015,12 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     }
     crowd?.update(dt, now, { x: (actors[0].pos.x + actors[1].pos.x) / 2, z: (actors[0].pos.z + actors[1].pos.z) / 2 })
     updateTelegraphs()
-    sparks.update(now, camera)
-    bolts.update(now)
+    for (let i = previews.length - 1; i >= 0; i--) {
+      if (previews[i]!.at > now) continue
+      onEvents([previews[i]!.e])
+      previews.splice(i, 1)
+    }
+    fx.update(now, camera, actors[0].root.position, actors[1].root.position, actors[0].height, actors[1].height)
     v.render()
     cpuMs = performance.now() - c0
     scale(frameMs)
@@ -1109,7 +1077,27 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     stats() {
       const avg = frameTimes.length ? frameTimes.reduce((p, c) => p + c, 0) / frameTimes.length : 16.7
       const mem = memoryMb(textures, scene, v.targetBytes())
-      return { backend: v.backend, fps: 1000 / avg, dpr, level: ART.ultra.levels[levelIndex]!, gpuMs: v.gpuMs(), cpuMs, arena: arena.kind, monster: asset.kind, gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null }
+      return { backend: v.backend, fps: 1000 / avg, dpr, level: ART.ultra.levels[levelIndex]!, gpuMs: v.gpuMs(), cpuMs, arena: arena.kind, monster: asset.kind, gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null, fx: fx.stats() }
+    },
+    setTimeScale(k) {
+      timeScale = Math.max(0.02, Math.min(1, k))
+    },
+    clock: () => now,
+    preview(id, side, outcome) {
+      const s = getState()
+      const t = TECHNIQUE_BY_ID[id]
+      if (!s || !t) return 0
+      const lands = s.tick + duelWindup(t.family)
+      const of = t.effect?.kind === 'multi' ? t.effect.hits : 1
+      const target = (1 - side) as Side
+      onEvents([{ t: s.tick, kind: 'fire', side, tech: id, cost: 0, lands, path: pathOf(t) }])
+      const at = now + (lands - s.tick) / BATTLE.ticksPerSecond / Math.max(1, o.speed())
+      for (let hitNo = 1; hitNo <= of; hitNo++) {
+        const e: BattleEvent = outcome === 'hit' ? { t: lands, kind: 'hit', side, target, tech: id, damage: 1, crit: false, wither: 0, hitNo, of } : { t: lands, kind: 'miss', side, target, tech: id, hitNo, of }
+        previews.push({ at, e })
+      }
+      if (t.effect?.kind === 'heal') previews.push({ at, e: { t: lands, kind: 'heal', side, amount: 1, why: 'tech' } })
+      return at - now
     },
     async setCrowdFame(fame) {
       const next = await makeCrowd(fame)
@@ -1120,7 +1108,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       disposed = true
       cancelAnimationFrame(raf)
       crowd?.dispose()
-      bolts.dispose()
+      fx.dispose()
       for (const t of telegraphs) {
         t.mesh.geometry.dispose()
         ;(t.mesh.material as Material).dispose()

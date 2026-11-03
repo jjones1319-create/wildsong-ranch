@@ -6,10 +6,11 @@ import { Badge, Confirm, TopBar } from '../../components/Controls.tsx'
 import { SpeakerCard, gold } from '../../components/RanchBits.tsx'
 import { showToast } from '../../store/appStore.ts'
 import { buyUpgrade, game } from '../../store/gameStore.ts'
+import { FarmCard } from './FarmCard.tsx'
 
 const t = UI_TEXT.upgrades
 
-/** CONTENT §11 ranch upgrades: the four cards, their gates, and Buy with a confirm. Nothing here expires. */
+/** CONTENT §11 the farm card (v1.21.0: level, pens, perks), then the ranch upgrades: the four cards, their gates, and Buy with a confirm. Nothing here expires. */
 export function UpgradesScreen() {
   const g = game.value
   const [asking, setAsking] = useState<UpgradeOffer | null>(null)
@@ -32,6 +33,7 @@ export function UpgradesScreen() {
   return (
     <main class="screen">
       <TopBar title={t.title} right={<span class="calstrip__money">{gold(g.money)}</span>} />
+      <FarmCard g={g} />
       <SpeakerCard speaker={UI_TEXT.ines} tone="muted">
         <p>{t.intro}</p>
       </SpeakerCard>

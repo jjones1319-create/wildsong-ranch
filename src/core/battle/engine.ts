@@ -13,6 +13,7 @@ import { senseForTier, senseOfMonster, tierForSense } from './duelSense.ts'
 import { WALL, centreDist, clampLine, isDuel, moveAlongAxis, offsetFromAim, sidestepMove, slideStep, slideVector, strafeAround } from './geometry.ts'
 import { pathOf } from '../../data/paths.ts'
 import { decideAiV1 } from './aiV1.ts'
+import { duelPaced, duelWindup } from './pace.ts'
 import { bandCentre, bandOf, critTenths, damageBase, distractionPct, finishDamage, formAdjusted, hitTenths, hpPctTenths, nimbleBonus, walkPerTick } from './formulas.ts'
 import { bulwarkPct, clutchPct, composurePct, lastStandPct, ragePct, specialMods, tickSpecial, tryTrigger, valorPct } from './specials.ts'
 import {
@@ -634,7 +635,8 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
 
   const gutsBefore = f.guts
   f.guts -= cost
-  f.busyTicks = tech.anim
+  // the duel runs at its own pace (docs/BATTLE_3D.md §3): the recovery shortens with the wind-up
+  f.busyTicks = isDuel(state) ? duelPaced(tech.anim) : tech.anim
   f.busyTech = tech.id
   f.attacks += 1
   f.techUses[tech.id] = (f.techUses[tech.id] ?? 0) + 1
@@ -643,7 +645,7 @@ function resolveFire(state: BattleState, f: FighterState, opp: FighterState, tec
   if (isDuel(state)) {
     // the wind-up: it lands later, aimed at where the defender stands now (docs/BATTLE_3D.md §3)
     const path = pathOf(tech)
-    const landTick = state.tick + BATTLE.duel.windup[tech.family]
+    const landTick = state.tick + duelWindup(tech.family)
     log.push({ t: state.tick, kind: 'fire', side: f.side, tech: tech.id, cost, lands: landTick, path })
     f.pending = { tech: tech.id, fireTick: state.tick, landTick, path, gutsBefore, ramArmed, ax: f.x, ay: f.y, dx: opp.x, dy: opp.y }
     return

@@ -8,6 +8,7 @@ import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
 import { TipCard, gold } from '../../components/RanchBits.tsx'
 import { navigate } from '../../router.ts'
 import { dismissTip, game, nextWeek, tipFor, type SummaryFlow } from '../../store/gameStore.ts'
+import { FarmLevelUp } from './FarmLevelUp.tsx'
 import { MateGoodbye } from './MateGoodbye.tsx'
 
 const DRAMATIC = new Set(['breakdownRunAway', 'breakdownCollapse', 'sick', 'tenWeeksLeft', 'farewell', 'retire'])
@@ -25,6 +26,7 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
   useEffect(() => {
     if (f.grewUp) playSfx('growUp')
     else if (f.aging.some((e) => e.kind === 'prime')) playSfx('prime')
+    else if (f.farmLevel !== null) playSfx('itemGet')
   }, [])
   const title = f.ended ? t.farewell : breakdown ? t.breakdown : f.grewUp ? t.grewUp : t.title
   // §6.11 a ranch-mate that passed or retired gets its own gentle card, with its lines; the rest join Wren's.
@@ -40,6 +42,7 @@ export function WeekSummary({ f }: { f: SummaryFlow }) {
             <MonsterPortrait monster={m} size={180} expression={breakdown ? 'sad' : f.grewUp ? 'happy' : undefined} live clip={breakdown ? 'idle_sad' : f.grewUp ? 'celebrate' : undefined} />
           </div>
         </div>
+        {f.farmLevel !== null && <FarmLevelUp level={f.farmLevel} />}
         <section class="card">
           <p class="speaker">{UI_TEXT.wren}</p>
           {quiet && <p>{t.quiet}</p>}

@@ -13,6 +13,7 @@ import { acceptStormChase } from './unlocks.ts'
 import { charmValue, countOf, useItem, type UseItemResult } from './items.ts'
 import { bondCharmId, canEnterSite, isJourneyDone, isSiteOpen, journeyCost, journeyWeek, startJourney, type JourneyProgress, type JourneyWeekResult } from './journey.ts'
 import { elderMentorFor, monthIndexOf } from './legacy.ts'
+import { friendsWeekMut, trainingPartner, type FriendNews } from './friends.ts'
 import { calmHerdMut, feedHerdMut, tickHerdMut, type MateReport } from './herd.ts'
 import { addCondition } from './monster.ts'
 import { createRng, type Rng } from './rng.ts'
@@ -82,6 +83,10 @@ export type WeekEvent =
   | { kind: 'titles'; titles: string[] }
   /** §6.11 the ranch-mates' week (after the star's); only present when there is a herd. */
   | { kind: 'herd'; reports: MateReport[] }
+  /** §6.11 v1.21.0 pairs at home that reached a friendship tier this week (only when there are any). */
+  | { kind: 'friends'; news: FriendNews[] }
+  /** §9.1 v1.21.0 the farm reached a new level (added by the controller, with Ines's letter). */
+  | { kind: 'farmLevel'; level: number }
 
 export interface StartWeekResult {
   state: GameState
@@ -240,7 +245,9 @@ function resolveActionOnce(input: GameState, action: WeekAction, rng: Rng): Reso
         events.push({ kind: 'invalidAction', reason: 'drillUnavailable' })
         return none
       }
-      const r = resolveDrill(m, chosen.drill, rng, { trainingYard: state.upgrades.trainingYard })
+      // §6.11 a Friends-or-better ranch-mate on the same drill trains alongside (no randomness; none without a herd).
+      const buddy = trainingPartner(state, chosen.drill)?.monster.name ?? null
+      const r = resolveDrill(m, chosen.drill, rng, { trainingYard: state.upgrades.trainingYard, buddy })
       state.monster = r.monster
       state.money += r.result.pay
       events.push({ kind: 'drill', result: r.result })
@@ -328,7 +335,8 @@ export function reactToDrill(input: GameState, outcome: DrillOutcome, reaction: 
  * Phase 4: aging, checks, next week's weather, autosave; then the calendar moves on. v16: then the herd's week
  * (§6.11), only when there are ranch-mates, from a sub-stream seeded by ONE number from the game's RNG. With no
  * ranch-mates nothing more is drawn, so every one-monster game is exactly as before; with them, the star's week
- * (and next week's weather) is the same as without, and only the following weeks see the one extra draw.
+ * (and next week's weather) is the same as without, and only the following weeks see the one extra draw. Then the
+ * friendships among the monsters at home (v1.21.0, core/friends.ts), which use no randomness at all.
  */
 export function endWeek(input: GameState, rng: Rng): { state: GameState; events: WeekEvent[] } {
   const state = structuredClone(input)
@@ -362,6 +370,9 @@ export function endWeek(input: GameState, rng: Rng): { state: GameState; events:
     const line = events.find((e) => e.kind === 'fees')
     if (line && line.kind === 'fees') line.amount += fees
     else if (fees > 0) events.push({ kind: 'fees', amount: fees })
+    // §6.11 friendships grow among the monsters at home, and calm them (no randomness).
+    const news = friendsWeekMut(state)
+    if (news.length > 0) events.push({ kind: 'friends', news })
   }
   events.push({ kind: 'autosave' })
   return { state, events }
