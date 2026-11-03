@@ -1309,6 +1309,15 @@ export const ART = {
     confine: { wallMargin: 0.45, maxFov: 68, raiseDeg: 6, maxRaiseDeg: 36 },
     /** The fighters' shadows on the arena's baked (unlit) floor: the arena's shadow_catcher disc. */
     shadowOpacity: 0.3,
+    /** Per arena: the Crown's floor is big, so its side camera stands back lower and the stands show behind the fight. */
+    arenaCamera: { minElevationDeg: 3, crown: { elevationAddDeg: -4 } },
+    /** The side camera stays at least this high (m), so the Crown's ring rope and posts never cut across the picture. */
+    minCameraHeightM: 1.5,
+    /** With a ring barrier inside the camera's floor, the side camera keeps out of the strip from barrierClearInM inside the ring's edge to barrierClearM beyond it (m). */
+    barrierClearM: 3.6,
+    barrierClearInM: 0.5,
+    /** Frames drawn behind the loading card before the entrance starts (texture uploads, first draws). */
+    warmupFrames: 2,
     /** A soft dark disc under each monster's feet (m; depthPct = its front-to-back length as a share of its width). */
     contactShadow: { sizeM: 0.95, depthPct: 120, opacity: 0.45 },
     /** Sharper ground textures at the battle camera's grazing angle. */

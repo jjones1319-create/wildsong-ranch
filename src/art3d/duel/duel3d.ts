@@ -57,8 +57,13 @@ const D = ART.duel
 
 export type DuelCamera = 'side' | 'behind'
 
+/** The arenas (docs/BATTLE_3D.md §8): the Breeders' Guild arena and the Crown Amphitheatre for the big fights. */
+export type ArenaId = 'guild' | 'crown'
+
 export interface DuelOptions {
   canvas: HTMLCanvasElement
+  /** Which arena (the Guild by default). */
+  arena?: ArenaId
   /** The player's side (the camera keeps it on the left / follows it). */
   me: Side
   /** Variant id per side (Songheart's palette), or null. */
@@ -82,7 +87,7 @@ export interface DuelStats {
   level: Level
   gpuMs: number | null
   cpuMs: number
-  arena: 'guild' | 'stand-in'
+  arena: ArenaId | 'stand-in'
   monster: 'ultra' | 'art2'
   /** Estimated GPU memory (textures, geometry, render targets) and Chrome's JS heap, in MB. */
   gpuMb: number
@@ -159,6 +164,8 @@ async function loadMonster(loader: GLTFLoader, lite: boolean): Promise<MonsterAs
 /** What tools/blender/arenas writes beside the arena (guild.json): the parts the runtime uses. */
 interface ArenaInfo {
   ringRadius?: number
+  /** How far from the centre a camera may stand before the stands or the wall (the Crown: 18.5 m); else the ring. */
+  cameraRadius?: number
   sun?: { direction: [number, number, number] }
   flyIn?: { eye: [number, number, number]; target: [number, number, number]; t: number; fovDeg: number }[]
   runtime?: { shadowCatcher?: { node: string } }
@@ -169,22 +176,22 @@ interface ArenaInfo {
 interface Arena {
   root: Object3D
   anchors: Map<string, Object3D>
-  kind: 'guild' | 'stand-in'
+  kind: ArenaId | 'stand-in'
   info: ArenaInfo | null
 }
 
-const GROUND_ATLAS = /ring|apron|mid|far/
+const GROUND_ATLAS = /ring|apron|mid|far|sand|floor/
 
 /**
- * The Guild arena (docs/BATTLE_3D.md §8), or a simple ring if it can't load. Its materials are unlit with the light
- * baked in, so the fighters' shadows fall on its invisible shadow_catcher disc instead.
+ * An arena (docs/BATTLE_3D.md §8: models/arenas/<id>/), or a simple ring if it can't load. Its materials are unlit
+ * with the light baked in, so the fighters' shadows fall on its invisible shadow_catcher disc instead.
  */
-async function loadArena(loader: GLTFLoader, lite: boolean): Promise<Arena> {
-  const dir = `${BASE}models/arenas/guild/`
-  const file = lite ? 'guild_lite.glb' : 'guild.glb'
+async function loadArena(loader: GLTFLoader, lite: boolean, id: ArenaId): Promise<Arena> {
+  const dir = `${BASE}models/arenas/${id}/`
+  const file = lite ? `${id}_lite.glb` : `${id}.glb`
   if (await exists(`${dir}${file}`)) {
     try {
-      const [gltf, info] = await Promise.all([loader.loadAsync(`${dir}${file}`), fetchJson<ArenaInfo>(`${dir}guild.json`)])
+      const [gltf, info] = await Promise.all([loader.loadAsync(`${dir}${file}`), fetchJson<ArenaInfo>(`${dir}${id}.json`)])
       const anchors = new Map<string, Object3D>()
       const catcher = info?.runtime?.shadowCatcher?.node ?? 'shadow_catcher'
       gltf.scene.traverse((o) => {
@@ -200,7 +207,7 @@ async function loadArena(loader: GLTFLoader, lite: boolean): Promise<Arena> {
         const mat = m.material as MeshBasicMaterial
         if (mat?.map && GROUND_ATLAS.test(mat.name)) mat.map.anisotropy = D.groundAnisotropy
       })
-      return { root: gltf.scene, anchors, kind: 'guild', info }
+      return { root: gltf.scene, anchors, kind: id, info }
     } catch {
       /* fall through to the stand-in */
     }
@@ -500,7 +507,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const scene = new Scene()
   const camera = new PerspectiveCamera(D.fov, w() / h(), 0.05, D.far)
   const loader = makeLoader(v.renderer)
-  const [arena, asset] = await Promise.all([loadArena(loader, o.lite), loadMonster(loader, o.lite)])
+  const [arena, asset] = await Promise.all([loadArena(loader, o.lite, o.arena ?? 'guild'), loadMonster(loader, o.lite)])
   const textures = new Set<Texture>()
   noteTextures(arena.root, textures)
   noteTextures(asset.scene, textures)
@@ -508,7 +515,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   // the Guild arena's living crowd (§8): its seats come with the arena (the stand-in has none); each battle's own seed
   // seats a different crowd and draws different breeds' boards
   const crowdSeed = D.crowd.seed + (getState()?.seed ?? 0)
-  const makeCrowd = (fame: number) => (arena.kind === 'guild' ? createCrowd(scene, arena.info, { fame, lite: o.lite, reduceMotion: o.reduceMotion, seed: crowdSeed }) : Promise.resolve(null))
+  const makeCrowd = (fame: number) => (arena.kind !== 'stand-in' ? createCrowd(scene, arena.info, { fame, lite: o.lite, reduceMotion: o.reduceMotion, seed: crowdSeed }) : Promise.resolve(null))
   let crowd: Crowd | null = await makeCrowd(o.crowdFame ?? D.crowd.defaultFame)
   let ovation = false
   const studio = buildStudio(scene, v.environment, new Vector3(0, 0.5, 0), 8)
@@ -518,7 +525,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const sun = arena.info?.sun?.direction
   if (sun) studio.key.position.set(sun[0], sun[1], sun[2]).normalize().multiplyScalar(32).add(studio.key.target.position)
   // every camera stays inside the fence (ART.duel.confine): the crowd stands start just past it
-  const wallR = arena.info?.ringRadius ? arena.info.ringRadius - D.confine.wallMargin : Infinity
+  const wallR = arena.info?.cameraRadius ?? (arena.info?.ringRadius ? arena.info.ringRadius - D.confine.wallMargin : Infinity)
   const actors: [Actor, Actor] = [makeActor(asset, 0, o.variants[0]), makeActor(asset, 1, o.variants[1])]
   for (const a of actors) scene.add(a.root)
   const sparks = new Sparks(scene)
@@ -529,6 +536,16 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     await (v.renderer as { compileAsync?: (s: Scene, c: PerspectiveCamera) => Promise<unknown> }).compileAsync?.(scene, camera)
   } catch {
     /* compiled on first use instead */
+  }
+  // warm-up: draw the whole arena once from the fly-in's start (it sees all of it), so the texture uploads and first
+  // draws happen behind the loading card instead of freezing the entrance's first frame (the Crown: about 7 s on the PC)
+  const firstKey = arena.info?.flyIn?.[0]
+  camera.position.set(...(firstKey?.eye ?? [0, 30, 60]))
+  camera.lookAt(...(firstKey?.target ?? [0, 0, 0]))
+  camera.updateMatrixWorld()
+  for (let i = 0; i < D.warmupFrames; i++) {
+    v.render()
+    await new Promise((r) => setTimeout(r, 0))
   }
   if (o.lite) v.setLevel('no-msaa')
 
@@ -588,6 +605,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     void s
     const F = D.side
     const fr = sideFraming(camera.aspect)
+    fr.elevationDeg = Math.max(D.arenaCamera.minElevationDeg, fr.elevationDeg + (arena.kind === 'crown' ? D.arenaCamera.crown.elevationAddDeg : 0))
     const n = new Vector3(-u.z, 0, u.x).multiplyScalar(sideSign)
     const yaw = (fr.yawDeg * Math.PI) / 180
     const flat = n.clone().multiplyScalar(Math.cos(yaw)).addScaledVector(u, -Math.sin(yaw)).normalize()
@@ -628,12 +646,24 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       d = F.base + dist * F.perGap
       for (let i = 0; i < 4; i++) d = Math.min(F.maxDist, Math.max(F.minDist, d * need()))
       const reach = reachInside(look, dir)
-      if (d <= reach) break
-      // the crowd is behind: stay inside the fence and widen the lens; if that can't fit them, rise and try again
-      t *= d / reach
-      d = reach
-      for (let i = 0; i < 3; i++) t = Math.min(tMax, t * need())
-      if (need() <= 1.02 || el >= fr.elevationDeg + D.confine.maxRaiseDeg) break
+      if (d > reach) {
+        // the crowd is behind: stay inside the fence and widen the lens; if that can't fit them, rise and try again
+        t *= d / reach
+        d = reach
+        for (let i = 0; i < 3; i++) t = Math.min(tMax, t * need())
+      }
+      // a ring barrier inside the camera's floor (the Crown's): never stop just beyond it, where a post fills the
+      // picture; back off past the strip (smaller monsters, still in the band)
+      const ring = arena.info?.ringRadius
+      if (ring && wallR > ring + D.barrierClearM) {
+        const at = look.clone().addScaledVector(dir, d)
+        const r = Math.sqrt(at.x * at.x + at.z * at.z)
+        if (r > ring - D.barrierClearInM && r < ring + D.barrierClearM) d = Math.min(reach, Math.max(d, reachTo(look, dir, ring + D.barrierClearM)))
+      }
+      const fits = d < reach || need() <= 1.02
+      // and never so low that a ring barrier's rope and posts cut across the picture (the Crown's)
+      const highEnough = look.y + dir.y * d >= D.minCameraHeightM
+      if ((fits && highEnough) || el >= fr.elevationDeg + D.confine.maxRaiseDeg) break
     }
     need()
     return { pos: look.clone().addScaledVector(dir, d), look, fov: (2 * Math.atan(t) * 180) / Math.PI }
@@ -641,10 +671,15 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
 
   /** How far the camera can back away from `from` along `dir` before it leaves the fence (horizontally), in metres. */
   function reachInside(from: Vector3, dir: Vector3): number {
-    if (!Number.isFinite(wallR)) return Infinity
+    return reachTo(from, dir, wallR)
+  }
+
+  /** How far from `from` along `dir` the camera reaches radius R from the centre (horizontally), in metres. */
+  function reachTo(from: Vector3, dir: Vector3, R: number): number {
+    if (!Number.isFinite(R)) return Infinity
     const a = dir.x * dir.x + dir.z * dir.z
     const b = from.x * dir.x + from.z * dir.z
-    const c = from.x * from.x + from.z * from.z - wallR * wallR
+    const c = from.x * from.x + from.z * from.z - R * R
     const disc = b * b - a * c
     if (a < 1e-6 || disc < 0) return Infinity
     return Math.max(0.6, (-b + Math.sqrt(disc)) / a)

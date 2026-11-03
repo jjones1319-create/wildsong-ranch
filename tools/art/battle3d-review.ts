@@ -4,9 +4,9 @@
  *   1-intro (the fly-in and walk-on), 2-side, 3-behind, 4-cinematic (Auto at ×2 to the end: the Special, Signature and KO cuts),
  * plus a contact sheet of stills and stats.json (fps, render resolution, effect level, GPU/CPU ms, download sizes).
  *
- *   node tools/art/battle3d-review.ts [--no-build] [--seconds 14]
+ *   node tools/art/battle3d-review.ts [--no-build] [--seconds 14] [--arena guild|crown]
  *
- * Output: art-review/battle3d/ (gitignored). Videos are trimmed and converted to MP4 (H.264) with ffmpeg.
+ * Output: art-review/battle3d/ (the Crown: art-review/battle3d-crown/; gitignored). Videos are trimmed and converted to MP4 (H.264) with ffmpeg.
  */
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
@@ -25,12 +25,13 @@ declare global {
 }
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const OUT = join(ROOT, 'art-review', 'battle3d')
-const PORT = 4173
-const URL = `http://localhost:${PORT}/wildsong-ranch/#lab/battle3d`
 const IS_WIN = process.platform === 'win32'
 const args = process.argv.slice(2)
 const has = (f: string) => args.includes(f)
+const ARENA = args.includes('--arena') ? args[args.indexOf('--arena') + 1] : 'guild'
+const OUT = join(ROOT, 'art-review', ARENA === 'crown' ? 'battle3d-crown' : 'battle3d')
+const PORT = 4173
+const URL = `http://localhost:${PORT}/wildsong-ranch/${ARENA === 'crown' ? '?arena=crown' : ''}#lab/battle3d`
 const SECONDS = Number(args[args.indexOf('--seconds') + 1] ?? 14) || 14
 const VIEW = { width: 412, height: 892 }
 
@@ -107,7 +108,7 @@ function sizes(): Record<string, number> {
   }
   add('monster', join(ROOT, 'public', 'models', 'monsters-ultra'), /^puddlepup\.(glb|json)$/)
   add('lite-monster', join(ROOT, 'public', 'models', 'monsters'), /^puddlepup\.(glb|json)$/)
-  add('arena', join(ROOT, 'public', 'models', 'arenas', 'guild'), /^guild(_lite)?\.(glb|json)$/)
+  add('arena', join(ROOT, 'public', 'models', 'arenas', ARENA), new RegExp(`^${ARENA}(_lite)?[.](glb|json)$`))
   const assets = join(ROOT, 'dist', 'assets')
   if (existsSync(assets)) for (const f of readdirSync(assets)) if (/^(duel3d|viewGpu|Battle3DScreen)-.*\.js$/.test(f)) out[`code-gz/${f}`] = gzipSync(readFileSync(join(assets, f))).length
   return out

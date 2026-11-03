@@ -279,6 +279,29 @@ Each person is about 170 triangles: a 7-sided torso with three-sided legs and fe
 - **The arena without its baked people:** Full 101,187 triangles in 14 draws, 6.6 MB (was 127,923 and 7.4 MB); Lite 44,855 in 10, 1.7 MB (was 58,562 and 2.0 MB). The fly-in path is unchanged.
 - **Review:** `node tools/art/crowd-review.ts` writes `art-review/arena-guild/crowd-sheet.png`. It shows the crowd viewer (`tools/art/crowd-viewer.html`: Fame, cheers, close-ups, Lite, Reduce motion) beside stills from the game.
 
+### 8.3 The Crown Amphitheatre (v1.18.0)
+The owner asked for "another, gladiator size, huge, for tournaments and more popular fights". A search found no ready-made free (CC0) arena good enough (art-review/arena-candidates/), so the owner chose **our own build, Roman style** (Nov 2).
+- **What it is:**
+  - a three-tier Roman bowl, 142 × 128 m and 32 m tall;
+  - a 54 × 40 m sand floor with rake marks, paw prints and the Guild emblem;
+  - the 12 m duel ring marked by a marble curb with a crimson rope on bronze posts: the fence of §4.5;
+  - two gatehouses with portcullises and marble Puddlepup statues, a Patrons' box with bronze statues and a canopy;
+  - striped cloth awnings, braziers, banners and Guild medallions;
+  - a town and hills outside for the fly-in.
+- **Built by** `npm run art:arena`'s sibling `npm run art:crown` (`tools/blender/arenas/crown*.py`, `crown.ts`), with CC0 Poly Haven materials (CREDITS). The light is baked, as in the Guild arena.
+- **Budgets:** Full 117,634 triangles, 20 draws, 9.2 MB; Lite 55,667 triangles, 2.6 MB. The review sheet is art-review/arena-crown/sheet.png.
+- **The crowd:**
+  - about 13,800 painted spectators in the stands;
+  - 262 live seats on the front rows and the Patrons' box (132 in Lite), filled by Fame like the Guild's (§8.2).
+- **Cameras:**
+  - cameras on the sand stay within `cameraRadius` (18.5 m), so the side camera can stand back with a long lens;
+  - it stays at least 1.5 m high (`ART.duel.minCameraHeightM`);
+  - it keeps out of the strip just beyond the ring barrier (`barrierClearM`), where a post would fill the picture, so the rope and posts frame the fight like ringside;
+  - it sits 4° lower than in the Guild (`arenaCamera.crown`), so the stands show above the fight.
+- **Loading:** the arena is drawn twice behind the loading card (`warmupFrames`), so its texture uploads don't freeze the entrance's first frame (about 7 s on the PC before).
+- **In the test:** the 🏟️ chip swaps the Guild and the Crown and restarts the fight there; `?arena=crown` in the address opens it directly; `npm run art:battle3d -- --arena crown` records it (art-review/battle3d-crown/).
+- **Still to decide for the full release:** which fights use it. The owner's brief says tournaments and popular fights: for example the Officials, the Crowns, the Legend Cup, and any battle where your monster's Fame is high.
+
 ## 9. Balance (re-run in duel mode)
 Command: `npm run sim:balance -- --only battle --mode duel --out docs/BALANCE_DUEL.md` (200 AI-vs-AI battles per pair, 32 breeds).
 

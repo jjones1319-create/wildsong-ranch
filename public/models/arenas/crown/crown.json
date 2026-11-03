@@ -1,0 +1,1457 @@
+{
+ "arena": "crown",
+ "title": "The Crown Amphitheatre",
+ "units": "metres, glTF Y-up; the sand at y = 0 centred on the origin; the duel ring's curb starts at ringRadius",
+ "ringRadius": 6,
+ "cameraRadius": 18.5,
+ "anchors": {
+  "cam_battle": {
+   "position": [
+    -7.2,
+    4.2,
+    16.8
+   ],
+   "forward": null,
+   "target": [
+    0.6,
+    1.5,
+    -0.3
+   ],
+   "fovDeg": 28
+  },
+  "cam_battle_wide": {
+   "position": [
+    0,
+    2.1,
+    17.6
+   ],
+   "forward": null,
+   "target": [
+    0,
+    1,
+    0
+   ],
+   "fovDeg": 22
+  },
+  "cam_establish": {
+   "position": [
+    -96,
+    84,
+    150
+   ],
+   "forward": null,
+   "target": [
+    0,
+    4,
+    -2
+   ],
+   "fovDeg": 40
+  },
+  "cam_fly_0": {
+   "position": [
+    -85,
+    92,
+    310
+   ],
+   "forward": null,
+   "target": [
+    0,
+    8,
+    10
+   ],
+   "fovDeg": 40,
+   "t": 0
+  },
+  "cam_fly_1": {
+   "position": [
+    -48,
+    74,
+    180
+   ],
+   "forward": null,
+   "target": [
+    0,
+    6,
+    4
+   ],
+   "fovDeg": 40,
+   "t": 1.5
+  },
+  "cam_fly_2": {
+   "position": [
+    -14,
+    60,
+    62
+   ],
+   "forward": null,
+   "target": [
+    0,
+    2,
+    -6
+   ],
+   "fovDeg": 40,
+   "t": 3
+  },
+  "cam_fly_3": {
+   "position": [
+    -7,
+    19,
+    24
+   ],
+   "forward": null,
+   "target": [
+    -1,
+    1,
+    -4
+   ],
+   "fovDeg": 38,
+   "t": 4.2
+  },
+  "cam_fly_4": {
+   "position": [
+    -9,
+    5,
+    7.5
+   ],
+   "forward": null,
+   "target": [
+    0,
+    0.6,
+    0
+   ],
+   "fovDeg": 36,
+   "t": 5
+  },
+  "cam_fly_5": {
+   "position": [
+    -5.4,
+    1.65,
+    1.35
+   ],
+   "forward": null,
+   "target": [
+    2.4,
+    0.75,
+    0
+   ],
+   "fovDeg": 34,
+   "t": 6
+  },
+  "cam_gate": {
+   "position": [
+    7.5,
+    1.8,
+    8
+   ],
+   "forward": null,
+   "target": [
+    24.5,
+    5,
+    0
+   ],
+   "fovDeg": 50
+  },
+  "cam_shoulder": {
+   "position": [
+    -4.45,
+    1.55,
+    1.15
+   ],
+   "forward": null,
+   "target": [
+    2.4,
+    0.7,
+    -0.15
+   ],
+   "fovDeg": 52
+  },
+  "gate_A": {
+   "position": [
+    -6.6,
+    0,
+    0
+   ],
+   "forward": [
+    1,
+    0,
+    0
+   ]
+  },
+  "gate_A_start": {
+   "position": [
+    -13,
+    0,
+    0
+   ],
+   "forward": [
+    1,
+    0,
+    0
+   ]
+  },
+  "gate_B": {
+   "position": [
+    6.6,
+    0,
+    0
+   ],
+   "forward": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "gate_B_start": {
+   "position": [
+    13,
+    0,
+    0
+   ],
+   "forward": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "ring_center": {
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "forward": null
+  },
+  "spawn_A": {
+   "position": [
+    -2.4,
+    0,
+    0
+   ],
+   "forward": [
+    1,
+    0,
+    0
+   ]
+  },
+  "spawn_B": {
+   "position": [
+    2.4,
+    0,
+    0
+   ],
+   "forward": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "tunnel_A": {
+   "position": [
+    -24.3,
+    0.55,
+    0
+   ],
+   "forward": [
+    1,
+    0,
+    0
+   ]
+  },
+  "tunnel_B": {
+   "position": [
+    24.3,
+    0.55,
+    0
+   ],
+   "forward": [
+    -1,
+    0,
+    0
+   ]
+  }
+ },
+ "flyIn": [
+  {
+   "node": "cam_fly_0",
+   "eye": [
+    -85,
+    92,
+    310
+   ],
+   "target": [
+    0,
+    8,
+    10
+   ],
+   "t": 0,
+   "fovDeg": 40
+  },
+  {
+   "node": "cam_fly_1",
+   "eye": [
+    -48,
+    74,
+    180
+   ],
+   "target": [
+    0,
+    6,
+    4
+   ],
+   "t": 1.5,
+   "fovDeg": 40
+  },
+  {
+   "node": "cam_fly_2",
+   "eye": [
+    -14,
+    60,
+    62
+   ],
+   "target": [
+    0,
+    2,
+    -6
+   ],
+   "t": 3,
+   "fovDeg": 40
+  },
+  {
+   "node": "cam_fly_3",
+   "eye": [
+    -7,
+    19,
+    24
+   ],
+   "target": [
+    -1,
+    1,
+    -4
+   ],
+   "t": 4.2,
+   "fovDeg": 38
+  },
+  {
+   "node": "cam_fly_4",
+   "eye": [
+    -9,
+    5,
+    7.5
+   ],
+   "target": [
+    0,
+    0.6,
+    0
+   ],
+   "t": 5,
+   "fovDeg": 36
+  },
+  {
+   "node": "cam_fly_5",
+   "eye": [
+    -5.4,
+    1.65,
+    1.35
+   ],
+   "target": [
+    2.4,
+    0.75,
+    0
+   ],
+   "t": 6,
+   "fovDeg": 34
+  }
+ ],
+ "flyInClearance": {
+  "minMetres": 0.67,
+  "nearest": "arena_props",
+  "at": [
+   -5.45,
+   -1.43,
+   1.69
+  ],
+  "atKeys": [
+   57.82,
+   64.54,
+   18.17,
+   12.76,
+   5,
+   0.67
+  ],
+  "minBeforeFaceOffMetres": 5.11,
+  "note": "closest approach of the eye path (centripetal Catmull–Rom through the cam_fly eyes) to any arena surface; the last key is the runtime face-off"
+ },
+ "sun": {
+  "direction": [
+   -0.5002,
+   0.6603,
+   0.5602
+  ],
+  "color": [
+   1,
+   0.94,
+   0.84
+  ]
+ },
+ "seats": [
+  {"p":[26.9282,3.42,-8.0804],"yaw":-1.2793,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[26.6521,3.42,-8.5907],"yaw":-1.259,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[25.4026,3.42,-10.5451],"yaw":-1.1773,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[25.0565,3.42,-11.0109],"yaw":-1.1568,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[24.6981,3.42,-11.4671],"yaw":-1.1361,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[24.3277,3.42,-11.9137],"yaw":-1.1154,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[23.9458,3.42,-12.3506],"yaw":-1.0946,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[23.5529,3.42,-12.7776],"yaw":-1.0737,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[23.1495,3.42,-13.1946],"yaw":-1.0527,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[22.7361,3.42,-13.6017],"yaw":-1.0317,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[22.313,3.42,-13.9988],"yaw":-1.0105,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[21.8807,3.42,-14.3858],"yaw":-0.9892,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[21.4396,3.42,-14.7628],"yaw":-0.9678,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[19.5948,3.42,-16.1699],"yaw":-0.8809,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[19.1153,3.42,-16.4967],"yaw":-0.8588,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[18.6292,3.42,-16.8134],"yaw":-0.8366,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[18.1367,3.42,-17.1202],"yaw":-0.8142,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[17.6382,3.42,-17.4171],"yaw":-0.7917,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[17.1339,3.42,-17.7042],"yaw":-0.769,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[16.6242,3.42,-17.9814],"yaw":-0.7462,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[16.1093,3.42,-18.2489],"yaw":-0.7232,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[15.5895,3.42,-18.5067],"yaw":-0.7,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[15.065,3.42,-18.7548],"yaw":-0.6767,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[12.3804,3.42,-19.8522],"yaw":-0.5576,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[11.8325,3.42,-20.0434],"yaw":-0.5333,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[11.2815,3.42,-20.2252],"yaw":-0.5088,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[10.7275,3.42,-20.3978],"yaw":-0.4842,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[10.1708,3.42,-20.5611],"yaw":-0.4594,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[9.6114,3.42,-20.7153],"yaw":-0.4344,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[9.0496,3.42,-20.8603],"yaw":-0.4093,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-11.0049,3.42,-20.3127],"yaw":0.4965,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-11.5574,3.42,-20.1355],"yaw":0.5211,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-12.1068,3.42,-19.9489],"yaw":0.5455,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-12.653,3.42,-19.7531],"yaw":0.5697,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-13.1957,3.42,-19.5478],"yaw":0.5938,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-13.7348,3.42,-19.3332],"yaw":0.6177,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-14.27,3.42,-19.109],"yaw":0.6414,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-14.8011,3.42,-18.8753],"yaw":0.665,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-15.3278,3.42,-18.632],"yaw":0.6884,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-15.85,3.42,-18.379],"yaw":0.7116,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-16.3674,3.42,-18.1164],"yaw":0.7347,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-18.3837,3.42,-16.968],"yaw":0.8254,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-18.873,3.42,-16.6563],"yaw":0.8477,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-19.3559,3.42,-16.3345],"yaw":0.8699,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-19.832,3.42,-16.0028],"yaw":0.8918,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-20.3009,3.42,-15.6611],"yaw":0.9137,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-20.7623,3.42,-15.3093],"yaw":0.9354,"row":0,"section":"north","kind":"seat","lite":true},
+  {"p":[-21.2159,3.42,-14.9475],"yaw":0.957,"row":0,"section":"north","kind":"seat","lite":false},
+  {"p":[-21.6612,3.42,-14.5755],"yaw":0.9785,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-22.098,3.42,-14.1936],"yaw":0.9999,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-22.5257,3.42,-13.8015],"yaw":1.0211,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-22.9441,3.42,-13.3994],"yaw":1.0422,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-24.5143,3.42,-11.6916],"yaw":1.1258,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-24.8788,3.42,-11.2402],"yaw":1.1464,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-25.2311,3.42,-10.7792],"yaw":1.167,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-25.5708,3.42,-10.3087],"yaw":1.1876,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-25.8972,3.42,-9.829],"yaw":1.2081,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-26.2099,3.42,-9.3403],"yaw":1.2285,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-26.5083,3.42,-8.8427],"yaw":1.2488,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-26.792,3.42,-8.3366],"yaw":1.2691,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-27.0605,3.42,-7.8222],"yaw":1.2894,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-27.0605,3.42,7.8222],"yaw":1.8522,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-26.792,3.42,8.3366],"yaw":1.8725,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-25.5708,3.42,10.3087],"yaw":1.954,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-25.2311,3.42,10.7792],"yaw":1.9745,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-24.8788,3.42,11.2402],"yaw":1.9951,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-24.5143,3.42,11.6916],"yaw":2.0158,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-24.1381,3.42,12.1334],"yaw":2.0366,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-23.7507,3.42,12.5653],"yaw":2.0574,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-23.3525,3.42,12.9873],"yaw":2.0783,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-22.9441,3.42,13.3994],"yaw":2.0994,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-22.5257,3.42,13.8015],"yaw":2.1205,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-22.098,3.42,14.1936],"yaw":2.1417,"row":0,"section":"west","kind":"seat","lite":true},
+  {"p":[-21.6612,3.42,14.5755],"yaw":2.1631,"row":0,"section":"west","kind":"seat","lite":false},
+  {"p":[-19.832,3.42,16.0028],"yaw":2.2497,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-19.3559,3.42,16.3345],"yaw":2.2717,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-18.873,3.42,16.6563],"yaw":2.2939,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-18.3837,3.42,16.968],"yaw":2.3162,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-17.8882,3.42,17.2699],"yaw":2.3386,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-17.3868,3.42,17.5619],"yaw":2.3612,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-16.8797,3.42,17.844],"yaw":2.384,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-16.3674,3.42,18.1164],"yaw":2.4069,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-15.85,3.42,18.379],"yaw":2.4299,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-15.3278,3.42,18.632],"yaw":2.4532,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-14.8011,3.42,18.8753],"yaw":2.4766,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-12.653,3.42,19.7531],"yaw":2.5719,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-12.1068,3.42,19.9489],"yaw":2.5961,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-11.5574,3.42,20.1355],"yaw":2.6205,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-11.0049,3.42,20.3127],"yaw":2.6451,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-10.4495,3.42,20.4806],"yaw":2.6698,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-9.8914,3.42,20.6394],"yaw":2.6947,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-9.3308,3.42,20.7889],"yaw":2.7197,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-8.7678,3.42,20.9294],"yaw":2.7449,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-8.2026,3.42,21.0607],"yaw":2.7702,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-7.6354,3.42,21.183],"yaw":2.7956,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-7.0663,3.42,21.2962],"yaw":2.8212,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-4.7744,3.42,21.6595],"yaw":2.9246,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-4.1982,3.42,21.728],"yaw":2.9507,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-3.621,3.42,21.7877],"yaw":2.9769,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-3.043,3.42,21.8384],"yaw":3.0031,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-2.4643,3.42,21.8804],"yaw":3.0294,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-1.885,3.42,21.9134],"yaw":3.0558,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-1.3053,3.42,21.9377],"yaw":3.0822,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[-0.7253,3.42,21.9531],"yaw":3.1086,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[-0.1451,3.42,21.9597],"yaw":3.135,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[0.4352,3.42,21.9575],"yaw":-3.1218,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[1.0153,3.42,21.9465],"yaw":-3.0954,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[3.3321,3.42,21.8142],"yaw":-2.99,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[3.9097,3.42,21.759],"yaw":-2.9638,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[4.4864,3.42,21.6949],"yaw":-2.9377,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[5.062,3.42,21.6219],"yaw":-2.9116,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[5.6365,3.42,21.5401],"yaw":-2.8857,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[6.2096,3.42,21.4493],"yaw":-2.8598,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[6.7812,3.42,21.3495],"yaw":-2.834,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[7.3511,3.42,21.2407],"yaw":-2.8084,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[7.9193,3.42,21.123],"yaw":-2.7829,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[8.4855,3.42,20.9962],"yaw":-2.7575,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[11.2815,3.42,20.2252],"yaw":-2.6328,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[11.8325,3.42,20.0434],"yaw":-2.6083,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[12.3804,3.42,19.8522],"yaw":-2.584,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[12.9248,3.42,19.6516],"yaw":-2.5598,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[13.4657,3.42,19.4417],"yaw":-2.5358,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[14.0029,3.42,19.2223],"yaw":-2.512,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[14.536,3.42,18.9933],"yaw":-2.4884,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[15.065,3.42,18.7548],"yaw":-2.4649,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[15.5895,3.42,18.5067],"yaw":-2.4415,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[16.1093,3.42,18.2489],"yaw":-2.4184,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[18.6292,3.42,16.8134],"yaw":-2.305,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[19.1153,3.42,16.4967],"yaw":-2.2828,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[19.5948,3.42,16.1699],"yaw":-2.2607,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[20.0673,3.42,15.8332],"yaw":-2.2388,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[20.5325,3.42,15.4864],"yaw":-2.217,"row":0,"section":"south","kind":"seat","lite":false},
+  {"p":[20.9901,3.42,15.1296],"yaw":-2.1953,"row":0,"section":"south","kind":"seat","lite":true},
+  {"p":[21.4396,3.42,14.7628],"yaw":-2.1738,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[21.8807,3.42,14.3858],"yaw":-2.1524,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[22.313,3.42,13.9988],"yaw":-2.1311,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[22.7361,3.42,13.6017],"yaw":-2.1099,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[24.3277,3.42,11.9137],"yaw":-2.0262,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[24.6981,3.42,11.4671],"yaw":-2.0055,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[25.0565,3.42,11.0109],"yaw":-1.9848,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[25.4026,3.42,10.5451],"yaw":-1.9643,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[25.7357,3.42,10.07],"yaw":-1.9438,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[26.0553,3.42,9.5858],"yaw":-1.9233,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[26.3609,3.42,9.0926],"yaw":-1.9029,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[26.6521,3.42,8.5907],"yaw":-1.8826,"row":0,"section":"east","kind":"seat","lite":true},
+  {"p":[26.9282,3.42,8.0804],"yaw":-1.8623,"row":0,"section":"east","kind":"seat","lite":false},
+  {"p":[20.4253,3.84,-16.7971],"yaw":-0.8826,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[19.9485,3.84,-17.1304],"yaw":-0.8613,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[19.4649,3.84,-17.454],"yaw":-0.8398,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[18.9751,3.84,-17.768],"yaw":-0.8182,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[18.4793,3.84,-18.0723],"yaw":-0.7965,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[17.9776,3.84,-18.3671],"yaw":-0.7747,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[17.4705,3.84,-18.6522],"yaw":-0.7527,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[16.9582,3.84,-18.9279],"yaw":-0.7306,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[16.4408,3.84,-19.1941],"yaw":-0.7083,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[15.9187,3.84,-19.4509],"yaw":-0.6859,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[15.3921,3.84,-19.6982],"yaw":-0.6633,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[13.2449,3.84,-20.5945],"yaw":-0.5715,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[12.6989,3.84,-20.7955],"yaw":-0.5482,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[12.1496,3.84,-20.9873],"yaw":-0.5248,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[11.5973,3.84,-21.1701],"yaw":-0.5012,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[11.042,3.84,-21.3437],"yaw":-0.4774,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[10.4839,3.84,-21.5084],"yaw":-0.4535,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[9.9233,3.84,-21.664],"yaw":-0.4295,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[9.3603,3.84,-21.8107],"yaw":-0.4054,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-11.32,3.84,-21.258],"yaw":0.4893,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-11.8738,3.84,-21.0798],"yaw":0.513,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-12.4247,3.84,-20.8926],"yaw":0.5365,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-12.9723,3.84,-20.6961],"yaw":0.5599,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-13.5166,3.84,-20.4906],"yaw":0.5831,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-14.0573,3.84,-20.2758],"yaw":0.6062,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-14.5942,3.84,-20.0517],"yaw":0.6292,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-15.1272,3.84,-19.8184],"yaw":0.652,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-15.656,3.84,-19.5757],"yaw":0.6746,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-16.1804,3.84,-19.3237],"yaw":0.6971,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-16.7001,3.84,-19.0622],"yaw":0.7194,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-19.2208,3.84,-17.6122],"yaw":0.829,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-19.7075,3.84,-17.2934],"yaw":0.8505,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-20.1877,3.84,-16.965],"yaw":0.8719,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-20.6612,3.84,-16.6268],"yaw":0.8932,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-21.1276,3.84,-16.279],"yaw":0.9143,"row":1,"section":"north","kind":"seat","lite":true},
+  {"p":[-21.5865,3.84,-15.9214],"yaw":0.9353,"row":1,"section":"north","kind":"seat","lite":false},
+  {"p":[-20.1877,3.84,16.965],"yaw":2.2697,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-19.7075,3.84,17.2934],"yaw":2.291,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-19.2208,3.84,17.6122],"yaw":2.3125,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-18.7279,3.84,17.9213],"yaw":2.3342,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-18.2292,3.84,18.2209],"yaw":2.356,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-17.7248,3.84,18.5108],"yaw":2.3779,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-17.215,3.84,18.7913],"yaw":2.3999,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-16.7001,3.84,19.0622],"yaw":2.4221,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-16.1804,3.84,19.3237],"yaw":2.4445,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-15.656,3.84,19.5757],"yaw":2.467,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-15.1272,3.84,19.8184],"yaw":2.4896,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-12.9723,3.84,20.6961],"yaw":2.5817,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-12.4247,3.84,20.8926],"yaw":2.6051,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-11.8738,3.84,21.0798],"yaw":2.6286,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-11.32,3.84,21.258],"yaw":2.6523,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-10.7633,3.84,21.4272],"yaw":2.6761,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-10.2039,3.84,21.5873],"yaw":2.7,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-9.6421,3.84,21.7384],"yaw":2.7241,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-9.0779,3.84,21.8806],"yaw":2.7483,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-8.5116,3.84,22.0139],"yaw":2.7727,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-7.9433,3.84,22.1383],"yaw":2.7971,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-7.373,3.84,22.2539],"yaw":2.8217,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-5.0764,3.84,22.628],"yaw":2.9209,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-4.499,3.84,22.6996],"yaw":2.9459,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-3.9206,3.84,22.7626],"yaw":2.971,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-3.3413,3.84,22.8168],"yaw":2.9962,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-2.7613,3.84,22.8623],"yaw":3.0214,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-2.1807,3.84,22.8991],"yaw":3.0466,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-1.5995,3.84,22.9273],"yaw":3.0719,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[-1.0181,3.84,22.9467],"yaw":3.0973,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[-0.4364,3.84,22.9576],"yaw":3.1226,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[0.1455,3.84,22.9597],"yaw":-3.1353,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[0.7272,3.84,22.9532],"yaw":-3.1099,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[3.0514,3.84,22.8406],"yaw":-3.0088,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[3.6311,3.84,22.7907],"yaw":-2.9836,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[4.2099,3.84,22.7322],"yaw":-2.9585,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[4.7879,3.84,22.6649],"yaw":-2.9334,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[5.3647,3.84,22.5889],"yaw":-2.9084,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[5.9403,3.84,22.5042],"yaw":-2.8835,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[6.5145,3.84,22.4106],"yaw":-2.8587,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[7.0873,3.84,22.3083],"yaw":-2.834,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[7.6584,3.84,22.1972],"yaw":-2.8094,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[8.2277,3.84,22.0772],"yaw":-2.7849,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[8.795,3.84,21.9484],"yaw":-2.7605,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[11.5973,3.84,21.1701],"yaw":-2.6404,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[12.1496,3.84,20.9873],"yaw":-2.6168,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[12.6989,3.84,20.7955],"yaw":-2.5934,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[13.2449,3.84,20.5945],"yaw":-2.5701,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[13.7874,3.84,20.3843],"yaw":-2.5469,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[14.3262,3.84,20.1649],"yaw":-2.5239,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[14.8612,3.84,19.9362],"yaw":-2.501,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[15.3921,3.84,19.6982],"yaw":-2.4783,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[15.9187,3.84,19.4509],"yaw":-2.4557,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[16.4408,3.84,19.1941],"yaw":-2.4333,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[16.9582,3.84,18.9279],"yaw":-2.411,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[18.9751,3.84,17.768],"yaw":-2.3234,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[19.4649,3.84,17.454],"yaw":-2.3018,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[19.9485,3.84,17.1304],"yaw":-2.2803,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[20.4253,3.84,16.7971],"yaw":-2.259,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[20.8953,3.84,16.4541],"yaw":-2.2378,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[21.358,3.84,16.1014],"yaw":-2.2168,"row":1,"section":"south","kind":"seat","lite":true},
+  {"p":[21.8131,3.84,15.739],"yaw":-2.1958,"row":1,"section":"south","kind":"seat","lite":false},
+  {"p":[6.4,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":true},
+  {"p":[4.8,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":false},
+  {"p":[3.2,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":true},
+  {"p":[1.6,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":false},
+  {"p":[0,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":true},
+  {"p":[-1.6,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":false},
+  {"p":[-3.2,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":true},
+  {"p":[-4.8,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":false},
+  {"p":[-6.4,4.85,-20.55],"yaw":0,"row":0,"section":"patrons","kind":"seat","lite":true},
+  {"p":[6.4,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":true},
+  {"p":[4.8,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":false},
+  {"p":[3.2,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":true},
+  {"p":[1.6,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":false},
+  {"p":[0,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":true},
+  {"p":[-1.6,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":false},
+  {"p":[-3.2,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":true},
+  {"p":[-4.8,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":false},
+  {"p":[-6.4,5.3,-22.2],"yaw":0,"row":1,"section":"patrons","kind":"seat","lite":true}
+ ],
+ "crowd": {
+  "liveSeats": 262,
+  "liveSeatsLite": 132,
+  "liveRows": "row 0 (the front marble row) all round; row 1 too on the long sides (sections north and south); the Patrons' box (section patrons, 2 rows)",
+  "paintedRows": "every other seat row is baked with a painted crowd: rows 1-13 of the lowest tier (row 1 only at the gate ends), all 14 of the middle tier and all 10 of the top tier",
+  "paintedSpectators": 13800,
+  "bakedInto": {
+   "full": [
+    "low_n",
+    "low_s",
+    "mid",
+    "top"
+   ],
+   "lite": [
+    "lbowl_low",
+    "lbowl_high"
+   ]
+  }
+ },
+ "trianglesFull": {
+  "arena_ring": 3024,
+  "arena_apron_w": 1120,
+  "arena_apron_e": 1120,
+  "arena_podium": 3562,
+  "arena_low_n": 2668,
+  "arena_low_s": 3712,
+  "arena_mid": 11444,
+  "arena_top": 10416,
+  "arena_gallery": 5700,
+  "arena_facade": 27432,
+  "arena_monuments": 2616,
+  "arena_props": 8532,
+  "arena_statues": 15600,
+  "arena_velarium": 2394,
+  "arena_plaza": 416,
+  "arena_land": 3072,
+  "arena_outskirts": 11566,
+  "sky_front": 1584,
+  "sky_back": 1584
+ },
+ "trianglesLite": {
+  "lite_ring": 3024,
+  "lite_apron_w": 1120,
+  "lite_apron_e": 1120,
+  "lite_podium": 3562,
+  "lite_facade": 13896,
+  "lite_monuments": 2296,
+  "lite_props": 6066,
+  "lite_velarium": 2394,
+  "lite_plaza": 416,
+  "lite_land": 3072,
+  "lite_outskirts": 740,
+  "lite_lbowl_low": 1798,
+  "lite_lbowl_high": 8424,
+  "lite_lstatues": 4499,
+  "sky_lite_front": 1584,
+  "sky_lite_back": 1584
+ },
+ "sources": [
+  {
+   "id": "sandstone_blocks_08",
+   "type": "texture",
+   "name": "Sandstone Blocks 08",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/sandstone_blocks_08",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "large_sandstone_blocks_01",
+   "type": "texture",
+   "name": "Large Sandstone Blocks 01",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/large_sandstone_blocks_01",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "sandstone_blocks_04",
+   "type": "texture",
+   "name": "Sandstone Blocks 04",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/sandstone_blocks_04",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "white_sandstone_blocks_02",
+   "type": "texture",
+   "name": "White Sandstone Blocks 02",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/white_sandstone_blocks_02",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "marble_01",
+   "type": "texture",
+   "name": "Marble 01",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/marble_01",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "coast_sand_01",
+   "type": "texture",
+   "name": "Coast Sand 01",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/coast_sand_01",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "raked_dirt",
+   "type": "texture",
+   "name": "Raked Dirt",
+   "authors": [
+    "Dario Barresi",
+    "Dimitrios Savva"
+   ],
+   "url": "https://polyhaven.com/a/raked_dirt",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "stone_pavers",
+   "type": "texture",
+   "name": "Stone Pavers",
+   "authors": [
+    "Amal Kumar"
+   ],
+   "url": "https://polyhaven.com/a/stone_pavers",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "stone_floor",
+   "type": "texture",
+   "name": "Stone Floor",
+   "authors": [
+    "Dimitrios Savva"
+   ],
+   "url": "https://polyhaven.com/a/stone_floor",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "clay_roof_tiles_02",
+   "type": "texture",
+   "name": "Clay Roof Tiles 02",
+   "authors": [
+    "Amal Kumar"
+   ],
+   "url": "https://polyhaven.com/a/clay_roof_tiles_02",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "rough_linen",
+   "type": "texture",
+   "name": "Rough Linen",
+   "authors": [
+    "Rico Cilliers",
+    "colormass"
+   ],
+   "url": "https://polyhaven.com/a/rough_linen",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "weathered_planks",
+   "type": "texture",
+   "name": "Weathered Planks",
+   "authors": [
+    "Dario Barresi",
+    "Dimitrios Savva"
+   ],
+   "url": "https://polyhaven.com/a/weathered_planks",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "leafy_grass",
+   "type": "texture",
+   "name": "Leafy Grass",
+   "authors": [
+    "Charlotte Baglioni"
+   ],
+   "url": "https://polyhaven.com/a/leafy_grass",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "dry_ground_rocks",
+   "type": "texture",
+   "name": "Dry Ground Rocks",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/dry_ground_rocks",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "bark_brown_02",
+   "type": "texture",
+   "name": "Bark Brown 02",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/bark_brown_02",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "white_plaster_rough_01",
+   "type": "texture",
+   "name": "White Plaster Rough 01",
+   "authors": [
+    "Rob Tuytel"
+   ],
+   "url": "https://polyhaven.com/a/white_plaster_rough_01",
+   "license": "CC0 1.0"
+  },
+  {
+   "id": "kloofendal_48d_partly_cloudy_puresky",
+   "type": "hdri",
+   "name": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+   "authors": [
+    "Greg Zaal",
+    "Jarod Guest"
+   ],
+   "url": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+   "license": "CC0 1.0"
+  }
+ ],
+ "files": {
+  "full": "crown.glb",
+  "lite": "crown_lite.glb"
+ },
+ "materials": {
+  "full": {
+   "crown_apron_e": {
+    "atlas": "apron_e",
+    "texture": "apron_e.ktx2",
+    "doubleSided": false
+   },
+   "crown_apron_w": {
+    "atlas": "apron_w",
+    "texture": "apron_w.ktx2",
+    "doubleSided": false
+   },
+   "crown_facade": {
+    "atlas": "facade",
+    "texture": "facade.ktx2",
+    "doubleSided": false
+   },
+   "crown_gallery": {
+    "atlas": "gallery",
+    "texture": "gallery.ktx2",
+    "doubleSided": false
+   },
+   "crown_land": {
+    "atlas": "land",
+    "texture": "land.ktx2",
+    "doubleSided": false
+   },
+   "crown_low_n": {
+    "atlas": "low_n",
+    "texture": "low_n.ktx2",
+    "doubleSided": false
+   },
+   "crown_low_s": {
+    "atlas": "low_s",
+    "texture": "low_s.ktx2",
+    "doubleSided": false
+   },
+   "crown_mid": {
+    "atlas": "mid",
+    "texture": "mid.ktx2",
+    "doubleSided": false
+   },
+   "crown_monuments": {
+    "atlas": "monuments",
+    "texture": "monuments.ktx2",
+    "doubleSided": true
+   },
+   "crown_outskirts": {
+    "atlas": "outskirts",
+    "texture": "outskirts.ktx2",
+    "doubleSided": true
+   },
+   "crown_plaza": {
+    "atlas": "plaza",
+    "texture": "plaza.ktx2",
+    "doubleSided": false
+   },
+   "crown_podium": {
+    "atlas": "podium",
+    "texture": "podium.ktx2",
+    "doubleSided": false
+   },
+   "crown_props": {
+    "atlas": "props",
+    "texture": "props.ktx2",
+    "doubleSided": true
+   },
+   "crown_ring": {
+    "atlas": "ring",
+    "texture": "ring.ktx2",
+    "doubleSided": false
+   },
+   "crown_statues": {
+    "atlas": "statues",
+    "texture": "statues.ktx2",
+    "doubleSided": false
+   },
+   "crown_top": {
+    "atlas": "top",
+    "texture": "top.ktx2",
+    "doubleSided": false
+   },
+   "crown_velarium": {
+    "atlas": "velarium",
+    "texture": "velarium.ktx2",
+    "doubleSided": true
+   },
+   "crown_sky_back": {
+    "atlas": "sky_back",
+    "texture": "sky_back.ktx2",
+    "doubleSided": true
+   },
+   "crown_sky_front": {
+    "atlas": "sky_front",
+    "texture": "sky_front.ktx2",
+    "doubleSided": true
+   }
+  },
+  "lite": {
+   "crown_apron_e_lite": {
+    "atlas": "apron_e",
+    "texture": "apron_e_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_apron_w_lite": {
+    "atlas": "apron_w",
+    "texture": "apron_w_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_facade_lite": {
+    "atlas": "facade",
+    "texture": "facade_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_land_lite": {
+    "atlas": "land",
+    "texture": "land_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_lbowl_high_lite": {
+    "atlas": "lbowl_high",
+    "texture": "lbowl_high_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_lbowl_low_lite": {
+    "atlas": "lbowl_low",
+    "texture": "lbowl_low_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_lstatues_lite": {
+    "atlas": "lstatues",
+    "texture": "lstatues_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_monuments_lite": {
+    "atlas": "monuments",
+    "texture": "monuments_lite.ktx2",
+    "doubleSided": true
+   },
+   "crown_outskirts_lite": {
+    "atlas": "outskirts",
+    "texture": "outskirts_lite.ktx2",
+    "doubleSided": true
+   },
+   "crown_plaza_lite": {
+    "atlas": "plaza",
+    "texture": "plaza_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_podium_lite": {
+    "atlas": "podium",
+    "texture": "podium_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_props_lite": {
+    "atlas": "props",
+    "texture": "props_lite.ktx2",
+    "doubleSided": true
+   },
+   "crown_ring_lite": {
+    "atlas": "ring",
+    "texture": "ring_lite.ktx2",
+    "doubleSided": false
+   },
+   "crown_velarium_lite": {
+    "atlas": "velarium",
+    "texture": "velarium_lite.ktx2",
+    "doubleSided": true
+   },
+   "crown_sky_lite_back": {
+    "atlas": "sky_lite_back",
+    "texture": "sky_lite_back.ktx2",
+    "doubleSided": true
+   },
+   "crown_sky_lite_front": {
+    "atlas": "sky_lite_front",
+    "texture": "sky_lite_front.ktx2",
+    "doubleSided": true
+   }
+  }
+ },
+ "runtime": {
+  "shading": "Every material is KHR_materials_unlit (three: MeshBasicMaterial) with its KTX2 atlas embedded (KHR_texture_basisu: the GLTFLoader needs a KTX2Loader). The light is baked in; light the fighters with a key along `sun.direction`.",
+  "hideForSideCamera": [],
+  "shadowCatcher": {
+   "node": "shadow_catcher",
+   "radius": 14,
+   "y": 0.004,
+   "note": "an invisible disc over the sand (the ring and the walk-on from gate_*_start): give it a THREE.ShadowMaterial (opacity about 0.3) for the fighters' shadows"
+  },
+  "sky": {
+   "radius": 600,
+   "centre": [
+    0,
+    12,
+    0
+   ],
+   "note": "two half-domes (sky_front looks toward -Z: north, the Patrons' box; sky_back toward +Z), 600 m out so the fly-in's high start sees little parallax: keep the camera far plane at 1000 m (ART.duel.far)"
+  },
+  "anisotropy": "set map.anisotropy to 4-8 on the ground atlases (ring, apron_w, apron_e; plaza and land for the fly-in). duel3d.ts's /ring|apron|mid|far/ already catches ring and the aprons.",
+  "cameraRadius": "cameras on the sand stay within cameraRadius (18.5 m) of the centre: the sand is an ellipse 54 x 40 m (the podium wall at 27 m on x, 20 m on y; the gate ramps and statues start beyond 20 m). The ring barrier stands at 6.0-6.35 m (curb 0.24 m, rope about 0.55 m, posts 0.62 m, the four gate posts 1.05 m): outside the ring keep the camera above about 1.2 m within 7.5 m of the centre.",
+  "lite": "crown_lite.glb: the same layout with a coarser bowl (lbowl_low, lbowl_high: its own bake, painted crowd included), 750-triangle statues (lstatues), no urns, archivolts, keystones, half-columns or gallery columns, and the trees and market stalls painted into the Lite sky (the town stays: the fly-in starts above it); every Lite atlas is at most 1024 px.",
+  "ring": "the duel ring: a marble curb (r 6.0-6.35 m) with bronze posts and a crimson rope, open 2.5 m wide on the A-B (x) axis where the fighters walk in: the fence a fighter is knocked into.",
+  "gates": "gate_A/B = the openings in the ring barrier (x = -/+6.6 m); gate_A/B_start = 13 m out on the sand (a walk like the Guild's); tunnel_A/B = under each raised portcullis at the top of its ramp (x = -/+24.3, y = 0.55), for a longer walk-on (about 22 m) straight out of the gate.",
+  "flyIn": "cam_fly_0 ... cam_fly_5: each node looks down its local -Z (three camera convention); `t` is seconds (6 s), `fovDeg` the vertical field of view, framed for a tall portrait phone; interpolate eye and target with a centripetal Catmull-Rom curve. It starts high above the town south-west of the arena, crosses the south rim (where the awnings are furled) well above the masts, dives over the south stands and ends low by spawn A looking at the ring. `flyInClearance` is the measured closest approach to any surface.",
+  "seats": "`seats`: the live crowd's spots only (the rest of the bowl is painted, see `crowd`). `p` = the seat top (glTF frame, metres), `yaw` = three's rotation.y with the person facing (sin yaw, 0, cos yaw), toward the ring centre; `row` = 0 (the front marble row) or 1 (the second; in the box its two benches); `section` = north / south (the long sides), west (gate A's end) / east (gate B's end), patrons (the Patrons' box); `kind` = seat; `lite` = kept in Lite (every other spot of each row).",
+  "crowd": "Fame fills `seats` (the front rows nearest the battle cameras); every other row is a painted crowd baked into the bowl's atlases (crowd.paintedRows), so the stands are never empty. The painted crowd leans teal toward gate A and coral toward gate B. Rows the live crowd leaves empty show bare marble."
+ },
+ "budget": {
+  "full": {
+   "triangles": 117634,
+   "drawCalls": 20,
+   "downloadBytes": 9651872,
+   "meshBytes": 1032880,
+   "textureBytes": 8618992,
+   "webpEquivalentBytes": 5328822,
+   "meshes": {
+    "arena_apron_e": 1120,
+    "arena_apron_w": 1120,
+    "arena_facade": 27432,
+    "arena_gallery": 5700,
+    "arena_land": 3072,
+    "arena_low_n": 2668,
+    "arena_low_s": 3712,
+    "arena_mid": 11444,
+    "arena_monuments": 2616,
+    "arena_outskirts": 11566,
+    "arena_plaza": 416,
+    "arena_podium": 3562,
+    "arena_props": 8532,
+    "arena_ring": 3024,
+    "arena_statues": 15600,
+    "arena_top": 10416,
+    "arena_velarium": 2394,
+    "shadow_catcher": 72,
+    "sky_back": 1584,
+    "sky_front": 1584
+   }
+  },
+  "lite": {
+   "triangles": 55667,
+   "drawCalls": 17,
+   "downloadBytes": 2736588,
+   "meshBytes": 533396,
+   "textureBytes": 2203192,
+   "webpEquivalentBytes": 1698630,
+   "meshes": {
+    "lite_apron_e": 1120,
+    "lite_apron_w": 1120,
+    "lite_facade": 13896,
+    "lite_land": 3072,
+    "lite_lbowl_high": 8424,
+    "lite_lbowl_low": 1798,
+    "lite_lstatues": 4499,
+    "lite_monuments": 2296,
+    "lite_outskirts": 740,
+    "lite_plaza": 416,
+    "lite_podium": 3562,
+    "lite_props": 6066,
+    "lite_ring": 3024,
+    "lite_velarium": 2394,
+    "shadow_catcher": 72,
+    "sky_lite_back": 1584,
+    "sky_lite_front": 1584
+   }
+  },
+  "textures": {
+   "apron_e": {
+    "px": [
+     2048,
+     1536
+    ],
+    "ktx2": 316968,
+    "webp": 155136
+   },
+   "apron_w": {
+    "px": [
+     2048,
+     1536
+    ],
+    "ktx2": 316497,
+    "webp": 145992
+   },
+   "facade": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 786287,
+    "webp": 412418
+   },
+   "gallery": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 188920,
+    "webp": 77300
+   },
+   "land": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 165139,
+    "webp": 66286
+   },
+   "low_n": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 667453,
+    "webp": 385338
+   },
+   "low_s": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 657010,
+    "webp": 357612
+   },
+   "mid": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 868085,
+    "webp": 781436
+   },
+   "monuments": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 576661,
+    "webp": 180892
+   },
+   "outskirts": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 237305,
+    "webp": 121316
+   },
+   "plaza": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 550864,
+    "webp": 195740
+   },
+   "podium": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 585285,
+    "webp": 136442
+   },
+   "props": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 532306,
+    "webp": 221376
+   },
+   "ring": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 583019,
+    "webp": 298104
+   },
+   "statues": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 248193,
+    "webp": 150354
+   },
+   "top": {
+    "px": [
+     2048,
+     2048
+    ],
+    "ktx2": 660256,
+    "webp": 414738
+   },
+   "velarium": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 160606,
+    "webp": 67058
+   },
+   "sky_back": {
+    "px": [
+     2048,
+     1024
+    ],
+    "ktx2": 246699,
+    "webp": 59214
+   },
+   "sky_front": {
+    "px": [
+     2048,
+     1024
+    ],
+    "ktx2": 271439,
+    "webp": 69190
+   },
+   "apron_e_lite": {
+    "px": [
+     1024,
+     768
+    ],
+    "ktx2": 97309,
+    "webp": 42070
+   },
+   "apron_w_lite": {
+    "px": [
+     1024,
+     768
+    ],
+    "ktx2": 97855,
+    "webp": 37508
+   },
+   "facade_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 232873,
+    "webp": 168660
+   },
+   "land_lite": {
+    "px": [
+     512,
+     512
+    ],
+    "ktx2": 59569,
+    "webp": 18984
+   },
+   "lbowl_high_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 212976,
+    "webp": 195998
+   },
+   "lbowl_low_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 230319,
+    "webp": 198564
+   },
+   "lstatues_lite": {
+    "px": [
+     512,
+     512
+    ],
+    "ktx2": 82234,
+    "webp": 42656
+   },
+   "monuments_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 182305,
+    "webp": 70824
+   },
+   "outskirts_lite": {
+    "px": [
+     512,
+     512
+    ],
+    "ktx2": 81248,
+    "webp": 47428
+   },
+   "plaza_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 156184,
+    "webp": 42198
+   },
+   "podium_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 180169,
+    "webp": 50368
+   },
+   "props_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 182388,
+    "webp": 88432
+   },
+   "ring_lite": {
+    "px": [
+     1024,
+     1024
+    ],
+    "ktx2": 161262,
+    "webp": 78880
+   },
+   "velarium_lite": {
+    "px": [
+     512,
+     512
+    ],
+    "ktx2": 52092,
+    "webp": 20986
+   },
+   "sky_lite_back": {
+    "px": [
+     1024,
+     512
+    ],
+    "ktx2": 95540,
+    "webp": 29312
+   },
+   "sky_lite_front": {
+    "px": [
+     1024,
+     512
+    ],
+    "ktx2": 98869,
+    "webp": 32366
+   }
+  },
+  "budget": {
+   "triangles": 150000,
+   "drawCalls": 40,
+   "texturePx": 2048,
+   "fullBytes": 12582912,
+   "liteTriangles": 60000,
+   "liteBytes": 4194304,
+   "litePx": 1024
+  }
+ },
+ "problems": []
+}

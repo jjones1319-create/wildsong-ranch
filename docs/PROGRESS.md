@@ -2,6 +2,45 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## The Crown Amphitheatre (2026-11-02) · v1.18.0
+
+The owner: "make another, gladiator size, huge, for tournaments and more popular fights". They saw the candidates (art-review/arena-candidates/sheet.png) and chose "#1, make own, style Roman".
+
+**Live (Lab → Battle 3D (test), the 🏟️ chip):**
+- **The Crown Amphitheatre:**
+  - a three-tier Roman bowl about 140 m across, packed with about 13,800 painted spectators under striped awnings;
+  - a big sand floor with the Guild emblem, and the 12 m ring marked by a crimson rope on bronze posts (the fence);
+  - gatehouses with portcullises and marble Puddlepup statues, a Patrons' box with bronze statues;
+  - braziers, banners and Guild medallions;
+  - a fly-in over a red-roofed town into the bowl.
+- **The live crowd** fills its front rows and the Patrons' box by Fame, with painted cut-outs as in the Guild.
+- **The camera** stands back with a long lens, like ringside: the rope and posts frame the fight and the stands show above it. Sideways it is a wide side view.
+
+**Done**
+- **Art:**
+  - `npm run art:crown` (`tools/blender/arenas/crown*.py`, `crown.ts`, `crown_sheet.ts`), CC0 Poly Haven materials (CREDITS);
+  - shipped to `public/models/arenas/crown/`: Full 117,634 triangles, 20 draws, 9.2 MB; Lite 55,667 triangles, 2.6 MB;
+  - the review sheet is art-review/arena-crown/sheet.png;
+  - the research scripts are in `tools/blender/arenas/candidates/`.
+- **Runtime:**
+  - any arena by id (`ArenaId`), its own `cameraRadius`;
+  - the crowd in any arena;
+  - the side camera's minimum height and the barrier strip it avoids;
+  - a lower Crown camera;
+  - two warm-up frames behind the loading card (the Crown's first frame used to freeze for about 7 s on the PC).
+- **Test:** the 🏟️ chip, `?arena=crown`, `npm run art:battle3d -- --arena crown`.
+- **Docs:** BATTLE_3D §8.3, CLAUDE.md commands, BUILD_PLAN.
+
+**Numbers** (the PC proxy): 60 fps sideways once settled; the Crown's crowd at Fame 60 is about 150 people and 30 cut-outs, under 1 ms CPU a frame.
+
+**Known issues**
+- **The painted crowd** looks like rows of little figures up close; it reads as a packed house from the fly-in.
+- **Simple details:** the town houses are simple boxes, the far hills soft, the braziers' flames static, and the Lite statues faceted.
+- **Smaller monsters in the Crown:** in the side view, the rope and posts are in the foreground by design (ringside), so the monsters are a little smaller than in the Guild.
+- **Not yet decided:** which fights use the Crown in the full release. The owner's brief says tournaments and popular fights.
+
+**Next:** the owner's phone test of the Crown, sideways and upright.
+
 ## Battle 3D sideways (2026-11-02) · v1.17.0
 
 The owner asked "would this be better if the phone was sideways?" and chose "sideways, upright still works".

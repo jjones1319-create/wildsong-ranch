@@ -600,7 +600,8 @@ Spec: docs/BATTLE_3D.md §4 (AI 3.0), §5 (controls), §8.2 (the crowd). The own
 - [x] 4. The living crowd: Fame fills the stands, painted cut-outs of every breed, cheers; the Guild arena rebaked with seat spots.
 - [x] 5. The test screen: the 🧠 upbringing and 👥 Fame chips.
 - [x] 6. v1.16.0: verify, recordings, commit, deploy.
-- [ ] 7. The Crown Amphitheatre (our own, Roman; the candidates sheet in art-review/arena-candidates/): the build, the bake, Lite, the seats and a painted far crowd, the review sheet; then the arena switch in the test and v1.17.0.
+- [x] 7. The Crown Amphitheatre (our own, Roman; the candidates sheet in art-review/arena-candidates/): the build, the bake, Lite, the seats and a painted far crowd, the review sheet; then the arena switch in the test (v1.18.0).
+- [x] 8. Sideways battles (the owner: "sideways, upright still works"), v1.17.0; two thumbs at once, v1.16.1.
 
 ## LATER (after v1.0)
 

@@ -11,6 +11,12 @@ export const BATTLE3D_TEXT = {
   cameraLabel: 'Switch camera',
   dodged: 'Dodged!',
   fence: 'Into the fence!',
+  arena: {
+    names: { guild: "the Breeders' Guild arena", crown: 'the Crown Amphitheatre' },
+    short: { guild: 'Guild', crown: 'Crown' },
+    chip: (name: string) => `🏟️ ${name}`,
+    label: (name: string) => `Fighting in ${name}. Tap to try the other arena (the fight restarts).`,
+  },
   sideways: {
     title: 'Better sideways',
     body: 'Turn your phone on its side: the stick under your left thumb, attacks under your right, and a wider view of the fight.',

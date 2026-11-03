@@ -67,7 +67,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - `npm run sim:life -- <breed> <policy>`: prints a simulated life (dev tool, from M1).
 - Sound (see the Audio section): `npm run audio:samples` · `npm run audio:analyze` · `npm run audio:check [-- --quick | --calibrate]` · `npm run audio:review`.
 - Art 2.0: `npm run art:monster -- <breed> [--quick] [--stages model,clips,export,review]` (Blender build + optimise) · `npm run art:optimize -- <look>` · `npm run art:review -- <look> [--no-build]` (in-game sheets in `art-review/`) · `npm run art:portraits` (the precached breed pictures in `public/portraits/`) · Art 2.1 Ultra: `npm run art:ultra -- <breed> [--blender] [--quick] [--stages build,bake,rig,clips,export]` (Blender `monsters/build_ultra.py` + ship to `public/models/monsters-ultra/`) · `npm run art:ultra-review -- <breed>` (film-look sheet in `art-review/<breed>-ultra/`).
-- Battle 3D (`docs/BATTLE_3D.md`): `npm run art:arena` (the Guild arena: Blender build, bake and ship to `public/models/arenas/guild/`; run `py -I tools/blender/arenas/fetch.py` once first for the CC0 sources) · `npm run art:battle3d [-- --no-build]` (a video per camera and stats.json in `art-review/battle3d/`).
+- Battle 3D (`docs/BATTLE_3D.md`): `npm run art:arena` (the Guild arena: Blender build, bake and ship to `public/models/arenas/guild/`; run `py -I tools/blender/arenas/fetch.py` once first for the CC0 sources) · `npm run art:crown -- [--stages build,bake,export,review,ship,shots]` (the Crown Amphitheatre, `public/models/arenas/crown/`) · `npm run art:battle3d [-- --no-build] [--arena crown]` (a video per camera and stats.json in `art-review/battle3d/`).
 
 ## Architecture
 ```

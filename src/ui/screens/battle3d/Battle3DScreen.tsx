@@ -7,7 +7,7 @@ import { fill } from '../../../data/text/format.ts'
 import { BAND_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
 import { ART, BATTLE, INPUT } from '../../../data/tuning.ts'
-import type { Duel3D, DuelCamera, DuelStats } from '../../../art3d/duel/duel3d.ts'
+import type { ArenaId, Duel3D, DuelCamera, DuelStats } from '../../../art3d/duel/duel3d.ts'
 import { navigate } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
 import {
@@ -38,6 +38,10 @@ import { goSideways, isPortrait, leaveSideways } from './sideways.ts'
 import { ThumbStick } from './ThumbStick.tsx'
 
 const B = UI_TEXT.battle
+
+/** §8 the test's arena: the Guild arena, or the Crown Amphitheatre for the big fights (the 🏟️ chip). */
+const ARENAS: ArenaId[] = ['guild', 'crown']
+let arenaChoice: ArenaId = typeof location !== 'undefined' && new URLSearchParams(location.search).get('arena') === 'crown' ? 'crown' : 'guild'
 
 /** §5 sideways: asked once a session (a save setting would need a save version). */
 let sidewaysChoice: 'ask' | 'sideways' | 'upright' = 'ask'
@@ -85,7 +89,7 @@ function Bars({ f, right }: { f: FighterView; right?: boolean }) {
 declare global {
   interface Window {
     /** For the review recordings (tools/art/battle3d-review.ts). */
-    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; crowdFame(fame: number): Promise<void> }
+    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; arena(id: ArenaId): void; crowdFame(fame: number): Promise<void> }
   }
 }
 
@@ -93,6 +97,7 @@ export function Battle3DScreen() {
   const canvas = useRef<HTMLCanvasElement>(null)
   const duel = useRef<Duel3D | null>(null)
   const [phase, setPhase] = useState<'loading' | 'intro' | 'fight' | 'error'>('loading')
+  const [arenaId, setArenaId] = useState<ArenaId>(arenaChoice)
   const [cam, setCam] = useState<DuelCamera>('side')
   const [stats, setStats] = useState<DuelStats | null>(null)
   // the crowd's Fame (the test chip): how full the Guild arena's stands are
@@ -126,6 +131,7 @@ export function Battle3DScreen() {
   const queued = useRef<{ id: string; until: number } | null>(null)
 
   useEffect(() => {
+    setPhase('loading')
     startDuel()
     let alive = true
     let off: () => void = () => {}
@@ -134,7 +140,7 @@ export function Battle3DScreen() {
         const m = await import('../../../art3d/duel/duel3d.ts')
         if (!alive || !canvas.current) return
         const d = await m.createDuel3D(
-          { canvas: canvas.current, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), leftHanded: settings.value.leftHanded, speed: () => speed.value, crowdFame: fame },
+          { canvas: canvas.current, arena: arenaId, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), leftHanded: settings.value.leftHanded, speed: () => speed.value, crowdFame: fame },
           liveBattleState,
         )
         if (!alive) {
@@ -168,6 +174,10 @@ export function Battle3DScreen() {
         if ((view.value?.fighters[0].auto ?? false) !== on) toggleAuto()
       },
       speed: (x) => setSpeed(x),
+      arena: (id: ArenaId) => {
+        arenaChoice = id
+        setArenaId(id)
+      },
       playerFires: () => liveBattleState()?.log.filter((e) => e.kind === 'fire' && e.side === 0).length ?? 0,
       async crowdFame(n) {
         setFame(n)
@@ -183,7 +193,11 @@ export function Battle3DScreen() {
       delete window.__battle3d
       leaveBattle()
     }
-  }, [])
+  }, [arenaId])
+  const cycleArena = () => {
+    arenaChoice = ARENAS[(ARENAS.indexOf(arenaChoice) + 1) % ARENAS.length]!
+    setArenaId(arenaChoice)
+  }
 
   const v = view.value
   const a = v?.fighters[0]
@@ -233,7 +247,7 @@ export function Battle3DScreen() {
 
   return (
     <main class={`screen b3d ${settings.value.leftHanded ? 'b3d--left' : ''}`}>
-      <canvas ref={canvas} class="b3d__canvas" aria-label={T.title} onClick={() => phase === 'intro' && duel.current?.skipIntro()} />
+      <canvas key={arenaId} ref={canvas} class="b3d__canvas" aria-label={T.title} onClick={() => phase === 'intro' && duel.current?.skipIntro()} />
 
       {phase === 'loading' && <p class="b3d__note">{T.loading}</p>}
       {phase === 'error' && (
@@ -292,6 +306,9 @@ export function Battle3DScreen() {
             </button>
             <button type="button" class={`btn ${paused.value ? 'btn--on' : ''}`} aria-label={paused.value ? B.resume : B.pause} onClick={() => setPaused(!paused.value)} disabled={!!v.outcome}>
               {paused.value ? '▶' : '⏸'}
+            </button>
+            <button type="button" class="btn b3d__arena" aria-label={T.arena.label(T.arena.names[arenaId])} onClick={cycleArena}>
+              {T.arena.chip(T.arena.short[arenaId])}
             </button>
             <button
               type="button"

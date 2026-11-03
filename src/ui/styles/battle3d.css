@@ -215,8 +215,11 @@
   }
 }
 /* the crowd's Fame chip (test build, §8): last in the top bar, pushed to the right when the bar wraps */
-.b3d__top .b3d__sense {
+.b3d__top .b3d__arena {
   margin-left: auto;
+  font-size: 13px;
+}
+.b3d__top .b3d__sense {
   font-size: 13px;
 }
 .b3d__top .b3d__fame {

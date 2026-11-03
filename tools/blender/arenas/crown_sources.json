@@ -1,0 +1,30 @@
+{
+ "_comment": "The CC0 Poly Haven sources the Crown Amphitheatre is dressed with (polyhaven.com, all CC0). crown_fetch.py downloads the new ones into .cache/textures/ (gitignored) and writes .cache/crown_manifest.json, which crown.json and CREDITS.md are written from. `shared` ids are already fetched by fetch.py for the Guild arena.",
+ "textures": {
+  "res": "2k",
+  "maps": ["Diffuse", "nor_gl"],
+  "ids": [
+   "sandstone_blocks_08",
+   "large_sandstone_blocks_01",
+   "sandstone_blocks_04",
+   "white_sandstone_blocks_02",
+   "marble_01",
+   "coast_sand_01",
+   "raked_dirt",
+   "stone_pavers",
+   "stone_floor",
+   "clay_roof_tiles_02"
+  ],
+  "shared": [
+   "rough_linen",
+   "weathered_planks",
+   "leafy_grass",
+   "dry_ground_rocks",
+   "bark_brown_02",
+   "white_plaster_rough_01"
+  ]
+ },
+ "hdris": {
+  "shared": ["kloofendal_48d_partly_cloudy_puresky"]
+ }
+}
