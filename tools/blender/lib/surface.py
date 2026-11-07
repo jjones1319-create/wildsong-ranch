@@ -156,10 +156,11 @@ def base_attrs(ob: bpy.types.Object, co: np.ndarray, extra: dict | None = None) 
 
 # ----------------------------------------------------------------------------- smooth bodies
 def build_body(name: str, parts: list[M.Part], voxel: float, smooth_iters: int, segments: int = 48,
-               coll: str = 'SurfaceParts') -> bpy.types.Object:
-    """Join rounded primitives, voxel-remesh them into one closed skin and smooth it."""
+               coll: str = 'SurfaceParts', extra: list[bpy.types.Object] | None = None) -> bpy.types.Object:
+    """Join rounded primitives (and any `extra` closed meshes, e.g. a breed's ear slabs; they are consumed), voxel-remesh
+    them into one closed skin and smooth it."""
     c = C.collection(coll)
-    objs = []
+    objs = list(extra or [])
     for p in parts:
         objs.extend(M.build_part(p, c, segments=segments))
     body = M.join_meshes(objs, name)

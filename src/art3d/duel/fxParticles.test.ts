@@ -22,6 +22,37 @@ describe('attack effect particles', () => {
     expect(pos.z).toBeCloseTo(0.75)
   })
 
+  it('a missed shot slows from the veer, swings aside and dips to the floor by devSec', () => {
+    const pool = new ParticlePool(8)
+    const p = pool.spawn()
+    Object.assign(p, { move: MOVE.path, from: 0, anchor: 1, t0: 0, travel: 0.3, life: 1, arc: 0 })
+    place(p, 0.25, anchors, pos, vel)
+    const atVeer = pos.x
+    Object.assign(p, { devAt: 0.25, devX: 0, devZ: 0.75, veerSec: 0.1, slow: 0.4, devY: -0.44, devSec: 0.2 })
+    place(p, 0.45, anchors, pos, vel)
+    // on at 40% of its speed (3 m in 0.3 s → 4 m/s for 0.2 s)
+    expect(pos.x - atVeer).toBeCloseTo(0.4 * 10 * 0.2)
+    expect(pos.z).toBeCloseTo(0.75)
+    expect(pos.y).toBeCloseTo(0.06)
+    // halfway down it is still heading down
+    place(p, 0.35, anchors, pos, vel)
+    expect(pos.y).toBeGreaterThan(0.06)
+    expect(vel.y).toBeLessThan(0)
+  })
+
+  it('a gust ribbon circles its centre on a widening, rising spiral, heading round it', () => {
+    const pool = new ParticlePool(8)
+    const g = Object.assign(pool.spawn(), { move: MOVE.orbit, anchor: -1, tx: 1, ty: 0.1, tz: 2, x: 0.5, y: 0.2, z: 0, swirl: 9, widen: 1, vy: 0.5, t0: 0, life: 0.6 })
+    place(g, 0, anchors, pos, vel)
+    expect(Math.hypot(pos.x - 1, pos.z - 2)).toBeCloseTo(0.5)
+    expect(pos.y).toBeCloseTo(0.3)
+    // round (tangent), not out
+    expect(Math.abs(vel.z)).toBeGreaterThan(Math.abs(vel.x))
+    place(g, 0.4, anchors, pos, vel)
+    expect(Math.hypot(pos.x - 1, pos.z - 2)).toBeCloseTo(0.5 * 1.4)
+    expect(pos.y).toBeCloseTo(0.5)
+  })
+
   it('a gathering mote ends on its anchor; a thrown one falls with gravity', () => {
     const pool = new ParticlePool(8)
     const m = Object.assign(pool.spawn(), { move: MOVE.gather, anchor: 0, x: 0.6, y: 0.2, z: -0.4, swirl: 5, t0: 0, life: 0.3 })

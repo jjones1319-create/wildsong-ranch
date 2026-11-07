@@ -35,6 +35,8 @@ html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* a sticky action bar's height (set while it is on the page): nothing scrolled into view stops under it */
+  scroll-padding-bottom: var(--actionbar-h, 0px);
 }
 
 body {

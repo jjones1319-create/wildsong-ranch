@@ -234,9 +234,33 @@ export interface FighterState {
   readBand: number[]
   /** §4.4–§4.5 what it makes of that (null outside the duel, so the line's AI is untouched). */
   duelBias: DuelBias | null
-  /** §4.6–§4.7: feinting and slacking until these ticks. */
+  /** §4.9 dancing at the edge of a range (a feint), §4.7 slacking, until these ticks. */
   aiFeintUntil: number
   aiLazyUntil: number
+  /** AI 3.1 §4.9: the shot it means to fire and the human timing around it (null outside the duel). */
+  shot: DuelShot | null
+}
+
+/** AI 3.1 (docs/BATTLE_3D.md §4.9): an intent to fire, released when the moment is right. */
+export interface DuelShot {
+  /** The technique it means to fire (the plan's choice), and since when: patience counts from here. */
+  intent: string | null
+  since: number
+  /** The tick a good chance it has seen becomes the shot (its reaction), or NEVER. */
+  chanceAt: number
+  /** Free to act in this band since this tick: a gap in its decisions or a new band is a fresh look. */
+  steadyBand: number
+  steadySince: number
+  lastLook: number
+  /** Pressing after landing a hit, stepping back after taking one, until these ticks; the hits already noticed. */
+  pressUntil: number
+  resetUntil: number
+  hitSeen: number
+  hurtSeen: number
+  /** Counters for the tests and the report: intents taken from the plan, released, and dropped unfired. */
+  taken: number
+  released: number
+  dropped: number
 }
 
 /** AI 3.0's adjustments to the range plan (×100; 100 = none): its sweeps, its knockbacks, and a range to stay out of. */

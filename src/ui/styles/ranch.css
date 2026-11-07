@@ -709,3 +709,48 @@
   justify-content: center;
   padding: 12px 0;
 }
+
+/* Short phones (the owner, Nov 3: the action bar covered the herd strip at 360 × 640): a tighter column and a
+   shorter bar, the extra buttons (Bag, Repeat, Plan weeks) side by side when they fit (wrapping when not), so the
+   whole strip shows above the bar as the ranch opens. The bar stays sticky; everything above it scrolls clear of it
+   (base.css scroll-padding). */
+@media (max-height: 820px) {
+  .screen:has(> .actionbar--ranch) {
+    gap: 10px;
+  }
+
+  .actionbar--ranch {
+    flex-flow: row wrap;
+    gap: 6px;
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .actionbar--ranch .actions__row {
+    display: contents;
+  }
+
+  .actionbar--ranch .actions__row .btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .actionbar--ranch .actionbar__reason {
+    flex-basis: 100%;
+    margin-top: 0;
+  }
+}
+
+@media (max-height: 680px) {
+  .stage__hint {
+    display: none;
+  }
+
+  .stage__caption {
+    margin-bottom: 6px;
+  }
+}

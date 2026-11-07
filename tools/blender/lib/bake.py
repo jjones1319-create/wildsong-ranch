@@ -28,9 +28,29 @@ CARD_CELLS = (2, 3, 4, 5, 6, 7)
 BASE_AO = 0.38         # share of the baked AO multiplied into the base colour (crevices stay dark on any renderer)
 
 
+def _uv_arrays(objs, uv_name: str) -> list[np.ndarray]:
+    out = []
+    for o in objs:
+        uv = o.data.uv_layers[uv_name].data
+        arr = np.empty(len(uv) * 2, np.float32)
+        uv.foreach_get('uv', arr)
+        out.append(arr.reshape(-1, 2))
+    return out
+
+
+def _set_uvs(objs, uv_name: str, arrays: list[np.ndarray]) -> None:
+    for o, arr in zip(objs, arrays):
+        o.data.uv_layers[uv_name].data.foreach_set('uv', np.ascontiguousarray(arr, np.float32).ravel())
+
+
 def pack_atlas(objs: list[bpy.types.Object], uv_name: str, strip: float, angle_deg: float = 62.0,
-               island_margin: float = 0.005, pack_margin: float = 0.003) -> None:
-    """Smart-project the objects together into `uv_name` at an even texel density, leaving the bottom `strip`."""
+               island_margin: float = 0.005, pack_margin: float = 0.003, density: dict | None = None) -> None:
+    """Smart-project the objects together into `uv_name` at an even texel density, leaving the bottom `strip`.
+    `density` {object name: k} scales an object's texel density by k (e.g. eyes up, smooth membranes down).
+
+    The islands fill the whole 1 × (1 − strip) rectangle (P1.2; P1.1 packed into a square and used ~80% of the width):
+    a first pack chooses each island's rotation; then the UVs are stretched by 1 / (1 − strip) in v, packed again into
+    the unit square without rotating (only moved and scaled together), and squashed back, so every island keeps its shape."""
     for o in objs:
         if uv_name not in o.data.uv_layers:
             o.data.uv_layers.new(name=uv_name)
@@ -40,22 +60,38 @@ def pack_atlas(objs: list[bpy.types.Object], uv_name: str, strip: float, angle_d
     for o in objs:
         o.select_set(True)
     bpy.context.view_layer.objects.active = objs[0]
-    with bpy.context.temp_override(active_object=objs[0], object=objs[0], selected_objects=objs, selected_editable_objects=objs):
-        bpy.ops.object.mode_set(mode='EDIT')
-        bpy.ops.mesh.select_all(action='SELECT')
+
+    def edit(fn) -> None:
+        with bpy.context.temp_override(active_object=objs[0], object=objs[0], selected_objects=objs, selected_editable_objects=objs):
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            fn()
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+    def project() -> None:
         bpy.ops.uv.smart_project(angle_limit=math.radians(angle_deg), island_margin=island_margin, correct_aspect=True, scale_to_bounds=False)
         bpy.ops.uv.average_islands_scale()
-        bpy.ops.uv.pack_islands(rotate=True, margin=pack_margin)
-        bpy.ops.object.mode_set(mode='OBJECT')
-    for o in objs:
-        uv = o.data.uv_layers[uv_name].data
-        arr = np.empty(len(uv) * 2, np.float32)
-        uv.foreach_get('uv', arr)
-        arr = arr.reshape(-1, 2)
+    edit(project)
+    if density:
+        arrs = _uv_arrays(objs, uv_name)
+        _set_uvs(objs, uv_name, [a * float(density.get(o.name, 1.0)) for o, a in zip(objs, arrs)])
+    edit(lambda: bpy.ops.uv.pack_islands(rotate=True, margin=pack_margin))
+    keep = 1.0 - strip
+    if strip > 0:
+        _set_uvs(objs, uv_name, [a * np.array([1.0, 1.0 / keep], np.float32) for a in _uv_arrays(objs, uv_name)])
+        edit(lambda: bpy.ops.uv.pack_islands(rotate=False, margin=pack_margin))
+    arrs = _uv_arrays(objs, uv_name)
+    lo = np.min([a.min(0) for a in arrs], axis=0)
+    hi = np.max([a.max(0) for a in arrs], axis=0)
+    C.log(f'atlas pack: islands span u {lo[0]:.3f}..{hi[0]:.3f}, v {lo[1]:.3f}..{hi[1]:.3f} (of the unit square before the strip)')
+    out = []
+    for a in arrs:
+        a = a.copy()
         if strip > 0:
-            arr = arr * (1.0 - strip)
-            arr[:, 1] += strip
-        uv.foreach_set('uv', arr.ravel())
+            a[:, 1] = a[:, 1] * keep + strip
+        out.append(a)
+    _set_uvs(objs, uv_name, out)
+    for o in objs:
         if 'UVMap' in o.data.uv_layers:
             o.data.uv_layers.active = o.data.uv_layers['UVMap']
 

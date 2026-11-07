@@ -25,6 +25,7 @@ import { UI_TEXT } from '../../../data/text/ui.ts'
 import { BackupCard } from '../../components/BackupCard.tsx'
 import { Emote } from '../../components/Emote.tsx'
 import { MonsterPortrait } from '../../components/MonsterPortrait.tsx'
+import { useStickyBarPadding } from '../../components/stickyBar.ts'
 import { CalendarStrip, ConditionBars, TipCard } from '../../components/RanchBits.tsx'
 import { navigate, navigateFrom } from '../../router.ts'
 import { settings } from '../../store/appStore.ts'
@@ -70,6 +71,8 @@ export function RanchScreen() {
   }, [g?.week, g?.weekPhase, f.kind])
   const [expOpen, setExpOpen] = useState(false)
   const [planOpen, setPlanOpen] = useState(false)
+  // nothing the browser scrolls into view stops under the sticky action bar
+  const barRef = useStickyBarPadding()
   // A waiting card the player opened by hand (the reason line, or the ?! emote), so nothing else can hide it.
   const [forced, setForced] = useState<'event' | 'request' | null>(null)
   useEffect(() => {
@@ -168,7 +171,7 @@ export function RanchScreen() {
       <ConditionBars m={m} mode={mode} />
 
       <div class="spacer" />
-      <div class="actionbar actionbar--stack">
+      <div class="actionbar actionbar--stack actionbar--ranch" ref={barRef}>
         <div class="actions">
           {g.tournament ? (
             <button type="button" class="btn btn--primary" onClick={() => navigate('tournamentPlay')}>

@@ -78,7 +78,12 @@ export function projectile(c: FxCtx, r: AttackFxRecipe, side: number, seq: numbe
     case 'blade':
       core = grow(tint(flier(c, CELL.crescent, false, side, seq, src, dst, t0, travel, arc), r.ramp[0]!, r.ramp[1]!, 0.9), sz * 2.2, sz * 2.4)
       core.spin = 16
-      grow(tint(flier(c, CELL.swirl, false, side, seq, src, dst, t0, travel, arc), r.ramp[1]!, r.ramp[2]!, 0.6), sz * 2, sz * 2.6).spin = -12
+      // the gust it rides: two ribbons of air streaming just behind it
+      for (let j = 0; j < 2; j++) {
+        const g = grow(tint(flier(c, CELL.gust, false, side, seq, src, dst, t0 + 0.025 + j * 0.03, travel, arc + (j ? 0.1 : -0.08)), r.ramp[1]!, r.ramp[2]!, 0.85), sz * 1.3, sz * 1.6)
+        g.face = FACE.stretch
+        g.stretch = 2.6
+      }
       break
     case 'boulder':
       core = grow(tint(flier(c, CELL.rock, false, side, seq, src, dst, t0, travel, arc + 0.15), r.ramp[1]!, r.ramp[2]!), sz * 1.9, sz * 1.9)
@@ -119,7 +124,7 @@ export function trail(c: FxCtx, r: AttackFxRecipe, at: Vector3, vx: number, vy: 
   p.fade = FADE.hold
   p.rot = noise(s + 6) * TAU
   p.spin = k.spin
-  if (k.trail === CELL.streak || k.trail === CELL.drop) {
+  if (k.trail === CELL.streak || k.trail === CELL.drop || k.trail === CELL.gust) {
     p.face = FACE.stretch
     p.stretch = 2.4
   }
@@ -154,9 +159,11 @@ export function wave(c: FxCtx, r: AttackFxRecipe, feet: Vector3, dir: Vector3, d
     const f = 0.25 + 0.75 * noise(c.seed + 60 + i)
     const a = base + spread * (noise(c.seed + 80 + i) * 2 - 1)
     const p = grow(tint(from(part(c, k.cell, k.glow, t0 + travel * f, k.life * c.q.life), feet, Math.cos(a) * reach * f, 0.08, Math.sin(a) * reach * f), r.ramp[1]!, r.ramp[2]!), size, size * 0.7)
-    p.vx = Math.cos(a) * 0.8
-    p.vz = Math.sin(a) * 0.8
-    p.vy = 1.4 + noise(c.seed + 100 + i)
+    // thrown up as the front passes; Wind's bits run on along it instead (level streaks of air)
+    const run = k.flow ? 3.2 : 0.8
+    p.vx = Math.cos(a) * run
+    p.vz = Math.sin(a) * run
+    p.vy = k.flow ? 0.25 + 0.3 * noise(c.seed + 100 + i) : 1.4 + noise(c.seed + 100 + i)
     p.g = k.gravity
     p.spin = k.spin
     p.face = k.stretch ? FACE.stretch : FACE.camera
@@ -218,7 +225,7 @@ export function healSparkles(c: FxCtx, feet: Vector3, t0: number, scale: number)
 
 /** A melee miss: a swish of air beside the target and a few bits drifting off (no impact). */
 export function whiff(c: FxCtx, r: AttackFxRecipe, at: Vector3, S: number, t0: number): void {
-  const p = grow(tint(from(part(c, CELL.crescent, r.look.glow, t0, 0.22 * c.q.life), at), r.ramp[0]!, r.ramp[1]!, 0.55), 0.35 * S, 0.7 * S)
+  const p = grow(tint(from(part(c, CELL.crescent, r.look.glow, t0, 0.24 * c.q.life), at), r.ramp[1]!, r.ramp[2]!, 0.8), 0.35 * S, 0.75 * S)
   p.rot = 0.4
   p.fade = FADE.hold
 }

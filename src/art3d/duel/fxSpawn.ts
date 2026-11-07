@@ -1,11 +1,12 @@
 import { Color, type Vector3 } from 'three'
+import { ART } from '../../data/tuning.ts'
 import { CELL, type AttackFxRecipe, type FxQuality } from './fxRecipe.ts'
 import { FACE, FADE, MOVE, noise, type Particle, type ParticlePool } from './fxParticles.ts'
 
 /**
  * docs/BATTLE_3D.md §7: the impacts. A burst of the element's particles plus its extra layer, the 3-D form of the
  * classic battle's hit recipe (src/fx/recipes.ts): Fire bursts and smokes, Water splashes a ring, Ice breaks and mists,
- * Lightning forks and flickers, Wind curls, Earth cracks the floor and raises dust, Nature whirls leaves, Light blooms,
+ * Lightning forks and flickers, Wind spirals round, Earth cracks the floor and raises dust, Nature whirls leaves, Light blooms,
  * Dark gathers then smokes, Sound rings out, a plain blow rings and kicks up dust.
  */
 
@@ -76,8 +77,8 @@ export function pop(c: FxCtx, at: Vector3, hex: number, size: number, t0: number
   return grow(tint(from(part(c, CELL.dot, true, t0, life), at), hex, hex, alpha), size * 0.6, size)
 }
 
-/** Puffs of smoke, dust or mist (solid), rising or drifting. */
-function puffs(c: FxCtx, at: Vector3, n: number, hex: number, to: number, alpha: number, s0: number, s1: number, t0: number, life: number, rise: number, spread: number, seed: number): void {
+/** Puffs of smoke, dust or mist (solid), rising or drifting (`spread` m/s outward). */
+export function puffs(c: FxCtx, at: Vector3, n: number, hex: number, to: number, alpha: number, s0: number, s1: number, t0: number, life: number, rise: number, spread: number, seed: number): void {
   for (let i = 0; i < n; i++) {
     const a = noise(seed + i) * TAU
     const p = grow(tint(from(part(c, CELL.puff, false, t0 + i * 0.02, life * (0.8 + 0.4 * noise(seed + 9 + i))), at), hex, to, alpha), s0, s1)
@@ -99,7 +100,8 @@ export function burst(c: FxCtx, r: AttackFxRecipe, at: Vector3, dir: Vector3, t0
     const u = noise(s + 1) * 2 - 1
     const w = Math.sqrt(1 - u * u)
     let x = w * Math.cos(th) + dir.x * 0.7
-    let y = Math.abs(u) * 0.8 + 0.25
+    // Wind streams out nearly level (streaks of air, not a starburst)
+    let y = (Math.abs(u) * 0.8 + 0.25) * (k.flow ? 0.3 : 1)
     let z = w * Math.sin(th) + dir.z * 0.7
     const len = Math.hypot(x, y, z) || 1
     const speed = k.speed * (0.55 + 0.6 * noise(s + 2)) * ss
@@ -130,6 +132,34 @@ export function burst(c: FxCtx, r: AttackFxRecipe, at: Vector3, dir: Vector3, t0
     p.fade = k.glow ? FADE.pop : FADE.hold
     tint(p, k.glow ? r.ramp[0]! : r.ramp[1]!, r.ramp[2]!, 1)
   }
+}
+
+/**
+ * Wind: ribbons of air spiralling round the target's body from low to high, widening and rising as they go (half of
+ * each turn behind it, so the gust wraps it), and a faint ring where it touches down.
+ */
+function gustSpiral(c: FxCtx, r: AttackFxRecipe, feet: Vector3, t0: number, S: number): void {
+  const G = ART.duel.fx.gust
+  const s = c.seed + 140
+  for (let i = 0, n = many(c, G.ribbons); i < n; i++) {
+    const a = (i / n) * TAU * 1.5 + noise(s + i) * 0.4
+    const rad = G.radiusM * S * (0.8 + 0.4 * noise(s + 10 + i))
+    const p = grow(tint(part(c, CELL.gust, false, t0 + i * 0.03, 0.5 * c.q.life * (0.8 + 0.4 * noise(s + 20 + i))), r.ramp[1]!, r.ramp[3]!, 0.9), 0.15 * S, 0.11 * S)
+    p.move = MOVE.orbit
+    p.tx = feet.x
+    p.ty = feet.y + 0.12
+    p.tz = feet.z
+    p.x = Math.cos(a) * rad
+    p.z = Math.sin(a) * rad
+    p.y = (i / Math.max(1, n - 1)) * 0.75 * S
+    p.swirl = G.turnRadPerSec * (i % 3 === 2 ? 1.2 : 1)
+    p.widen = G.widenPerSec
+    p.vy = G.riseMps
+    p.face = FACE.stretch
+    p.stretch = 2.8
+    p.fade = FADE.hold
+  }
+  ring(c, feet, r.ramp[2]!, false, 0.25 * S, 1.1 * S, t0, 0.35 * c.q.life).a = 0.55
 }
 
 /** The element's extra layer, with the burst. */
@@ -169,11 +199,8 @@ export function extra(c: FxCtx, r: AttackFxRecipe, at: Vector3, feet: Vector3, d
       }
       pop(c, at, r.core, 0.85 * S, t0, 0.12 * L)
       break
-    case 'swirls':
-      for (let i = 0; i < many(c, 3); i++) {
-        const p = grow(tint(from(part(c, CELL.swirl, false, t0 + i * 0.04, 0.42 * L), at, (noise(s + i) - 0.5) * 0.3, (noise(s + 5 + i) - 0.5) * 0.3, 0), r.ramp[0]!, r.ramp[2]!, 0.8), 0.15 * S, 0.55 * S)
-        p.spin = i % 2 ? 11 : -11
-      }
+    case 'spiral':
+      gustSpiral(c, r, feet, t0, S)
       break
     case 'crack': {
       const p = grow(tint(from(part(c, CELL.crack, false, t0, 0.9 * L), feet, 0, 0.015, 0), r.ramp[3]!, r.ramp[3]!, 0.9), 0.45 * S, 0.55 * S)

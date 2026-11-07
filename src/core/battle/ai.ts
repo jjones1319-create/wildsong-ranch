@@ -6,6 +6,7 @@ import { divRound } from '../mathx.ts'
 import type { Rng } from '../rng.ts'
 import { currentBand, effectiveCost, gapUnits, previewDamage, previewHitTenths, speedPerTick } from './engine.ts'
 import { bandCentre, hpPctTenths } from './formulas.ts'
+import { maySpend } from './duelShot.ts'
 import { roomBehindUnits } from './geometry.ts'
 import { traitFreeDash, traitImmovable, traitsAny } from './traits.ts'
 import type { BattleEvent, BattleState, FighterState, TechniqueRef } from './types.ts'
@@ -138,6 +139,11 @@ function affordMask(f: FighterState): number {
     if (tech && f.guts >= effectiveCost(f, tech)) mask |= 1 << i
   }
   return mask
+}
+
+/** Rookies hold this many guts before a shot; in the duel they are impulsive (docs/BATTLE_3D.md §4.9). */
+function rookieReserve(f: FighterState): number {
+  return f.shot ? AI.duel.human.rookieReserve : AI.guts.rookieReserve
 }
 
 function punishWindowOf(opp: FighterState): boolean {
@@ -494,7 +500,7 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
   if (f.aiCooldown === 0 && inRange.length > 0 && !(habit === 'waits99' && f.guts < AI.value.habitWaitGuts)) {
     const best = inRange.reduce((m, t) => (value(t.id) > value(m.id) ? t : m))
     if (f.tier === 'rookie') {
-      if (f.guts >= AI.guts.rookieReserve) pick = best
+      if (f.guts >= rookieReserve(f)) pick = best
     } else if (goal && goal.range === band && f.guts >= goalCost) pick = goal
     else if (f.guts >= AI.guts.spendAt || stallFire || sit.oppBroke || sit.beingPunished || !goal) pick = best
     else if (f.guts < AI.guts.pokeFloor) saving = true
@@ -505,6 +511,11 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
       else saving = true
     }
   } else if (goal && f.guts < goalCost) saving = true
+  // docs/BATTLE_3D.md §4.9 (duel only): guts like a player, a gate on the pick (no cooldown is spent while it saves)
+  if (pick && f.shot && !maySpend(state, f, opp, pick)) {
+    pick = null
+    saving = true
+  }
   if (f.aiFireTech !== null && !inRange.some((t) => t.id === f.aiFireTech)) {
     f.aiFireTech = null
     f.aiFireAt = NEVER
@@ -513,12 +524,13 @@ export function decideAi(state: BattleState, f: FighterState, opp: FighterState,
     let chosen = pick
     if (inRange.length > 1 && rng.chance(tierCfg.mistakePct)) chosen = rng.pick(inRange)
     f.aiFireTech = chosen.id
-    f.aiFireAt = tick + rng.nextInt(tierCfg.react.min, tierCfg.react.max)
+    // the duel hands the shot over at once: its human reaction (duelShot.ts, §4.9) replaces this delay
+    f.aiFireAt = f.shot ? tick : tick + rng.nextInt(tierCfg.react.min, tierCfg.react.max)
   }
   if (f.aiFireTech !== null && tick >= f.aiFireAt) {
     const t = TECHNIQUE_BY_ID[f.aiFireTech]
     // A dash or a Wither may have cost guts since the decision: the reserve rules are checked again here.
-    const held = (f.tier === 'rookie' && f.guts < AI.guts.rookieReserve) || (habit === 'waits99' && f.guts < AI.value.habitWaitGuts) || (habit === 'banksForHeavy' && t?.family === 'Heavy' && f.guts < AI.value.habitBankGuts)
+    const held = (f.tier === 'rookie' && f.guts < rookieReserve(f)) || (habit === 'waits99' && f.guts < AI.value.habitWaitGuts) || (habit === 'banksForHeavy' && t?.family === 'Heavy' && f.guts < AI.value.habitBankGuts)
     if (t && !held && t.range === band && f.guts >= effectiveCost(f, t) && f.aiCooldown === 0) {
       f.wantFire = t.id
       f.habitDone = true

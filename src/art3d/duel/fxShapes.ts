@@ -54,6 +54,26 @@ function inkLine(g: G, pts: readonly number[], width: number): void {
   }
 }
 
+/**
+ * A tapered ribbon from x0 to x1 along a shallow arc (its middle `bow` px above y), widest (`half` px) toward its
+ * head (+x), sharp at both ends: a stroke of moving air.
+ */
+function ribbon(g: G, x0: number, x1: number, y: number, bow: number, half: number): void {
+  const n = 14
+  const at = (u: number) => [x0 + (x1 - x0) * u, y - bow * Math.sin(Math.PI * u)] as const
+  const w = (u: number) => half * Math.sin(Math.PI * Math.pow(u, 1.4))
+  g.beginPath()
+  for (let i = 0; i <= n; i++) {
+    const [x, yy] = at(i / n)
+    g[i ? 'lineTo' : 'moveTo'](x, yy - w(i / n))
+  }
+  for (let i = n; i >= 0; i--) {
+    const [x, yy] = at(i / n)
+    g.lineTo(x, yy + w(i / n))
+  }
+  g.closePath()
+}
+
 const circle = (g: G, x: number, y: number, r: number) => () => {
   g.beginPath()
   g.arc(x, y, r, 0, Math.PI * 2)
@@ -143,16 +163,10 @@ export const DRAW: Record<number, (g: G) => void> = {
       g.lineTo(50, 31)
       g.lineTo(36, 23)
     }, 4),
-  [CELL.swirl]: (g) => {
-    g.lineCap = 'round'
-    for (const [w, c] of [[11, RIM], [6, 'white']] as const) {
-      g.strokeStyle = c
-      g.lineWidth = w
-      g.beginPath()
-      g.arc(32, 32, 22, Math.PI * 0.15, Math.PI * 1.55)
-      g.arc(26, 26, 10, Math.PI * 1.55, Math.PI * 0.7, true)
-      g.stroke()
-    }
+  // a gust: two tapered ribbons of air sweeping along +x in a long, shallow arc (no curl, so it never reads as a letter)
+  [CELL.gust]: (g) => {
+    inked(g, () => ribbon(g, 3, 61, 40, 10, 5), 3.5)
+    inked(g, () => ribbon(g, 14, 54, 26, 6, 2.6), 3)
   },
   [CELL.bolt]: (g) => inkLine(g, [3, 33, 15, 22, 24, 38, 35, 24, 44, 40, 53, 27, 61, 32], 5),
   [CELL.rock]: (g) => {

@@ -4,17 +4,17 @@
  "plan": "quadruped",
  "version": 2,
  "heightUnits": 150,
- "restHeight": 0.9823,
+ "restHeight": 0.9858,
  "bounds": {
   "min": [
-   -0.3562,
-   -0.627,
+   -0.279,
+   -0.6258,
    -0.018
   ],
   "max": [
-   0.3615,
-   0.7546,
-   0.9823
+   0.279,
+   0.8239,
+   0.9858
   ]
  },
  "bones": {
@@ -68,7 +68,7 @@
  },
  "face": {
   "mode": "baked",
-  "note": "The eyes are glossy lenses (lo_eyes) with the iris, pupil, catchlights and the upper lash line baked into the body atlas; the brows, blush, nose and the smile are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip).",
+  "note": "The eyes are glossy lenses (lo_eyes) with the iris, pupil, catchlights and the upper lash line baked into the body atlas; the brows, blush, nose and the smile are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid (sculpted and painted on the body under the lens).",
   "eyeBones": [
    "eye.L",
    "eye.R"
@@ -76,7 +76,12 @@
   "blinkClip": "blink",
   "blinkScale": {
    "axis": "y",
-   "closed": 0.08
+   "closed": 0.04,
+   "closedXYZ": [
+    0.72,
+    0.04,
+    0.2
+   ]
   },
   "eyeColor": "#24323A"
  },
@@ -99,6 +104,22 @@
   "belly": "#F3E6C4",
   "accent": "#F28FA8",
   "eye": "#24323A"
+ },
+ "atlas": {
+  "strip": 0.125,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
  },
  "clips": {
   "idle": {
@@ -644,18 +665,18 @@
  },
  "build": {
   "cards": {
-   "total": 2061,
+   "total": 2199,
    "layers": [
-    1824,
-    237
+    1912,
+    287
    ]
   },
   "tuftLocks": 5,
   "lyingLocks": {
-   "head": 9704,
-   "body": 18067
+   "head": 10399,
+   "body": 19011
   },
-  "sourceTriangles": 3699705
+  "sourceTriangles": 3921290
  },
  "files": {
   "glb": "puddlepup.glb",
@@ -689,59 +710,59 @@
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use COLOR_1 (three: geometry attribute color_1) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false.",
  "budget": {
-  "triangles": 59635,
+  "triangles": 61099,
   "trianglesByMesh": {
    "lo_body": 46000,
-   "lo_cards": 8244,
+   "lo_cards": 8796,
    "lo_eyes": 624,
-   "lo_fins": 4656,
+   "lo_fins": 5568,
    "lo_tuft": 110,
    "__variant_songheart-puddlepup": 1
   },
-  "vertices": 43027,
-  "cards": 2061,
+  "vertices": 44186,
+  "cards": 2199,
   "cardLayers": 2,
   "joints": 28,
   "animations": 32,
-  "animationBytes": 179664,
+  "animationBytes": 174824,
   "download": {
-   "glb": 4143984,
-   "glbKtx2": 4143984,
-   "glbWebp": 4494364,
+   "glb": 4672376,
+   "glbKtx2": 4672376,
+   "glbWebp": 4475628,
    "ktx2": {
-    "body": 2161314,
-    "variants": 729831
+    "body": 2545848,
+    "variants": 847625
    },
    "webp": {
-    "body": 2492840,
-    "variants": 748690
+    "body": 2493502,
+    "variants": 703246
    },
-   "totalKtx2": 4143984,
-   "totalWebp": 4494364
+   "totalKtx2": 4672376,
+   "totalWebp": 4475628
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 720854,
-     "webp": 724160
+     "ktx2": 829685,
+     "webp": 677130
     },
     "normal": {
      "px": 2048,
-     "ktx2": 688327,
-     "webp": 850956
+     "ktx2": 828137,
+     "webp": 943176
     },
     "orm": {
      "px": 2048,
-     "ktx2": 752133,
-     "webp": 917724
+     "ktx2": 888026,
+     "webp": 873196
     }
    },
    "songheart-puddlepup": {
     "base": {
      "px": 2048,
-     "ktx2": 729831,
-     "webp": 748690
+     "ktx2": 847625,
+     "webp": 703246
     }
    }
   },

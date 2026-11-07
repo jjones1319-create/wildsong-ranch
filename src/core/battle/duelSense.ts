@@ -36,6 +36,11 @@ export function senseOfMonster(m: Monster): Sense {
   return { sense, spoiled, battles, fromBattles, fromLoyalty, fromSpoiling }
 }
 
+/** A number that runs from `slow` at battle sense 0 to `quick` at 100. */
+export function bySense(slow: number, quick: number, sense: number): number {
+  return slow + divRound((quick - slow) * sense, 100)
+}
+
 export function senseForTier(tier: AiTier): number {
   return S.tier[tier]
 }

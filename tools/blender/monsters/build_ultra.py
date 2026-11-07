@@ -35,6 +35,7 @@ sys.path.insert(0, str(HERE.parent))        # tools/blender → `lib`, `monsters
 import bpy  # noqa: E402
 import numpy as np  # noqa: E402
 from mathutils import Vector  # noqa: E402
+from mathutils.kdtree import KDTree  # noqa: E402
 
 from lib import anim as A  # noqa: E402
 from lib import bake as BK  # noqa: E402
@@ -100,16 +101,27 @@ def stage_build(recipe, out: Path, quick: bool, body_tris: int) -> dict:
     C.clear_scene()
     t0 = time.time()
     hi_vox = 0.006 if quick else 0.0035
+    extras = getattr(recipe, 'body_extras', lambda: [])
     with C.Timer('high body'):
-        hi_body = S.build_body('hi_body', recipe.all_parts(), hi_vox, 4, segments=48)
+        hi_body = S.build_body('hi_body', recipe.all_parts(), hi_vox, 4, segments=48, extra=extras())
         recipe.carve(hi_body)
     with C.Timer('low body'):
-        lo_body = S.build_body('lo_body', recipe.all_parts(), 0.0055, 4, segments=40)
+        lo_body = S.build_body('lo_body', recipe.all_parts(), 0.0055, 4, segments=40, extra=extras())
         co, _ = S.mesh_arrays(lo_body)
         z = recipe.zones(co)
         keep = np.clip(z['face'] * 1.0 + z['muzzle'] * 1.0 + (z['eye_d'] < 0.1) * 1.0 + z['toes'] * 0.75 + z['paw'] * 0.25, 0, 1)
         decimate_keep(lo_body, body_tris, keep)
+        if lo_body.data.validate(verbose=False):
+            C.log('lo_body: validate() fixed invalid geometry')
         C.log(f'lo_body: {M.tri_count(lo_body)} tris')
+    if hasattr(recipe, 'body_extras'):
+        # heat weights can't be solved over thin extras (the ear slabs): the rig skins a proxy body without them and
+        # copies its weights to lo_body by the nearest vertex (P1.2)
+        with C.Timer('weight proxy'):
+            proxy = S.build_body('lo_proxy', recipe.all_parts(), 0.0055, 4, segments=40)
+            S.decimate_to(proxy, 24000, smooth_after=0.0)
+            proxy.data.validate(verbose=False)
+            proxy.hide_render = True
     hi_eyes = [recipe.build_eye(f'hi_eye{"L" if s > 0 else "R"}', s, True) for s in (1, -1)]
     lo_eyes_parts = [recipe.build_eye(f'lo_eye{"L" if s > 0 else "R"}', s, False) for s in (1, -1)]
     hi_fins = recipe.build_fins(True, quick)
@@ -157,7 +169,7 @@ def stage_build(recipe, out: Path, quick: bool, body_tris: int) -> dict:
             for uvl in list(o.data.uv_layers):
                 o.data.uv_layers.remove(uvl)
             o.data.uv_layers.new(name='UVMap')
-        BK.pack_atlas([lo_body, lo_eyes, lo_fins], 'UVMap', BK.STRIP)
+        BK.pack_atlas([lo_body, lo_eyes, lo_fins], 'UVMap', BK.STRIP, density=getattr(recipe, 'ATLAS_DENSITY', None))
         BK.strip_uvs(lo_cards, BK.CARD_CELLS)
         BK.strip_uvs(lo_tuft, BK.LOCK_CELLS)
     hi_srcs = [hi_body, lie_head, lie_body, hi_tuft]
@@ -189,7 +201,7 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
     C.log(f'bake device {dev}, body atlas {atlas_px}²')
     body_srcs = [O['hi_body'], O['hi_locks_head'], O['hi_locks_body'], O['hi_tuft']]
     eyes = [O['hi_eyeL'], O['hi_eyeR']]
-    fins = [o for o in O if o.name.startswith('hi_ear') or o.name == 'hi_tailfan']
+    fins = [o for o in O if o.name.startswith('hi_ear') or o.name.startswith('hi_tailfan')]
     lo_body, lo_eyes, lo_fins = O['lo_body'], O['lo_eyes'], O['lo_fins']
     var = recipe.VARIANTS[recipe.VARIANT_ID]
     dapples = [tuple(map(tuple, d)) for d in json.loads((out / 'dapples.json').read_text(encoding='utf-8'))]
@@ -213,7 +225,8 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
             BK.set_material(eyes, mats['eye'])
 
     samples = (2, 12, 2) if quick else (6, 24, 4)
-    plan = [(lo_body, body_srcs, body_srcs + eyes + fins), (lo_eyes, eyes, eyes + body_srcs), (lo_fins, fins, fins)]
+    # P1.2: the eyes don't shadow the body: the skin under a lens is the closed lid a blink shows (it baked black)
+    plan = [(lo_body, body_srcs, body_srcs + fins), (lo_eyes, eyes, eyes + body_srcs), (lo_fins, fins, fins)]
     t0 = time.time()
     imgs = BK.bake_set('atlas', atlas_px, out, plan, 'UVMap', True, paint, samples, extra_colours=('songheart',))
     base = BK.image_array(imgs['base_rgba'])
@@ -236,13 +249,52 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
 def eye_bone_specs(recipe) -> list[R.BoneSpec]:
     out = []
     for s, tag in ((1, 'L'), (-1, 'R')):
-        pivot, up = recipe.blink_pivot(s)
+        pivot, up, *_ = recipe.blink_pivot(s)
         out.append(R.BoneSpec(f'eye.{tag}', tuple(pivot), tuple(pivot + up * 0.05), 'head', radius=0.05))
     return out
 
 
+def align_eye_bones(recipe, arm) -> None:
+    """Turn each blink bone about its own axis so its Z looks out of the face: the blink scales it across (X), up (Y)
+    and out (Z)."""
+    with bpy.context.temp_override(object=arm, active_object=arm, selected_objects=[arm], selected_editable_objects=[arm]):
+        bpy.ops.object.mode_set(mode='EDIT')
+        for s, tag in ((1, 'L'), (-1, 'R')):
+            pv = recipe.blink_pivot(s)
+            if len(pv) > 2:
+                arm.data.edit_bones[f'eye.{tag}'].align_roll(pv[2])
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+
 def set_group_weights(ob: bpy.types.Object, names: list[str], W: np.ndarray, arm) -> None:
     S.write_weights(ob, names, W, arm)
+
+
+def skin_body(body, proxy, arm, specs) -> tuple[list[str], np.ndarray]:
+    """Heat weights for the body, as (group names, verts × groups). With a proxy (the body without its thin extras),
+    the solve runs on the proxy and every body vertex copies its nearest proxy vertex. Distance weights when heat
+    leaves most bones empty (P1.2: the ear slabs made the solve fail for every bone)."""
+    src = proxy if proxy is not None else body
+    deform = [s.name for s in specs if s.deform]
+    ok = R.skin_auto(src, arm)
+    if ok:
+        _bn, W = S.body_weights(src)
+        ok = int((W.max(axis=0) > 0.01).sum()) >= len(deform) // 2
+    if not ok:
+        C.log(f'heat weights failed on {src.name}: distance weights')
+        R.skin_distance(src, arm, specs)
+    bn, W = S.body_weights(src)
+    if proxy is None:
+        return bn, W
+    pco, _ = S.mesh_arrays(proxy)
+    kd = KDTree(len(pco))
+    for i, p in enumerate(pco):
+        kd.insert(Vector(p), i)
+    kd.balance()
+    bco, _ = S.mesh_arrays(body)
+    idx = np.array([kd.find(Vector(p))[1] for p in bco], dtype=np.int64)
+    C.log(f'skin body: {len(bco)} verts copy the weights of the proxy ({len(pco)} verts)')
+    return bn, W[idx]
 
 
 def stage_rig(recipe, plan, out: Path) -> dict:
@@ -251,13 +303,11 @@ def stage_rig(recipe, plan, out: Path) -> dict:
     P = recipe.rig_p()
     specs = plan.rig_specs(P) + eye_bone_specs(recipe)
     arm = R.build_armature(f'{recipe.ID}_rig', specs)
+    align_eye_bones(recipe, arm)
     names = [s.name for s in specs if s.deform]
     body = O['lo_body']
     with C.Timer('skin body'):
-        if not R.skin_auto(body, arm):
-            C.log('heat weights failed: distance weights')
-            R.skin_distance(body, arm, specs)
-        bn, W = S.body_weights(body)
+        bn, W = skin_body(body, O.get('lo_proxy'), arm, specs)
         W2 = np.zeros((W.shape[0], len(names)), np.float64)
         for j, nm in enumerate(bn):
             if nm in names:
@@ -329,17 +379,34 @@ def stage_rig(recipe, plan, out: Path) -> dict:
 
 
 # ----------------------------------------------------------------------------- clips
-def blink_clip(cb: A.ClipBuilder, arm) -> A.ClipMeta:
-    """Both eyes close toward the lash line and open again: 7 frames. It keys only the blink bones, so the runtime can
-    play it over any other clip."""
+def blink_clip(cb: A.ClipBuilder, arm, closed=(1.0, 0.08, 1.0)) -> A.ClipMeta:
+    """Both eyes close and open again: 7 frames. It keys only the blink bones, so the runtime can play it over any
+    other clip. `closed` is the bones' (across, up, out) scale when shut; P1.2 squashes each lens down onto the closed
+    lid's lash line first, then sinks it into the head, showing the lid."""
     n = 7
     cb.begin('blink', n, loop=False)
-    for f, k in ((1, 1.0), (3, 0.08), (5, 0.08), (8, 1.0)):
+    half = tuple(1.0 + (c - 1.0) * k for c, k in zip(closed, (0.3, 0.62, 0.08)))
+    for f, sc in ((1, (1.0, 1.0, 1.0)), (2, half), (3, closed), (5, closed), (6, half), (8, (1.0, 1.0, 1.0))):
         for tag in ('L', 'R'):
             pb = arm.pose.bones[f'eye.{tag}']
-            pb.scale = (1.0, k, 1.0)
+            pb.scale = sc
             pb.keyframe_insert('scale', frame=f)
     return cb.end()
+
+
+class CalmClips(A.ClipBuilder):
+    """A clip builder that scales the ear and tail bones' rotations per clip (a recipe's CLIP_CALM)."""
+
+    def __init__(self, arm, deform, calm: dict):
+        super().__init__(arm, deform)
+        self.calm = calm
+
+    def rot(self, bone: str, frame: int, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> None:
+        group = 'ear' if bone.startswith('ear.') else 'tail' if bone.startswith('tail.') else None
+        k = 1.0
+        if group and self.meta is not None:
+            k = self.calm.get(self.meta.name, {}).get(group, self.calm.get('*', {}).get(group, 1.0))
+        super().rot(bone, frame, x * k, y * k, z * k)
 
 
 def stage_clips(recipe, plan, out: Path, only: list[str] | None) -> list[A.ClipMeta]:
@@ -354,11 +421,11 @@ def stage_clips(recipe, plan, out: Path, only: list[str] | None) -> list[A.ClipM
     for act in list(bpy.data.actions):
         bpy.data.actions.remove(act)
     deform = [b.name for b in arm.data.bones if b.use_deform]
-    cb = A.ClipBuilder(arm, deform)
+    cb = CalmClips(arm, deform, getattr(recipe, 'CLIP_CALM', {}))
     with C.Timer('clips'):
         clips = plan.make_clips(cb, recipe.rig_p(), only)
         if not only or 'blink' in only:
-            clips.append(blink_clip(cb, arm))
+            clips.append(blink_clip(cb, arm, getattr(recipe, 'BLINK_CLOSED', (1.0, 0.08, 1.0))))
     want = plan.STAR_CLIPS + plan.MOVE_CLIPS + ['blink']
     missing = [c for c in want if c not in [m.name for m in clips]]
     if missing and not only:
@@ -446,15 +513,20 @@ def stage_export(recipe, plan, out: Path) -> Path:
             'mode': 'baked',
             'note': 'The eyes are glossy lenses (lo_eyes) with the iris, pupil, catchlights and the upper lash line baked into the '
                     'body atlas; the brows, blush, nose and the smile are baked into the body. No face sheet and no morphs: '
-                    'expressions in clips\' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip).',
+                    'expressions in clips\' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): '
+                    'each lens squashes onto the closed lid\'s lash line and sinks into the head, showing the closed lid '
+                    '(sculpted and painted on the body under the lens).',
             'eyeBones': ['eye.L', 'eye.R'],
             'blinkClip': 'blink',
-            'blinkScale': {'axis': 'y', 'closed': 0.08},
+            'blinkScale': {'axis': 'y', 'closed': getattr(recipe, 'BLINK_CLOSED', (1.0, 0.08, 1.0))[1],
+                           'closedXYZ': list(getattr(recipe, 'BLINK_CLOSED', (1.0, 0.08, 1.0)))},
             'eyeColor': recipe.PALETTE['eye'],
         },
         'variants': {recipe.VARIANT_ID: {'textures': recipe.VARIANT_ID, 'colorAttribute': 'COLOR_1', 'eyeColor': var['eye'],
                                          'palette': {k: var[k] for k in ('body', 'belly', 'accent', 'eye')}}},
         'palette': recipe.PALETTE,
+        # the atlas layout: the bottom `strip` share holds `cells` tiles (tuft locks, then fur cards with alpha)
+        'atlas': {'strip': BK.STRIP, 'cells': BK.CELLS, 'lockCells': list(BK.LOCK_CELLS), 'cardCells': list(BK.CARD_CELLS)},
         'clips': clips,
         'build': {'cards': build['cards'], 'tuftLocks': build['tuft_locks'], 'lyingLocks': build['lying_locks'], 'sourceTriangles': build['hi_tris']},
     }

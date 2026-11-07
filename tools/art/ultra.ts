@@ -22,6 +22,7 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions'
 import { dedup, inspect, meshopt, quantize, resample } from '@gltf-transform/functions'
 import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer'
 import { embedTextures, promoteColours, type Format } from './ultra-embed.ts'
+import { DEFAULT_LAYOUT, padAtlas, type Layout } from './ultra-pad.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..')
@@ -59,6 +60,7 @@ interface Side extends Record<string, unknown> {
   look: string
   variants: Record<string, Record<string, unknown>>
   build?: { cards?: { total: number; layers: number[] } }
+  atlas?: Layout
 }
 
 export async function shipUltra(breed: string, look: string): Promise<{ problems: string[]; report: Record<string, unknown> }> {
@@ -70,18 +72,24 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   await MeshoptEncoder.ready
   await MeshoptDecoder.ready
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder })
-  // textures: the body atlas and each variant's colour map (separate files, and embedded in the .glb below)
+  // textures: the body atlas and each variant's colour map (separate files, and embedded in the .glb below), padded
+  // first (ultra-pad.ts: no black, zero-AO or zero-roughness texels next to an island or a card's alpha edge)
   const side = JSON.parse(readFileSync(srcJson, 'utf8')) as Side
+  const shortOf = (vid: string) => vid.replace(`-${breed}`, '')
+  for (const vid of Object.keys(side.variants)) if (!existsSync(join(src, `atlas_${shortOf(vid)}.png`))) throw new Error(`no atlas_${shortOf(vid)}.png in ${src}`)
+  const padded = join(src, 'ship')
+  mkdirSync(padded, { recursive: true })
+  const pad = padAtlas(FFMPEG, src, padded, Object.keys(side.variants).map(shortOf), side.atlas ?? DEFAULT_LAYOUT)
+  console.log(`padded the atlas: ${JSON.stringify(pad)} texels`)
   const body = {
-    base: encode(join(src, 'atlas_base.png'), 'base', `${breed}_base`),
-    normal: encode(join(src, 'atlas_normal.png'), 'normal', `${breed}_normal`),
-    orm: encode(join(src, 'atlas_orm.png'), 'orm', `${breed}_orm`),
+    base: encode(join(padded, 'atlas_base.png'), 'base', `${breed}_base`),
+    normal: encode(join(padded, 'atlas_normal.png'), 'normal', `${breed}_normal`),
+    orm: encode(join(padded, 'atlas_orm.png'), 'orm', `${breed}_orm`),
   }
   const textures: Record<string, Record<string, TexFile>> = { body }
   for (const vid of Object.keys(side.variants)) {
-    const short = vid.replace(`-${breed}`, '')
-    const png = join(src, `atlas_${short}.png`)
-    if (!existsSync(png)) throw new Error(`no ${png}`)
+    const short = shortOf(vid)
+    const png = join(padded, `atlas_${short}.png`)
     textures[vid] = { base: encode(png, 'base', `${breed}_${short}_base`) }
     side.variants[vid] = { ...side.variants[vid], textures: vid, holder: `__variant_${vid}` }
   }

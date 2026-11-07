@@ -204,6 +204,7 @@ function setupFighter(side: Side, s: FighterSetup): FighterState {
     duelBias: null,
     aiFeintUntil: NEVER,
     aiLazyUntil: NEVER,
+    shot: null,
   }
 }
 
@@ -219,6 +220,7 @@ function setupDuelBrain(f: FighterState, s: FighterSetup): void {
     f.tier = tierForSense(r.sense)
   } else f.sense = senseForTier(f.tier)
   f.duelBias = { sweepPct: 100, knockPct: 100, avoidBand: 0, avoidPct: 100 }
+  f.shot = { intent: null, since: NEVER, chanceAt: NEVER, steadyBand: 0, steadySince: NEVER, lastLook: NEVER, pressUntil: NEVER, resetUntil: NEVER, hitSeen: NEVER, hurtSeen: NEVER, taken: 0, released: 0, dropped: 0 }
 }
 
 export function createBattle(a: FighterSetup, b: FighterSetup, opts: BattleOptions): Battle {

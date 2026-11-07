@@ -3,7 +3,7 @@
  * Battle 3D in the installed Chrome, pauses the fight and fires chosen techniques with the picture-only preview,
  * capturing frames from each fire; then tiles them into contact sheets (rows: techniques, columns: frames in order).
  *
- *   node tools/art/attack-fx-review.ts [--no-build] [--arena crown] [--upright] [--slow 0.1]
+ *   node tools/art/attack-fx-review.ts [--no-build] [--arena crown] [--upright] [--slow 0.1] [--set fixed [--tag before]]
  *
  * Output: art-review/attack-fx/ (-crown, -upright; gitignored): sheet.png, sheet-2.png, rows.txt (what each row is), frames/.
  */
@@ -54,6 +54,25 @@ const SHEETS: [string, 0 | 1, 'hit' | 'miss'][][] = [
     ['puddlepup.puddle-party', 0, 'hit'],
   ],
 ]
+
+/**
+ * `--set fixed`: the weak spots of the v1.21 review, one sheet (sheet-fixed.png, or sheet-fixed-<tag>.png with
+ * `--tag before`): a Basic fire melee, a melee and a ranged miss, Wind (ranged, melee and the Special's cut), a long
+ * line telegraph, a sweep telegraph, and the opponent's Signature cut.
+ */
+const FIXED: [string, 0 | 1, 'hit' | 'miss'][] = [
+  ['cinderlynx.ember-swipe', 0, 'hit'],
+  ['cinderlynx.ember-swipe', 0, 'miss'],
+  ['puddlepup.bubble-pop', 0, 'miss'],
+  ['galeheron.gust-feather', 0, 'hit'],
+  ['galeheron.lightning-stride', 0, 'hit'],
+  ['puddlepup.belly-flop', 0, 'hit'],
+  ['cobblemaw.landslide-maul', 0, 'hit'],
+  ['galeheron.squall-line', 0, 'hit'],
+  ['tumblefox.ninefold-feint', 1, 'hit'],
+]
+const SET = opt('--set', 'all')
+const TAG = opt('--tag', '')
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -124,7 +143,11 @@ async function row(page: Page, dir: string, n: number, [tech, side, outcome]: [s
 }
 
 async function main(): Promise<void> {
-  rmSync(OUT, { recursive: true, force: true })
+  const fixed = SET === 'fixed'
+  const sheets = fixed ? [FIXED] : SHEETS
+  const suffix = fixed ? `-fixed${TAG ? `-${TAG}` : ''}` : ''
+  // the fixed set keeps the full review's files (and its own before sheet) beside it
+  rmSync(fixed ? join(OUT, `frames${suffix}`) : OUT, { recursive: true, force: true })
   mkdirSync(OUT, { recursive: true })
   if (!args.includes('--no-build')) execFileSync(IS_WIN ? 'npx.cmd' : 'npx', ['vite', 'build'], { cwd: ROOT, stdio: 'inherit', shell: IS_WIN })
   const server = await serve()
@@ -141,16 +164,16 @@ async function main(): Promise<void> {
       await page.waitForFunction(() => (window as unknown as W).__battle3d!.phase === 'fight', null, { timeout: 60_000 })
       await page.evaluate(() => (window as unknown as W).__battle3d!.pause(true))
       await wait(2500)
-      await page.screenshot({ path: join(OUT, 'screen.png') })
-      for (const [s, list] of SHEETS.entries()) {
-        const dir = join(OUT, 'frames', String(s + 1))
+      await page.screenshot({ path: join(OUT, `screen${suffix}.png`) })
+      for (const [s, list] of sheets.entries()) {
+        const dir = join(OUT, `frames${suffix}`, String(s + 1))
         mkdirSync(dir, { recursive: true })
         for (const [i, r] of list.entries()) {
           const st = await row(page, dir, i, r)
           notes.push(`sheet ${s + 1} row ${i + 1}: ${r.join(' ')} · stats ${JSON.stringify(st)}`)
           console.log(notes.at(-1))
         }
-        const name = s === 0 ? 'sheet.png' : `sheet-${s + 1}.png`
+        const name = fixed ? `sheet${suffix}.png` : s === 0 ? 'sheet.png' : `sheet-${s + 1}.png`
         const w = Math.round((CLIP.width * 1.5) / 2)
         execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-framerate', '1', '-i', join(dir, 'f_%03d.png'), '-vf', `scale=${w}:-1,tile=${FRAMES}x${list.length}:padding=4:color=white`, '-frames:v', '1', join(OUT, name)])
       }
@@ -161,7 +184,7 @@ async function main(): Promise<void> {
   } finally {
     kill(server)
   }
-  writeFileSync(join(OUT, 'rows.txt'), notes.join('\n') + '\n')
+  writeFileSync(join(OUT, `rows${suffix}.txt`), notes.join('\n') + '\n')
   console.log('done', OUT)
 }
 

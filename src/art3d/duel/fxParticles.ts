@@ -7,8 +7,11 @@ import type { QuadBatch } from './fxBatch.ts'
  * flight, the floor or across a direction, and is written into the glowing or the solid quad batch each frame.
  */
 
-/** How a particle moves: thrown (gravity), held at an anchor, drawn in to an anchor, or flown between two points. */
-export const MOVE = { free: 0, anchor: 1, gather: 2, path: 3 } as const
+/**
+ * How a particle moves: thrown (gravity), held at an anchor, drawn in to an anchor, flown between two points, or
+ * circling an anchor (or the fixed point t) on a widening, rising spiral (the wind's gusts).
+ */
+export const MOVE = { free: 0, anchor: 1, gather: 2, path: 3, orbit: 4 } as const
 /** How it faces: the camera (turning with `spin`), stretched along its flight, flat on the floor, or across `n`. */
 export const FACE = { camera: 0, stretch: 1, ground: 2, across: 3 } as const
 /** How it fades: bright at once then out, building up to its end, or holding then out. */
@@ -38,12 +41,21 @@ export class Particle {
   tx = 0
   ty = 0
   tz = 0
-  /** Path: seconds to arrive (it flies on past after), the height of its arc, and a sideways veer from devAt (a miss). */
+  /**
+   * Path: seconds to arrive (it flies on past after) and the height of its arc. A miss, from devAt: a sideways veer
+   * over veerSec, then on at `slow` of its speed, dipping devY (m) over devSec.
+   */
   travel = 0.3
   arc = 0
   devX = 0
   devZ = 0
   devAt = -1
+  veerSec = 0.12
+  devY = 0
+  devSec = 0.4
+  slow = 1
+  /** Orbit: how fast the spiral widens (share of the start radius per second). */
+  widen = 0
   s0 = 0.1
   s1 = 0.1
   stretch = 1
@@ -107,6 +119,16 @@ export function place(p: Particle, now: number, anchors: readonly Vector3[], pos
     const oz = (p.x * s + p.z * c) * f
     pos.set(a.x + ox, a.y + p.y * f, a.z + oz)
     vel.set(-ox, -p.y * f, -oz)
+  } else if (p.move === MOVE.orbit) {
+    const a = p.anchor >= 0 ? anchors[p.anchor]! : null
+    const c = Math.cos(p.swirl * t)
+    const s = Math.sin(p.swirl * t)
+    const w = 1 + p.widen * t
+    const ox = (p.x * c - p.z * s) * w
+    const oz = (p.x * s + p.z * c) * w
+    pos.set((a ? a.x : p.tx) + ox, (a ? a.y : p.ty) + p.y + p.vy * t, (a ? a.z : p.tz) + oz)
+    // along the spiral: round, out and up
+    vel.set(-oz * p.swirl + (ox / w) * p.widen, p.vy, ox * p.swirl + (oz / w) * p.widen)
   } else {
     const from = p.from >= 0 ? anchors[p.from]! : null
     const to = p.anchor >= 0 ? anchors[p.anchor]! : null
@@ -116,14 +138,24 @@ export function place(p: Particle, now: number, anchors: readonly Vector3[], pos
     const dx = (to ? to.x : p.tx) - fx
     const dy = (to ? to.y : p.ty) - fy
     const dz = (to ? to.z : p.tz) - fz
-    const k = t / Math.max(1e-3, p.travel)
+    const travel = Math.max(1e-3, p.travel)
+    let k = t / travel
+    // a miss: on from the veer at `slow` of its speed
+    const since = p.devAt >= 0 && now > p.devAt ? now - p.devAt : 0
+    if (since > 0) k = (p.devAt - p.t0) / travel + (since / travel) * p.slow
     const lift = k < 1 ? Math.sin(Math.PI * k) * p.arc : 0
     pos.set(fx + dx * k, fy + dy * k + lift, fz + dz * k)
     vel.set(dx, dy + (k < 1 ? Math.cos(Math.PI * k) * Math.PI * p.arc : 0), dz)
-    if (p.devAt >= 0 && now > p.devAt) {
-      const m = Math.min(1, (now - p.devAt) / 0.12)
+    if (since > 0) {
+      const m = Math.min(1, since / p.veerSec)
+      const d = Math.min(1, since / Math.max(1e-3, p.devSec))
       pos.x += p.devX * m
       pos.z += p.devZ * m
+      pos.y += p.devY * d * d
+      // its heading (per unit of `travel`, like the rest): slower, swinging aside, dipping
+      vel.multiplyScalar(p.slow)
+      if (m < 1) vel.set(vel.x + (p.devX / p.veerSec) * travel, vel.y, vel.z + (p.devZ / p.veerSec) * travel)
+      if (d < 1) vel.y += ((2 * p.devY * d) / Math.max(1e-3, p.devSec)) * travel
     }
   }
 }

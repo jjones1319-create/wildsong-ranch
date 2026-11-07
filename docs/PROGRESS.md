@@ -2,6 +2,67 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## A CPU with human qualities, effect fixes and Puddlepup P1.2 (2026-11-06) · v1.22.0
+
+The owner: "The CPU should attack with some strategy, just because it has guts doesn't mean it should attack and it shouldn't attack instantly in range it should have a bit more human qualities in the ai. Do this and fix the weakspots." The weak spots: v1.21's effects and layout notes, and Puddlepup Ultra's review list.
+
+**Live:**
+- **Battle 3D, AI 3.1 (BATTLE_3D §4.9, duel only).** The CPU, and your monster on Auto, judge each shot instead of firing as soon as they can afford it:
+  - they wait for a moment you can't dodge: you're recovering, in your own wind-up, or your sidestep is spent;
+  - they react like people: experts in about 0.3 s, rookies slower and less steady, with the odd hesitation; never sooner than 7 ticks after reaching range (unless punishing an opening);
+  - they press after landing a hit and step back after taking one;
+  - they dance in and out at the edge of range before committing, and Tricksters bait your attack, sidestep it and punish;
+  - they keep guts for a sidestep unless there's a reason to spend;
+  - rookies are impulsive: they attack about 6 times a match instead of 4 but are no stronger.
+- **Battle 3D effects:**
+  - every impact has a minimum on-screen size, so a Basic hit reads at Near;
+  - a miss veers toward the camera, dips into the sand and fizzles, with a whoosh;
+  - Wind is redrawn as gust ribbons that spiral round the target;
+  - quieter floor telegraphs (an outlined lane with chevrons, an outlined ring) that fade by the landing;
+  - the over-the-shoulder Special cut is framed for upright play.
+- **The ranch:** the herd strip is never under the action bar (scroll padding, plus a compact bar on screens under 820 px tall).
+- **Puddlepup Ultra (Art 2.1 P1.2, ART_2_DETAIL §9.2):**
+  - lined fur-flap ears; a nose blended into the muzzle;
+  - a longer tail with a round fan at its tip; calmer ears and tail in the big poses;
+  - a real blink with closed lids; organic deep-teal spots; softer cream/teal borders;
+  - no dark specks on the fur cards (every Ultra breed's atlas is now padded before encoding).
+
+**Done**
+- **AI 3.1:**
+  - `core/battle/duelShot.ts` (the intent, shot score, bar, reaction, guts gate) and `duelSetup.ts` (dance, press, step-back, holding position);
+  - `AI.duel.human` in `tuning.ts`; line mode bit-identical (golden record);
+  - tests in `duelAi31.test.ts`.
+- **Duel balance** (docs/BALANCE_DUEL.md): pairs inside 30–70 at 97.6% / 99.2% / 90.9% (was 97.6 / 98.0 / 92.7); attacks per monster per match 5.9–11.7.
+- **Against a scripted player** (100 matches a tier, five breeds), CPU wins:
+  - rookie 25 → 22;
+  - skilled 46 → 52;
+  - expert 45 → 43.
+- **Expert shots that land against a sidestepping player:** 47% → 52%.
+- **Effects and layout:**
+  - `cineShot.ts`, `telegraph.ts`, `fxMiss.ts`; `ui/components/stickyBar.ts`;
+  - `attack-fx-review --set fixed`; e2e `herdLayout.spec.ts`.
+- **Puddlepup:**
+  - shipped at 61,099 triangles, 2,199 cards, 28 joints and 4.67 MB (KTX2);
+  - `tools/art/ultra-pad.ts` (atlas padding), `puddlepup_ears.py`;
+  - the rig survives thin parts (it weighs on a stand-in body).
+
+**Known issues**
+- **AI:**
+  - experts' hit chance per fire isn't above rookies' (they choose better moments, not more accurate moves);
+  - at 3,000, 18 pairs fall outside 25–75 (was 14): fast, skilful breeds against slow heavy hitters;
+  - the CPU attacks 4–7% less often in AI-vs-AI duels.
+- **Effects:**
+  - side-on, a still frame of a missed shot can look like it touches the target for about 0.05 s;
+  - side-on, the telegraph lines are thin at the grazing angle;
+  - in the upright cut the attacker's head is large.
+- **Puddlepup:**
+  - fresh-eyes reviews said "partly" in both rounds; the ear fans still read as flat cards in profile;
+  - the lids are smooth domes;
+  - in-game only, the knocked-out tail fin glows (bloom) and there is some sparkle on the fur outline: runtime fixes, not the model;
+  - the download is up 13% (4.14 → 4.67 MB).
+
+**Next:** the owner's phone check and Puddlepup's sheet (`art-review/puddlepup-ultra/sheet.png`). Then, by their roadmap: 3D for every breed (after Puddlepup's approval), the walkable 3D farm, 3D event scenes, and the 3D duel as the real battle.
+
 ## Growing the farm, friendships, and faster attacks with effects (2026-11-03) · v1.21.0
 
 The owner chose step 1 of the roadmap: v1.21 (farm levels, pens, friendships) and the Battle 3D request "build in the visuals for the attacks and speed them up a bit, probably by 20%".

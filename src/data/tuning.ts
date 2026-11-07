@@ -644,14 +644,65 @@ export const AI = {
     /** Chance (percent) at each plan to circle for a while, and how long (ticks). */
     circlePct: 45,
     circleTicks: { min: 30, max: 75 },
-    /** §4.6 styles: circling ×100, and the trickster's feints (chance per plan, length, step) and the careful finisher. */
+    /** §4.6 styles: circling ×100 and the careful finisher (the trickster's feints are §4.9's dances, in `human`). */
     styles: {
       rusher: { circlePct: 50 },
-      trickster: { circlePct: 120, feintPct: 35, feintTicks: 30, feintStep: 7 },
+      trickster: { circlePct: 120 },
       careful: { circlePct: 140, finisherHpPct: 35 },
     },
     /** §4.7 spoiled: showing off and slacking chances (fond, doting), checked every slackEvery ticks; slacking lasts slackTicks. */
     spoiled: { showOffPct: [0, 12, 25], slackPct: [0, 10, 20], slackEvery: 30, slackTicks: 30 },
+    /**
+     * AI 3.1 §4.9 human qualities (v1.22): the plan's shot becomes an intent, released when the moment is right.
+     * "slow" is the value at battle sense 0 and "quick" at 100; times are ticks; scores are points (about percent).
+     */
+    human: {
+      /** The reaction from a good chance appearing to the shot, and the settle after arriving to punish. */
+      react: { slow: { min: 11, max: 22 }, quick: { min: 7, max: 10 } },
+      punishSettle: { slow: 4, quick: 2 },
+      /** The situational terms count this percent of their size (a rookie barely reads the moment). */
+      weight: { slow: 30, quick: 100 },
+      /** Shot score = hit chance + these × weight. */
+      score: {
+        open: 25, oppWindup: 8, noDodge: 8,
+        lineFresh: 10, lineEscapable: 10, escapableWindup: 8, sidestepSeenPct: 100,
+        edge: 4, edgeLeaving: 8, edgeUnits: 30,
+        vpgPct: 20, vpgMin: -15,
+        betterSoon: 10, betterSoonTicks: 45, betterPct: 130,
+        drain: 8, drainFloor: 6,
+        spendBig: 10, oppLowGuts: 15, finish: 30, full: 10, fullGuts: 95,
+        press: 10, reset: 15,
+      },
+      /** The bar a shot must clear, lowered to floor over the patience (ticks held), then gone (any shot goes); styles shift both. */
+      threshold: { slow: 40, quick: 62, floor: 30 },
+      patience: { slow: 20, quick: 70 },
+      styles: {
+        rusher: { threshold: -10, patiencePct: 70 },
+        steady: { threshold: 0, patiencePct: 100 },
+        trickster: { threshold: 0, patiencePct: 110 },
+        careful: { threshold: 6, patiencePct: 130 },
+      },
+      /** A pending chance is dropped when the score falls this far below the bar; an intent that can't fire for this long is dropped. */
+      dropBelow: 8,
+      intentMaxTicks: 120,
+      /**
+       * Guts like a player: the plan doesn't pick a shot that leaves less than a sidestep, `extra` and punishPct of its
+       * cheapest technique (a punish), times slowPct–quickPct by sense, unless there is a reason to spend (the score's
+       * spendBig cases, an open or broke opponent, a finish, full guts or a stall).
+       */
+      keep: { extra: 2, punishPct: 0, slowPct: 0, quickPct: 100 },
+      /** Rookies are impulsive in the duel: they hold this many guts before a shot (AI.guts.rookieReserve on the line). */
+      rookieReserve: 30,
+      hesitate: { slowPct: 20, quickPct: 5, ticks: { min: 8, max: 20 } },
+      /** After landing a hit: press (chance by style) for this long, stepping depth units deeper (never closer than inset into the band). */
+      press: { ticks: 60, depth: 40, inset: 15, pct: { rusher: 85, steady: 55, trickster: 55, careful: 30 } },
+      /** After taking a hit: step back (chance by style × the sense factor from senseSlow% to 100%). */
+      reset: { ticks: { min: 15, max: 30 }, senseSlow: 40, pct: { rusher: 15, steady: 45, trickster: 50, careful: 70 } },
+      /** Set-ups: dance in and out at the edge of the intent's band (step ticks, depth units), then commit; tricksters at any sense. */
+      dance: { fromSense: 40, pct: { rusher: 20, steady: 40, trickster: 85, careful: 50 }, ticks: { min: 20, max: 45 }, step: 8, depth: 25, commitAbove: 15 },
+      /** Baiting: dancing with a sidestep ready, it expects the attack (sidestep chance + this). */
+      bait: { fromSense: 55, sidestepPct: 35 },
+    },
   },
   /** The player's Auto styles (§12.11): aggression / caution, band biases, pacing, free dashes and the poke horizon. */
   styles: {
@@ -1425,6 +1476,21 @@ export const ART = {
       /** An impact sits this far in front of the target, toward the camera, so the target's own body doesn't hide it. */
       impactFrontM: 0.35,
       waveFrontDeg: 55,
+      /**
+       * Every impact reads (the owner, Nov 3: "fix the weak spots"): from afar a small impact grows until it is at
+       * least viewPct of the view's short side (impactM: an impact's size at familyPct 100, in metres; it goes with the
+       * root of the size), at most maxZoom; big ones and the close-up cuts are untouched. Projectiles grow by its root.
+       */
+      impactMin: { viewPct: 22, impactM: 0.95, maxZoom: 2 },
+      /**
+       * A miss is easy to see but not loud: a projectile flies leadSec past the landing (so a miss can veer before it
+       * reaches the target), then veers aside (toward the camera) over veerSec, slows to slowPct of its speed and dips to
+       * landM over flySec, into the sand beside the target, trailing; a whoosh of streaks passes the target, and a puff
+       * of dust and a few of its bits fizz where it lands.
+       */
+      miss: { leadSec: 0.05, veerSec: 0.12, flySec: 0.24, slowPct: 35, landM: 0.06, streaks: 3, puffs: 4, bits: 3 },
+      /** Wind: ribbons spiral round the target (rad/s, how fast the spiral widens per second, rising m/s). */
+      gust: { ribbons: 7, turnRadPerSec: 9, widenPerSec: 1.2, riseMps: 0.7, radiusM: 0.5 },
     },
     /** Frames drawn behind the loading card before the entrance starts (texture uploads, first draws). */
     warmupFrames: 2,
@@ -1444,7 +1510,21 @@ export const ART = {
      * A Special or Signature (v1.21) looks over the attacker's shoulder instead (`attack`: back, side, height, m; the
      * look point lookPct of the way to the target), so its effects and their impact are in the shot.
      */
-    cine: { enabled: true, ahead: 1.6, side: 1.3, height: 0.55, seconds: 1.5, attack: { back: 2.9, side: 1.5, height: 1.2, lookPct: 60 } },
+    cine: {
+      enabled: true,
+      ahead: 1.6,
+      side: 1.3,
+      height: 0.55,
+      seconds: 1.5,
+      /**
+       * Sideways (from side.landscape.aspect): beside and behind the attacker. Upright (to side.portrait.aspect; a narrow
+       * lens, so the shoulder can't sit beside the target): higher, more directly behind, looking down past its head,
+       * so its back is low in the picture and the target above it. Blended between; then the lens widens (up to
+       * confine.maxFov) until the attacker's shoulders and the whole target sit in the clear band (side.*.band); if that
+       * takes a lens wider than recentreFov (far apart), it first aims at the middle of the two (lookY: the look height, m).
+       */
+      attack: { back: 2.9, side: 1.5, height: 1.2, lookPct: 60, lookY: 0.45, recentreFov: 46, portrait: { back: 2.3, side: 0.5, height: 2.0, lookPct: 62, lookY: 0.3 } },
+    },
     /**
      * The entrance: the fly-in along the arena's timed camera path (its times scaled to flySeconds), the walk-on from
      * outside the gates to the start marks, then the face-off until `seconds`.
@@ -1456,8 +1536,13 @@ export const ART = {
     dprStart: 2.0,
     /** Seconds between blinks, cycled (each monster starts at a different place, so they never blink together). */
     blinkGaps: [3.4, 4.8, 2.6, 5.2, 3.9, 2.2],
-    /** Wind-up telegraphs on the floor: POW warm, INT cool. */
-    telegraph: { pow: '#ff7a1a', int: '#2e8dff', opacity: 0.5 },
+    /**
+     * Wind-up telegraphs on the floor (src/art3d/duel/telegraph.ts): POW warm, INT cool. Quiet, so the effects lead
+     * (the owner, Nov 3): an outlined lane (widthPct of the rules' path width) with faint chevrons for a straight line,
+     * an outlined ring round the target for a sweep; `opacity` is the outline's, the fill is fillPct of it. Each fades
+     * in over inPct of the wind-up, holds at least holdPct of it, and fades out from the release to the landing.
+     */
+    telegraph: { pow: '#ff7a1a', int: '#2e8dff', opacity: 0.6, fillPct: 30, widthPct: 50, sweepM: 1.5, inPct: 25, holdPct: 45 },
     /** §8: the Guild arena's living crowd (src/art3d/duel/crowd*.ts, cutouts.ts) at the seats in its guild.json. */
     /**
      * The test screen's upbringing chip (§4.1): the player's Puddlepup raised three ways, so Auto's battle sense can be

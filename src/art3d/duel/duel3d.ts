@@ -23,7 +23,7 @@ import {
   TorusGeometry,
   Vector3,
 } from 'three'
-import type { AnimationAction, AnimationClip, Material, Texture } from 'three'
+import type { AnimationAction, AnimationClip, Texture } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
@@ -35,6 +35,8 @@ import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
 import { lungeFor, lungeReach, type Lunge } from './attacks.ts'
 import { AttackFx } from './attackFx.ts'
+import { Telegraphs } from './telegraph.ts'
+import { cineShot } from './cineShot.ts'
 import { isRangedTech } from './fxRecipe.ts'
 import { duelWindup } from '../../core/battle/pace.ts'
 import { pathOf } from '../../data/paths.ts'
@@ -96,7 +98,7 @@ export interface DuelStats {
   /** The Guild arena's crowd (people, cut-outs, its draws, triangles and CPU ms), or null without it. */
   crowd: CrowdStats | null
   /** §7 the attack effects last frame: quads drawn, their draws (at most two) and CPU ms. */
-  fx: { quads: number; draws: number; ms: number }
+  fx: { quads: number; draws: number; ms: number; zoom: number }
 }
 
 export interface Duel3D {
@@ -412,12 +414,6 @@ function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: 
 
 /* ---------------------------------------------------------------------------------------------- effects */
 
-interface Telegraph {
-  mesh: Mesh
-  born: number
-  landAt: number
-}
-
 let contactTexture: CanvasTexture | null = null
 
 /** A soft dark disc under the feet: the arena's floor is baked, so this is what makes a monster stand on it. */
@@ -490,7 +486,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const previews: { at: number; e: BattleEvent }[] = []
   // §7: a hit nudges the camera until this time (not with Reduce motion)
   let shakeUntil = 0
-  const telegraphs: Telegraph[] = []
+  // §7: the wind-up's quiet floor marks (a lane for a straight line, a ring for a sweep)
+  const telegraphs = new Telegraphs(scene)
   await v.init(scene, camera)
   // compile the materials' shaders now, so the entrance's first frames don't stall on it (where the renderer can)
   try {
@@ -511,7 +508,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   if (o.lite) v.setLevel('no-msaa')
 
   let camMode: DuelCamera = 'side'
-  let cine: { until: number; from: Vector3; look: Vector3 } | null = null
+  let cine: { until: number; from: Vector3; look: Vector3; fov: number } | null = null
   const camPos = new Vector3(0, 3, 9)
   const camLook = new Vector3(0, 0.6, 0)
   let camFov: number = D.fov
@@ -663,18 +660,22 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     return p
   }
 
-  /** A cut to `attacker`: over its shoulder toward the target for a technique (§7: its effects in the shot), else on it. */
+  /**
+   * A cut to `attacker`: over its shoulder toward the target for a technique (§7: its effects in the shot; framed for
+   * the screen's shape, cineShot.ts), else a low three-quarter on it (the KO).
+   */
   function startCine(attacker: Actor, now: number, technique = false): void {
     if (!D.cine.enabled) return
     const opp = actors[1 - attacker.side]!
+    const until = now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds)
+    if (technique) {
+      cine = { until, ...cineShot(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence) }
+      return
+    }
     const u = opp.pos.clone().sub(attacker.pos).normalize()
     const n = new Vector3(-u.z, 0, u.x)
-    const C = D.cine.attack
-    const from = technique
-      ? insideFence(attacker.pos.clone().addScaledVector(u, -C.back).addScaledVector(n, C.side * sideSign).add(new Vector3(0, C.height, 0)))
-      : insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead).addScaledVector(n, D.cine.side * sideSign).add(new Vector3(0, D.cine.height, 0)))
-    const look = technique ? attacker.pos.clone().lerp(opp.pos, C.lookPct / 100).add(new Vector3(0, 0.45, 0)) : attacker.pos.clone().add(new Vector3(0, 0.55, 0))
-    cine = { until: now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds), from, look }
+    const from = insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead).addScaledVector(n, D.cine.side * sideSign).add(new Vector3(0, D.cine.height, 0)))
+    cine = { until, from, look: attacker.pos.clone().add(new Vector3(0, 0.55, 0)), fov: D.fov }
   }
 
   function updateActors(s: BattleState, dt: number): void {
@@ -762,7 +763,10 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         // §7: melee lunges across the gap; the technique's own effects (wind-up glow, projectile, wave) land with it
         if (!ranged) a.lunge = lungeFor(now, windupSec)
         if (tech) fx.fire(e.side, tech, now, windupSec)
-        if (e.lands !== undefined && e.path) addTelegraph(s, e.side, e.path, tech?.type === 'INT', e.lands)
+        if (e.lands !== undefined && e.path) {
+          const travel = ranged ? AT.boltTravelSec : AT.lungeSec
+          telegraphs.show(e.side, e.path, tech?.type === 'INT', fighterAt(s, e.side), fighterAt(s, (1 - e.side) as Side), now, windupSec, travel)
+        }
         if (tech && (tech.family === 'Special' || tech.family === 'Signature')) {
           startCine(a, now, true)
           crowd?.cheer('big')
@@ -793,43 +797,6 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         fx.fenced(e.side, now)
         play(t, 'hit_heavy', { loop: false, rate: o.speed() })
         crowd?.cheer('big')
-      }
-    }
-  }
-
-  function addTelegraph(s: BattleState, side: Side, path: 'line' | 'sweep', int: boolean, lands: number): void {
-    const a = fighterAt(s, side)
-    const b = fighterAt(s, (1 - side) as Side)
-    const color = int ? D.telegraph.int : D.telegraph.pow
-    const mat = new MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false })
-    let mesh: Mesh
-    if (path === 'line') {
-      const len = Math.max(0.2, a.distanceTo(b))
-      mesh = new Mesh(new PlaneGeometry((BATTLE.duel.pathHalfWidth * 2) / 100, len), mat)
-      mesh.rotation.x = -Math.PI / 2
-      const mid = a.clone().add(b).multiplyScalar(0.5)
-      mesh.position.set(mid.x, 0.02, mid.z)
-      mesh.rotation.z = -Math.atan2(b.x - a.x, b.z - a.z)
-    } else {
-      mesh = new Mesh(new RingGeometry(0.45, 1.7, 48), mat)
-      mesh.rotation.x = -Math.PI / 2
-      mesh.position.set(b.x, 0.02, b.z)
-    }
-    scene.add(mesh)
-    telegraphs.push({ mesh, born: now, landAt: now + (lands - s.tick) / BATTLE.ticksPerSecond / Math.max(1, o.speed()) })
-  }
-
-  function updateTelegraphs(): void {
-    for (let i = telegraphs.length - 1; i >= 0; i--) {
-      const t = telegraphs[i]!
-      const mat = t.mesh.material as MeshBasicMaterial
-      const k = (now - t.born) / Math.max(0.05, t.landAt - t.born)
-      mat.opacity = k < 1 ? D.telegraph.opacity * Math.min(1, k * 1.5) : Math.max(0, D.telegraph.opacity * (1 - (now - t.landAt) / 0.2))
-      if (k >= 1 && now - t.landAt > 0.2) {
-        scene.remove(t.mesh)
-        t.mesh.geometry.dispose()
-        mat.dispose()
-        telegraphs.splice(i, 1)
       }
     }
   }
@@ -989,7 +956,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
           const k = o.reduceMotion ? 1 - Math.exp(-dt * 4) : 1
           camPos.lerp(cine.from, k)
           camLook.lerp(cine.look, k)
-          camFov += (D.fov - camFov) * k
+          camFov += (cine.fov - camFov) * k
         } else {
           cine = null
           const k = 1 - Math.exp(-dt * (o.reduceMotion ? D.springReduced : D.spring))
@@ -1014,7 +981,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       }
     }
     crowd?.update(dt, now, { x: (actors[0].pos.x + actors[1].pos.x) / 2, z: (actors[0].pos.z + actors[1].pos.z) / 2 })
-    updateTelegraphs()
+    telegraphs.update(now)
     for (let i = previews.length - 1; i >= 0; i--) {
       if (previews[i]!.at > now) continue
       onEvents([previews[i]!.e])
@@ -1109,10 +1076,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       cancelAnimationFrame(raf)
       crowd?.dispose()
       fx.dispose()
-      for (const t of telegraphs) {
-        t.mesh.geometry.dispose()
-        ;(t.mesh.material as Material).dispose()
-      }
+      telegraphs.dispose()
       v.dispose()
     },
   }

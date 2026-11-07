@@ -5,14 +5,18 @@ import type { Rng } from '../rng.ts'
 import { canFire, currentBand, effectiveCost } from './engine.ts'
 import { herdDir, leftIsOutward, offsetFromAim, roomBehindUnits } from './geometry.ts'
 import { canHerd, rusherSeen } from './duelRead.ts'
+import { bySense } from './duelSense.ts'
+import { setUp } from './duelSetup.ts'
+import { isOpen, judge, look, notice, spendIntent, takeIntent } from './duelShot.ts'
 import type { BattleState, FighterState } from './types.ts'
 
 /**
  * docs/BATTLE_3D.md §4 AI 3.0: the duel brain, run after the range plan (ai.ts) for every AI or Auto fighter in a
  * duel that can act. The plan still decides the range and the techniques; this layer adds, scaled by battle sense:
  * sidesteps timed to the wind-up (§4.2), punishing openings (§4.3), the habits read in duelRead.ts (§4.4, through the
- * plan's values), the ring (§4.5), visible styles (§4.6) and a spoiled monster's bad habits (§4.7).
- * Every random draw happens in duel mode only, so line battles are untouched.
+ * plan's values), the ring (§4.5), visible styles (§4.6) and a spoiled monster's bad habits (§4.7); and AI 3.1's
+ * human qualities (§4.9, duelShot.ts and duelSetup.ts): the plan's shot is held as an intent and fired when the moment
+ * is right, after a human reaction. Every random draw happens in duel mode only, so line battles are untouched.
  */
 
 const NEVER = -100_000
@@ -38,11 +42,6 @@ export function duelStyleOf(f: FighterState): DuelStyle {
   }
 }
 
-/** From `slow` at battle sense 0 to `quick` at 100. */
-function bySense(slow: number, quick: number, sense: number): number {
-  return slow + divRound((quick - slow) * sense, 100)
-}
-
 /** The way to sidestep or circle so the fighter turns toward open ground (+1 left, −1 right). */
 function towardOpenGround(f: FighterState, opp: FighterState): -1 | 1 {
   return leftIsOutward(f, opp) ? -1 : 1
@@ -50,10 +49,14 @@ function towardOpenGround(f: FighterState, opp: FighterState): -1 | 1 {
 
 export function decideDuel(state: BattleState, f: FighterState, opp: FighterState, rng: Rng): void {
   const style = duelStyleOf(f)
+  look(state, f)
   sidestep(state, f, opp, rng, style)
-  holdFire(f, opp)
+  // §4.9: the plan's shot becomes an intent; a punish fires at once; otherwise the intent waits for its moment
+  takeIntent(state, f, opp, rng, style)
+  notice(f, opp, rng, style)
   punish(state, f, opp, rng, style)
   finisher(state, f, opp, style)
+  judge(state, f, opp, rng, style)
   showOff(state, f, rng)
   move(state, f, opp, rng, style)
 }
@@ -67,7 +70,9 @@ function sidestep(state: BattleState, f: FighterState, opp: FighterState, rng: R
     f.aiSidestepFor = p.fireTick
     f.aiSidestepAt = NEVER
     const offLine = f.sense >= S.ignoreOffLineFrom && offsetFromAim(p.ax, p.ay, p.dx, p.dy, f.x, f.y) > BATTLE.duel.pathHalfWidth * CENTI
-    const pct = S.basePct + divRound(S.perSensePct * f.sense, 100) + (style === 'careful' ? S.carefulPct : 0)
+    // §4.9 a bait: dancing at the edge with a sidestep ready, it expects the attack
+    const baiting = state.tick < f.aiFeintUntil && (style === 'trickster' || f.sense >= D.human.bait.fromSense)
+    const pct = S.basePct + divRound(S.perSensePct * f.sense, 100) + (style === 'careful' ? S.carefulPct : 0) + (baiting ? D.human.bait.sidestepPct : 0)
     if (afford && !offLine && rng.chance(pct)) {
       const base = rng.nextInt(bySense(S.reactSlow.min, S.reactQuick.min, f.sense), bySense(S.reactSlow.max, S.reactQuick.max, f.sense))
       const spd = Math.min(f.stats.SPD, 999)
@@ -84,18 +89,6 @@ function sidestep(state: BattleState, f: FighterState, opp: FighterState, rng: R
   if (!p && afford && f.sense < F.below && state.tick % F.every === 0 && rng.chance(divRound((F.below - f.sense) * F.perPoint, 10))) {
     f.wantSidestep = rng.chance(50) ? 1 : -1
   }
-}
-
-/** §4.3 patience: don't trade blows with a technique it is about to sidestep; dodge it, then punish. */
-function holdFire(f: FighterState, opp: FighterState): void {
-  if (!f.wantFire || f.sense < D.punish.holdFromSense) return
-  const p = opp.pending
-  if (p !== null && f.aiSidestepFor === p.fireTick && f.aiSidestepAt !== NEVER) f.wantFire = null
-}
-
-/** §4.3: the opponent can't sidestep or answer right now. */
-function isOpen(opp: FighterState): boolean {
-  return (opp.busyTicks > 0 && opp.pending === null) || opp.stunTicks > 0 || opp.dawdleTicks > 0
 }
 
 /** The best technique it can fire this tick, by the plan's values. */
@@ -123,8 +116,14 @@ function punish(state: BattleState, f: FighterState, opp: FighterState, rng: Rng
   if (f.aiPunishAt === NEVER || state.tick < f.aiPunishAt) return
   const best = bestReady(state, f)
   if (best) {
+    // §4.9 even a punish settles for a moment after arriving in range; it spends the intent the plan had
+    if (f.shot && state.tick - f.shot.steadySince < bySense(D.human.punishSettle.slow, D.human.punishSettle.quick, f.sense)) {
+      f.aiPunishAt = state.tick + 1
+      return
+    }
     f.wantFire = best
     f.aiPunishAt = NEVER
+    spendIntent(f)
     return
   }
   // nothing ready here: head for the range of the best technique it can afford, and try again while it stays open
@@ -161,14 +160,15 @@ function finisher(state: BattleState, f: FighterState, opp: FighterState, style:
     if (fin === null || tech.force > (TECHNIQUE_BY_ID[fin]?.force ?? 0)) fin = t.id
   }
   const finTech = fin ? TECHNIQUE_BY_ID[fin] : undefined
-  if (!fin || !finTech) return
-  if (canFire(state, f, fin)) {
-    f.wantFire = fin
-    return
-  }
+  if (!fin || !finTech || !f.shot || f.wantFire) return
+  // §4.9 it becomes the intent (fired at the right moment, after a reaction) when it can be paid for, or when the
+  // intent it has would leave too little for it
   const finCost = effectiveCost(f, finTech)
-  const want = f.wantFire ? TECHNIQUE_BY_ID[f.wantFire] : undefined
-  if (want && f.wantFire !== fin && f.guts - effectiveCost(f, want) < finCost) f.wantFire = null
+  const intent = f.shot.intent ? TECHNIQUE_BY_ID[f.shot.intent] : undefined
+  if (f.shot.intent !== fin && (intent ? f.guts - effectiveCost(f, intent) < finCost : f.guts >= finCost)) {
+    if (!intent) f.shot.since = state.tick
+    f.shot.intent = fin
+  }
   // with the guts in hand, walk to its range
   const band = currentBand(state)
   if (f.guts >= finCost && band !== finTech.range) f.moveDir = band > finTech.range ? 1 : -1
@@ -185,9 +185,10 @@ function showOff(state: BattleState, f: FighterState, rng: Rng): void {
   if (flashy) f.wantFire = flashy
 }
 
-/** Slacking (§4.7), feints (§4.6) and circling: away from the fence, herding the opponent to it (§4.5), or for a while. */
+/** Set-ups (§4.9), slacking (§4.7) and circling: away from the fence, herding the opponent to it (§4.5), or for a while. */
 function move(state: BattleState, f: FighterState, opp: FighterState, rng: Rng, style: DuelStyle): void {
   const tick = state.tick
+  setUp(state, f, opp)
   const Sp = D.spoiled
   if (f.spoiled && tick % Sp.slackEvery === 0 && rng.chance(Sp.slackPct[f.spoiled])) f.aiLazyUntil = tick + Sp.slackTicks
   if (tick < f.aiLazyUntil) {
@@ -195,7 +196,6 @@ function move(state: BattleState, f: FighterState, opp: FighterState, rng: Rng, 
     f.wantDash = false
   }
   const T = D.styles.trickster
-  if (tick < f.aiFeintUntil && !f.wantFire) f.moveDir = Math.floor(tick / T.feintStep) % 2 === 0 ? 1 : -1
 
   if (roomBehindUnits(state, f, opp) < AI.cornerUnits) {
     f.strafeDir = towardOpenGround(f, opp)
@@ -217,5 +217,4 @@ function move(state: BattleState, f: FighterState, opp: FighterState, rng: Rng, 
   f.strafeDir = rng.chance(pct) ? (rng.chance(50) ? 1 : -1) : 0
   const ticks = rng.nextInt(D.circleTicks.min, D.circleTicks.max)
   f.aiStrafeUntil = tick + (style === 'trickster' ? divRound(ticks, 2) : ticks)
-  if (style === 'trickster' && tick >= f.aiFeintUntil && rng.chance(T.feintPct)) f.aiFeintUntil = tick + T.feintTicks
 }

@@ -1,9 +1,10 @@
-import { Vector3, type Camera, type Scene } from 'three'
+import { Vector3, type Camera, type PerspectiveCamera, type Scene } from 'three'
 import { ART } from '../../data/tuning.ts'
 import type { Technique } from '../../data/types.ts'
 import { fxAtlas } from './fxAtlas.ts'
 import { QuadBatch } from './fxBatch.ts'
 import { charge, dustKick, flash, healSparkles, projectile, shockwave, slash, trail, wave, whiff, wisps } from './fxDelivery.ts'
+import { fizzle, whoosh } from './fxMiss.ts'
 import { MOVE, ParticlePool, place, type Particle } from './fxParticles.ts'
 import { attackFxFor, fxCount, fxQuality, type AttackFxRecipe } from './fxRecipe.ts'
 import { burst, extra, pop, ring, type FxCtx } from './fxSpawn.ts'
@@ -28,6 +29,8 @@ interface Flight {
   trailFrom: number
   trailTo: number
   emitted: number
+  /** The size its projectile and trail are drawn at (the family's, grown from afar). */
+  size: number
   cores: Particle[]
   coreIds: number[]
 }
@@ -53,6 +56,10 @@ export class AttackFx {
   private readonly vel = new Vector3()
   /** The camera's position last frame (impacts sit on its side of the target). */
   private readonly eye = new Vector3()
+  /** Last frame's lens: the view's short side is 2 · distance · shortTan. */
+  private shortTan = Math.tan((ART.duel.fov * Math.PI) / 360)
+  /** The last impact's zoom (for the stats line). */
+  private zoom = 1
   /** CPU time of the last frame's update (ms), for the stats line. */
   cpuMs = 0
 
@@ -66,7 +73,18 @@ export class AttackFx {
   }
 
   private flight(): Flight {
-    return { r: null, land: 0, trailFrom: 0, trailTo: 0, emitted: 0, cores: [], coreIds: [] }
+    return { r: null, land: 0, trailFrom: 0, trailTo: 0, emitted: 0, size: 1, cores: [], coreIds: [] }
+  }
+
+  /**
+   * How much an impact of size S (familyPct / 100) at `p` grows so it still reads from afar: never smaller on screen
+   * than impactMin.viewPct of the view's short side (1 for big ones and up close, so the cut's close-ups are
+   * untouched; at most maxZoom). Its size goes with √S.
+   */
+  private zoomAt(p: Vector3, S: number): number {
+    const Z = F.impactMin
+    const short = 2 * this.eye.distanceTo(p) * this.shortTan
+    return Math.min(Z.maxZoom, Math.max(1, (short * Z.viewPct) / 100 / (Z.impactM * Math.sqrt(S))))
   }
 
   private quality() {
@@ -105,12 +123,15 @@ export class AttackFx {
     f.land = land
     f.cores.length = 0
     f.coreIds.length = 0
+    // from afar a projectile grows by the root of the impact's zoom (not the grand moves: they cut to a close-up)
+    f.size = S * (r.grand && ART.duel.cine.enabled ? 1 : this.zoomAt(this.anchors[CHEST[foe]!]!, S))
     if (r.path === 'sweep') {
       const dist = this.anchors[FEET[side]!]!.distanceTo(this.anchors[FEET[foe]!]!)
       wave(c, r, this.anchors[FEET[side]!]!, dir, dist, release, travel, S, fxCount(F.burst, r, c.q))
     } else if (r.ranged) {
       for (let k = 0; k < Math.min(r.hits, 4); k++) {
-        const p = projectile(c, r, side, k, FRONT[side]!, CHEST[foe]!, release + k * F.hitGapSec, travel, r.hits > 1 ? S * 0.8 : S)
+        // it reaches the target leadSec after the landing, so a miss can veer off before it gets there
+        const p = projectile(c, r, side, k, FRONT[side]!, CHEST[foe]!, release + k * F.hitGapSec, travel + F.miss.leadSec, r.hits > 1 ? f.size * 0.8 : f.size)
         f.cores.push(p)
         f.coreIds.push(p.id)
       }
@@ -128,49 +149,76 @@ export class AttackFx {
     const c = this.begin()
     const foe = 1 - side
     const t0 = now + (hitNo - 1) * F.hitGapSec
-    // the projectile ends where it strikes
-    this.pool.forOwner(side, Math.min(hitNo - 1, 3), (p) => (p.life = Math.min(p.life, Math.max(now - p.t0, p.travel))))
+    // the projectile ends where it strikes (it was due leadSec later: the burst takes over just short of the target)
+    this.pool.forOwner(side, Math.min(hitNo - 1, 3), (p) => (p.life = Math.min(p.life, Math.max(now - p.t0, p.travel - F.miss.leadSec))))
     const dir = this.aim(side)
     const at = this.at.copy(this.anchors[CHEST[foe]!]!).addScaledVector(dir, -0.15)
     at.addScaledVector(this.feet.copy(this.eye).sub(at).setY(0).normalize(), F.impactFrontM)
     const feet = this.feet.copy(this.anchors[FEET[foe]!]!)
     const S = (r.sizePct / 100) * (of > 1 ? 0.75 : 1) * (crit ? 1.2 : 1)
-    burst(c, r, at, dir, t0, S, Math.max(1, Math.round(fxCount(F.burst, r, c.q) * (of > 1 ? 0.6 : 1))))
+    // from afar every impact grows (the same for every family); its size on screen goes with z · √S
+    const z = (this.zoom = this.zoomAt(at, S))
+    burst(c, r, at, dir, t0, S * z * z, Math.max(1, Math.round(fxCount(F.burst, r, c.q) * (of > 1 ? 0.6 : 1))))
     // the extra layer grows with the square root of the size: Basics stay readable, grand moves don't swallow the target
-    extra(c, r, at, feet, dir, t0, Math.sqrt(S))
-    if (r.slash) slash(c, r, at, S, t0)
-    if (r.shockwave && hitNo === of) shockwave(c, r, at, feet, dir, S, t0)
+    extra(c, r, at, feet, dir, t0, Math.sqrt(S) * z)
+    if (r.slash) slash(c, r, at, S * z, t0)
+    if (r.shockwave && hitNo === of) shockwave(c, r, at, feet, dir, S * z, t0)
     if (r.drain && hitNo === 1) wisps(c, r, at, CHEST[side]!, t0 + 0.05, S)
     if (r.grand && hitNo === 1) {
       flash(c, at, r.core, S, t0)
       ring(c, feet, r.ramp[2]!, false, 0.3 * S, 1.8 * S, t0, 0.5 * c.q.life)
     }
     if (r.signature && hitNo === of) {
-      burst(c, r, at, this.vel.set(0, 1, 0), t0 + 0.08, S * 1.2, fxCount(F.burst, r, c.q))
-      ring(c, at, r.ramp[1]!, false, 0.2 * S, 1.2 * S, t0 + 0.08, 0.4 * c.q.life, 0)
+      burst(c, r, at, this.vel.set(0, 1, 0), t0 + 0.08, S * 1.2 * z * z, fxCount(F.burst, r, c.q))
+      ring(c, at, r.ramp[1]!, false, 0.2 * S * z, 1.2 * S * z, t0 + 0.08, 0.4 * c.q.life, 0)
     }
   }
 
-  /** Hit k of n misses: the projectile veers past and flies on (no impact); a melee blow swishes beside. */
+  /**
+   * Hit k of n misses (no impact). A projectile veers aside just short of the target, slows and dips to the floor,
+   * still trailing, and fizzles out there in a small puff; a melee blow swishes past beside it and kicks up dust. Either
+   * way a whoosh of air rushes past the target's side.
+   */
   miss(side: number, tech: Technique, hitNo: number, now: number): void {
     const f = this.flights[side]!
     const r = f.r?.tech === tech.id ? f.r : attackFxFor(tech)
     const c = this.begin()
+    const M = F.miss
     const dir = this.aim(side)
     const sx = -dir.z
     const sz = dir.x
-    const sign = (this.serial + hitNo) % 2 ? 1 : -1
+    const seq = Math.min(hitNo - 1, 3)
+    const chest = this.anchors[CHEST[1 - side]!]!
+    // aside toward the camera, so it comes down in plain sight in front of the target (side-on, a veer away from the
+    // camera would only hide it behind the target's body)
+    const sign = (this.eye.x - chest.x) * sx + (this.eye.z - chest.z) * sz >= 0 ? 1 : -1
+    const S = (r.sizePct / 100) * this.zoomAt(chest, r.sizePct / 100)
     let veered = false
-    this.pool.forOwner(side, Math.min(hitNo - 1, 3), (p) => {
+    this.pool.forOwner(side, seq, (p) => {
       if (p.move !== MOVE.path || p.devAt >= 0) return
       p.devX = sx * sign * F.missOffsetM
       p.devZ = sz * sign * F.missOffsetM
       p.devAt = now
+      p.veerSec = M.veerSec
+      p.slow = M.slowPct / 100
+      p.devSec = M.flySec
+      p.life = Math.max(p.life, now - p.t0 + M.flySec)
+      // where it would be by then, so it can dip to the floor there
+      place(p, now + M.flySec, this.anchors, this.at, this.vel)
+      p.devY = M.landM - this.at.y
       veered = true
     })
+    const core = f.cores[seq]
+    if (veered && core && core.alive && core.id === f.coreIds[seq] && core.devAt === now) {
+      place(core, now + M.flySec, this.anchors, this.at, this.vel)
+      fizzle(c, r, this.at.setY(M.landM), now + M.flySec * 0.92, f.size)
+      if (r.path === 'line') f.trailTo = Math.max(f.trailTo, now + M.flySec * 0.85)
+    }
+    const beside = this.at.copy(chest).add(this.vel.set(sx * sign * 0.45, 0.1, sz * sign * 0.45))
+    if (veered || r.path === 'line') whoosh(c, r, beside, dir, now, S)
     if (!veered && r.path === 'line' && !r.ranged) {
-      const at = this.at.copy(this.anchors[CHEST[1 - side]!]!).add(this.vel.set(sx * sign * 0.45, 0.1, sz * sign * 0.45))
-      whiff(c, r, at, r.sizePct / 100, now)
+      whiff(c, r, beside, S, now)
+      fizzle(c, r, beside.set(beside.x + sx * sign * 0.2, M.landM, beside.z + sz * sign * 0.2), now + 0.05, S * 0.8, true)
     }
   }
 
@@ -200,6 +248,8 @@ export class AttackFx {
   update(now: number, camera: Camera, root0: Vector3, root1: Vector3, h0: number, h1: number): void {
     const t0 = performance.now()
     this.eye.copy(camera.position)
+    const lens = camera as PerspectiveCamera
+    if (lens.isPerspectiveCamera) this.shortTan = Math.tan((lens.fov * Math.PI) / 360) * Math.min(1, lens.aspect)
     this.anchors[CHEST[0]].copy(root0).setY(root0.y + h0 * 0.55)
     this.anchors[CHEST[1]].copy(root1).setY(root1.y + h1 * 0.55)
     this.anchors[FEET[0]].copy(root0).setY(root0.y + 0.03)
@@ -224,7 +274,7 @@ export class AttackFx {
     const c = this.ctx
     const rate = (F.trailPerSec * r.sizePct * c.q.particlePct) / 10_000
     const due = Math.floor((Math.min(now, f.trailTo) - f.trailFrom) * rate)
-    const S = r.sizePct / 100
+    const S = f.size
     for (; f.emitted < due; f.emitted++) {
       if (r.ranged && r.path === 'line') {
         const i = f.emitted % Math.max(1, f.cores.length)
@@ -239,9 +289,9 @@ export class AttackFx {
     }
   }
 
-  /** Quads drawn last frame (glowing + solid) and the draws they took. */
-  stats(): { quads: number; draws: number; ms: number } {
-    return { quads: this.glow.count + this.solid.count, draws: (this.glow.count ? 1 : 0) + (this.solid.count ? 1 : 0), ms: this.cpuMs }
+  /** Quads drawn last frame (glowing + solid), the draws they took, and the last impact's zoom. */
+  stats(): { quads: number; draws: number; ms: number; zoom: number } {
+    return { quads: this.glow.count + this.solid.count, draws: (this.glow.count ? 1 : 0) + (this.solid.count ? 1 : 0), ms: this.cpuMs, zoom: +this.zoom.toFixed(2) }
   }
 
   dispose(): void {

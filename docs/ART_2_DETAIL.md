@@ -498,6 +498,81 @@ What it asked for, most important first:
 - **Dapples painted per vertex on the locks read as camouflage blotches** (a lock is 6 vertices across and 9 along): paint round marks per pixel in the bake shader, by position.
 - A shared GPU can make one Cycles bake 300× slower (the laptop RTX A500 runs at 15 W): when another job holds it, bake on the CPU (`build_ultra.py --cpu`): the body's AO took 38 s on the i7's 12 threads against 15 minutes on the busy GPU. Run bakes in the background with logs.
 
+### 9.2 P1.2 (Nov 3): the pilot's weak spots
+**What changed** (the pilot every breed copies):
+- **Ears: one fur flap, lined** (`monsters/breeds/puddlepup_ears.py`). Each ear is a surface F(u, v) from a root line arched over the top of the head to a rounded, scalloped bottom edge.
+  - The fur is a slab (2.6 cm thick at the root, 1.8 cm at its end) on F's outside down to 64–80% of its length, joined into the voxel body (`build_body(..., extra=)`), so the coat grows on it; a shaggy card fringe runs along its edges and the bottom of its fur.
+  - The membrane is the flap's lining, just inside F, its sides tucked into the fur; past the fur it carries on into the ribbed, rounded fan. It shares the flap's u, so the lining and the fur get the same skin weights.
+  - The flap stands 3.4 cm off the cheek from mid-length and twists 48° as it falls, so the fan opens forward: the lining shows from the front and, partly, in three-quarter view (at 35° the near ear's lining was exactly edge-on to the 3/4 camera, a blade).
+  - Cards skip the flap's lining side; the fur combs down the flap.
+- **Nose:** set back on the muzzle with a short bridge from the brow (no stalk in profile).
+- **Tail:** a longer, thicker paddle (`TAIL_LEN` 0.6) ending in a round fan at its tip (P1.1's fan ran along the paddle's back like a sail). The fluke is a lens with volume (8 cm thick by the paddle, closing to an edge all round): a leaf from behind, as in the pictures.
+- **Big poses:** `CLIP_CALM` scales the ear and tail bones' rotations per clip in `build_ultra.py` (ko ears 0.1 / tail 0.45, hit_heavy 0.2 / 0.55, win 0.3 / 0.55, strike ears 0.3, every clip's ears 0.7). The shared quadruped plan is untouched.
+- **Membranes:** pinker coral (less orange), 12% darker, finer and softer ribs (the strong dark ribs read as paper pleats), a lighter coral edge instead of near-white, rougher toward the edge.
+- **Blink:** the blink bones sit behind each lens at the closed lid's lash height. The `blink` clip squashes each lens onto the lash line, then sinks it into the head (scale 0.72 / 0.04 / 0.2 across / up / out), showing the closed lid sculpted and painted on the skin under the lens: a soft bulge toned toward the fur with a curved lash line. The body's AO bake no longer counts the eyes as occluders (the skin under a lens baked black).
+- **Coat:**
+  - Dapples are organic and deep teal (they read grey-black): mixed sizes (most small, the big ones on the back), uneven shapes, 40% with satellites that merge into them, and a noise warp on every edge; spots on the ear flaps too.
+  - A lock that crosses the cream / teal border blends toward the colour under its tip along its length (the border read as hard cream shards); no fur cards in the border band (cream mask 0.06–0.94).
+  - **The ship step pads the atlas** (`tools/art/ultra-pad.ts`, every breed): texels no bake wrote and the transparent texels of the card tiles take the colour, AO and roughness of the nearest texels with data, ring by ring, without crossing between the islands and the strip's tiles. In P1.1 those texels held black colour, AO ≈ 0.04 and roughness ≈ 0.02: filtered at a card's alpha edge they made dark specks without MSAA and glints (the glitter).
+- **Atlas:** the islands fill the whole 1 × 0.875 area above the strip (P1.1 packed into a square: ~80% of the width). A first pack picks rotations; the UVs are stretched in v, packed again without rotating and squashed back. Eyes get 1.35× texel density, the membranes 0.8× (`ATLAS_DENSITY`).
+- **Rig:** heat weights fail over the thin ear slabs (every bone came out empty), so the rig solves them on a proxy body without the slabs and copies them by the nearest vertex; distance weights if heat still fails.
+
+**Measured (round 2, shipped; P1.1 in brackets):**
+
+| What | Measured |
+|---|---|
+| Source | 3.92 million triangles (3.70); 29,410 lying locks (27,771); 227 dapple ellipsoids (124) |
+| LOD0 triangles | **61,099** (59,635): body 46,000 · cards 8,796 · membranes 5,568 · eye lenses 624 · tuft 110 · variant holder 1 |
+| Fur cards | **2,199 in 2 layers** (1,912 + 287) |
+| Joints · clips | **28** · 32 clips, 175 KB |
+| Atlas | the islands span u 0.003–0.993 (0.003–0.873); AO median 0.84 (0.75) |
+| Body atlas 2048², KTX2 | 2.55 MB (2.16) · Songheart colour map 0.85 MB (0.73) |
+| **Download (one `.glb`)** | **KTX2 4.67 MB (4.14) · WebP 4.48 MB (4.49)**, ≤ 8 MB |
+| Times on the shared PC | build 3.3 min · bake 8.3 min on the CPU · rig, clips, export 2 min · Blender sheets 3 min · pad 10 s · KTX2 encoding 5.5 min · film sheet 8 min |
+
+The download grew 13% (KTX2) because a fuller atlas holds more detail; the padded texels themselves compress well.
+
+**Fresh-eyes review** (a new agent each round; the same two questions; `art-review/puddlepup-ultra/verdicts.txt`, sheets `sheet-p12-round1.png` and `sheet.png`):
+- **Round 1: "partly"; 64 px "partly".** It liked the face, the glossy teal eyes and the blush. It asked for:
+  - big furry flaps (the flap read as a thin sliver; the fan as a rectangle in profile and a blade in three-quarter view);
+  - clean cream borders (hard shards, camouflage blotches, glitter);
+  - coral-pink membranes with fine ribs (salmon-orange paper pleats);
+  - a longer tail with a round tip fan (a sail on its back);
+  - calmer poses: the ko fluke glowed and the strike ear crossed the muzzle;
+  - a visible nose in profile; lids that aren't bright mint goggles; teal spots, not grey ones.
+- **Round 2: "partly"; 64 px "partly".** The face and colours read as a cute pup, the spots are teal, and at 100 px it's clearly a teal pup with pink accents. Still short:
+  1. the ears still read as flat cards (a shell on the skull, the fan a flat panel in profile);
+  2. glitter and stair-steps along the outline and the teal / cream line, in-game only (the Blender renders are clean);
+  3. the fluke is a flat half-disc that glows in ko;
+  4. the shared clips: hit_heavy snaps the head up and hides the face, ko is a twisted heap, strike dives the face;
+  5. the closed lids are smooth domes; a teal smudge sits on the muzzle top (the V's tip on the new bridge); the toe beans look stuck on.
+
+**Lessons for every breed:**
+- **Pad the atlas before encoding** (now in the ship step for every look). A bake leaves black colour, zero AO and zero roughness wherever it wrote nothing, including the transparent texels of the card tiles; filtering pulls them into the visible texels.
+- **Thin parts break heat weights for the whole mesh.** Skin a proxy without them and copy by the nearest vertex (`skin_body`). Then check that no bone except root comes out empty.
+- **A membrane that should read as a lining shares its flap's parameters** (its u drives the weights), with its edges tucked into the fur.
+- **Check every flap and fin against the 3/4 camera** (az 35°, el 14°): a sheet turned 35° is edge-on there and reads as a blade.
+- **Calm a breed's big poses with `CLIP_CALM`,** not by editing the shared plan.
+- **A blink needs no lid mesh:** sink the lens and show a lid sculpted and painted under it. Leave the eyes out of the body's AO.
+- **Iterate shapes in a flat-paint preview** (body, slabs, membranes and eyes in EEVEE, about 25 s) before a 15-minute build.
+- **Blender from an agent's shell:** close stdin (`< /dev/null`) or it idles after its work. `build.log` appends across runs, so read only the lines after the run's header. Another agent's Blender may be running, so don't wait for "no Blender process".
+- **Bloom on unshadowed fins** (the film material leaves fins out of shadows): a coral fan lit face-on by the key and the warm rims clears the bloom threshold, so the ko fluke glows whatever its paint. It needs a runtime fix.
+
+**Open issues (P1.3):**
+- **Ears:**
+  - the fan below the fur is one sheet and still reads as a card: give it a rolled, thicker edge, or real translucency in the runtime;
+  - the near ear shows only a strip of lining in three-quarter view.
+- **Runtime, not this asset:**
+  - outline glitter on the card edges;
+  - the fins' bloom in ko;
+  - the shared clips' hit_heavy, ko and strike staging.
+- **Lids:** need short lying locks on the lid area and a fur tone (they read as smooth domes).
+- **Muzzle:** move the teal V's tip above the new bridge (`cream_mask`'s `tip`).
+- **Budget and proportions:**
+  - the download is 4.67 MB against 4.14 MB: a lower ETC1S `qlevel` for the normal and ORM maps would win some back;
+  - in profile the head looks small for the longer body.
+- **Spike:** `detail_spike.py` shares `pack_atlas`, which now fills the width; the spike wasn't re-run.
+
 ## 10. What approval changes in the other docs
 - **ART_2_PLAN:**
   - §2.1: film shading, no lines, 3D eyes and morphs;

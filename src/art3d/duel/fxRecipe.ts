@@ -19,7 +19,7 @@ import { styleOf, type ProjectileShape } from '../../fx/elements.ts'
 const F = ART.duel.fx
 
 /** The cells of the effects' texture atlas (fxAtlas.ts draws them in this order, 4 × 4). */
-export const CELL = { dot: 0, puff: 1, ring: 2, crescent: 3, shard: 4, leaf: 5, drop: 6, star: 7, streak: 8, crack: 9, note: 10, swirl: 11, bolt: 12, rock: 13, orb: 14, flame: 15 } as const
+export const CELL = { dot: 0, puff: 1, ring: 2, crescent: 3, shard: 4, leaf: 5, drop: 6, star: 7, streak: 8, crack: 9, note: 10, gust: 11, bolt: 12, rock: 13, orb: 14, flame: 15 } as const
 export type Cell = (typeof CELL)[keyof typeof CELL]
 
 /** An impact's look, one per element. */
@@ -31,7 +31,7 @@ export const MOTIF_OF: Readonly<Record<Element, FxMotif>> = {
 }
 
 /** The extra layer an impact draws with its burst (the second call of the 2-D hit recipe). */
-export type FxExtra = 'flames' | 'ring' | 'mist' | 'bolts' | 'swirls' | 'crack' | 'whirl' | 'glow' | 'smoke' | 'rings' | 'dust'
+export type FxExtra = 'flames' | 'ring' | 'mist' | 'bolts' | 'spiral' | 'crack' | 'whirl' | 'glow' | 'smoke' | 'rings' | 'dust'
 
 export interface MotifLook {
   /** Burst particles: atlas cell; glowing (added light) or solid; speed (m/s); gravity (m/s², + falls); life (s); size (m). */
@@ -50,6 +50,8 @@ export interface MotifLook {
   trailGravity: number
   /** The burst gathers into the target instead of flying out (Dark: `inward` in the 2-D style). */
   inward: boolean
+  /** The bits stream level (Wind): a burst flies out flat, a sweep's bits run on along its front. */
+  flow?: boolean
   extra: FxExtra
 }
 
@@ -60,7 +62,7 @@ export const MOTIF_LOOKS: Readonly<Record<FxMotif, MotifLook>> = {
   splash: L({ cell: CELL.drop, glow: false, speed: 2.4, gravity: 7, life: 0.6, sizeM: 0.13, stretch: true, spin: 0, trail: CELL.drop, trailGlow: false, trailGravity: 5, inward: false, extra: 'ring' }),
   shards: L({ cell: CELL.shard, glow: false, speed: 2.6, gravity: 5, life: 0.6, sizeM: 0.17, stretch: true, spin: 0, trail: CELL.star, trailGlow: false, trailGravity: 0.5, inward: false, extra: 'mist' }),
   crackle: L({ cell: CELL.bolt, glow: false, speed: 3.2, gravity: 0, life: 0.24, sizeM: 0.28, stretch: true, spin: 0, trail: CELL.streak, trailGlow: false, trailGravity: 0, inward: false, extra: 'bolts' }),
-  gust: L({ cell: CELL.swirl, glow: false, speed: 1.6, gravity: -0.3, life: 0.5, sizeM: 0.2, stretch: false, spin: 9, trail: CELL.streak, trailGlow: false, trailGravity: 0, inward: false, extra: 'swirls' }),
+  gust: L({ cell: CELL.gust, glow: false, speed: 2.6, gravity: -0.3, life: 0.42, sizeM: 0.16, stretch: true, spin: 0, trail: CELL.gust, trailGlow: false, trailGravity: 0, inward: false, flow: true, extra: 'spiral' }),
   rubble: L({ cell: CELL.rock, glow: false, speed: 2.4, gravity: 9, life: 0.7, sizeM: 0.13, stretch: false, spin: 6, trail: CELL.puff, trailGlow: false, trailGravity: -0.2, inward: false, extra: 'crack' }),
   leaves: L({ cell: CELL.leaf, glow: false, speed: 1.5, gravity: 1.2, life: 0.9, sizeM: 0.16, stretch: false, spin: 7, trail: CELL.leaf, trailGlow: false, trailGravity: 0.6, inward: false, extra: 'whirl' }),
   stars: L({ cell: CELL.star, glow: false, speed: 2, gravity: -0.6, life: 0.6, sizeM: 0.17, stretch: false, spin: 3, trail: CELL.star, trailGlow: false, trailGravity: -0.4, inward: false, extra: 'glow' }),

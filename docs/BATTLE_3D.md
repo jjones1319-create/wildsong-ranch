@@ -129,9 +129,9 @@ CPU personalities and the player's Auto styles fight in ways you can see:
 
 | Style | Who | What it does |
 |---|---|---|
-| Rusher | Aggressive and Brawler; Auto Aggressive | circles half as often, dashes in to punish, taunts when you miss |
-| Trickster | Trickster | feints: quick steps in and out at the edge of a range, switching the way it circles |
-| Careful | Cautious and Sniper; Auto Defensive | circles 40% more, sidesteps 15 points more often, and saves guts for its Special or Signature once the opponent is under 35% HP |
+| Rusher | Aggressive and Brawler; Auto Aggressive | circles half as often, dashes in to punish, presses after landing a hit, taunts when you miss; the lowest bar and least patience (§4.9), but never instant |
+| Trickster | Trickster | feints: dances in and out at the edge of a range before most shots, baiting your attack (§4.9), and switches the way it circles |
+| Careful | Cautious and Sniper; Auto Defensive | circles 40% more, sidesteps 15 points more often, waits longest for its moment (§4.9), and saves guts for its Special or Signature once the opponent is under 35% HP |
 | Steady | Steady; Auto Balanced | the plan as it is |
 
 ### 4.7 Spoiled monsters
@@ -150,6 +150,62 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
 | Expert | 431 | 124 (about 5 a match) | 3 |
 | Skilled | 439 | 48 | 0 |
 | Rookie | 153 | 1 | 0 |
+
+### 4.9 Human qualities (v1.22; `duelShot.ts`, `duelSetup.ts`, `AI.duel.human`)
+The owner (Nov 3): "The CPU should attack with some strategy. Just because it has guts doesn't mean it should attack, and it shouldn't attack instantly in range. It should have a bit more human qualities in the AI." Duel only; line battles replay bit for bit.
+
+**The shot becomes an intent.** The range plan still picks what to fire and paces its shots (§12.10). In the duel it hands its shot over at once (its own reaction delay is replaced by the one below), and the fighter **holds it as an intent** until the moment is right.
+- Holding never resets the plan: its goal and target are untouched, and while a shot it could fire is held the plan's cooldown **pauses at 2 ticks** instead of running out, so the plan doesn't pick a second shot over the first. (AI 3.0's guts reserve failed because it cancelled shots the plan had already paced, §4.3.)
+- A clearly better technique at the same range (worth 30% more) that becomes affordable takes the intent's place.
+- An intent it can't fire for 4 s is dropped, and the plan picks again.
+
+**The shot score** (points, about percent) = the hit chance + the situation × a weight that grows with battle sense (30% at 0, 100% at 100: rookie 48%, skilled 68%, expert 90%):
+
+| The situation | Points |
+|---|---|
+| The opponent is open (recovering, stunned, distracted) | +25 |
+| …is in its own wind-up (can't sidestep: a trade) | +8 |
+| A straight line at a fighter that can sidestep it | −10; −20 if the wind-up is 8+ ticks (Special, Heavy, Signature); up to twice that when it has been sidestepping |
+| A straight line at a fighter that can't sidestep now (cooldown or guts) | +8 |
+| Standing within 30 units of the band's edge | −4; −8 if the opponent is walking that way |
+| Value per guts below the best it can afford | (ratio − 100%) × 0.2, at most −15 |
+| A better technique at this range is under 1.5 s of regen away | −10 |
+| It can finish the opponent | +30 |
+| The opponent is down to 15 guts or has its back to the fence | +10 |
+| It would leave under 6 guts (and can't finish) | −8 |
+| Its own guts at 95+, or stuck in a stall | +10 |
+| Pressing after a hit / stepping back after one (below) | +10 / −15 |
+
+**The bar.** It fires when the score clears a bar: 40 + 0.22 × battle sense (rookie 46, skilled 52, expert 59), rushers −10, careful fighters +6. Patience lowers the bar to 30 over 20 + 0.5 × sense ticks (rookie 1.1 s, skilled 1.6 s, expert 2.1 s; rushers ×0.7, tricksters ×1.1, careful ×1.3); after that any shot goes, so it never waits forever.
+
+**A human reaction.** When the score first clears the bar it fires after a reaction: 11–22 ticks at battle sense 0, 7–10 at 100 (rookie 10–19 ticks, 0.33–0.63 s; skilled 9–15; expert 8–12, 0.27–0.4 s), plus now and then a hesitation of 8–20 ticks (20% of the time at 0, 5% at 100). The chance is dropped if the score falls 8 below the bar. A gap in its decisions (busy, stunned, sidestepping) or a new band is a fresh look, so **it never fires on the tick it reaches range**: at the earliest 7 ticks later. A punish (§4.3) keeps its own faster delay, and settles 2–4 ticks after arriving in range; it spends the intent.
+
+**Guts like a player.** The plan doesn't pick a shot that would leave less than a sidestep (4 + 2 guts, times battle sense) unless there's a reason to spend: the opponent is open, broke, down to 15 guts or at the fence, the shot can finish, its guts are full or it is stuck in a stall. It is a gate on the pick, not a veto after it, so no paced shot is lost. (Keeping a punish's worth as well cost the slow, heavy breeds too many big shots.)
+
+**Rhythm you can see:**
+- **Press:** after landing a hit (rushers 85%, steady and tricksters 55%, careful 30%) it presses for 2 s: it steps 40 units deeper into its range and fires sooner.
+- **Reset:** after taking a hit (rushers 15%, steady 45%, tricksters 50%, careful 70%, times 40–100% by battle sense) it steps back for 0.5–1 s and is slower to fire. It never steps out of its own range (it stops 30 units inside the far edge of the band its plan wants), so a brawler resets inside Close and doesn't hand a caster free distance; stepping back out of range favoured the ranged breeds in the late game.
+- **Dance, then commit:** when it takes a new shot and the opponent isn't open, from 40 battle sense (tricksters at any), it may dance (rushers 20%, steady 40%, tricksters 85%, careful 50%): for 0.7–1.5 s it steps in and out across the edge of that range, 25 units either side, 8 ticks a step. It stops as soon as it sees its chance (at once when the score is 15 over the bar), then commits: it holds its ground 30 units inside the range and doesn't dash until the shot goes.
+- **Bait:** dancing with a sidestep ready (from 55 battle sense, tricksters at any) it expects your attack: +35 points on its sidestep chance, then it punishes the miss.
+- The careful finisher (§4.6) is an intent too, so even the finishing blow waits for a reaction.
+- **Rookies are impulsive:** in the duel they hold 30 guts before a shot instead of AI 2.0's 45 (`AI.duel.human.rookieReserve`), with the lowest bar and weight, no dances and no baits. They attack more often (about 6 a match instead of 4) but win no more.
+
+**Measured** (a scripted player against the CPU, 100 matches a tier, five breeds mirrored at a 1,600 total; the player fires its strongest ready technique every 0.2 s or walks in; "sidestepping" also sidesteps every straight-line technique 0.1 s into its wind-up when it can). Before → after:
+
+| | Rookie | Skilled | Expert |
+|---|---|---|---|
+| CPU wins (of 100) | 25 → 22 | 46 → 52 | 45 → 43 |
+| …against the sidestepping player | 24 → 23 | 38 → 39 | 35 → 39 |
+| CPU attacks per match | 4.3 → 5.8 | 10.2 → 10.2 | 9.8 → 9.4 |
+| Hit chance per fire (the preview) | 66.7% → 67.7% | 61.2% → 61.8% | 61.1% → 61.6% |
+| Shots that landed, against the sidestepping player | 60% → 62% | 48% → 50% | 47% → 52% |
+| Median ticks from reaching range to firing (not into an opening) | 629 → 375 | 17 → 15 | 9 → 19 |
+| Fires into the player's openings (100 matches) | 269 → 289 | 249 → 243 | 211 → 263 |
+
+- No shot outside an opening came within 3 ticks of reaching range, before or after; the rule now guarantees at least 7.
+- **The hit chance per fire barely moves,** and a rookie's stays above an expert's: the preview is mostly the technique (a Hit-family move is about 75% to hit, a Basic 60%) and guts (0.2% a point on each side). Rookies wait for 30 guts and then often fire a Hit; experts poke with Basics as soon as they can, because against a player who spends everything the opponent is nearly always broke, which is a reason to spend. What the judgment changes is *when*: more shots go when the opponent can't dodge, so against a sidestepper the expert's shots land 47% → 52% and it wins more.
+- AI against AI of the same tier (24 matches per personality): attacks per monster per match rookie 5.5–6.0 (was 4.2–4.8), skilled 8.8–9.9 (8.9–9.8), expert 8.0–8.6 (8.9–9.5).
+- What you see per match (expert, against the scripted player): steady fighters dance 3 times (3 s in all), press 3 and step back 3; tricksters dance 7 times and bait 1–2 sidesteps; rushers press 5 times and step back about once; careful fighters step back 4 times.
 
 ## 5. Controls (phone)
 - **Sideways or upright** (the owner, Nov 2: "sideways, upright still works"):
@@ -189,14 +245,16 @@ A monster raised *doting* or *fond* (§4.1) also shows it:
   - All of these numbers are in `ART.duel` (`side`, `behind`, `confine`).
 - **Cinematic cuts:**
   - for a **Special** or **Signature**, a short cut (1.2–1.8 s) over the attacker's shoulder toward the target, so the move's effects and impact are in the shot (v1.21, §7.1); for a **KO**, a low three-quarter angle on the winner; then back;
+  - the over-the-shoulder cut is framed for the screen's shape (`cineShot.ts`, v1.21 polish). Sideways it stands beside and behind the attacker. Upright the lens is narrow, so a shoulder beside the target fell off the screen's edge; instead it stands higher and more directly behind, looking down past the attacker's head: its back low in the picture, the whole target above. Then the lens widens (up to 68°) until the attacker's shoulders and the whole target sit between the top bar and the panel (left of the cards sideways); far apart, it aims at the middle of the two first;
   - the battle keeps running: cuts never pause the simulation, and inputs still count.
 - **One button** cycles side-on ⇄ behind. In the test build the cinematic cuts are a tuning switch (`ART.duel.cine.enabled`); a Settings toggle comes with the full release (it changes the save's settings, so it needs a save version).
 - **Reduce motion:** gentle cuts (cross-fades, no swoops or shake), and the side-on camera turns slower.
 
 ## 7. What you see
 - **Telegraph:** during the wind-up the attacker plays its wind-up pose.
-  - A **straight-line technique** paints a soft lane on the floor toward the defender.
-  - A **sweep** paints a wide arc or ring, which tells you not to bother sidestepping.
+  - A **straight-line technique** paints a lane on the floor toward the defender: two edge lines, a faint fill and faint chevrons, half the rules' path width.
+  - A **sweep** paints an outlined ring round the defender, which tells you not to bother sidestepping.
+  - They are quiet, so the attack's own effects lead (the owner, Nov 3: "the big lanes compete with the effects"): each fades in over the first quarter of the wind-up, holds, and fades out from the release (the projectile or lunge on its way) to nothing at the landing (`telegraph.ts`, `ART.duel.telegraph`).
 - **Sidestep:** the `sidestep_l` / `sidestep_r` clip; on a full dodge, a "Dodged!" float.
 - **Impact:** at the landing tick (no more visual delays: the engine and the picture agree).
 - **Attacks that visibly reach** (v1.19; the owner: "the attacks do not seem to land"). The rules were fine: a simple player lands 60% of its attacks against Songheart and wins most fights. The picture wasn't, because strikes played in place across a 2–3 m gap. Now (`attacks.ts`, `ART.duel.attack`):
@@ -223,7 +281,7 @@ The owner (Nov 3): "we need to build in the visuals for the attacks". Each techn
 | Water | a drop trailing droplets | droplets, a splash ring on the floor |
 | Ice | a lance trailing glints | shards, cold mist |
 | Lightning | a bolt trailing sparks | forks crackling out, a flicker of light |
-| Wind | a spinning blade and gust | gusts curling round the target |
+| Wind | a spinning blade riding two ribbons of air | ribbons of air spiralling round the target, streaks of air flying out level |
 | Earth | a tumbling boulder trailing dust | the floor cracks, rocks and dust, a ground ring |
 | Nature | a whirl of three leaves | leaves whirling round the target |
 | Light | a bright orb trailing stars | stars, a bloom of light, a ring |
@@ -248,7 +306,8 @@ The owner (Nov 3): "we need to build in the visuals for the attacks". Each techn
 - **The wind-up:** a ring closes in on the attacker while a glow builds (with the wind-up's length), from the fire to the release.
 - **The release and travel:** a projectile flies the last 0.24 s (or the whole wind-up, if shorter); a lunge takes the last 0.3 s.
 - **The impact:** it comes from the engine's `hit` event, so it lands exactly on the landing tick. It sits 0.35 m in front of the target, on the camera's side (`impactFrontM`), so the target's own body doesn't hide it.
-- **A miss** has no impact. A projectile veers 0.75 m aside and flies on past; a melee blow swishes beside the target.
+- **Every impact reads from afar** (v1.21 polish; a Basic fire swipe was too small side-on at Near): a small impact grows until it is at least 22% of the view's short side, at most ×2 (`impactMin`). Big ones and the close-up cuts are untouched; projectiles grow by the square root of the same zoom.
+- **A miss** has no impact, but it is easy to see (v1.21 polish: "a missed projectile is easy to overlook"). A projectile is due 0.05 s after the landing, so on a miss it veers aside (toward the camera) just short of the target, slows, and dips into the sand beside it, still trailing; it fizzles there in a small puff of dust with a few of its bits. A melee blow swishes past beside the target and kicks up dust. Either way a whoosh of air streaks past the target's side (`fxMiss.ts`, `ART.duel.fx.miss`). The "Miss" or "Dodged!" float says the rest.
 - **A sidestep** during the wind-up leaves the projectile flying to where the defender stood, so a dodge shows as a near miss.
 
 **The look in daylight.** A first pass drew the effects as added light, and on the sunlit floor they washed out. So the main shapes are **solid and inked**, like the monsters' cel look. Each shape in the atlas has a grey rim, which the tint turns into a darker shade of the particle's own colour, so a flame, drop or leaf reads against the sand in any light. Added light is kept for accents only: glows, halos and the flash, which also bloom in Full.
@@ -267,6 +326,9 @@ The owner (Nov 3): "we need to build in the visuals for the attacks". Each techn
 **Review:** `node tools/art/attack-fx-review.ts [--no-build] [--arena crown] [--upright]`.
 - It pauses the test fight, fires chosen techniques with the picture-only preview (`window.__battle3d.preview`, in slow motion), and keeps frames at set times around each landing: two in the wind-up, then 0.01–0.5 s after.
 - It writes `art-review/attack-fx/sheet.png` and `sheet-2.png`, with `rows.txt` listing what each row is.
+- `--set fixed [--tag before]` writes `sheet-fixed.png` instead: the v1.21 polish's weak spots (a Basic fire melee, a melee and a ranged miss, Wind ranged, melee and in a Special's cut, a long line telegraph, a sweep telegraph, the opponent's Signature cut), beside the full review's files.
+
+**Wind** (v1.21 polish; its curls "looked like a row of letters in a still frame"): the curl glyph is gone. Its shape is a gust: two tapered ribbons of air along a shallow arc, drawn stretched along their motion. The impact sends ribbons spiralling round the target's body from low to high (a new particle motion, `orbit`: round a point on a widening, rising spiral; half of each turn is behind the body, so the gust wraps it), and its burst streams out nearly level instead of as a starburst. A sweep's bits run on along the wave front as level streaks.
 
 ## 8. The test build
 - **Where:** Lab → **Battle 3D (test)** (`#lab/battle3d`).
@@ -387,7 +449,14 @@ Command: `npm run sim:balance -- --only battle --mode duel --out docs/BALANCE_DU
 | Duel, first run | **97.0%** | 98.2% | 88.1% |
 | Duel, after the two adjustments below | 96.4% | 98.2% | 90.3% |
 | Duel with AI 3.0 (§4) | 96.6% | 98.0% | **92.7%** |
-| Duel at the v1.21 pace (§3, 80%; the committed report) | **97.6%** | 98.0% | 92.7% |
+| Duel at the v1.21 pace (§3, 80%) | **97.6%** | 98.0% | 92.7% |
+| Duel with AI 3.1 (§4.9; the committed report) | 97.6% | **99.2%** | 90.9% |
+
+**AI 3.1** (§4.9, v1.22) kept every total within 2 points of the v1.21 run (the bar the owner's request was held to): 1,000 the same, 2,000 +1.2, 3,000 −1.8.
+- **Attacks per monster per match** fell 4–7% (at 3,000 from 8.9 to 8.3; the range is now 5.9–11.7 at every total), because a held shot sometimes outlasts the plan's pause. Coilfang at 1,000 is back inside 4–12 (12.6 → 11.7).
+- **The means' spread narrowed at the bottom:** at 3,000 the weakest mean went from 31.2 to 34.5. Gloomgrin gains the most everywhere (+7.6, +8.4, +8.8 at 1,000, 2,000, 3,000): its long, telegraphed Heavies now wait for a moment it can't be sidestepped.
+- **At 3,000 the fast, skilful breeds gain again** (Quillion +6.4, Scrollopus +6.0, Mirrorkin +5.5, Galeheron +4.4) and some brawlers and walls lose (Grumblestone −4.6, Nibblegrub −3.8, Bloatoad −3.4, Hearthwing −3.4). Pairs outside the hard 25–75 band at 3,000: 18 (were 14), mostly Galeheron, Velvesper, Ashwraith and Mirrorkin against Gloomgrin, Aurelwyrm, Grumblestone and Hearthwing.
+- **Tuned on the way** (quick runs of 60 battles a pair against the v1.21 code on the same seeds): keeping a punish's worth of guts as well as a sidestep cost the heavy-technique breeds too many big shots (3,000 −3.2 points), so the reserve is a sidestep only; patience 90 → 70 at full sense; and the step back after a hit stays inside the fighter's own range, which had been handing casters free distance (3,000 from −0.6 to +0.2 points in the quick runs). A smaller bait bonus (15 instead of 35) and shorter patience (55) made no difference or worse.
 
 **The v1.21 pace** (wind-ups and recovery at 80%, Nov 3) left the balance as it was, a little better at 1,000: no adjustment.
 - A breed's mean moved 1.0–1.1 points on average (the run-to-run noise is about ±1.5). The most: at 1,000 Coilfang and Rammerjack +2.3, Lootlid +1.9; at 2,000 Plumdrake −3.4, Grumblestone +2.3; at 3,000 Quillion −3.3, Tumblefox −2.7, Nibblegrub +2.2.
@@ -423,11 +492,11 @@ Together they took the 3,000 total from 88.1% to 90.3%.
 
 ## 10. Files
 - **Core:**
-  - `src/core/battle/geometry.ts` (the ring), `duelAi.ts`, `pace.ts` (the duel's 80% pace, §3), and `engine.ts` (the `mode` option, the fire / land split, sidesteps, strafing);
+  - `src/core/battle/geometry.ts` (the ring), `duelAi.ts`, `duelShot.ts` and `duelSetup.ts` (§4.9: intents, the shot score, the reaction, set-ups), `pace.ts` (the duel's 80% pace, §3), and `engine.ts` (the `mode` option, the fire / land split, sidesteps, strafing);
   - `types.ts` (`BattleMode`, `PendingFire`, the `sidestep` action and event, `move.side`);
   - `src/data/paths.ts`;
   - `tuning.ts` (`BATTLE.duel`, `AI.duel`).
 - **The picture:** `src/art3d/duel/duel3d.ts`; the crowd in `crowd.ts`, `crowdPlan.ts` (pure), `crowdPose.ts`, `crowdParts.ts` and `cutouts.ts` (`ART.duel.crowd`); the arena's seats from `tools/blender/arenas/guild.py` (`crowd_spots`).
-- **The attack effects (§7.1):** `attackFx.ts` (events → effects), `fxRecipe.ts` (technique → recipe, pure), `fxSpawn.ts` (impacts), `fxDelivery.ts` (wind-up, projectiles, waves, wisps, slash, shockwave), `fxParticles.ts` (the pool), `fxBatch.ts` (the two draws), `fxAtlas.ts` and `fxShapes.ts` (the texture); `attacks.ts` (lunges); `ART.duel.fx`.
-- **Tests:** `src/core/battle/duel.test.ts`; every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers); `src/art3d/duel/fxRecipe.test.ts` and `fxParticles.test.ts` (the mapping, the pool, the two draws); the pace in `duel.test.ts`.
+- **The attack effects (§7.1):** `attackFx.ts` (events → effects), `fxRecipe.ts` (technique → recipe, pure), `fxSpawn.ts` (impacts), `fxDelivery.ts` (wind-up, projectiles, waves, wisps, slash, shockwave), `fxMiss.ts` (the whoosh and fizzle of a miss), `fxParticles.ts` (the pool), `fxBatch.ts` (the two draws), `fxAtlas.ts` and `fxShapes.ts` (the texture); `attacks.ts` (lunges); `telegraph.ts` (the floor telegraphs); `cineShot.ts` (the over-the-shoulder cut); `ART.duel.fx`, `telegraph`, `cine`.
+- **Tests:** `src/core/battle/duel.test.ts`, `duelAi3.test.ts`, `duelAi31.test.ts` (§4.9); every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers); `src/art3d/duel/fxRecipe.test.ts` and `fxParticles.test.ts` (the mapping, the pool, the two draws, a miss's dip, the gust's spiral); `telegraph.test.ts` (quiet, out by the landing); `cineShot.test.ts` (shoulders and the whole target in the band, upright and sideways); the pace in `duel.test.ts`.
 - **Balance:** `scripts/balance.ts` `--mode duel`.
