@@ -63,7 +63,7 @@ test.describe('3D monsters (Art P1)', () => {
     expect(errors).toEqual([])
   })
 
-  test('without WebGL everything is Classic and nothing breaks', async ({ page }) => {
+  test('without WebGL the monsters show as stills (picture or Classic), no canvas, and nothing breaks', async ({ page }) => {
     const errors = collectErrors(page)
     await seed(page, saveJsonAt({ year: 1, month: 3, week: 2, breed: 'puddlepup' }))
     await page.addInitScript(() => {
@@ -74,8 +74,13 @@ test.describe('3D monsters (Art P1)', () => {
       } as typeof orig
     })
     await page.goto(`${BASE}#ranch`)
-    await expect(page.locator('.stage .ws-mon')).toBeVisible({ timeout: 30_000 })
+    // without WebGL a subject screen settles on a still (artStore.portraitMode: 'image', the precached picture of the
+    // model) with the Classic drawing in its place until the picture is ready: either is right, a canvas never is.
+    // (Waiting for the Classic drawing alone raced the switch to the picture and failed on a busy PC.)
+    const still = page.locator('.stage .ws-mon, .stage .portrait--img')
+    await expect(still.first()).toBeVisible({ timeout: 30_000 })
     await page.waitForTimeout(1500)
+    await expect(still.first()).toBeVisible()
     expect(await page.locator('canvas.art3d-canvas').count()).toBe(0)
     await page.goto(`${BASE}#settings`)
     await expect(page.getByText('can’t draw 3D')).toBeVisible()

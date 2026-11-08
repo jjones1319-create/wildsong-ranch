@@ -29,18 +29,27 @@ export function cineParams(aspect: number): { back: number; side: number; height
   return { back: lerp(P.back, C.back, k), side: lerp(P.side, C.side, k), height: lerp(P.height, C.height, k), lookPct: lerp(P.lookPct, C.lookPct, k), lookY: lerp(P.lookY, C.lookY, k) }
 }
 
-/** The points that must be in the shot: the attacker's shoulders, and the target's feet and head. */
-export function cinePoints(attacker: Vector3, target: Vector3): Vector3[] {
-  const h = D.monsterHeightM
-  return [attacker.clone().setY(attacker.y + 0.75 * h), target.clone().setY(target.y + 0.05), target.clone().setY(target.y + h)]
+/** The points that must be in the shot: the attacker's shoulders, and the target's feet and head (heights in metres). */
+export function cinePoints(attacker: Vector3, target: Vector3, heights: readonly [number, number] = [D.monsterHeightM, D.monsterHeightM]): Vector3[] {
+  return [attacker.clone().setY(attacker.y + 0.75 * heights[0]), target.clone().setY(target.y + 0.05), target.clone().setY(target.y + heights[1])]
 }
 
 /**
  * The cut from `attacker` toward `target` (their feet), on the side-on camera's side (`sideSign`). `fence` keeps the
- * camera inside the fence (it may move it); the lens is then fitted from there.
+ * camera inside the fence (it may move it); the lens is then fitted from there. `heights` are the two monsters' (m):
+ * the camera stands back and up in proportion to the attacker's (the numbers are Puddlepup's).
  */
-export function cineShot(attacker: Vector3, target: Vector3, aspect: number, sideSign: number, fence: (p: Vector3) => Vector3 = (p) => p): CineShot {
-  const q = cineParams(aspect)
+export function cineShot(
+  attacker: Vector3,
+  target: Vector3,
+  aspect: number,
+  sideSign: number,
+  fence: (p: Vector3) => Vector3 = (p) => p,
+  heights: readonly [number, number] = [D.monsterHeightM, D.monsterHeightM],
+): CineShot {
+  const p0 = cineParams(aspect)
+  const k = heights[0] / D.monsterHeightM
+  const q = { ...p0, back: p0.back * k, side: p0.side * k, height: p0.height * k, lookY: p0.lookY * k }
   const u = target.clone().sub(attacker).setY(0)
   if (u.lengthSq() < 1e-6) u.set(0, 0, 1)
   u.normalize()
@@ -53,7 +62,7 @@ export function cineShot(attacker: Vector3, target: Vector3, aspect: number, sid
   cam.position.copy(from)
   cam.lookAt(look)
   cam.updateMatrixWorld()
-  const pts = cinePoints(attacker, target)
+  const pts = cinePoints(attacker, target, heights)
   let fov = fitLens(cam, pts, band)
   // far apart, the plain aim can't hold both: aim at the middle of the points instead (the band's centre), and refit
   if (fov > C.recentreFov) {

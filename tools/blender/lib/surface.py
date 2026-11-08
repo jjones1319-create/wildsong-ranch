@@ -551,3 +551,283 @@ def copy_weights_at_roots(elems: bpy.types.Object, body: bpy.types.Object, arm: 
             idx[i] = cache[key]
     write_weights(elems, names, W[idx], arm)
     C.log(f'skinned {elems.name}: {len(roots)} verts copy their root vertex weights')
+
+
+# ----------------------------------------------------------------------------- batch 2: sheets, wing membranes, hard plates
+def sheet_object(name: str, verts: np.ndarray, faces, attrs: dict | None = None, out=None) -> bpy.types.Object:
+    """A mesh object from vertices and faces (a membrane, a petal), smooth shaded, with per-point attributes; `out` (a
+    direction) flips the faces when their mean normal looks against it (the bake's rays and the AO need the outer side)."""
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(map(float, v)) for v in verts], [], [tuple(f) for f in faces])
+    me.update()
+    if out is not None:
+        n = np.empty(len(me.polygons) * 3, np.float32)
+        me.polygons.foreach_get('normal', n)
+        if float(n.reshape(-1, 3).mean(0) @ v3(out)) < 0:
+            import bmesh
+            bm = bmesh.new()
+            bm.from_mesh(me)
+            bmesh.ops.reverse_faces(bm, faces=bm.faces)
+            bm.to_mesh(me)
+            bm.free()
+            me.update()
+    me.shade_smooth()
+    ob = bpy.data.objects.new(name, me)
+    C.link_obj(ob)
+    for k, a in (attrs or {}).items():
+        add_attr(ob, k, np.asarray(a, np.float64))
+    return ob
+
+
+def wing_membrane(name: str, spec: dict, side: int, high: bool, quick: bool = False, relief: float = 0.002,
+                  res: tuple[int, int] | None = None, out=None) -> bpy.types.Object:
+    """One wing's membrane (lib.ultra.wing_membrane) as an object for a recipe's build_fins: folded (the rest pose), its
+    faces turned outward (+X on the left wing), with `wing_uv` (panel, u, v) and `wing_side` (+1 / -1) for
+    lib.ultra.wing_fin_regions and the paint, and on the high source a relief of ridges and veins (`relief` metres)
+    for the membrane's normal map. `res` = (nu, nv) per panel [high 36 x 60 (quick 16 x 28), low 6 x 12]."""
+    from . import ultra as U
+    nu, nv = res if res else (((16, 28) if quick else (36, 60)) if high else (6, 12))
+    verts, faces, wuv = U.wing_membrane(spec, side, nu, nv)
+    ob = sheet_object(name, verts, faces, {'wing_uv': wuv, 'wing_side': np.full(len(verts), float(side))},
+                      out=out if out is not None else (float(side), 0.0, 0.35))
+    if high and relief:
+        co, vn = mesh_arrays(ob)
+        set_positions(ob, co + vn * (relief * U.wing_relief(wuv, len(spec['fingers'])))[:, None])
+    return ob
+
+
+def apply_plates(ob: bpy.types.Object, plates: dict, shape: str = 'cobble', scale: float = 1.0, inset: float = 0.0,
+                 prefix: str = 'plate', attrs: bool = True, edge_soft: float = 0.0) -> dict:
+    """Push a body's vertices out along their normals by lib.ultra.plate_field (cobbles or scales): the high source in
+    carve(hi_body), and for relief that must reach the silhouette the low body in carve_low(lo_body) with the same
+    plates (e.g. scale 0.85). With `attrs`, stores <prefix> (inside a plate), <prefix>_rim, <prefix>_top and
+    <prefix>_id (the plate's index, -1 off plates) as point attributes for paint_sources. Returns the field."""
+    from . import ultra as U
+    co, vn = mesh_arrays(ob)
+    f = U.plate_field(co, vn, plates, shape, scale, inset, edge_soft)
+    set_positions(ob, co + vn * f['h'][:, None])
+    if attrs:
+        add_attr(ob, prefix, f['mask'])
+        add_attr(ob, f'{prefix}_rim', f['rim'])
+        add_attr(ob, f'{prefix}_top', f['top'])
+        add_attr(ob, f'{prefix}_id', f['pid'].astype(np.float64))
+    C.log(f'{ob.name}: {len(plates["c"])} {shape} plates, {int((f["pid"] >= 0).sum())} of {len(co)} vertices on a plate, '
+          f'height up to {float(f["h"].max()) * 1000:.1f} mm')
+    return f
+
+
+def tube_frames(pts: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per segment of the polyline `pts` (k x 3): its unit direction and a unit normal carried along by rotation-
+    minimising frames (double reflection), so the normal turns only as much as the line does. The first one is world
+    Z (or X for a near-vertical start) made square to the first segment."""
+    pts = v3(pts)
+    seg = pts[1:] - pts[:-1]
+    D = norm(seg)
+    d0 = D[0]
+    ref = np.array([0.0, 0.0, 1.0]) if abs(d0[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+    r = ref - d0 * float(ref @ d0)
+    r = r / max(float(np.linalg.norm(r)), 1e-9)
+    E = [r]
+    mids = (pts[1:] + pts[:-1]) * 0.5
+    for i in range(len(D) - 1):
+        v1 = mids[i + 1] - mids[i]
+        c1 = float(v1 @ v1)
+        rl, tl = r, D[i]
+        if c1 > 1e-18:
+            rl = r - (2.0 / c1) * float(v1 @ r) * v1
+            tl = D[i] - (2.0 / c1) * float(v1 @ D[i]) * v1
+        v2 = D[i + 1] - tl
+        c2 = float(v2 @ v2)
+        r = rl - (2.0 / c2) * float(v2 @ rl) * v2 if c2 > 1e-18 else rl
+        r = r - D[i + 1] * float(r @ D[i + 1])
+        r = r / max(float(np.linalg.norm(r)), 1e-9)
+        E.append(r)
+    return D, np.array(E)
+
+
+def tube_param(co: np.ndarray, pts, edges: np.ndarray, chunk: int = 4096) -> tuple[np.ndarray, np.ndarray, float]:
+    """(each vertex's arc position 0..1 along the polyline `pts` (k x 3; past 0 or 1 beyond the ends), the segment it
+    sits on, the polyline's length), continuous over the mesh (`edges`: e x 2 vertex pairs). The plain nearest point
+    (ultra.polyline_param) jumps a whole turn where a tube coils tightly (a rope wound round a horn: a vertex facing the
+    next turn lies nearer that turn's centre line than its own). Here each vertex takes the pass of the line near it (a
+    local minimum of its distance, no more than about a tube radius farther than the nearest one) that lies nearest
+    its already placed neighbour's position, walking the mesh from the vertex nearest the start; where nothing coils
+    that is the nearest point, as before."""
+    pts = v3(pts)
+    co = v3(co)
+    sv = pts[1:] - pts[:-1]
+    lens = np.linalg.norm(sv, axis=1)
+    total = float(lens.sum())
+    start = np.concatenate([[0.0], np.cumsum(lens)[:-1]])
+    m = len(sv)
+    L2 = np.maximum(lens ** 2, 1e-12)
+    lo = np.zeros(m)
+    hi = np.ones(m)
+    lo[0], hi[-1] = -np.inf, np.inf
+    n = len(co)
+    tt = np.empty((n, m))
+    dist = np.empty((n, m))
+    for a in range(0, n, chunk):
+        c = co[a:a + chunk]
+        u = np.clip(((c[:, None, :] - pts[None, :-1, :]) * sv[None]).sum(-1) / L2[None], lo[None], hi[None])
+        dist[a:a + chunk] = np.linalg.norm(c[:, None, :] - (pts[None, :-1, :] + u[..., None] * sv[None]), axis=-1)
+        tt[a:a + chunk] = (start[None] + u * lens[None]) / max(total, 1e-9)
+    left = np.concatenate([np.full((n, 1), np.inf), dist[:, :-1]], axis=1)
+    right = np.concatenate([dist[:, 1:], np.full((n, 1), np.inf)], axis=1)
+    seg = dist.argmin(axis=1)
+    t = tt[np.arange(n), seg]
+    dmin = dist[np.arange(n), seg]
+    # a pass counts if it is no more than a tube radius (the median nearest distance) farther than the nearest one: a
+    # rope's own turn qualifies, a far stretch of a broad band (a scarf end) doesn't
+    is_min = (dist <= left) & (dist <= right) & (dist <= (dmin + float(np.median(dmin)))[:, None])
+    if not len(edges):
+        return t, seg, total
+    nb = [[] for _ in range(n)]
+    for a, b in edges:
+        nb[a].append(b)
+        nb[b].append(a)
+    placed = np.zeros(n, bool)
+    from collections import deque
+    first = True
+    while not placed.all():
+        free = np.flatnonzero(~placed)
+        v0 = int(free[np.linalg.norm(co[free] - pts[0], axis=1).argmin()])
+        if first:
+            # the start: of the passes near it, the earliest one
+            cols = np.flatnonzero(is_min[v0])
+            seg[v0] = int(cols[tt[v0, cols].argmin()]) if len(cols) else seg[v0]
+            t[v0] = tt[v0, seg[v0]]
+            first = False
+        placed[v0] = True
+        todo = deque([v0])
+        while todo:
+            v = todo.popleft()
+            for w in nb[v]:
+                if placed[w]:
+                    continue
+                cols = np.flatnonzero(is_min[w])
+                if len(cols):
+                    seg[w] = int(cols[np.abs(tt[w, cols] - t[v]).argmin()])
+                    t[w] = tt[w, seg[w]]
+                placed[w] = True
+                todo.append(w)
+    return t, seg, total
+
+
+def tube_uvs(ob: bpy.types.Object, axis, layer: str = 'UVMap', cap_ratio: float = 0.25) -> None:
+    """Unroll a tube (a horn, a rope, a tail ring, a wing's finger) as one strip: u around the axis polyline `axis`
+    (k x 3, base to tip), v along it, both in metres so the strip keeps its true proportions; faces across the seam are
+    mended. Sets the custom property own_uv, so build_ultra keeps this unwrap (bake.pack_atlas keep_faces) instead of
+    smart-projecting the tube into many small islands. Call it on the low part (and on the high one if you like).
+
+    Positions along the axis follow the mesh (tube_param: a rope coiled tight round a horn no longer takes its
+    neighbour turn's place), and the angle is measured from rotation-minimising frames, so it doesn't jump where the
+    axis turns through the vertical (a coiled horn). Faces with a corner on the axis (nearer it than cap_ratio x the tube's median radius:
+    an end cap's fan, the point of a tip) are laid flat across the axis instead, one disc per end beside the strip:
+    round the axis their angle means nothing, and unrolled, a fan's slivers lay over one another (Rammerjack's horns,
+    ropes and scarf ends shared 66k texels)."""
+    pts = v3(axis)
+    co, _ = mesh_arrays(ob)
+    me = ob.data
+    ev = np.empty(len(me.edges) * 2, np.int32)
+    me.edges.foreach_get('vertices', ev)
+    t, seg, length = tube_param(co, pts, ev.reshape(-1, 2))
+    D, E1 = tube_frames(pts)
+    d = D[seg]
+    e1 = E1[seg]
+    e1 = norm(e1 - d * (e1 * d).sum(axis=1, keepdims=True))
+    e2 = np.cross(d, e1)
+    centre = pts[seg] + d * (((co - pts[seg]) * d).sum(axis=1, keepdims=True))
+    r = co - centre
+    ang = np.arctan2((r * e2).sum(axis=1), (r * e1).sum(axis=1)) / (2 * np.pi) + 0.5
+    radius = float(np.median(np.linalg.norm(r, axis=1)))
+    if layer not in me.uv_layers:
+        me.uv_layers.new(name=layer)
+    lv = np.empty(len(me.loops), np.int32)
+    me.loops.foreach_get('vertex_index', lv)
+    u = ang[lv].copy()
+    # a face whose corners straddle the seam (u jumps by more than a half turn) takes its low corners round once more
+    starts = np.empty(len(me.polygons), np.int32)
+    totals = np.empty(len(me.polygons), np.int32)
+    me.polygons.foreach_get('loop_start', starts)
+    me.polygons.foreach_get('loop_total', totals)
+    for s, n in zip(starts, totals):
+        fu = u[s:s + n]
+        if fu.max() - fu.min() > 0.5:
+            fu[fu < 0.5] += 1.0
+            u[s:s + n] = fu
+    uv = np.stack([u * 2 * np.pi * radius, t[lv] * length], axis=1)
+    # the caps: a face with a corner on the axis (an end cap's fan, the point of a blunt tip), where the angle round the
+    # axis means nothing, is laid flat across the axis instead: one disc per end, beside the strip, wound like the strip
+    rad = np.linalg.norm(r, axis=1)[lv]
+    cap = np.minimum.reduceat(rad, starts) < cap_ratio * max(radius, 1e-9)
+    if cap.any():
+        fn = np.empty(len(me.polygons) * 3, np.float32)
+        me.polygons.foreach_get('normal', fn)
+        fn = fn.reshape(-1, 3).astype(np.float64)
+        ft = np.add.reduceat(t[lv], starts) / totals                  # each face's mean position along the axis
+        loop_face = np.repeat(np.arange(len(me.polygons)), totals)
+        side_loops = ~cap[loop_face]
+        x0 = (float(uv[side_loops, 0].max()) if side_loops.any() else 0.0) + 0.1 * 2 * np.pi * radius
+        for end, faces in ((0, cap & (ft < 0.5)), (-1, cap & (ft >= 0.5))):
+            if not faces.any():
+                continue
+            loops = faces[loop_face]
+            dd, a1 = D[end], E1[end]
+            a2 = np.cross(dd, a1)
+            q = co[lv[loops]] - pts[end]
+            x, y = q @ a1, q @ a2
+            if float((fn[faces] @ dd).mean()) < 0:
+                x = -x
+            ext = max(float(np.abs(np.concatenate([x, y])).max()), 1e-4)
+            uv[loops] = np.stack([x + x0 + ext, y + ext], axis=1)
+            x0 += 2.2 * ext
+    me.uv_layers[layer].data.foreach_set('uv', uv.astype(np.float32).ravel())
+    ob['own_uv'] = True
+
+
+def orient_away(ob: bpy.types.Object, inside_fn) -> int:
+    """Turn every face of a prop outward: away from `inside_fn(face centres)` (n x 3 points inside the part: a tube's
+    nearest axis point, a scarf's neck axis, a ball's centre). bmesh's recalc_face_normals can flip thin, curved or
+    closed ribbons (a scarf), and an inverted prop bakes an inverted normal map and shades pale in the game. Returns how
+    many faces were flipped."""
+    import bmesh
+    me = ob.data
+    n = len(me.polygons)
+    c = np.empty(n * 3, np.float32)
+    nn = np.empty(n * 3, np.float32)
+    me.polygons.foreach_get('center', c)
+    me.polygons.foreach_get('normal', nn)
+    c, nn = c.reshape(-1, 3).astype(np.float64), nn.reshape(-1, 3).astype(np.float64)
+    flip = (((c - v3(inside_fn(c))) * nn).sum(axis=1)) < 0
+    if flip.any():
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bm.faces.ensure_lookup_table()
+        bmesh.ops.reverse_faces(bm, faces=[bm.faces[i] for i in np.nonzero(flip)[0]])
+        bm.to_mesh(me)
+        bm.free()
+        me.update()
+    return int(flip.sum())
+
+
+def laplacian_positions(ob: bpy.types.Object, iterations: int, factor: float = 0.5, mask: np.ndarray | None = None) -> np.ndarray:
+    """The mesh's vertex positions after `iterations` Laplacian smoothing steps (each vertex moves `factor` toward its
+    neighbours' mean, times `mask` 0..1 per vertex when given). The mesh is not changed: build_ultra unwraps lo_body at
+    these positions for UV_SMOOTH (a smoothed twin unwraps into far fewer, larger islands), then puts it back."""
+    co, _ = mesh_arrays(ob)
+    me = ob.data
+    ev = np.empty(len(me.edges) * 2, np.int32)
+    me.edges.foreach_get('vertices', ev)
+    ev = ev.reshape(-1, 2)
+    n = len(co)
+    deg = np.bincount(ev.ravel(), minlength=n).astype(np.float64)
+    deg[deg == 0] = 1.0
+    k = factor * (np.ones(n) if mask is None else np.clip(np.asarray(mask, np.float64), 0.0, 1.0))[:, None]
+    p = co.copy()
+    for _ in range(int(iterations)):
+        acc = np.zeros_like(p)
+        np.add.at(acc, ev[:, 0], p[ev[:, 1]])
+        np.add.at(acc, ev[:, 1], p[ev[:, 0]])
+        p = p + k * (acc / deg[:, None] - p)
+    return p

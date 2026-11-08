@@ -1,0 +1,894 @@
+{
+ "look": "tumblefox",
+ "tier": "ultra",
+ "plan": "quadruped",
+ "version": 2,
+ "heightUnits": 135,
+ "restHeight": 0.8865,
+ "bounds": {
+  "min": [
+   -0.2259,
+   -0.4678,
+   -0.0006
+  ],
+  "max": [
+   0.4635,
+   0.5596,
+   0.8865
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "spine",
+  "socket_mouth": "jaw",
+  "socket_paw_L": "foot.FL",
+  "socket_paw_R": "foot.FR",
+  "socket_tail": "tail.6"
+ },
+ "springs": [
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.L.1",
+    "ear.L.2"
+   ]
+  },
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.R.1",
+    "ear.R.2"
+   ]
+  },
+  {
+   "kind": "tail",
+   "chain": [
+    "tail.1",
+    "tail.2",
+    "tail.3",
+    "tail.4",
+    "tail.5",
+    "tail.6"
+   ]
+  }
+ ],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_cards": "card",
+  "lo_props_town-crier": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "The eyes are glossy lenses (lo_eyes) with the bright whites, the dark brown iris, pupil, catchlights and the upper lash line baked into the body atlas; the plum mask band across the eyes, the brows, the nose, the wide smile with two tiny fangs and the whisker dots are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid (mask plum, sculpted and painted on the body under the lens).",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.04,
+   "closedXYZ": [
+    0.72,
+    0.04,
+    0.2
+   ]
+  },
+  "eyeColor": "#2A1E22"
+ },
+ "variants": {
+  "town-crier-tumblefox": {
+   "textures": "town-crier-tumblefox",
+   "colorAttribute": "COLOR_1",
+   "eyeColor": "#2A1E22",
+   "palette": {
+    "body": "#C8522B",
+    "belly": "#FFF7E8",
+    "accent": "#F2C14E",
+    "eye": "#2A1E22"
+   },
+   "meshes": [
+    "lo_props_town-crier"
+   ],
+   "holder": "__variant_town-crier-tumblefox"
+  },
+  "glitch-tumblefox": {
+   "textures": "glitch-tumblefox",
+   "colorAttribute": "COLOR_2",
+   "eyeColor": "#101014",
+   "palette": {
+    "body": "#2DE2A6",
+    "belly": "#F4F4F4",
+    "accent": "#FF3D81",
+    "eye": "#101014"
+   },
+   "holder": "__variant_glitch-tumblefox"
+  }
+ },
+ "palette": {
+  "body": "#D9733B",
+  "belly": "#F7F1E8",
+  "accent": "#3B3240",
+  "eye": "#2A1E22"
+ },
+ "atlas": {
+  "strip": 0.125,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0.08,
+   0.04,
+   0.42
+  ],
+  "size": 1.3,
+  "head": {
+   "target": [
+    0,
+    -0.29,
+    0.66
+   ],
+   "size": 0.64
+  }
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.2167,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    },
+    {
+     "name": "step",
+     "t": 0.7667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.6933,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2167,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.176,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    -1
+   ]
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.975,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "strafe_l": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2176,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ]
+  },
+  "strafe_r": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2176,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "sidestep_l": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "sidestep_r": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 0.8865,
+ "build": "ecd767d5b5",
+ "buildStats": {
+  "cards": {
+   "total": 3489,
+   "layers": [
+    2357,
+    247,
+    885
+   ]
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {
+   "head": 8153,
+   "body": 11449
+  },
+  "sourceTriangles": 2742492
+ },
+ "files": {
+  "glb": "tumblefox.glb",
+  "glbWebp": "tumblefox.webp.glb",
+  "lite": "tumblefox.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "tumblefox_base.ktx2",
+    "webp": "tumblefox_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "tumblefox_normal.ktx2",
+    "webp": "tumblefox_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "tumblefox_orm.ktx2",
+    "webp": "tumblefox_orm.webp",
+    "px": 2048
+   }
+  },
+  "town-crier-tumblefox": {
+   "base": {
+    "ktx2": "tumblefox_town-crier_base.ktx2",
+    "webp": "tumblefox_town-crier_base.webp",
+    "px": 2048
+   }
+  },
+  "glitch-tumblefox": {
+   "base": {
+    "ktx2": "tumblefox_glitch_base.ktx2",
+    "webp": "tumblefox_glitch_base.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 67716,
+  "trianglesByMesh": {
+   "lo_body": 52000,
+   "lo_cards": 13956,
+   "lo_eyes": 624,
+   "lo_props_town-crier": 1134,
+   "__variant_town-crier-tumblefox": 1,
+   "__variant_glitch-tumblefox": 1
+  },
+  "vertices": 55614,
+  "cards": 3489,
+  "cardLayers": 3,
+  "joints": 31,
+  "animations": 32,
+  "animationBytes": 216124,
+  "download": {
+   "glb": 6394840,
+   "glbKtx2": 6394840,
+   "glbWebp": 5795824,
+   "ktx2": {
+    "body": 2894767,
+    "variants": 1785964
+   },
+   "webp": {
+    "body": 2536288,
+    "variants": 1545446
+   },
+   "totalKtx2": 6394840,
+   "totalWebp": 5795824
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 861057,
+     "webp": 710986
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 1107282,
+     "webp": 940382
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 926428,
+     "webp": 884920
+    }
+   },
+   "town-crier-tumblefox": {
+    "base": {
+     "px": 2048,
+     "ktx2": 872565,
+     "webp": 738186
+    }
+   },
+   "glitch-tumblefox": {
+    "base": {
+     "px": 2048,
+     "ktx2": 913399,
+     "webp": 807260
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_cards": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "COLOR_0",
+    "COLOR_1",
+    "COLOR_2",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props_town-crier": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "__variant_town-crier-tumblefox": [
+    "POSITION",
+    "TEXCOORD_0"
+   ],
+   "__variant_glitch-tumblefox": [
+    "POSITION",
+    "TEXCOORD_0"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "tumblefox.lite.glb",
+  "build": "a40ad82213",
+  "bytes": 1402784,
+  "triangles": 11692,
+  "trianglesByMesh": {
+   "lo_body": 9932,
+   "lo_eyes": 624,
+   "lo_props_town-crier": 1134,
+   "__variant_town-crier-tumblefox": 1,
+   "__variant_glitch-tumblefox": 1
+  },
+  "simplified": {
+   "lo_body": {
+    "from": 52000,
+    "to": 9932
+   }
+  },
+  "joints": 31,
+  "animations": 32,
+  "atlasPx": 1024,
+  "textureBytes": 792036,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

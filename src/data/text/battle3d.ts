@@ -11,6 +11,22 @@ export const BATTLE3D_TEXT = {
   cameraLabel: 'Switch camera',
   dodged: 'Dodged!',
   fence: 'Into the fence!',
+  /** The speed button (×1 → ×2 → ×4). */
+  speedLabel: (n: number) => `Speed ×${n}. Tap for the next speed.`,
+  /** ⚙️ Setup: the test's choices in one sheet, so the buttons along the top fit one row on a phone. */
+  setup: {
+    chip: '⚙️ Setup',
+    label: 'Fight setup: the breeds, the arena, the upbringing and the crowd',
+    title: 'Fight setup',
+    note: 'A new breed, arena or upbringing starts the fight again.',
+    close: 'Back to the fight',
+  },
+  /** §8 the 🐾 chips: each side's breed, any finished 3D breed. */
+  breed: {
+    chip: (side: 0 | 1, name: string) => `🐾 ${side === 0 ? 'You' : 'Rival'}: ${name}`,
+    label: (side: 0 | 1, name: string, more: boolean) =>
+      `${side === 0 ? 'Your monster' : 'Your rival'} is a ${name}. ${more ? 'Tap for the next breed (the fight restarts).' : 'More breeds join here as they’re finished.'}`,
+  },
   arena: {
     names: { guild: "the Breeders' Guild arena", crown: 'the Crown Amphitheatre' },
     short: { guild: 'Guild', crown: 'Crown' },

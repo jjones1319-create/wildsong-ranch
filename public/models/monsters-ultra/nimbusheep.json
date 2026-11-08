@@ -1,0 +1,882 @@
+{
+ "look": "nimbusheep",
+ "tier": "ultra",
+ "plan": "quadruped",
+ "version": 2,
+ "heightUnits": 165,
+ "restHeight": 1.0839,
+ "bounds": {
+  "min": [
+   -0.4137,
+   -0.6553,
+   0.0005
+  ],
+  "max": [
+   0.4177,
+   0.5889,
+   1.0839
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "spine",
+  "socket_mouth": "jaw",
+  "socket_paw_L": "foot.FL",
+  "socket_paw_R": "foot.FR",
+  "socket_tail": "tail.2",
+  "socket_horns": "prop.horns"
+ },
+ "springs": [
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.L.1",
+    "ear.L.2"
+   ]
+  },
+  {
+   "kind": "ear",
+   "chain": [
+    "ear.R.1",
+    "ear.R.2"
+   ]
+  },
+  {
+   "kind": "tail",
+   "chain": [
+    "tail.1",
+    "tail.2"
+   ]
+  }
+ ],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_cards": "card",
+  "lo_props": "prop",
+  "lo_props_stormcrown": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "The eyes are glossy lenses (lo_eyes) with the pupil, the blue-grey iris, the catchlights and a heavy upper lash line (the sleepy look) baked into the body atlas; the brows, blush, nose and the small \"w\" smile are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid sculpted and painted on the skin under it. The drizzle and the happy rainbow (#F28F8F #F7D36B #8FD1A8 #8FB8F2) are runtime effects from socket_back.",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.04,
+   "closedXYZ": [
+    0.72,
+    0.04,
+    0.2
+   ]
+  },
+  "eyeColor": "#2E3440"
+ },
+ "variants": {
+  "stormcrown-nimbusheep": {
+   "textures": "stormcrown-nimbusheep",
+   "colorAttribute": "COLOR_1",
+   "eyeColor": "#E6ECF5",
+   "palette": {
+    "body": "#4A5366",
+    "belly": "#2E3440",
+    "accent": "#F2D16B",
+    "eye": "#E6ECF5"
+   },
+   "meshes": [
+    "lo_props_stormcrown"
+   ],
+   "holder": "__variant_stormcrown-nimbusheep"
+  }
+ },
+ "palette": {
+  "body": "#E9EEF6",
+  "belly": "#8C97AD",
+  "accent": "#F28F8F",
+  "eye": "#2E3440"
+ },
+ "atlas": {
+  "strip": 0.125,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0,
+   -0.01,
+   0.56
+  ],
+  "size": 1.8,
+  "head": {
+   "target": [
+    0,
+    -0.45,
+    0.8
+   ],
+   "size": 0.86
+  }
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.2,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    },
+    {
+     "name": "step",
+     "t": 0.7667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.64,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.1625,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.2333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    -1
+   ]
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.9,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    },
+    {
+     "name": "step",
+     "t": 0.6333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "strafe_l": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2009,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ]
+  },
+  "strafe_r": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.2009,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "sidestep_l": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "sidestep_r": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 1.0839,
+ "build": "ce4a0f1b9e",
+ "buildStats": {
+  "cards": {
+   "total": 425,
+   "layers": [
+    291,
+    134
+   ]
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {
+   "head": 17918,
+   "body": 4356
+  },
+  "sourceTriangles": 4320582,
+  "uvOverlapTexels": {
+   "lo_body": 0,
+   "lo_eyes": 0,
+   "lo_props": 0,
+   "lo_props_stormcrown": 2
+  }
+ },
+ "files": {
+  "glb": "nimbusheep.glb",
+  "glbWebp": "nimbusheep.webp.glb",
+  "lite": "nimbusheep.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "nimbusheep_base.ktx2",
+    "webp": "nimbusheep_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "nimbusheep_normal.ktx2",
+    "webp": "nimbusheep_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "nimbusheep_orm.ktx2",
+    "webp": "nimbusheep_orm.webp",
+    "px": 2048
+   }
+  },
+  "stormcrown-nimbusheep": {
+   "base": {
+    "ktx2": "nimbusheep_stormcrown_base.ktx2",
+    "webp": "nimbusheep_stormcrown_base.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 68890,
+  "trianglesByMesh": {
+   "lo_body": 57989,
+   "lo_cards": 1700,
+   "lo_eyes": 1840,
+   "lo_props": 4760,
+   "lo_props_stormcrown": 2600,
+   "__variant_stormcrown-nimbusheep": 1
+  },
+  "vertices": 43642,
+  "cards": 425,
+  "cardLayers": 2,
+  "joints": 28,
+  "animations": 32,
+  "animationBytes": 157156,
+  "download": {
+   "glb": 4561372,
+   "glbKtx2": 4561372,
+   "glbWebp": 3622528,
+   "ktx2": {
+    "body": 2674795,
+    "variants": 668381
+   },
+   "webp": {
+    "body": 2050492,
+    "variants": 353858
+   },
+   "totalKtx2": 4561372,
+   "totalWebp": 3622528
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 769467,
+     "webp": 509096
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 1078485,
+     "webp": 914088
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 826843,
+     "webp": 627308
+    }
+   },
+   "stormcrown-nimbusheep": {
+    "base": {
+     "px": 2048,
+     "ktx2": 668381,
+     "webp": 353858
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_cards": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "COLOR_0",
+    "COLOR_1",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props_stormcrown": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "__variant_stormcrown-nimbusheep": [
+    "POSITION",
+    "TEXCOORD_0"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "nimbusheep.lite.glb",
+  "build": "c5b901a4bb",
+  "bytes": 989872,
+  "triangles": 11763,
+  "trianglesByMesh": {
+   "lo_body": 7598,
+   "lo_eyes": 1840,
+   "lo_props": 1504,
+   "lo_props_stormcrown": 820,
+   "__variant_stormcrown-nimbusheep": 1
+  },
+  "simplified": {
+   "lo_props": {
+    "from": 4760,
+    "to": 1504
+   },
+   "lo_props_stormcrown": {
+    "from": 2600,
+    "to": 820
+   },
+   "lo_body": {
+    "from": 57989,
+    "to": 7598
+   }
+  },
+  "joints": 28,
+  "animations": 32,
+  "atlasPx": 1024,
+  "textureBytes": 494066,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

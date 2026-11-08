@@ -332,7 +332,7 @@ The owner (Nov 3): "we need to build in the visuals for the attacks". Each techn
 
 ## 8. The test build
 - **Where:** Lab → **Battle 3D (test)** (`#lab/battle3d`).
-  - Puddlepup (player) against Songheart Puddlepup (CPU), both Art 2.1 Ultra.
+  - Any finished Ultra breed on either side (§8.4): Puddlepup (player) against Songheart Puddlepup (CPU) by default.
   - Fight, Auto, Skip, the speeds, both cameras and the cuts.
 - **The entrance cutscene** (7.6 s):
   - the camera flies in over the river and Tunewick into the arena, along the arena's own camera path (`guild.json` → `flyIn`);
@@ -348,7 +348,7 @@ The owner (Nov 3): "we need to build in the visuals for the attacks". Each techn
 - **The renderer:** the Art 2.1 film look and its dynamic resolution (ART_2_DETAIL §3.5–§3.6).
   - WebGPU where the phone has it (it was 2.6× faster on the PC proxy), WebGL otherwise.
   - The target is **60 fps on the Galaxy S25 Ultra in Chrome**.
-- **Lite** (Settings → Effects quality → Lite, or Auto choosing Lite): WebGL, the Lite arena, the Art 2.0 Puddlepup, the lowest effect level (no AO, bloom or MSAA), and at most 1.5× resolution.
+- **Lite** (Settings → Effects quality → Lite, or Auto choosing Lite): WebGL, the Lite arena, each breed's Lite model (`<breed>.lite.glb`: ≤ 12k triangles, no fur cards; Puddlepup falls back to its Art 2.0 model only if its Ultra files can't load), the lowest effect level (no AO, bloom or MSAA), and at most 1.5× resolution.
 - **The current battle is untouched** everywhere else (cups, Versus, trials).
 - **What gets reported:** fps, render resolution, download size and memory, plus a screen recording from each camera. The stats line under the top bar shows fps, resolution, renderer and effect level live.
 
@@ -440,6 +440,22 @@ The owner asked for "another, gladiator size, huge, for tournaments and more pop
 - **In the test:** the 🏟️ chip swaps the Guild and the Crown and restarts the fight there; `?arena=crown` in the address opens it directly; `npm run art:battle3d -- --arena crown` records it (art-review/battle3d-crown/).
 - **Still to decide for the full release:** which fights use it. The owner's brief says tournaments and popular fights: for example the Officials, the Crowns, the Legend Cup, and any battle where your monster's Fame is high.
 
+### 8.4 Any breed, at its true size (v1.23)
+The owner chose (Nov 7): each batch of Ultra monsters shows in **Lab → 3D Gallery** and in **Battle 3D**; the ranch, the Monster Card and the cups stay on the Art 2.0 models and the Classic drawings until a later step.
+- **Choosing:** in **⚙️ Setup** (the last button of the top row), a 🐾 chip per side ("You: …", "Rival: …") steps through the finished looks (the fight restarts): every breed, and a grown form shipped as its own look ("Hearthwing (grown)", id `hearthwing-grown`; its fighter is an NPC of the breed). A link can choose them: `?a=<look>&b=<look>` (with `?arena=crown` as before); the review hooks have `window.__battle3d.breeds(a, b)` and `breedsNow()` (look ids).
+- **The top row (phone first):** Auto, one speed button (×1 → ×2 → ×4), the camera, Skip, pause and ⚙️ Setup: one row from 360 px wide upright, and sideways left of the cards. ⚙️ Setup opens a sheet with the test's choices (both breeds, 🏟️ the arena, 🧠 the upbringing, 👥 the crowd's Fame; two columns sideways); the fight waits while it's open, and a choice that restarts the fight closes it. The live stats line (fps, resolution, renderer, effect level, crowd) shows only with `?debug`; a stand-in arena or model is still noted.
+- **The fighters:** NPC monsters of the chosen breeds (`npcMonster`), the player's raised as the 🧠 chip says. Both sides the same breed: the CPU wears its first secret variant (Songheart Puddlepup, Town Crier Tumblefox…), so they can be told apart.
+- **The registry:** `src/art/ultraLooks.ts` (`ULTRA_LOOKS`, main chunk, no three): breed → files, `heightUnits`, variants, the Lite file, a fallback. `src/art/ultraLooks.test.ts` checks every entry's files, clips (§7), variant holders and props, and the budgets (≤ 100k triangles and ≤ 8 MB; Lite ≤ 12k and ≤ 1.5 MB).
+- **Sizes:** every breed is built `HEIGHT_UNITS / 150` m tall in Blender (Puddlepup 150, Tumblefox 135, Cinderlynx and Nimbusheep 165, Starhowl and Rammerjack 195), and the duel fits each to `ART.duel.monsterHeightM × heightUnits / 150` at its top (ears, horns): Puddlepup 1 m, Tumblefox 0.9 m, Rammerjack 1.3 m. What depends on size scales with each model's measured bounds against Puddlepup's (`ART.duel.reference`: 1.44 m long, its nose 0.62 m ahead of its feet, 0.56 m wide):
+  - the side camera's body points (`side.bodyHalfM` × length) and heads (each monster's height);
+  - the behind camera, the KO cut and the over-the-shoulder cut (back, side and height × the monster's height);
+  - the lunge's contact distance (`attack.contactM` × the two noses' reach, their mean);
+  - the contact shadow (width × width, depth × length);
+  - the effects' sockets (`fx.chestPct` of the height, `fx.frontM` × the nose's reach, `fx.impactBackM` × the target's, `fx.impactFrontM` × the target's width).
+- **Loading:** one download per breed (two fighters of one breed share it). The sidecar `<breed>.json` comes first (revalidated); the `.glb` is fetched as `?v=<build>` (the sidecar's 10-hex hash), so a re-shipped model reaches a phone that cached the old one (vite.config.ts: sidecars NetworkFirst, models CacheFirst by URL, 200 entries).
+- **Parts:** every mesh is optional (no fins, no tuft…); `lo_props` (rigid horns, rope, a scarf) take the body's film material without sheen; a variant's own props (`lo_props_<short>`, e.g. Town Crier's bell) show only with that variant (`src/art3d/ultra/parts.ts`).
+- **Runtime fixes for every breed (Nov 7):** every lit surface capped below the bloom threshold so only glow blooms (fins: the ko fluke glowed white; Nimbusheep's white wool turned into a peach blob under the warm rims); fur cards with less specular, capped below the threshold, out of the AO pass and the shadows, and alpha-to-coverage only with MSAA (without it they drew white specks along the outline); every part clamped to `film.hdrMax` (a glossy prop's highlight overflowed the half-float buffers and the bloom blacked out the frame); the contact shadows, telegraphs and effect quads out of the AO pass (squares under the monsters with WebGL).
+
 ## 9. Balance (re-run in duel mode)
 Command: `npm run sim:balance -- --only battle --mode duel --out docs/BALANCE_DUEL.md` (200 AI-vs-AI battles per pair, 32 breeds).
 
@@ -496,7 +512,7 @@ Together they took the 3,000 total from 88.1% to 90.3%.
   - `types.ts` (`BattleMode`, `PendingFire`, the `sidestep` action and event, `move.side`);
   - `src/data/paths.ts`;
   - `tuning.ts` (`BATTLE.duel`, `AI.duel`).
-- **The picture:** `src/art3d/duel/duel3d.ts`; the crowd in `crowd.ts`, `crowdPlan.ts` (pure), `crowdPose.ts`, `crowdParts.ts` and `cutouts.ts` (`ART.duel.crowd`); the arena's seats from `tools/blender/arenas/guild.py` (`crowd_spots`).
+- **The picture:** `src/art3d/duel/duel3d.ts`; the fighters in `fighters.ts` (pure: breeds, variants, heights); the models in `src/art3d/ultra/` (`ultraAsset.ts` loads and poses a breed, `parts.ts` its parts' materials and variant props, `clips.ts` the clips and fallbacks) from the registry `src/art/ultraLooks.ts`; the crowd in `crowd.ts`, `crowdPlan.ts` (pure), `crowdPose.ts`, `crowdParts.ts` and `cutouts.ts` (`ART.duel.crowd`); the arena's seats from `tools/blender/arenas/guild.py` (`crowd_spots`).
 - **The attack effects (§7.1):** `attackFx.ts` (events → effects), `fxRecipe.ts` (technique → recipe, pure), `fxSpawn.ts` (impacts), `fxDelivery.ts` (wind-up, projectiles, waves, wisps, slash, shockwave), `fxMiss.ts` (the whoosh and fizzle of a miss), `fxParticles.ts` (the pool), `fxBatch.ts` (the two draws), `fxAtlas.ts` and `fxShapes.ts` (the texture); `attacks.ts` (lunges); `telegraph.ts` (the floor telegraphs); `cineShot.ts` (the over-the-shoulder cut); `ART.duel.fx`, `telegraph`, `cine`.
-- **Tests:** `src/core/battle/duel.test.ts`, `duelAi3.test.ts`, `duelAi31.test.ts` (§4.9); every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers); `src/art3d/duel/fxRecipe.test.ts` and `fxParticles.test.ts` (the mapping, the pool, the two draws, a miss's dip, the gust's spiral); `telegraph.test.ts` (quiet, out by the landing); `cineShot.test.ts` (shoulders and the whole target in the band, upright and sideways); the pace in `duel.test.ts`.
+- **Tests:** `src/art/ultraLooks.test.ts` (§8.4: every registry breed's files, clips, variants and budgets), `src/art3d/duel/fighters.test.ts` (two breeds, true heights, one download per breed), `e2e/gallery3d.spec.ts`; `src/core/battle/duel.test.ts`, `duelAi3.test.ts`, `duelAi31.test.ts` (§4.9); every line-mode test unchanged (the golden record holds); `src/art3d/duel/crowdPlan.test.ts` (filling by Fame, the fixed seat order, the cut-outs, the cheers); `src/art3d/duel/fxRecipe.test.ts` and `fxParticles.test.ts` (the mapping, the pool, the two draws, a miss's dip, the gust's spiral); `telegraph.test.ts` (quiet, out by the landing); `cineShot.test.ts` (shoulders and the whole target in the band, upright and sideways); the pace in `duel.test.ts`.
 - **Balance:** `scripts/balance.ts` `--mode duel`.

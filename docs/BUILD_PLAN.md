@@ -614,6 +614,67 @@ Spec: GAME_DESIGN §6.10–§6.11, §9.1, §14.1, §15, §16, §19, §21 and CON
 - [x] 5. v1.20.0: verify, e2e `herd.spec.ts`, commit, deploy.
 - [x] 6. v1.21.0: the farm card in Upgrades (level, XP, pens to buy, perks), level-up letters, `FARM.perksLive`; friendships (growth, tiers, calm, the training partner, lines); `sim/herdSim` targets. With it, Battle 3D attacks 20% faster (duel only) and per-technique 3D effects (BATTLE_3D §3, §7.1).
 
+## Every monster in 3D (roadmap step 1; from v1.23.0)
+
+The owner approved Puddlepup's Art 2.1 Ultra look on Nov 7, 2026, then said: *"Start step 1 of 4. Create them the same way you have been, make them in batches of 5 for upload. After each finishes have an independent reviewer come in and check it against the photos and make suggestions; after you make 5 put them on the game and I will let you know if they are up to the quality I would like."* Each batch shows in **Lab → 3D Gallery** and in **Battle 3D** (any finished breed on either side). The ranch, the Monster Card and the cups switch later, in the walkable-farm step (roadmap step 2, which also takes P2's Waterfall Stand). Steps 3 and 4 are 3D event scenes and the 3D duel as the real battle.
+
+Spec: ART_2_PLAN §3.3, §3.6 (the Ultra and Lite budgets), §6 (the review loop) and §8 (the batches); ART_2_DETAIL §5.1, §9.3 and §9.4; `tools/blender/monsters/breeds/RECIPE.md`; BATTLE_3D §8.4.
+
+**The batches** (35 looks: 31 breeds, 3 grown forms and Nibblegrub's cocoon; they replace ART_2_PLAN's P3–P9):
+- **B1:** Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack (four-legged fur and wool).
+- **B2:** Stripeneck, Petalphant, Cobblemaw, Hearthwing young and grown.
+- **B3:** Quillion, Grumblestone, Gloomgrin, Pluckrex young and grown, Plumdrake.
+- **B4:** Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance.
+- **B5:** Moatshell, Reefclaw, Bloatoad, Scrollopus, Lootlid.
+- **B6:** Coilfang, Aurelwyrm, Galeheron, Paladove young and grown.
+- **B7:** Nibblegrub and its cocoon, Velvesper, Gearhoot.
+
+**For each breed** (ART_2_PLAN §6):
+1. A builder writes `tools/blender/monsters/breeds/<breed>_ultra.py` following RECIPE.md (a grown form: `<breed>_grown_ultra.py`, ID `<breed>-grown`).
+2. Shape previews: `npm run art:shape -- <breed>`.
+3. A full build through the slot lock (at most 2 at once): `tools/blender/slot.sh npm run art:ultra -- <breed> --blender`.
+4. A fresh-eyes reviewer (a new agent each round) judges the film sheet against the pictures in `chatgpt/monsters/NN-<breed>/`; verdicts go in `art-review/<breed>-ultra/verdicts.txt`.
+5. Up to 3 review rounds, then one defect-only polish pass that the session running the batch checks itself. Taste items go to the owner as known issues.
+
+### Batch 1: four-legged fur and wool (v1.23.0)
+- [x] 1. The pipeline for any breed (RECIPE.md):
+  - variants 0..N, with props only a variant wears; every mesh optional; eyes per variant; tuft colours; wool cards;
+  - the quadruped plan options: `size_k`, `tail_bones` / `tail_points`, `ears`, `hooves`, `hocks`, `manes`, `props`, `neck_bones`, `trunk` with `bud`, `wings`, `jaw`, `strike_style` (pounce, charge, kick, swipe, slam) and `ko_leg_fold`; the shared clips reworked after review;
+  - the glow channel (the ORM map's alpha and the sidecar's `glow`); `lib/marks.py`;
+  - `UV_SMOOTH`, `CARD_COLOUR_FROM`, `MEMBRANE_AO_BODY`, `MOUTH_SOCKET` / `SOCKET_POINTS`; the grown-form convention.
+- [x] 2. Atlas fixes: the coverage-mask bake (texels every ray missed are padded); UV-overlap repair with a build check (≤ 32 shared texels) and `node tools/art/ultra-uv.ts <breed…> [--shipped]`. Puddlepup rebuilt with it (19,093 → 0 shared texels, the same look) and re-shipped with the reworked clips.
+- [x] 3. The Lite copy of every look (`<breed>.lite.glb`: ≤ 12k triangles, ≤ 1.5 MB, no cards; `LITE_KEEP`, `LITE_PROPS_TRIS`; WebP quality 78 / 84 / 76 and a normal pre-blur of 1.5); the sidecar's `build` hash (cache-busting) and `restHeightWithProps`.
+- [x] 4. Tools: `npm run art:shape`, `npm run art:lineup`, `npm run art:ultra -- <breed> --lite-only`, the build-slot lock `tools/blender/slot.sh`, and the review viewer on the game's renderer rules.
+- [x] 5. The game:
+  - the registry `src/art/ultraLooks.ts` (`ULTRA_LOOKS`) and its test;
+  - Lab → 3D Gallery (`#lab/gallery3d`);
+  - Battle 3D: breed chips in a ⚙️ Setup sheet, `?a=&b=`, monsters at their true height;
+  - glow that blooms, and only glow (a brightness cap on every other surface);
+  - the film colour fix (the sheen takes each texel's own colour, not a fixed teal; near-neutral rims) and the screen-space AO floor (0.8);
+  - sidecars fetched network-first, and the `.glb` asked for as `?v=<build>`.
+- [x] 6. The five breeds through the review loop: Tumblefox (Town Crier, Glitch), Cinderlynx (Bonfire), Starhowl, Nimbusheep (Stormcrown), Rammerjack; the lineup with Puddlepup first.
+- [x] 7. Docs (ART_2_PLAN §3.6, §6, §8; ART_2_DETAIL §9.4, §10; CLAUDE.md), tests (`ultraLooks.test.ts`, `fighters.test.ts`, e2e `gallery3d.spec.ts`), `npm run verify`, PROGRESS, v1.23.0, commit, deploy.
+- [ ] 8. The owner's verdict on the phone, given for batches 1 and 2 together (the owner, Nov 7: *"After these are completely finished start the next batch and I will review all 10 at once"*), so both ship in v1.23.0. Their notes are applied before batch 3.
+
+### Batch 2: Stripeneck, Petalphant, Cobblemaw, Hearthwing young and grown (v1.23.0, with batch 1)
+- [x] 1. Recipes and shape previews, started while batch 1 finished its reviews (no full builds until batch 1 shipped).
+- [x] 2. Decisions so far (the owner hears them with the batch):
+  - **Stripeneck:** the Ezgi variant's hooves are indigo (its picture wins over the card's text); a new shared strike style, `kick` (a spinning double back-hoof kick, as the card says); the eyes and ears face as in the hero.
+  - **Petalphant:** keeps the leaf sprout on its crown (in every picture, though not on the card); strike `charge` (head and trunk), not pounce; toenails `#F3E3C8`, a leaf green made from its skin colour, and the iris `#3B3B3B` warmed to brown (the pictures show brown).
+  - **Cobblemaw:** keeps its baked moss strands; a new strike style, `slam` (it rears up and slams down its front paws, as the card says); the Granite variant's "polished sheen" waits, because roughness is shared by every variant.
+  - **Hearthwing:** the frills are modelled (in the pictures, not on the card); wings with 3 fingers; 4 toes; the spade tail glows (as in the pictures).
+- [x] 3. Full builds through the slot lock (queued on Nov 7 while batch 1 finished).
+- [x] 4. 3 fresh-eyes rounds and the defect-only polish pass for each (the owner's notes on both batches come together after v1.23.0).
+- [x] 5. The registry lines (grown Hearthwing gets its own entry, `hearthwing-grown`), the Gallery and Battle 3D.
+- [x] 6. Shared fixes found on the way, applied to every look:
+  - bone channels held constant were dropped on export (sleep pose, tired head, battle-idle bends, Petalphant's bud): fixed, with an export check;
+  - normal maps as UASTC + zstd at 1024² (no 4×4 block steps);
+  - `CARD_STYLE 'hair'` strand tiles and per-look `cards.edgeFade` (no paper-blade fur); soft card tips kept in game;
+  - build guards: a stalled decimation or oversized faces stop the build; a black bake stops the build; Blender fails on Python errors;
+  - Lite WebP keeps colour under zero alpha (the alpha floor);
+  - new strike styles `kick`, `slam` and `lunge`, wings, the open mouth, the trunk cast.
+- [x] 7. The final clips sweep (a dry run compared every key with each look's rigged.blend; 6 looks re-exported for the new hit), docs, tests (`npm run verify` 1,233 green; e2e), PROGRESS, v1.23.0, commit, deploy, one phone checklist for all 10.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · online friend leagues (would need a backend) · cloud sync · localization.

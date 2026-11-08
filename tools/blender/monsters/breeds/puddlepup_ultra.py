@@ -22,6 +22,7 @@ from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 
 from lib import common as C
+from lib import ultra as U
 from lib import surface as S
 from lib.mesh import Part
 from lib.nodes import NB, new_mat
@@ -35,7 +36,6 @@ HEIGHT_UNITS = 150
 
 PALETTE = {'body': '#3FB6A8', 'belly': '#F3E6C4', 'accent': '#F28FA8', 'eye': '#24323A'}
 VARIANTS = {'songheart-puddlepup': {'body': '#5FC7B0', 'belly': '#FFF4D6', 'accent': '#FF6FB5', 'eye': '#24323A', 'rainbow': True}}
-VARIANT_ID = 'songheart-puddlepup'
 RAINBOW = ['#FF6F6F', '#FFB36B', '#FFE96B', '#7BE495', '#6FB8FF', '#C28BFF']
 
 NOSE_HEX = '#16171B'
@@ -861,21 +861,23 @@ def fin_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray]
 
 
 def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object]) -> None:
-    """Store the paint attributes on every source: 'paint' (base), 'paint_v' (Songheart), 'cream', 'shade', 'rough'."""
-    var = VARIANTS[VARIANT_ID]
+    """Store the paint attributes on every source: 'paint' (base), 'paint_<short>' per variant (Songheart), 'cream',
+    'shade', 'rough' (RECIPE.md)."""
     for ob in body_srcs:
         a = paint_arrays(ob, PALETTE)
         S.set_colour_attr(ob, 'paint', a['paint'])
         S.set_colour_attr(ob, 'rough', a['rough'])
         S.add_attr(ob, 'cream', a['cream'])
         S.add_attr(ob, 'shade', a['shade'])
-        S.set_colour_attr(ob, 'paint_v', paint_arrays(ob, var)['paint'])
+        for vid, var in VARIANTS.items():
+            S.set_colour_attr(ob, U.variant_attr(vid, ID), paint_arrays(ob, var)['paint'])
     for ob in fins:
         rgb, rc = fin_arrays(ob, PALETTE)
         S.set_colour_attr(ob, 'paint', rgb)
         S.set_colour_attr(ob, 'rough', rc)
-        rgb_v, _ = fin_arrays(ob, var)
-        S.set_colour_attr(ob, 'paint_v', rgb_v)
+        for vid, var in VARIANTS.items():
+            rgb_v, _ = fin_arrays(ob, var)
+            S.set_colour_attr(ob, U.variant_attr(vid, ID), rgb_v)
 
 
 # ----------------------------------------------------------------------------- paint (nodes: the crisp details, per pixel)
@@ -1037,6 +1039,14 @@ def tail_weights(p: np.ndarray) -> dict[str, np.ndarray]:
     for k in range(3):
         w[f'tail.{k + 1}'] = raw[k] / np.maximum(tot, 1e-6) * (1 - w['hips'])
     return w
+
+
+# ----------------------------------------------------------------------------- the sidecar's face note (the runtime reads it)
+FACE_NOTE = ('The eyes are glossy lenses (lo_eyes) with the iris, pupil, catchlights and the upper lash line baked into the '
+             'body atlas; the brows, blush, nose and the smile are baked into the body. No face sheet and no morphs: '
+             'expressions in clips\' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): '
+             'each lens squashes onto the closed lid\'s lash line and sinks into the head, showing the closed lid '
+             '(sculpted and painted on the body under the lens).')
 
 
 # ----------------------------------------------------------------------------- review framing (Blender sheets)

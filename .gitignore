@@ -45,11 +45,13 @@ public/models/perf/*_normal.ktx2
 tools/blender/arenas/.cache/
 tools/blender/arenas/__pycache__/
 
-# Art 2.1 Ultra (tools/art/ultra.ts): the game loads only <breed>.glb and <breed>.json; the separate textures and the
-# WebP copy are local comparisons, rebuilt by `npm run art:ultra`
+# Art 2.1 Ultra (tools/art/ultra.ts): the game loads only <breed>.glb, <breed>.lite.glb (the Lite copy) and
+# <breed>.json; the separate textures and the WebP copy are local comparisons, rebuilt by `npm run art:ultra` (the Lite
+# copy's own textures stay in tools/blender/out/<breed>-ultra/ship/lite/)
 public/models/monsters-ultra/*.webp
 public/models/monsters-ultra/*_*.ktx2
 public/models/monsters-ultra/*.webp.glb
+!public/models/monsters-ultra/*.lite.glb
 
 # Python caches (Blender scripts)
 __pycache__/

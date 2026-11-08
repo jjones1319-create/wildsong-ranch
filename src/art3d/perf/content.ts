@@ -21,7 +21,8 @@ const U = ART.ultra
 export const SITE = import.meta.env.BASE_URL.replace(/perf\/$/, '')
 export const MODELS = `${SITE}models/perf/`
 
-export type Kind = 'body' | 'eye' | 'fin' | 'card' | 'lock'
+/** A part's film material: fur, eye lenses, fin membranes, fur cards, tuft locks, and props (rigid horns, rope, a bell). */
+export type Kind = 'body' | 'eye' | 'fin' | 'card' | 'lock' | 'prop'
 export interface TexSet { base: Texture; normal: Texture; orm: Texture; bytes: number }
 /** Texture files: WebP, KTX2 (ETC1S colour and ORM, UASTC normals), or KTX2 with ETC1S normals too (the smallest). */
 export type TexFormat = 'ktx2' | 'webp' | 'ktx2-etc1s'
@@ -127,24 +128,81 @@ export async function loadAssets(renderer: AnyRenderer, format: TexFormat): Prom
   return { scene: gltf.scene, body, cine, standin, format, glbBytes: await fetchBytes(`${MODELS}spike.glb`) }
 }
 
-/** The film material for one kind of part (ART_2_DETAIL §2.4): damp fur, glowing fins, soft cards. */
-export function filmMaterial(kind: Kind, tex: TexSet): MeshPhysicalMaterial {
+/** The maps a film material is built from: a part's colour map, and its normal and ORM maps when the file has them. */
+export interface FilmTex {
+  base: Texture
+  normal: Texture | null
+  orm: Texture | null
+}
+
+/**
+ * A part's glow (the sidecar's `glow`; its mask is the ORM map's alpha): how strong, and a tint (linear RGB) or null
+ * for the part's own base colour. Only a breed whose sidecar has `glow` gets one (an ORM without alpha can decode as 1).
+ */
+export interface FilmGlow {
+  strength: number
+  tint: readonly [number, number, number] | null
+}
+
+export interface FilmOptions {
+  glow?: FilmGlow | null
+  /** A look's own card edge fade (its sidecar's cards.edgeFade), instead of film.cardEdgeFade. */
+  cardEdgeFade?: readonly [number, number] | null
+  /** A look's own normal-map strength for its body and props (its sidecar's normal.scale), instead of film.normalScale. */
+  normalScale?: number | null
+}
+
+/** The glow's twinkle: the shared clock (seconds) and amplitude (0 with Reduce motion); setFilmClock each frame. */
+export const FILM_TIME = { value: 0 }
+export const FILM_TWINKLE = { value: U.film.glow.twinkleAmp as number }
+
+export function setFilmClock(seconds: number, reduceMotion: boolean): void {
+  FILM_TIME.value = seconds
+  FILM_TWINKLE.value = reduceMotion ? 0 : U.film.glow.twinkleAmp
+}
+
+/** The brightness cap of a part (linear luminance, below the bloom threshold): only real glow blooms. */
+export function maxLumOf(kind: Kind): number {
   const f = U.film
+  return kind === 'fin' ? f.finMaxLum : kind === 'card' ? f.cardMaxLum : f.surfaceMaxLum
+}
+
+/**
+ * The film material for one kind of part (ART_2_DETAIL §2.4): damp fur, glowing fins, soft cards.
+ *
+ * Runtime guards (the pilot's in-game review, ART_2_DETAIL §9.2-§9.3, and the first batch):
+ * - **only glow blooms:** every part's lit brightness is capped below the bloom threshold (hue kept): fins (the ko
+ *   fluke lit face-on by the key and the warm rims glowed white), fur cards (grazing-angle glints along the outline)
+ *   and every other surface (Nimbusheep's white wool under the warm rims turned into a glowing peach blob);
+ * - **glow:** with `opts.glow`, the ORM map's alpha is an emissive mask (base colour or tint × strength, twinkling
+ *   ±`film.glow.twinkleAmp` per texel, still under Reduce motion); it is exempt from the cap, so it blooms;
+ * - **hdrMax:** everything, glow included, stays under `film.hdrMax` (a glossy prop's highlight overflowed the
+ *   half-float buffers and the bloom blacked out the frame);
+ * - fur cards get less specular, and fade in only toward the outline.
+ * The WebGPU view rebuilds these rules as node materials (viewGpu.ts); WebGL patches the shader here.
+ */
+export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): MeshPhysicalMaterial {
+  const f = U.film
+  // the body and the props may take the look's own strength (a scaled hide wants more relief than fur)
+  const ns = (kind === 'body' || kind === 'prop') && opts.normalScale ? opts.normalScale : f.normalScale
   const m = new MeshPhysicalMaterial({
     map: tex.base,
     normalMap: tex.normal,
-    normalScale: new Vector2(f.normalScale, f.normalScale),
+    normalScale: new Vector2(ns, ns),
     aoMap: tex.orm,
     roughnessMap: tex.orm,
     roughness: f.furRoughness,
     metalness: 0,
     clearcoat: kind === 'fin' ? f.finCoat : kind === 'eye' ? f.eyeCoat : kind === 'card' ? 0 : f.furCoat,
     clearcoatRoughness: kind === 'eye' ? 0.05 : f.furCoatRoughness,
-    sheen: kind === 'fin' || kind === 'eye' ? 0 : kind === 'card' ? f.cardSheen : f.furSheen,
-    sheenColor: new Color(f.sheenColor),
+    // a prop is the body's material without the fur's sheen (hard horns, rope, a bell)
+    sheen: kind === 'fin' || kind === 'eye' || kind === 'prop' ? 0 : kind === 'card' ? f.cardSheen : f.furSheen,
+    // the sheen in the fur's own colour (each texel's), so it never tints a coat another hue
+    sheenColor: new Color(f.sheenGain, f.sheenGain, f.sheenGain),
+    sheenColorMap: tex.base,
     sheenRoughness: f.sheenRoughness,
-    envMapIntensity: kind === 'eye' ? f.eyeEnv : f.envIntensity,
-    specularIntensity: kind === 'eye' ? f.eyeSpecular : 1,
+    envMapIntensity: kind === 'eye' ? f.eyeEnv : kind === 'card' ? f.cardEnv : f.envIntensity,
+    specularIntensity: kind === 'eye' ? f.eyeSpecular : kind === 'card' ? f.cardSpecular : kind === 'fin' ? f.finSpecular : 1,
     // only the fins are two-sided: a fur card's back face gets a flipped normal and renders nearly black at the outline
     side: kind === 'fin' ? DoubleSide : FrontSide,
     vertexColors: kind === 'card' || kind === 'lock',
@@ -155,22 +213,108 @@ export function filmMaterial(kind: Kind, tex: TexSet): MeshPhysicalMaterial {
     m.emissive = new Color('#ffffff')
     m.emissiveIntensity = f.finGlow
   }
+  // the body's and the props' clearcoat per texel from the ORM map's B channel (matte horns stay matte)
+  const coatMask = (kind === 'body' || kind === 'prop') && tex.orm ? f.coatFromOrm : null
+  if (coatMask) {
+    // any coat > 0 turns three's clearcoat on; the shader then takes the texel's own
+    m.clearcoat = 1
+    m.userData.coatMask = { gain: coatMask.gain, max: coatMask.max }
+  }
+  const maxLum = maxLumOf(kind)
+  m.userData.maxLum = maxLum
+  m.userData.hdrMax = f.hdrMax
+  // cards and the tuft read shared strip tiles: they never glow (the pipeline's notes)
+  const glow = opts.glow && tex.orm && opts.glow.strength > 0 && kind !== 'card' && kind !== 'lock' ? opts.glow : null
+  if (glow) m.userData.glow = { strength: glow.strength, tint: glow.tint }
+  let edge: readonly [number, number] | null = null
   if (kind === 'card') {
     m.alphaTest = f.cardAlphaTest
     m.alphaToCoverage = true
+    // the views turn coverage off without MSAA (view.ts setCoverage)
+    m.userData.a2c = true
     // fins: a card fades out as it turns to face the camera, so cards only show where the coat meets the outline
     // (the WebGPU view rebuilds this as a node material with the same rule, viewGpu.ts)
-    const [lo, hi] = f.cardEdgeFade
-    m.userData.edgeFade = [lo, hi]
-    m.onBeforeCompile = (sh) => {
+    edge = opts.cardEdgeFade ?? f.cardEdgeFade
+    m.userData.edgeFade = [edge[0], edge[1]]
+    m.userData.coverageRamp = [f.cardCoverage[0], f.cardCoverage[1]]
+  }
+  // cards and the tuft take their colour from the vertex colours over a shared grey-white strip tile: their sheen gets
+  // the vertex colour too, so it stays the strand's own colour (the tile alone laid a white veil over green or dark fur)
+  const sheenByVertex = kind === 'card' || kind === 'lock'
+  if (sheenByVertex) m.userData.sheenByVertex = true
+  const g = f.glow
+  m.onBeforeCompile = (sh) => {
+    if (sheenByVertex) {
       sh.fragmentShader = sh.fragmentShader.replace(
-        '#include <alphatest_fragment>',
-        `diffuseColor.a *= smoothstep( ${lo.toFixed(3)}, ${hi.toFixed(3)}, 1.0 - abs( dot( normalize( vNormal ), normalize( vViewPosition ) ) ) );
-#include <alphatest_fragment>`,
+        '#include <lights_physical_fragment>',
+        `#include <lights_physical_fragment>
+#if defined( USE_SHEEN ) && ( defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) )
+  material.sheenColor *= vColor.rgb;
+#endif`,
       )
     }
-    m.customProgramCacheKey = () => 'film-card-fin'
+    if (coatMask) {
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <lights_physical_fragment>',
+        `#include <lights_physical_fragment>
+#ifdef USE_CLEARCOAT
+  material.clearcoat = clamp( texture2D( roughnessMap, vRoughnessMapUv ).b * ${coatMask.gain.toFixed(3)}, 0.0, ${coatMask.max.toFixed(3)} );
+#endif`,
+      )
+    }
+    if (edge) {
+      // the edge fade, then the strand's alpha: with MSAA it becomes coverage over a soft ramp (tapered tips fade, as in
+      // Blender); three's own coverage would cut it hard at alphaTest. Without MSAA, a plain cut (views: setCoverage)
+      const [lo, hi] = f.cardCoverage
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <alphatest_fragment>',
+        `diffuseColor.a *= smoothstep( ${edge[0].toFixed(3)}, ${edge[1].toFixed(3)}, 1.0 - abs( dot( normalize( vNormal ), normalize( vViewPosition ) ) ) );
+#ifdef ALPHA_TO_COVERAGE
+  diffuseColor.a = smoothstep( ${lo.toFixed(3)}, ${hi.toFixed(3)}, diffuseColor.a );
+  if ( diffuseColor.a <= 0.0 ) discard;
+#else
+  if ( diffuseColor.a < alphaTest ) discard;
+#endif`,
+      )
+    }
+    if (glow) {
+      sh.uniforms.filmTime = FILM_TIME
+      sh.uniforms.filmTwinkle = FILM_TWINKLE
+      sh.uniforms.filmGlowStrength = { value: glow.strength }
+      sh.uniforms.filmGlowTint = { value: new Vector3(...(glow.tint ?? [0, 0, 0])) }
+      sh.fragmentShader = sh.fragmentShader
+        .replace(
+          '#include <common>',
+          `#include <common>
+uniform float filmTime;
+uniform float filmTwinkle;
+uniform float filmGlowStrength;
+uniform vec3 filmGlowTint;`,
+        )
+        .replace(
+          '#include <emissivemap_fragment>',
+          `#include <emissivemap_fragment>
+// the glow: the ORM map's alpha, twinkling slowly with a phase per texel cell
+float filmPhase = fract( sin( dot( floor( vRoughnessMapUv * ${g.cells.toFixed(1)} ), vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ) * 6.2831853;
+vec3 filmGlow = ${glow.tint ? 'filmGlowTint' : 'diffuseColor.rgb'} * texture2D( roughnessMap, vRoughnessMapUv ).a * filmGlowStrength
+  * ( 1.0 + filmTwinkle * sin( filmTime * ${(g.twinkleHz * 2 * Math.PI).toFixed(4)} + filmPhase ) );
+totalEmissiveRadiance += filmGlow;`,
+        )
+    }
+    // the cap on the lit surface (the linear brightness the bloom reads; hue kept), the glow added back on top, and
+    // the half-float buffers' ceiling over all of it
+    sh.fragmentShader = sh.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      `{
+  vec3 filmGlowPart = ${glow ? 'filmGlow' : 'vec3( 0.0 )'};
+  vec3 filmLit = max( outgoingLight - filmGlowPart, vec3( 0.0 ) );
+  filmLit *= min( 1.0, ${maxLum.toFixed(3)} / max( dot( filmLit, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-4 ) );
+  outgoingLight = min( filmLit + filmGlowPart, vec3( ${f.hdrMax.toFixed(1)} ) );
+}
+#include <opaque_fragment>`,
+    )
   }
+  m.customProgramCacheKey = () => `film-${kind}-${edge ? `fade${edge[0]}_${edge[1]}` : ''}-${maxLum}-${f.hdrMax}-${glow ? (glow.tint ? 'glow-tint' : 'glow') : ''}-${coatMask ? `coat${coatMask.gain}-${coatMask.max}` : ''}-${edge ? f.cardCoverage.join('_') : ''}`
   return m
 }
 

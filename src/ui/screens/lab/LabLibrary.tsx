@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks'
 import { BATTLE3D_TEXT } from '../../../data/text/battle3d.ts'
+import { GALLERY3D_TEXT } from '../../../data/text/gallery3d.ts'
 import { duplicateMonster } from '../../../core/lab.ts'
 import { freezerFull } from '../../../core/legacy.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
@@ -112,6 +113,9 @@ export function LabLibraryScreen() {
         </button>
         <button type="button" class="btn btn--half" onClick={() => navigate('labBattle3d')}>
           🏟️ {BATTLE3D_TEXT.labButton}
+        </button>
+        <button type="button" class="btn btn--half" onClick={() => navigate('labGallery3d')}>
+          🖼️ {GALLERY3D_TEXT.labButton}
         </button>
       </div>
       <Segmented options={tabs} value={tab} onChange={(v) => (labTab.value = v)} label={t.title} />

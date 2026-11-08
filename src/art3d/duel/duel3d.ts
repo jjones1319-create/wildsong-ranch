@@ -1,7 +1,5 @@
 import {
   AnimationMixer,
-  Box3,
-  BufferGeometry,
   CanvasTexture,
   CatmullRomCurve3,
   CircleGeometry,
@@ -23,16 +21,20 @@ import {
   TorusGeometry,
   Vector3,
 } from 'three'
-import type { AnimationAction, AnimationClip, Texture } from 'three'
+import type { AnimationAction, Texture } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import type { BattleEvent, BattleState, FighterState, Side } from '../../core/battle/types.ts'
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { ART, BATTLE } from '../../data/tuning.ts'
-import { buildStudio, filmMaterial, type Kind } from '../perf/content.ts'
+import type { UltraId } from '../../art/ultraLooks.ts'
+import { buildStudio, setFilmClock } from '../perf/content.ts'
+import { createDynRes } from '../perf/dynres.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
+import { resolveClipName } from '../ultra/clips.ts'
+import { blinkClipOf, NO_AO_LAYER, loadUltraAsset, makeUltraModel, type UltraAsset, type UltraKind, type UltraSize } from '../ultra/ultraAsset.ts'
+import { duelFighters, duelLoads } from './fighters.ts'
 import { lungeFor, lungeReach, type Lunge } from './attacks.ts'
 import { AttackFx } from './attackFx.ts'
 import { Telegraphs } from './telegraph.ts'
@@ -69,7 +71,9 @@ export interface DuelOptions {
   arena?: ArenaId
   /** The player's side (the camera keeps it on the left / follows it). */
   me: Side
-  /** Variant id per side (Songheart's palette), or null. */
+  /** Each side's look (an Ultra registry look, src/art/ultraLooks.ts: a breed or a grown form; Puddlepup by default and for any other). */
+  looks?: [UltraId, UltraId]
+  /** Variant id per side (Songheart's palette), or null; a variant the breed's file doesn't hold shows its usual look. */
   variants: [string | null, string | null]
   lite: boolean
   reduceMotion: boolean
@@ -91,7 +95,10 @@ export interface DuelStats {
   gpuMs: number | null
   cpuMs: number
   arena: ArenaId | 'stand-in'
-  monster: 'ultra' | 'art2'
+  /** What the player's side is drawn from (the Ultra file, its Lite file, or Puddlepup's Art 2.0 file), and both sides'. */
+  monster: UltraKind
+  monsters: [UltraKind, UltraKind]
+  looks: [UltraId, UltraId]
   /** Estimated GPU memory (textures, geometry, render targets) and Chrome's JS heap, in MB. */
   gpuMb: number
   heapMb: number | null
@@ -129,13 +136,6 @@ export interface Duel3D {
 
 /* ---------------------------------------------------------------------------------------------- loading */
 
-interface MonsterAsset {
-  scene: Object3D
-  clips: AnimationClip[]
-  meta: { clips?: Record<string, { rootSpeed?: number; markers?: { name: string; t: number }[] }>; variants?: Record<string, { texture?: string }> } | null
-  kind: 'ultra' | 'art2'
-}
-
 async function fetchJson<T>(url: string): Promise<T | null> {
   try {
     const r = await fetch(url)
@@ -161,14 +161,6 @@ function makeLoader(renderer: unknown): GLTFLoader {
   ;(ktx2 as unknown as { detectSupport(r: unknown): void }).detectSupport(renderer)
   loader.setKTX2Loader(ktx2)
   return loader
-}
-
-async function loadMonster(loader: GLTFLoader, lite: boolean): Promise<MonsterAsset> {
-  const ultra = !lite && (await exists(`${BASE}models/monsters-ultra/puddlepup.glb`))
-  const dir = ultra ? 'models/monsters-ultra/' : 'models/monsters/'
-  const gltf = await loader.loadAsync(`${BASE}${dir}puddlepup.glb`)
-  const meta = await fetchJson<MonsterAsset['meta']>(`${BASE}${dir}puddlepup.json`)
-  return { scene: gltf.scene, clips: gltf.animations, meta, kind: ultra ? 'ultra' : 'art2' }
 }
 
 /** What tools/blender/arenas writes beside the arena (guild.json): the parts the runtime uses. */
@@ -257,14 +249,6 @@ function standInArena(): Group {
 
 /* ---------------------------------------------------------------------------------------------- actors */
 
-const FALLBACK: Record<string, string[]> = {
-  strafe_l: ['strafe_l', 'walk', 'step_fwd'],
-  strafe_r: ['strafe_r', 'walk', 'step_fwd'],
-  sidestep_l: ['sidestep_l', 'hop', 'dash'],
-  sidestep_r: ['sidestep_r', 'hop', 'dash'],
-  battle_idle: ['battle_idle', 'idle'],
-}
-
 interface Actor {
   side: Side
   root: Group
@@ -279,8 +263,16 @@ interface Actor {
   pos: Vector3
   yaw: number
   height: number
+  /** Its measurements (metres): how far nose and tail reach, its width; and its sizes beside Puddlepup's. */
+  size: UltraSize
+  /** Its body length, nose reach and width as shares of Puddlepup's (ART.duel.reference): 1 for Puddlepup. */
+  lenK: number
+  frontK: number
+  widthK: number
   rootSpeed: Record<string, number>
   impactAt: Record<string, number>
+  /** The file's blink clip, if it has one. */
+  blink: string | null
   /** When the next blink plays (the blink clip keys only the lids, so it layers over any clip). */
   nextBlink: number
   blinks: number
@@ -290,104 +282,29 @@ interface Actor {
   loopSince: number
 }
 
-function makeActor(asset: MonsterAsset, side: Side, variant: string | null): Actor {
-  const model = cloneSkinned(asset.scene)
-  const variantMap = new Map<string, Texture>()
-  model.traverse((o) => {
-    const m = o as Mesh
-    if (!m.isMesh) return
-    m.castShadow = true
-    m.frustumCulled = false
-    // Art 2.0 files carry each variant's texture on a hidden mesh named __variant_<id>
-    const vm = /^__variant_(.+)$/.exec(m.name)
-    if (vm) {
-      const map = (m.material as MeshStandardMaterial).map
-      if (map) variantMap.set(vm[1]!, map)
-      m.visible = false
-    }
-  })
-  // fit to about 1 m tall at the head (the monsters' metres), standing on y = 0. Only the visible body counts: the
-  // variant holders sit half a metre below the feet, and counting them floated every monster off the floor
-  model.updateMatrixWorld(true)
-  const box = new Box3()
-  model.traverse((o) => {
-    if ((o as Mesh).isMesh && o.visible) box.union(new Box3().setFromObject(o))
-  })
-  const h = Math.max(0.01, box.max.y - box.min.y)
-  const scale = D.monsterHeightM / h
-  model.scale.setScalar(scale)
-  model.position.y = -box.min.y * scale
-  const variantBase = variant ? (variantMap.get(variant) ?? null) : null
-  if (asset.kind === 'ultra') {
-    // Art 2.1: the film materials of the spike (ART_2_DETAIL §3.4), rebuilt from the file's own maps by part, so the
-    // cards get their edge fade and the eyes their own gloss; glTF can't carry those
-    model.traverse((o) => {
-      const m = o as Mesh
-      if (!m.isMesh || !m.visible) return
-      const kind = filmKindOf(m.name)
-      const mat = m.material as MeshStandardMaterial
-      if (!kind || !mat?.map) return
-      const orm = mat.roughnessMap ?? mat.aoMap ?? mat.map
-      const base = variantBase && kind !== 'eye' ? variantBase : mat.map
-      m.material = filmMaterial(kind, { base, normal: mat.normalMap ?? mat.map, orm, bytes: 0 })
-      // a variant's cards and tufts take their colour from the second vertex-colour set (the model's notes)
-      if (variantBase && (kind === 'card' || kind === 'lock') && m.geometry.getAttribute('color_1')) m.geometry = withColourSet(m.geometry, 'color_1')
-    })
-  } else if (variantBase) {
-    model.traverse((o) => {
-      const m = o as Mesh
-      if (!m.isMesh || !m.visible) return
-      const mat = m.material as MeshStandardMaterial
-      if (mat?.map && !/eye|face/i.test(m.name)) {
-        const c = mat.clone()
-        c.map = variantBase
-        m.material = c
-      }
-    })
-  }
+function makeActor(asset: UltraAsset, side: Side, variant: string | null, heightM: number): Actor {
+  // the copy: film materials, the variant, the cards out of the AO pass and the shadows, fitted to its true height
+  const u = makeUltraModel(asset, variant, heightM)
+  const R = D.reference
+  const lenK = (u.size.front + u.size.back) / R.lengthM
+  const frontK = u.size.front / R.frontM
+  const widthK = u.size.width / R.widthM
   const root = new Group()
-  root.add(model, contactShadow())
-  const mixer = new AnimationMixer(model)
+  root.add(u.model, contactShadow(widthK, lenK))
+  const mixer = new AnimationMixer(u.model)
   const actions = new Map<string, AnimationAction>()
   for (const clip of asset.clips) actions.set(clip.name, mixer.clipAction(clip))
-  const rootSpeed: Record<string, number> = {}
-  const impactAt: Record<string, number> = {}
-  for (const [name, c] of Object.entries(asset.meta?.clips ?? {})) {
-    // the file's root speeds are in the model's metres: scale them like the model
-    rootSpeed[name] = (c.rootSpeed ?? 0) * scale
-    const imp = c.markers?.find((m) => m.name === 'impact' || m.name === 'release')
-    if (imp) impactAt[name] = imp.t
+  const a: Actor = {
+    side, root, model: u.model, mixer, actions, current: '', holdUntil: 0, oneShot: null, pos: new Vector3(), yaw: 0, height: heightM,
+    size: u.size, lenK, frontK, widthK, rootSpeed: u.rootSpeed, impactAt: u.impactAt, blink: blinkClipOf(asset),
+    nextBlink: 1.2 + side * 0.9, blinks: side * 2, lunge: null, squashUntil: 0, loopSince: 0,
   }
-  const a: Actor = { side, root, model, mixer, actions, current: '', holdUntil: 0, oneShot: null, pos: new Vector3(), yaw: 0, height: D.monsterHeightM, rootSpeed, impactAt, nextBlink: 1.2 + side * 0.9, blinks: side * 2, lunge: null, squashUntil: 0, loopSince: 0 }
   play(a, 'battle_idle', { loop: true })
   return a
 }
 
-/** A geometry sharing every buffer with `src`, but reading its vertex colours from another set. */
-function withColourSet(src: BufferGeometry, set: string): BufferGeometry {
-  const g = new BufferGeometry()
-  for (const [k, a] of Object.entries(src.attributes)) g.setAttribute(k, a)
-  g.setAttribute('color', src.getAttribute(set))
-  g.setIndex(src.index)
-  for (const gr of src.groups) g.addGroup(gr.start, gr.count, gr.materialIndex)
-  g.boundingBox = src.boundingBox
-  g.boundingSphere = src.boundingSphere
-  return g
-}
-
-/** The film material kind of an Ultra model's part, by its mesh name (tools/blender: lo_body, lo_cards, …). */
-function filmKindOf(name: string): Kind | null {
-  if (/^lo_card/.test(name)) return 'card'
-  if (/^lo_tuft|^lo_lock/.test(name)) return 'lock'
-  if (/^lo_eye/.test(name)) return 'eye'
-  if (/^lo_fin/.test(name)) return 'fin'
-  if (/^lo_(body|paw)/.test(name)) return 'body'
-  return null
-}
-
 function resolveClip(a: Actor, name: string): string | null {
-  for (const n of FALLBACK[name] ?? [name]) if (a.actions.has(n)) return n
-  return a.actions.has(name) ? name : null
+  return resolveClipName((n) => a.actions.has(n), name)
 }
 
 function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: number; hold?: boolean }): void {
@@ -416,8 +333,11 @@ function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: 
 
 let contactTexture: CanvasTexture | null = null
 
-/** A soft dark disc under the feet: the arena's floor is baked, so this is what makes a monster stand on it. */
-function contactShadow(): Mesh {
+/**
+ * A soft dark disc under the feet: the arena's floor is baked, so this is what makes a monster stand on it. Sized like
+ * the monster: its width and length beside Puddlepup's.
+ */
+function contactShadow(widthK: number, lenK: number): Mesh {
   if (!contactTexture) {
     const c = document.createElement('canvas')
     c.width = c.height = 64
@@ -432,10 +352,12 @@ function contactShadow(): Mesh {
     contactTexture.colorSpace = SRGBColorSpace
   }
   const mat = new MeshBasicMaterial({ map: contactTexture, transparent: true, opacity: D.contactShadow.opacity, depthWrite: false })
-  const disc = new Mesh(new PlaneGeometry(D.contactShadow.sizeM, D.contactShadow.sizeM * D.contactShadow.depthPct / 100), mat)
+  const disc = new Mesh(new PlaneGeometry(D.contactShadow.sizeM * widthK, ((D.contactShadow.sizeM * D.contactShadow.depthPct) / 100) * lenK), mat)
   disc.rotation.x = -Math.PI / 2
   disc.position.y = 0.006
   disc.renderOrder = 1
+  // see-through: the AO pass would draw its whole square
+  disc.layers.set(NO_AO_LAYER)
   return disc
 }
 
@@ -451,18 +373,23 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   const w = () => Math.max(1, canvas.clientWidth)
   const h = () => Math.max(1, canvas.clientHeight)
   const dprMax = Math.max(1, Math.min(o.lite ? 1.5 : ART.ultra.scaling.dprMax, devicePixelRatio || 1))
-  let dpr = Math.min(o.lite ? 1.25 : D.dprStart, dprMax)
+  const dpr = Math.min(o.lite ? 1.25 : D.dprStart, dprMax)
   const wantGpu = (o.backend ?? 'webgpu') === 'webgpu' && !o.lite && 'gpu' in navigator
   let view: PerfView | undefined = wantGpu ? await createView('webgpu', { canvas, width: w(), height: h(), dpr, cinematic: false, focus: 3 }).catch(() => undefined) : undefined
   if (!view) view = await createView('webgl', { canvas, width: w(), height: h(), dpr, cinematic: false, focus: 3 })
   const v = view!
   const scene = new Scene()
   const camera = new PerspectiveCamera(D.fov, w() / h(), 0.05, D.far)
+  // the fur cards (and the see-through floor marks and effects) draw on a layer the AO pass's camera leaves out
+  camera.layers.enable(NO_AO_LAYER)
   const loader = makeLoader(v.renderer)
-  const [arena, asset] = await Promise.all([loadArena(loader, o.lite, o.arena ?? 'guild'), loadMonster(loader, o.lite)])
+  // each side's breed at its true size; two fighters of one breed share one download
+  const fighters = duelFighters(o)
+  const loads = new Map(duelLoads(fighters).map((id) => [id, loadUltraAsset(loader, id, o.lite)] as const))
+  const [arena, assets] = await Promise.all([loadArena(loader, o.lite, o.arena ?? 'guild'), Promise.all(fighters.map((f) => loads.get(f.look)!))])
   const textures = new Set<Texture>()
   noteTextures(arena.root, textures)
-  noteTextures(asset.scene, textures)
+  for (const asset of new Set(assets)) noteTextures(asset.scene, textures)
   scene.add(arena.root)
   // the Guild arena's living crowd (§8): its seats come with the arena (the stand-in has none); each battle's own seed
   // seats a different crowd and draws different breeds' boards
@@ -478,16 +405,20 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   if (sun) studio.key.position.set(sun[0], sun[1], sun[2]).normalize().multiplyScalar(32).add(studio.key.target.position)
   // every camera stays inside the fence (ART.duel.confine): the crowd stands start just past it
   const wallR = arena.info?.cameraRadius ?? (arena.info?.ringRadius ? arena.info.ringRadius - D.confine.wallMargin : Infinity)
-  const actors: [Actor, Actor] = [makeActor(asset, 0, o.variants[0]), makeActor(asset, 1, o.variants[1])]
+  const actors: [Actor, Actor] = [makeActor(assets[0], 0, fighters[0].variant, fighters[0].heightM), makeActor(assets[1], 1, fighters[1].variant, fighters[1].heightM)]
   for (const a of actors) scene.add(a.root)
-  // §7: every technique's effects (its element and shape), two draws from one pool
+  // §7: every technique's effects (its element and shape), two draws from one pool; their sockets sized per monster
+  const seeThroughFrom = scene.children.length
   const fx = new AttackFx(scene, { lite: o.lite, reduceMotion: o.reduceMotion, speed: o.speed })
+  for (const a of actors) fx.setSize(a.side, a.frontK, a.widthK)
   // review only: a previewed technique's result, waiting for its landing (picture only; the rules never see it)
   const previews: { at: number; e: BattleEvent }[] = []
   // §7: a hit nudges the camera until this time (not with Reduce motion)
   let shakeUntil = 0
   // §7: the wind-up's quiet floor marks (a lane for a straight line, a ring for a sweep)
   const telegraphs = new Telegraphs(scene)
+  // the effects' quads and the telegraphs are see-through: out of the AO pass (it would draw them whole)
+  for (const c of scene.children.slice(seeThroughFrom)) c.traverse((x) => x.layers.set(NO_AO_LAYER))
   await v.init(scene, camera)
   // compile the materials' shaders now, so the entrance's first frames don't stall on it (where the renderer can)
   try {
@@ -506,6 +437,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     await new Promise((r) => setTimeout(r, 0))
   }
   if (o.lite) v.setLevel('no-msaa')
+  const dyn = createDynRes(v, { lite: o.lite, dprStart: dpr, dprMax, size: () => ({ w: w(), h: h() }), fastDrop: D.fastDrop })
 
   let camMode: DuelCamera = 'side'
   let cine: { until: number; from: Vector3; look: Vector3; fov: number } | null = null
@@ -528,11 +460,6 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   let sideSign = 1
   const frameTimes: number[] = []
   let cpuMs = 0
-  let missSecond = 0
-  let framesSecond = 0
-  let secondStart = performance.now()
-  let calmSince = performance.now()
-  let levelIndex = o.lite ? ART.ultra.levels.indexOf('no-msaa') : 0
 
   const fighterAt = (s: BattleState, side: Side) => worldOf(s.fighters[side])
 
@@ -554,10 +481,12 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const dist = Math.max(0.01, u.length())
     u.divideScalar(dist)
     if (camMode === 'behind') {
-      const lat = new Vector3(-u.z, 0, u.x).multiplyScalar(D.behind.side)
+      // over the player's monster's back, at its size (a taller breed: further back and higher)
+      const k = actors[o.me].height / D.monsterHeightM
+      const lat = new Vector3(-u.z, 0, u.x).multiplyScalar(D.behind.side * k)
       return {
-        pos: insideFence(a.clone().addScaledVector(u, -D.behind.back).add(lat).add(new Vector3(0, D.behind.height, 0))),
-        look: b.clone().add(new Vector3(0, D.behind.lookY, 0)),
+        pos: insideFence(a.clone().addScaledVector(u, -D.behind.back * k).add(lat).add(new Vector3(0, D.behind.height * k, 0))),
+        look: b.clone().add(new Vector3(0, D.behind.lookY * (actors[1 - o.me]!.height / D.monsterHeightM), 0)),
         fov: D.fov,
       }
     }
@@ -576,9 +505,13 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const centreY = (band.top + band.bottom) / 2
     const right = new Vector3()
     const tMax = Math.tan(((D.confine.maxFov / 2) * Math.PI) / 180)
-    // both monsters whole: feet and heads, front and back
-    const up = new Vector3(0, D.monsterHeightM, 0)
-    const pts = [a, b].flatMap((p) => [-1, 1].flatMap((k) => [p.clone().addScaledVector(u, k * F.bodyHalfM), p.clone().addScaledVector(u, k * F.bodyHalfM).add(up)]))
+    // both monsters whole: feet and heads, front and back, each at its own size (bodyHalfM is Puddlepup's)
+    const pts = ([[a, actors[o.me]], [b, actors[1 - o.me]!]] as const).flatMap(([p, act]) =>
+      [-1, 1].flatMap((k) => {
+        const q = p.clone().addScaledVector(u, k * F.bodyHalfM * act.lenK)
+        return [q, q.clone().add(new Vector3(0, act.height, 0))]
+      }),
+    )
     const dir = new Vector3()
     let t = 0
     let d = 0
@@ -669,13 +602,15 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const opp = actors[1 - attacker.side]!
     const until = now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds)
     if (technique) {
-      cine = { until, ...cineShot(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence) }
+      cine = { until, ...cineShot(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence, [attacker.height, opp.height]) }
       return
     }
+    // the KO: a low three-quarter on the winner, at its size
+    const k = attacker.height / D.monsterHeightM
     const u = opp.pos.clone().sub(attacker.pos).normalize()
     const n = new Vector3(-u.z, 0, u.x)
-    const from = insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead).addScaledVector(n, D.cine.side * sideSign).add(new Vector3(0, D.cine.height, 0)))
-    cine = { until, from, look: attacker.pos.clone().add(new Vector3(0, 0.55, 0)), fov: D.fov }
+    const from = insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead * k).addScaledVector(n, D.cine.side * k * sideSign).add(new Vector3(0, D.cine.height * k, 0)))
+    cine = { until, from, look: attacker.pos.clone().add(new Vector3(0, D.cine.lookPct / 100 * attacker.height, 0)), fov: D.fov }
   }
 
   function updateActors(s: BattleState, dt: number): void {
@@ -692,7 +627,9 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       // §7: a melee lunge carries the body across the gap to the target and back (picture only)
       const reach = a.lunge ? lungeReach(now, a.lunge) : 0
       if (a.lunge && now >= a.lunge.end) a.lunge = null
-      const gap = Math.max(0, actors[(1 - a.side) as Side].pos.distanceTo(a.pos) - AT.contactM)
+      // contactM is between two Puddlepups' noses: longer reaches meet further apart
+      const foe = actors[(1 - a.side) as Side]
+      const gap = Math.max(0, foe.pos.distanceTo(a.pos) - (AT.contactM * (a.frontK + foe.frontK)) / 2)
       a.root.position.copy(a.pos).addScaledVector(fwd, reach * gap)
       a.root.rotation.y = a.yaw
       // §7: a hit squashes the target for a moment
@@ -737,7 +674,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
   }
 
   function blink(a: Actor, awake: boolean): void {
-    const clip = a.actions.get('blink')
+    const clip = a.blink ? a.actions.get(a.blink) : undefined
     if (!clip || !awake || now < a.nextBlink) return
     clip.reset()
     clip.setLoop(LoopOnce, 1)
@@ -825,9 +762,10 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const me = fighterAt(s, o.me)
     const them = fighterAt(s, (1 - o.me) as Side)
     const u = them.clone().sub(me).normalize()
-    const eye = me.clone().addScaledVector(u, -D.behind.back).add(new Vector3(-u.z, 0, u.x).multiplyScalar(D.behind.side)).add(new Vector3(0, D.behind.height, 0))
+    const k = actors[o.me].height / D.monsterHeightM
+    const eye = me.clone().addScaledVector(u, -D.behind.back * k).add(new Vector3(-u.z, 0, u.x).multiplyScalar(D.behind.side * k)).add(new Vector3(0, D.behind.height * k, 0))
     const lastT = arena.info?.flyIn?.[arena.info.flyIn.length - 1]?.t ?? keys[keys.length - 1]!.t + 1
-    keys.push({ eye: eye.toArray(), target: them.clone().add(new Vector3(0, D.behind.lookY, 0)).toArray(), t: lastT, fovDeg: D.fov })
+    keys.push({ eye: eye.toArray(), target: them.clone().add(new Vector3(0, D.behind.lookY * (actors[1 - o.me]!.height / D.monsterHeightM), 0)).toArray(), t: lastT, fovDeg: D.fov })
     const v3 = (p: readonly number[]) => new Vector3(p[0], p[1], p[2])
     flyCache = {
       eyes: new CatmullRomCurve3(keys.map((k) => v3(k.eye)), false, 'centripetal'),
@@ -897,36 +835,6 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     return true
   }
 
-  function scale(frameMs: number): void {
-    // dynamic resolution (ART_2_DETAIL §3.6): resolution first, then effects; the monsters never change
-    const S = ART.ultra.scaling
-    const budget = 1000 / S.targetFps
-    framesSecond++
-    if (frameMs > budget * S.missFactor) missSecond++
-    const t = performance.now()
-    if (t - secondStart < 1000) return
-    const miss = missSecond / Math.max(1, framesSecond)
-    secondStart = t
-    missSecond = 0
-    framesSecond = 0
-    if (miss > S.missShareDown) {
-      // most frames late (a slower phone at the start): take bigger steps so it recovers in a second or two
-      const step = miss > D.fastDrop.missShare ? S.dprStepDown * D.fastDrop.stepMul : S.dprStepDown
-      if (dpr - S.dprStepDown >= S.dprMin - 1e-6) {
-        dpr = Math.max(S.dprMin, Math.round((dpr - step) * 100) / 100)
-        v.setSize(w(), h(), dpr)
-      } else if (levelIndex < ART.ultra.levels.length - 1) v.setLevel(ART.ultra.levels[++levelIndex]!)
-      calmSince = t
-    } else if (miss <= S.calmMissShare && t - calmSince > S.calmMsUp) {
-      if (levelIndex > (o.lite ? ART.ultra.levels.indexOf('no-msaa') : 0)) v.setLevel(ART.ultra.levels[--levelIndex]!)
-      else if (dpr + S.dprStepUp <= dprMax + 1e-6) {
-        dpr = Math.round((dpr + S.dprStepUp) * 100) / 100
-        v.setSize(w(), h(), dpr)
-      }
-      calmSince = t
-    }
-  }
-
   let lastW = w()
   let lastH = h()
   function loop(): void {
@@ -944,7 +852,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       lastH = h()
       camera.aspect = lastW / lastH
       camera.updateProjectionMatrix()
-      v.setSize(lastW, lastH, dpr)
+      v.setSize(lastW, lastH, dyn.dpr())
     }
     const c0 = performance.now()
     const s = getState()
@@ -988,9 +896,12 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       previews.splice(i, 1)
     }
     fx.update(now, camera, actors[0].root.position, actors[1].root.position, actors[0].height, actors[1].height)
+    // the glow's twinkle (still with Reduce motion)
+    setFilmClock(now, o.reduceMotion)
     v.render()
     cpuMs = performance.now() - c0
-    scale(frameMs)
+    // dynamic resolution (ART_2_DETAIL §3.6): resolution first, then effects; the monsters never change
+    dyn.frame(frameMs)
   }
 
   const s0 = getState()
@@ -1044,7 +955,11 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     stats() {
       const avg = frameTimes.length ? frameTimes.reduce((p, c) => p + c, 0) / frameTimes.length : 16.7
       const mem = memoryMb(textures, scene, v.targetBytes())
-      return { backend: v.backend, fps: 1000 / avg, dpr, level: ART.ultra.levels[levelIndex]!, gpuMs: v.gpuMs(), cpuMs, arena: arena.kind, monster: asset.kind, gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null, fx: fx.stats() }
+      return {
+        backend: v.backend, fps: 1000 / avg, dpr: dyn.dpr(), level: dyn.level(), gpuMs: v.gpuMs(), cpuMs, arena: arena.kind,
+        monster: assets[o.me].kind, monsters: [assets[0].kind, assets[1].kind], looks: [fighters[0].look, fighters[1].look],
+        gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null, fx: fx.stats(),
+      }
     },
     setTimeScale(k) {
       timeScale = Math.max(0.02, Math.min(1, k))

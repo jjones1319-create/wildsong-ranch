@@ -1,5 +1,5 @@
 import { HalfFloatType, NeutralToneMapping, PCFSoftShadowMap, PMREMGenerator, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three'
-import type { Camera, PerspectiveCamera, Scene, Texture } from 'three'
+import type { Camera, Object3D, PerspectiveCamera, Scene, Texture } from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js'
@@ -27,6 +27,11 @@ export interface PerfView {
   /** A prefiltered environment for reflections, made by this renderer. */
   environment: Texture
   init(scene: Scene, camera: PerspectiveCamera): Promise<void>
+  /**
+   * Ready a subtree added after init (a model swapped in): the WebGPU view rebuilds the film materials' shader rules as
+   * node materials; WebGL needs nothing (content.ts patches its shaders).
+   */
+  prepare(root: Object3D): void
   setSize(width: number, height: number, dpr: number): void
   setLevel(level: Level): void
   setCinematic(on: boolean, focus: number): void
@@ -61,6 +66,45 @@ void main() {
   g *= 1.0 - vignette * smoothstep(0.35, 0.85, length(d) * 1.4);
   gl_FragColor = vec4(clamp(g, 0.0, 1.0), c.a);
 }`,
+}
+
+/**
+ * Alpha to coverage only means something with MSAA. Without it (Lite, the lowest levels) the fur cards fall back to a
+ * plain alpha test: left on, a single-sample target drew their partial-alpha fragments as white and gold specks along
+ * the outline on this PC's Chrome (ANGLE on D3D11). Cards carry userData.a2c (content.ts).
+ */
+export function setCoverage(root: Object3D, msaa: number): void {
+  root.traverse((o) => {
+    const mat = (o as { material?: CoverageMaterial }).material
+    if (!mat?.userData?.a2c) return
+    const on = msaa > 0
+    if (mat.isNodeMaterial) {
+      // WebGPU (viewGpu.ts): its built-in coverage cuts at alphaTest, so with MSAA the cards carry the soft ramp as their
+      // opacity and no alpha test; without, the plain opacity and the cut
+      const u = mat.userData
+      if (u.coverageOn === on) return
+      u.coverageOn = on
+      mat.alphaToCoverage = on
+      mat.alphaTest = on ? 0 : ART.ultra.film.cardAlphaTest
+      mat.opacityNode = (on ? u.opacityRamp : u.opacityRaw) ?? null
+      mat.needsUpdate = true
+      return
+    }
+    if (mat.alphaToCoverage !== on) {
+      mat.alphaToCoverage = on
+      mat.needsUpdate = true
+    }
+  })
+}
+
+/** What setCoverage touches on a fur card's material (a WebGL one, or the WebGPU view's node material). */
+interface CoverageMaterial {
+  isNodeMaterial?: boolean
+  alphaToCoverage: boolean
+  alphaTest: number
+  opacityNode?: unknown
+  needsUpdate: boolean
+  userData: { a2c?: boolean; coverageOn?: boolean; opacityRaw?: unknown; opacityRamp?: unknown }
 }
 
 /** The levels a view applies, from 'all' down to 'no-msaa' (each includes the ones before it). */
@@ -129,6 +173,14 @@ export function createWebGLView(opts: ViewOptions): PerfView {
     gtao = new GTAOPass(scene, aoCamera, w, h)
     gtao.output = GTAOPass.OUTPUT.Default
     gtao.blendIntensity = ART.ultra.post.aoIntensity
+    // the most the screen-space AO may darken (post.aoFloor): the monsters bake their own soft AO, and deep creases
+    // (Nimbusheep's wool) went near-black when both multiplied
+    const blend = gtao.blendMaterial
+    blend.fragmentShader = blend.fragmentShader.replace(
+      'gl_FragColor = vec4(mix(vec3(1.), texel.rgb, intensity), texel.a);',
+      `gl_FragColor = vec4(max(mix(vec3(1.), texel.rgb, intensity), vec3(${ART.ultra.post.aoFloor.toFixed(3)})), texel.a);`,
+    )
+    blend.needsUpdate = true
     gtao.updateGtaoMaterial({ radius: ART.ultra.post.aoRadius, distanceExponent: 1, thickness: 1, scale: 1, samples: 12 })
     composer.addPass(gtao)
     const b = ART.ultra.post.bloom
@@ -157,6 +209,7 @@ export function createWebGLView(opts: ViewOptions): PerfView {
         t.dispose()
       }
     }
+    setCoverage(scene, f.msaa)
     const sh = scene.children.find((c) => (c as { isDirectionalLight?: boolean; castShadow?: boolean }).isDirectionalLight && (c as { castShadow: boolean }).castShadow) as
       | { shadow: { mapSize: Vector2; map: { dispose(): void } | null } }
       | undefined
@@ -186,6 +239,9 @@ export function createWebGLView(opts: ViewOptions): PerfView {
       scene = s
       camera = c
       build()
+    },
+    prepare(root) {
+      setCoverage(root, levelFlags(level).msaa)
     },
     setSize(w, h, dpr) {
       size = { w, h, dpr }

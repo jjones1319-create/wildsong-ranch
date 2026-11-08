@@ -53,10 +53,19 @@ export default defineConfig({
         navigateFallbackDenylist: [/\/perf\//],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
+          // Art 2.1: a model's sidecar (.json) is asked for fresh first, so a re-shipped model's new build tag reaches a
+          // phone that cached the old one; offline (or after 4 s) the cached sidecar answers
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/models/') && url.pathname.endsWith('.json'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'wildsong-art-meta', networkTimeoutSeconds: 4, expiration: { maxEntries: 80 }, cacheableResponse: { statuses: [0, 200] } },
+          },
+          // the models themselves are kept by URL: an Ultra .glb is asked for as ?v=<build> (src/art/ultraLooks.ts), so a
+          // new build is a new entry and the old one ages out
           {
             urlPattern: ({ url }) => url.pathname.includes('/models/') || url.pathname.includes('/baked/'),
             handler: 'CacheFirst',
-            options: { cacheName: 'wildsong-art', expiration: { maxEntries: 120 }, cacheableResponse: { statuses: [0, 200] } },
+            options: { cacheName: 'wildsong-art', expiration: { maxEntries: 200 }, cacheableResponse: { statuses: [0, 200] } },
           },
         ],
       },

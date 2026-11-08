@@ -2,6 +2,105 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Every monster in 3D, batches 1 and 2 (2026-11-08) · v1.23.0
+
+The owner, Nov 7: "Puddlepup looks good. Start step 1 of 4. Create them the same way… in batches of 5… have an independent reviewer come in and check it against the photos." Then: "After these are completely finished start the next batch and I will review all 10 at once." So batches 1 and 2 ship together (BUILD_PLAN "Every monster in 3D"; ART_2_DETAIL §9.3–§9.5).
+
+**Live:**
+- **Lab → 3D Gallery** (`#lab/gallery3d`) shows every finished high-detail monster. You can:
+  - drag to turn it and pinch to zoom;
+  - play its moves (idle, walk, strike, cast, hit, big hit, knocked out, win, blink);
+  - switch to a secret variant's colours;
+  - stand it beside Puddlepup at its real size.
+- **Ten new looks besides Puddlepup:**
+  - Tumblefox (Town Crier, Glitch), Cinderlynx (Bonfire), Starhowl, Nimbusheep (Stormcrown), Rammerjack;
+  - Stripeneck (Ezgi), Petalphant, Cobblemaw (Granite), Hearthwing, and Hearthwing (grown) as its own look.
+- **Battle 3D:**
+  - ⚙️ Setup holds the test choices (each side's breed, the arena, the upbringing, the crowd), so the top bar is one row on a phone;
+  - 🐾 chips pick any finished breed for either side, and each monster stands at its true height;
+  - phones set to Lite effects get each monster's lighter copy.
+- **New moves:** strike styles per breed (pounce, charge, Stripeneck's kick, Cinderlynx's swipe, Cobblemaw's slam, lunge); Hearthwing's wings; an open mouth; Petalphant's trunk cast with its bud opening; a new knock-aside hit for everyone.
+- **Every 3D monster looks truer:**
+  - coats keep their own colour (the shine used to tint everything teal, and fur strands white);
+  - only real glow blooms;
+  - soft fur tips;
+  - no blocky steps in the fine bumps;
+  - a re-shipped model now updates on the phone.
+
+**Done**
+- **The pipeline works for any breed** (`tools/blender/monsters/breeds/RECIPE.md`):
+  - variants 0..N; optional meshes; the quadruped plan's options (hooves, hocks, manes, props, neck, trunk and bud, wings, jaw, strike styles, the KO leg fold);
+  - the glow channel; the grown-form convention (`<breed>-grown`);
+  - `CARD_STYLE 'hair'` and per-look `cards.edgeFade`; `NORMAL_SCALE`.
+- **Tools:**
+  - `npm run art:shape`, `art:lineup`, `art:ultra -- <breed> --lite-only`;
+  - `node tools/art/ultra-uv.ts`;
+  - the build-slot lock `tools/blender/slot.sh`.
+- **Guards** (each found a real fault):
+  - UV overlap ≤ 32 shared texels;
+  - held bone channels survive export (an export check);
+  - a stalled decimation, oversized faces or a black bake stop the build;
+  - Blender fails on Python errors;
+  - the Lite WebP alpha floor.
+- **Textures and runtime:**
+  - normal maps are UASTC + zstd at 1024²; each Lite copy is ≤ 12k triangles and ≤ 1.5 MB;
+  - the film sheen takes each texel's colour, and the cards' and tuft's sheen takes their vertex colour (WebGL and WebGPU).
+- **The game:**
+  - `src/art/ultraLooks.ts` (the registry) and its test;
+  - `src/art3d/gallery/`, `src/art3d/ultra/`, `src/art3d/duel/fighters.ts`;
+  - e2e `gallery3d.spec.ts`.
+- **Review:** every look had 3 fresh-eyes review rounds against its pictures (Starhowl 6), then a defect-only polish pass checked by the session. Before release, a final clips sweep re-exported the 6 looks whose clips had changed.
+
+| Look | Triangles | Download | Lite |
+|---|---|---|---|
+| Puddlepup | 61k | 4.7 MB | 1.0 MB |
+| Tumblefox | 68k | 6.1 MB | 1.3 MB |
+| Cinderlynx | 69k | 5.1 MB | 1.2 MB |
+| Starhowl | 57k | 4.2 MB | 1.1 MB |
+| Nimbusheep | 69k | 4.4 MB | 0.9 MB |
+| Rammerjack | 71k | 4.0 MB | 1.0 MB |
+| Stripeneck | 61k | 4.4 MB | 1.1 MB |
+| Cobblemaw | 73k | 4.7 MB | 1.0 MB |
+| Petalphant | 91k | 3.5 MB | 0.8 MB |
+| Hearthwing | 71k | 3.7 MB | 1.0 MB |
+| Hearthwing (grown) | 79k | 4.0 MB | 1.1 MB |
+
+(MB = 1,048,576 bytes. Models download when viewed; they are never precached.)
+
+**Known issues** (taste items from the reviews, for the owner's verdict):
+- **Starhowl:** the most reworked; the eyes are a bit wide; the mane is thinner than the hero picture's; the tail plume is thin from behind.
+- **Tumblefox:** the smile is subtle at small sizes; there is a thin crease inside the tail spiral.
+- **Cinderlynx:** the embers read a touch light; from straight behind they show as a dotted line; there is no open-mouth cavity.
+- **Nimbusheep:** the wool is slightly crumpled up close; Stormcrown's gold shows as thin rim lines.
+- **Rammerjack:** the muzzle is a bit smooth; the beard reads as one mass from the front.
+- **Stripeneck:**
+  - the mane reads as a banded slab;
+  - the forelock looks cone-like;
+  - the ears are flat;
+  - the zebra half fades at 64 px.
+- **Petalphant:**
+  - the ears are flat streak fans;
+  - the skin looks a little vinyl-like, and the body boxy;
+  - the open flower's centre is muddy;
+  - from behind, the ear-root fur is a little pale and grainy.
+- **Cobblemaw:**
+  - the jaw reads as a double chin;
+  - the stones are smooth, and the moss is flat;
+  - the claws look putty-like;
+  - Granite's flecks are fine, with no polish.
+- **Hearthwing (young):**
+  - the scales read as a painted pattern;
+  - the face is pug-like;
+  - the claws are long;
+  - the eyes dissolve at 64 px.
+- **Hearthwing (grown):**
+  - the chest glow is moderate, not hot;
+  - the neck is pole-like;
+  - the folded arm shows a tube end from the front;
+  - the spread wings are not wide.
+
+**Next:** the owner's verdict on all 10. Their notes get applied, then batch 3 (Quillion, Grumblestone, Gloomgrin, Pluckrex young and grown, Plumdrake).
+
 ## A CPU with human qualities, effect fixes and Puddlepup P1.2 (2026-11-06) · v1.22.0
 
 The owner: "The CPU should attack with some strategy, just because it has guts doesn't mean it should attack and it shouldn't attack instantly in range it should have a bit more human qualities in the ai. Do this and fix the weakspots." The weak spots: v1.21's effects and layout notes, and Puddlepup Ultra's review list.

@@ -1386,8 +1386,14 @@ export const ART = {
    */
   /** docs/BATTLE_3D.md §6–§8: Battle 3D's picture (metres; the fence is at 6 m). */
   duel: {
-    /** Monsters are fitted to this height at the head. */
+    /** Puddlepup is fitted to this height at the head; every other breed to its height beside it (src/art/ultraLooks.ts). */
     monsterHeightM: 1.0,
+    /**
+     * Puddlepup's body once fitted (m): nose to tail tip, its feet to its nose, and side to side. The sizes below are
+     * Puddlepup's; another breed's scale by its own over these (the side camera's bodyHalfM and the contact shadow by
+     * length and width; the lunge's contactM and the effects' front socket by the nose's reach).
+     */
+    reference: { lengthM: 1.44, frontM: 0.62, widthM: 0.56 },
     fov: 32,
     sky: '#cfe6f5',
     /**
@@ -1475,6 +1481,15 @@ export const ART = {
       missOffsetM: 0.75,
       /** An impact sits this far in front of the target, toward the camera, so the target's own body doesn't hide it. */
       impactFrontM: 0.35,
+      /**
+       * The sockets (Puddlepup's; a bigger body scales them by its size, ART.duel.reference): the chest at chestPct of
+       * the height, the feet just above the floor; moves leave frontM ahead of the chest, and an impact sits
+       * impactBackM out from the target's chest toward the attacker.
+       */
+      chestPct: 55,
+      feetM: 0.03,
+      frontM: 0.3,
+      impactBackM: 0.15,
       waveFrontDeg: 55,
       /**
        * Every impact reads (the owner, Nov 3: "fix the weak spots"): from afar a small impact grows until it is at
@@ -1515,6 +1530,8 @@ export const ART = {
       ahead: 1.6,
       side: 1.3,
       height: 0.55,
+      /** The KO cut looks at this share of the winner's height. */
+      lookPct: 55,
       seconds: 1.5,
       /**
        * Sideways (from side.landscape.aspect): beside and behind the attacker. Upright (to side.portrait.aspect; a narrow
@@ -1606,14 +1623,49 @@ export const ART = {
       },
     },
   },
+  /**
+   * Lab → 3D Gallery (src/art3d/gallery/): a finished Ultra breed on a turntable in the studio light. The lens (deg),
+   * the studio's reach (m: the key's shadow covers ±reach), the render resolution (device pixels per CSS pixel; Lite
+   * lower), the opening turn and tilt (deg) with the tilt's limits, the zoom range and a button's step, how far a
+   * drag turns (deg per CSS px), the cross-fade, how long a move holds its last pose before idling (the ko longer),
+   * seconds between blinks (cycled), the gap between two stands (m), and the margin round the fitted view.
+   */
+  gallery3d: {
+    fov: 30,
+    studioReachM: 2.5,
+    dprStart: 2.0,
+    liteDprStart: 1.25,
+    liteDprMax: 1.5,
+    startYawDeg: 28,
+    pitchDeg: 12,
+    pitchMinDeg: -4,
+    pitchMaxDeg: 60,
+    zoomMin: 0.7,
+    zoomMax: 4,
+    zoomStep: 1.3,
+    turnDegPerPx: 0.6,
+    pitchDegPerPx: 0.25,
+    fadeSec: 0.2,
+    holdSec: 0.8,
+    koHoldSec: 1.6,
+    blinkGapsSec: [3.2, 4.6, 2.4, 5.0, 3.8] as const,
+    compareGapM: 0.25,
+    fitMargin: 1.12,
+    /** How much of what stands there's depth the fit backs off for (percent: the near side looks bigger). */
+    fitDepthPct: 50,
+  },
   ultra: {
     /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */
     studio: {
       key: { color: '#fff3e6', intensity: 2.6, azDeg: -45, elDeg: 42 },
-      /** Round 4: stronger and more to the side, so the warm edge shows on the outline in the front and 3/4 views. */
-      rim: { color: '#ffd2a6', intensity: 4.0, azDeg: 140, elDeg: 22 },
-      /** Round 5: a second warm rim from the other back side, so the warm edge shows on both outlines in every view. */
-      rim2: { color: '#ffd9b3', intensity: 3.0, azDeg: -150, elDeg: 26 },
+      /**
+       * Round 4: stronger and more to the side, so the warm edge shows on the outline in the front and 3/4 views.
+       * Nov 7: 15% of round 4's warmth (it was #ffd2a6): a strongly orange rim multiplies a dark coat's colour and
+       * turned violet and plum fur toward brown and olive (+16° of hue); the warmth moved to the grade's highlights.
+       */
+      rim: { color: '#fff9f4', intensity: 4.0, azDeg: 140, elDeg: 22 },
+      /** Round 5: a second rim from the other back side, so the edge shows on both outlines in every view (was #ffd9b3). */
+      rim2: { color: '#fffaf6', intensity: 3.0, azDeg: -150, elDeg: 26 },
       sky: '#dfe9ff',
       ground: '#7c7466',
       /** Round 3: less fill and room light, so the coat keeps its teal and the cream doesn't clip (round 2 read washed out). */
@@ -1631,18 +1683,64 @@ export const ART = {
       normalScale: 0.6,
       furRoughness: 1.0,
       furCoat: 0.12,
+      /**
+       * The body's and the props' clearcoat per texel: the ORM map's B channel (the clearcoat each breed bakes: matte
+       * keratin 0, a glossy nose, pads or hooves high) × gain, at most max. furCoat is only for a part without an ORM
+       * map. A uniform coat gave matte horns a specular streak (Rammerjack).
+       */
+      coatFromOrm: { gain: 1.0, max: 1.0 },
       furCoatRoughness: 0.35,
       furSheen: 0.45,
       cardSheen: 0.25,
       /** Cards fade in between these values of 1 − |N·V| (0 = facing the camera, 1 = edge-on): only the outline shows them. */
       cardEdgeFade: [0.25, 0.65] as const,
-      /** Close to the fur's own colour: a pale sheen laid a white veil over the coat and the nose. */
+      /**
+       * The sheen takes each texel's own colour (the base map) × sheenGain: a pale sheen laid a white veil over the
+       * coat, and the fixed teal one Puddlepup used (#86d3c8) turned every other breed's dark fur teal-grey
+       * (Cinderlynx's violet #3A3236 rendered at hue 166° instead of 330°).
+       */
+      sheenGain: 1.0,
+      /**
+       * Only the sheen colour tools/art/ultra-embed.ts writes into a .glb's own material (KHR_materials_sheen: the raw
+       * look); the game's film material doesn't use it (the texel's own colour × sheenGain, above).
+       */
       sheenColor: '#86d3c8',
       sheenRoughness: 0.5,
       finCoat: 0.3,
       finGlow: 0.05,
       envIntensity: 0.6,
-      cardAlphaTest: 0.5,
+      /**
+       * Fur cards' alpha: with MSAA the strand's own alpha (after the edge fade) becomes its coverage over the ramp
+       * cardCoverage (lo → 0, hi → full), so tapered tips fade like the Blender render; without MSAA (Lite, the lowest
+       * levels) a plain cut at cardAlphaTest. At 0.5 with a hard coverage edge, Starhowl's long mane cards rendered as
+       * flat planks with square, stair-stepped ends.
+       */
+      cardAlphaTest: 0.35,
+      cardCoverage: [0.08, 0.6] as const,
+      /**
+       * Runtime guards (ART_2_DETAIL §9.2, the pilot's in-game review): a fin's linear brightness is capped below the
+       * bloom threshold (post.bloom), so the ko fluke, lit face-on by the key and the warm rims, can't glow white; fur
+       * cards (seen only at grazing angles, where Fresnel turns each into a mirror) get less specular and room light and
+       * the same kind of cap, so the outline doesn't glitter white and gold. Specular 1 = three's default.
+       */
+      finSpecular: 1,
+      finMaxLum: 1.0,
+      /** Every part's linear brightness ceiling: a glossy prop's highlight overflowed the half-float buffers (Inf), and the bloom blacked out the frame. */
+      hdrMax: 8,
+      /**
+       * The cap on every other lit surface (body, eyes, props, tufts), below the bloom threshold: white wool under the
+       * warm rims (Nimbusheep) bloomed into a peach blob. Only glow blooms.
+       */
+      surfaceMaxLum: 1.15,
+      /**
+       * Glow (the ORM map's alpha × the sidecar's glow.strength, on the base colour or glow.tint): its twinkle, ±amp
+       * at hz with a phase per texel cell (cells per UV unit), still under Reduce motion; strengths above maxStrength
+       * are refused (src/art3d/ultra/parts.ts glowOf).
+       */
+      glow: { twinkleAmp: 0.2, twinkleHz: 0.25, cells: 512, maxStrength: 20 },
+      cardSpecular: 0.35,
+      cardEnv: 0.3,
+      cardMaxLum: 1.1,
       /**
        * Eyes: glossy but dark, so the iris stays the reference's deep teal. three uses the scene's environment strength
        * on materials without their own envMap, so the eye's reflections are cut with a weaker specular instead.
@@ -1655,10 +1753,17 @@ export const ART = {
     post: {
       msaa: 4,
       aoIntensity: 0.45,
+      /**
+       * The most the screen-space AO darkens a pixel (its multiplier never goes below this): every Ultra breed bakes
+       * its own soft AO, and GTAO on top turned Nimbusheep's wool creases near-black. Shallow creases (Puddlepup) are
+       * above it and unchanged.
+       */
+      aoFloor: 0.8,
       aoRadius: 0.25,
       /** Only real highlights bloom (at 0.9 the lit cream and the fins glowed). */
       bloom: { strength: 0.18, radius: 0.5, threshold: 1.2 },
-      grade: { saturation: 1.0, contrast: 1.02, warmth: 0.02, vignette: 0.08 },
+      /** warmth: added to highlights only (luminance 0.4 → 1), so dark coats keep their hue; it carries the rims' old warmth. */
+      grade: { saturation: 1.0, contrast: 1.02, warmth: 0.035, vignette: 0.08 },
       dof: { aperture: 0.002, maxBlur: 0.008 },
     },
     /**

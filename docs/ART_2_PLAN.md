@@ -1,6 +1,6 @@
 # Art 2.0: Blender monsters and scenes
 
-**Status:** written Oct 28, 2026. The owner approves it by running P0 and P1. This is the spec behind the prompts in `ART_2_PROMPTS.md` (repo root): one milestone each, P0 to P19.
+**Status:** written Oct 28, 2026. The owner approves it by running P0 and P1. This is the spec behind the prompts in `ART_2_PROMPTS.md` (repo root): one milestone each, P0 to P19. **Updated Nov 7, 2026:** the owner approved Puddlepup's Art 2.1 Ultra look (`docs/ART_2_DETAIL.md`), and the other monsters now come in batches of 5 (§6, §8) on the Ultra budgets (§3.6).
 
 **One breed per monster:** the main/sub mix system is retired (owner, Oct 28). Every monster is its own whole breed with one fixed design, and breeding makes another whole breed. P0 removes mixing from the rules and saves. That frees every breed to be designed and painted individually in Blender for the highest quality, with no recolouring and no swapped parts.
 
@@ -14,7 +14,7 @@
 
 The game (three.js) only displays what Blender made. Code still draws the UI, the Classic fallback monsters and V1's small effect sparks.
 
-**How it runs:** P0 retires mixing (rules and saves, no art). P1 builds one pilot monster. P2 puts it in the first real scene (Waterfall Stand). Nothing else starts until the owner has signed off both on the phone, because they set the look for everything after. Then come batches: the monsters by body plan, the farm, battles, the drill scenes, every other scene, and a final polish.
+**How it runs:** P0 retires mixing (rules and saves, no art). P1 builds one pilot monster, rebuilt at Art 2.1's detail (`docs/ART_2_DETAIL.md`, P1.1–P1.2). Its look sets the look for everything after: the owner approved it on the phone on **Nov 7, 2026**, and the monster batches started then (§8). P2, the first real scene (Waterfall Stand), moved into roadmap step 2, the walkable 3D farm, so it no longer has to come first. The owner's roadmap after that: 3D event scenes, then the 3D duel as the real battle.
 
 ## 0. Decisions
 
@@ -27,7 +27,7 @@ The game (three.js) only displays what Blender made. Code still draws the UI, th
 | Look | "Slight anime/cartoon" (§2). |
 | Faces | Anime-style eyes and mouths made in Blender as a face sheet (every expression), shown on small patches of the 3D head. The game swaps cells of the sheet for expressions and blinks, and slides the pupils for glances. |
 | Skeletons and motion | One rig template and one clip set per body plan (9 in all), shared by its breeds. The clip names are a contract (§5) that every scene can call. |
-| The drawn (SVG) monsters | Stay, as the fallback (no WebGL, a model still loading, offline before its first download) and as a setting: Settings → Graphics → Monsters: **3D / Classic**. A breed without a model shows Classic. |
+| The drawn (SVG) monsters | Stay, as the fallback (a model still loading, offline before its first download, and no WebGL where the portrait picture is missing) and as a setting: Settings → Graphics → Monsters: **3D / Classic**. A breed without a model shows Classic. |
 | Pilot breed | **Puddlepup** (the owner may swap it). It's the balanced starter most players meet first; its quadruped body plan serves 9 breeds; its round shapes suit the style; and a water monster suits the Waterfall Stand pilot. |
 | New dependencies (approved by running P1) | `three` (runtime, in a lazy chunk) and a dev-only glTF optimiser (`@gltf-transform/cli` with meshopt). Nothing else without asking. |
 | Reference pictures | Every monster has the owner's ChatGPT reference set in `chatgpt/monsters/<NN>-<breed-id>/`: `PROMPTS.md` (its creature card and "Notes for Claude Code"), `1-hero.png` (the design lock), `2-turnaround.png`, `3-faces.png`, `4-details.png`, `5-poses.png`, and where they apply `variant-<variant-id>.png`, `grown-*.png`, `cocoon-*.png` and `6-scale.png`. Read `chatgpt/FOR-CLAUDE-CODE.md` and the owner's two choices at the top of `chatgpt/CHECKLIST.md`, then view every picture before modelling. Which source wins: the card on part counts and which parts exist (image models miscount; log any mismatch); the pictures on shapes, proportions, markings, placement, surface detail and materials (the hero over the others, the turnaround for measurements); CONTENT §2.2 and `src/art/monster/variants.ts` on exact colours (never sample hex from a picture). The pictures are gitignored reference only and never shipped. §2.4 points to the style text they were made with. |
@@ -55,6 +55,8 @@ The game (three.js) only displays what Blender made. Code still draws the UI, th
 ## 2. Art bible: "slight anime/cartoon"
 
 ### 2.1 Monsters
+**Since Puddlepup's approval (Nov 7, 2026) the monsters use Art 2.1's film look** (`docs/ART_2_DETAIL.md` §3.4–§3.7): soft studio light with a cool fill and near-neutral rims, standard physical materials, fur, scales and plates baked from a detailed source, **no outlines**, and glossy 3D eye lenses with a baked face and blink bones (morph targets come with the cinematic set, not built yet). The shapes, colour and motion rules below still apply. The cel shading and outline rules are Art 2.0's: they describe the Art 2.0 models that normal play shows until the walkable-farm step.
+
 - **Shapes:**
   - Soft, rounded and chunky, with clear silhouettes that read at 64 px.
   - Babies lean chibi (the head is about 45% of the height); grown forms and big breeds less so.
@@ -98,13 +100,15 @@ The game (three.js) only displays what Blender made. Code still draws the UI, th
 - Describe the style in plain words in code and docs; don't name other games, films or studios as references.
 
 ### 2.4 The style text for the ChatGPT reference pictures
-The style text now in use is the project instructions in `chatgpt/PROJECT-INSTRUCTIONS.md`: every picture in `chatgpt/monsters/` was made with it, with `chatgpt/style-anchor.png` (Puddlepup's hero) attached to each hero. The owner chose its **film** look (not the anime cel variant described under its box) and a **fur** coat for Puddlepup (`chatgpt/CHECKLIST.md`). The older style text that used to sit here, and the Style Guide in `docs/CONCEPT_PROMPTS.md`, are retired. How the film look changes the shading and outline rules of §2.1 is proposed in `docs/ART_2_DETAIL.md` (Art 2.1) and waits for the owner's approval.
+The style text now in use is the project instructions in `chatgpt/PROJECT-INSTRUCTIONS.md`: every picture in `chatgpt/monsters/` was made with it, with `chatgpt/style-anchor.png` (Puddlepup's hero) attached to each hero. The owner chose its **film** look (not the anime cel variant described under its box) and a **fur** coat for Puddlepup (`chatgpt/CHECKLIST.md`). The older style text that used to sit here, and the Style Guide in `docs/CONCEPT_PROMPTS.md`, are retired. How the film look changes the shading and outline rules of §2.1 is in `docs/ART_2_DETAIL.md` (Art 2.1), approved with Puddlepup on Nov 7, 2026.
 
 ## 3. Architecture
 
 ### 3.1 The pipeline (the owner's PC, headless Blender 5.2)
 
 Blender runs headless only (CLAUDE.md, "Tools on the owner's PC"): `blender -b --factory-startup --python <script> -- <args>`, with every script pinned to the installed version's API.
+
+**Ultra monsters (Art 2.1, the pipeline every batch uses):** `tools/blender/monsters/build_ultra.py` builds a look from its recipe `breeds/<breed>_ultra.py` (a grown form: `<breed>_grown_ultra.py`, ID `<breed>-grown`), and `tools/art/ultra.ts` ships it to `public/models/monsters-ultra/` (the model, its Lite copy and the sidecar). The recipe contract is `tools/blender/monsters/breeds/RECIPE.md`; the techniques are ART_2_DETAIL §3 and §9. The tree below is Art 2.0's, which still makes the models normal play shows.
 
 ```
 tools/blender/
@@ -147,6 +151,8 @@ public/baked/scenes/<scene>/         plates (.webp), loops (.mp4), scene.json, p
   - `npm run art:portraits`
 
 ### 3.2 The runtime (`src/art3d/`, one lazy chunk)
+**Ultra monsters** draw on Art 2.1's film renderer (`src/art3d/perf/`, shared by `src/art3d/ultra/`, the Lab → 3D Gallery and Battle 3D): ART_2_DETAIL §3.4–§3.7 and §9.3. The registry of finished breeds is `src/art/ultraLooks.ts` (`ULTRA_LOOKS`). The list below is the Art 2.0 runtime, which normal play still uses.
+
 - **Loader and cache:** `three` with `GLTFLoader` and the meshopt decoder. A model loads once, is cloned per use (`SkeletonUtils`), and is disposed when nothing uses it.
 - **Toon material:** one shader for every monster. It does:
   - a two-tone cel ramp with a soft terminator, plus the rim light;
@@ -170,9 +176,11 @@ public/baked/scenes/<scene>/         plates (.webp), loops (.mp4), scene.json, p
   - **Ultra:** up to 2× pixel ratio, MSAA, outlines, springs and a soft shadow.
   - **High:** 1.5×, outlines and springs.
   - **Lite:** 1×, no outline, no springs, a 30 fps cap.
-- **Fallback:** Classic SVG when the setting says so, when WebGL fails, and while a model loads (it cross-fades in).
+- **Fallback:** Classic SVG when the setting says so and while a model loads (it cross-fades in); when WebGL fails, the portrait picture (or Classic if the picture is missing).
 
 ### 3.3 Where monsters appear
+**Ultra monsters, for now:** each finished batch shows in **Lab → 3D Gallery** (`#lab/gallery3d`) and in **Battle 3D**, where any finished breed can fight on either side (BATTLE_3D §8.4); the owner chose this on Nov 7, 2026. The ranch, the Monster Card and the cups switch to them later, in the walkable-farm step (roadmap step 2); until then they show the Art 2.0 models and the Classic drawings as below.
+
 `MonsterPortrait` is used on about 29 screens.
 - **Live 3D** where the monster is the subject of the screen:
   - the ranch stage, the battle arena and the Monster Card;
@@ -219,15 +227,32 @@ public/baked/scenes/<scene>/         plates (.webp), loops (.mp4), scene.json, p
 The monster's toon shader takes the key, fill and rim light from `scene.json`. On the ranch stage they come from the season and the weather. So a monster at golden hour is warm, under the waterfall it's cool and wet, and at night it's moonlit.
 
 ### 3.6 Budgets
-Tests and `check:build` enforce these where they can. The owner set the Art 2.1 targets on Nov 1, 2026 (`docs/ART_2_DETAIL.md` §2 and §5: an Ultra tier for S25-class phones, High and Lite); the table below stands until the owner approves the spike's look and the phone's Performance check result, and step A1 replaces it.
+The owner set these targets on Nov 1, 2026 (ART_2_DETAIL §2 and §5) and approved the look they buy with Puddlepup on Nov 7, 2026. Every look ships as two files in `public/models/monsters-ultra/`: the **Ultra** model `<look>.glb` and its **Lite** copy `<look>.lite.glb`, for phones set to Lite effects. Both are runtime-cached, never precached. `tools/art/ultra.ts` refuses to ship a look over budget (it exits with the reasons), and `src/art/ultraLooks.test.ts` checks every shipped one.
+
+**Per monster:**
+
+| Item | Ultra (`<look>.glb`) | Lite (`<look>.lite.glb`) |
+|---|---|---|
+| Triangles | ≤ 100,000 (aim 60–80k) | ≤ 12,000 in all: the membranes keep a quarter of theirs, props up to 2,400 (a recipe's `LITE_PROPS_TRIS` raises it, at most 60%), the body takes the rest |
+| Fur | ≤ 5,000 standing locks; ≤ 6,000 fur cards in ≤ 3 layers | no cards and no tuft, unless the recipe's `LITE_KEEP` keeps them (they count in the 12k) |
+| Body atlas | 2048² colour, normal and ORM, KTX2 ETC1S; a glow mask in the ORM's alpha where the breed glows | 1024² WebP at quality 78 / 84 / 76 (colour / normal / ORM), the normal map lightly blurred first (1.5 px) |
+| Each secret variant | its own 2048² colour map on the same UVs (normal and ORM shared), plus any props only it wears | its own 1024² colour map |
+| UVs | ≤ 32 texels shared between faces in any mesh (the build stops above it) | the same UVs |
+| Skeleton and clips | ≤ 64 deform bones (+ spring chains); the ★ clips, Battle 3D's moves and the blink (§5) | the same skeleton and clips |
+| Face | baked on the eye lenses and the body, with blink bones (ART_2_DETAIL §9.1) | the same |
+| Cinematic set (Monster Card, cutscenes) | 2048² head set + 2048² face sheet + ≤ 24 morph targets (not built yet) | none |
+| Size | built `HEIGHT_UNITS / 150` m tall, so every breed stands at its true size beside Puddlepup | the same |
+| Download | **≤ 8 MB** (batch 1: 4.0–5.9 MB) | **≤ 1.5 MB** (batch 1: 1.0–1.4 MB) |
+| Graphics memory | ≈ 15 MB in battle with KTX2 (+ 15 MB for the cinematic set) | ≈ 4 MB |
+
+ART_2_DETAIL §5.1 also has a **High** column (≤ 40,000 triangles, ≤ 3.5 MB). No High copy is made yet: every setting but Lite draws the Ultra file.
+
+**Art 2.0's monster budget** (the models normal play still shows, in `public/models/monsters/`): ≤ 700 KB per look, ≤ 12,000 triangles, ≤ 64 deform bones, WebP textures ≤ 1024² (glow ≤ 512², a variant's set ≤ 250 KB) and a face sheet ≤ 512². They retire when the ranch switches to Ultra.
+
+**Everything else** (tests and `check:build` enforce these where they can):
 
 | Item | Budget |
 |---|---|
-| One look's `.glb` (mesh, rig, clips and textures, optimised) | ≤ 700 KB (aim for ~400 KB) |
-| Textures | WebP inside the `.glb` (`EXT_texture_webp`), ≤ 1024×1024 base colour, ≤ 512×512 glow; a secret variant's set ≤ 250 KB |
-| Triangles | ≤ 12,000 per look (aim for 6–9k) |
-| Deform bones | ≤ 64 |
-| Face sheet | made in Blender, inside the `.glb`, ≤ 512×512 |
 | One effect flipbook | ≤ 250 KB WebP |
 | The art3d chunk (three, the loader, the decoder, our code) | ≤ 300 KB gzipped, lazy (a one-time download budget, not a performance one; raised from 200 with the owner on Oct 29, 2026, as P1 landed at ~230) |
 | One plate | ≤ 300 KB WebP |
@@ -235,28 +260,31 @@ Tests and `check:build` enforce these where they can. The owner set the Art 2.1 
 | A scene's `props.glb` | ≤ 300 KB |
 | A whole scene | ≤ 1.5 MB |
 | The install (precache) | grows by ≤ 2 MB over the whole of Art 2.0 (code, the fallback stills, the breed portraits) |
-| Frame rate | 60 fps on a Galaxy S25 Ultra on the ranch (the monster plus keepsakes), in battle (two monsters, Flashy effects) and in Meadow Dash (four runners); Lite holds 30 fps on a weak phone |
-| Memory | models and textures are disposed when a screen closes |
+| Frame rate | 60 fps on a Galaxy S25 Ultra on the ranch (the monster plus keepsakes), in battle (two monsters, Flashy effects) and in Meadow Dash (four runners); on Ultra still 60 after 10 minutes of battle, with dynamic resolution (ART_2_DETAIL §3.6, §5.2); Lite holds 30 fps on a weak phone |
+| Memory | about 1 GB of graphics memory for the whole game on Ultra, to start (ART_2_DETAIL §6); models and textures are disposed when a screen closes |
 
 ### 3.7 Offline and caching
 - **Precache:** in `vite.config.ts`, `models/**` and `baked/scenes/**` leave the precache (`globIgnores`), except the fallback stills and the breed portraits.
 - **Runtime cache:** a cache-first rule keeps every model, plate and loop once it has been downloaded, so the game keeps working offline afterwards.
+  - A model's sidecar (`models/**/*.json`) is fetched network-first, and an Ultra `.glb` is asked for as `<look>.glb?v=<build>` (the sidecar's `build`, a short hash of the file), so a phone that cached an older model gets the re-shipped one.
 - **Download all art:** P19 adds this to Settings (showing its size), for playing offline from day one.
 - **Repo size:** commit art files only once they're final for that milestone, never scratch renders, to keep the repo's history small.
 
 ## 4. Body plans, rigs and batches
 
-| Plan | Breeds (looks) | Rig notes | Prompt |
+The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below; each other plan is written when its first batch starts.
+
+| Plan | Breeds (looks) | Rig notes | Batch |
 |---|---|---|---|
-| quadruped | Puddlepup · Tumblefox, Cobblemaw, Cinderlynx, Nimbusheep · Starhowl, Petalphant, Rammerjack, Hearthwing (young, grown) · Stripeneck (31) | spine, neck, head, jaw, two-bone ears, four three-bone legs, a tail chain. Options: a long neck and wings (grown Hearthwing), a longer 4–5 bone neck and hooves (Stripeneck), a trunk chain (Petalphant) | P1 · P3 · P4 |
-| biped | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | P5 |
-| floater | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | P6 |
-| shelled | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs. Crab option: six legs, two claws (one big), eye stalks | P7 |
-| blob | Bloatoad, Scrollopus | a squash chain for the body, a throat sac (Bloatoad), six to eight tentacle chains (Scrollopus) | P7 |
-| serpent | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline, head and jaw. For Aurelwyrm, which floats: ribbon-fin chains, whiskers, antlers | P8 |
-| avian | Galeheron, Paladove (young, grown) | long legs, a neck chain, head, beak, two wings (four on grown Paladove), tail and crest plumes | P8 |
-| insect | Nibblegrub, Velvesper | a segment chain with tiny legs, antennae; moth wings (Velvesper) | P9 |
-| construct | Gearhoot, Lootlid | Gearhoot: an owl body with gear-feather wings, a turning key and a monocle. Lootlid: a box body whose lid is the jaw, stubby legs, a tongue chain | P9 |
+| quadruped | Puddlepup · Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack · Stripeneck (31), Petalphant, Cobblemaw, Hearthwing (young, grown) | spine, neck, head, jaw, two-bone ears, four three-bone legs, a tail chain. Options: a long neck and wings (grown Hearthwing), a longer 4–5 bone neck and hooves (Stripeneck), a trunk chain (Petalphant) | P1 · B1 · B2 |
+| biped | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | B3 |
+| floater | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
+| shelled | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs. Crab option: six legs, two claws (one big), eye stalks | B5 |
+| blob | Bloatoad, Scrollopus | a squash chain for the body, a throat sac (Bloatoad), six to eight tentacle chains (Scrollopus) | B5 |
+| serpent | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline, head and jaw. For Aurelwyrm, which floats: ribbon-fin chains, whiskers, antlers | B6 |
+| avian | Galeheron, Paladove (young, grown) | long legs, a neck chain, head, beak, two wings (four on grown Paladove), tail and crest plumes | B6 |
+| insect | Nibblegrub (and its cocoon), Velvesper | a segment chain with tiny legs, antennae; moth wings (Velvesper) | B7 |
+| construct | Gearhoot, Lootlid | Gearhoot: an owl body with gear-feather wings, a turning key and a monocle. Lootlid: a box body whose lid is the jaw, stubby legs, a tongue chain | B7 (Gearhoot), B5 (Lootlid) |
 
 ## 5. The clip contract
 
@@ -269,7 +297,7 @@ Every look has every clip below, under exactly these names.
   - markers (`step`, `impact`, `release`, `land`) for sound and effects.
 - **Faces:** a clip can set a face at a marker.
 
-★ = built in P1 for Puddlepup · ◆ = added in P2 · everything else comes in P3 (quadrupeds) and in each plan's batch.
+★ = built in P1 for Puddlepup · ◆ = added in P2 (now with the walkable farm) · everything else comes with the batches and the scenes that need it. The Ultra looks also carry Battle 3D's moves (`strafe_l` / `strafe_r`, `sidestep_l` / `sidestep_r`) and `blink` (ART_2_DETAIL §9.1).
 
 | Group | Clips |
 |---|---|
@@ -284,41 +312,35 @@ Every look has every clip below, under exactly these names.
 
 ## 6. The review loop (Claude can't see while it builds)
 
-A breed, scene or clip isn't done until it has been through all six steps.
+This is how every Ultra monster is made and checked, as run in batch 1 (Nov 7, 2026). Scenes and clips follow the same idea: sheets, fresh eyes, then the owner.
 
-1. **Blender sheets** in `tools/blender/out/`:
-   - a turnaround (front, ¾ front, side, ¾ back, back);
-   - the faces;
-   - texture close-ups (head, body, markings, any glow);
-   - its secret variant, if it has one;
-   - an 8-frame strip of every clip.
+**For each breed:**
+1. **The recipe.** A builder reads the breed's reference pictures and card in `chatgpt/monsters/<NN>-<breed-id>/` (the "which source wins" rules of §0 and `chatgpt/FOR-CLAUDE-CODE.md` §2) and writes `tools/blender/monsters/breeds/<breed>_ultra.py` by the contract in `breeds/RECIPE.md` (a grown form: `<breed>_grown_ultra.py`).
+2. **Shape previews** (`npm run art:shape -- <breed>`, about a minute in flat colours, in `art-review/<breed>-shape/`): repeat until the shapes, proportions and height match the turnaround. No full build before that.
+3. **The full build**, always through the build-slot lock, which lets at most two full builds run at once on this PC: `tools/blender/slot.sh npm run art:ultra -- <breed> --blender`, in the background with a log. It builds, bakes, rigs, makes the clips, exports and ships the Ultra model, its Lite copy and the sidecar. It stops, with the reason in words, when a budget (§3.6) is broken or two faces share texels.
+4. **The sheets.** The Blender sheets in `tools/blender/out/<look>/review/` (turnaround, head, key poses of the clips, each variant) and the film sheet from `npm run art:ultra-review -- <breed>` in `art-review/<breed>-ultra/`: the game's own renderer and part rules, every view beside its reference picture, the clips' key frames, every variant, the Lite copy, and 64 / 100 / 200 px. The builder looks at every sheet; the film sheet is the one that counts.
+5. **Fresh-eyes review.** A new agent each round, one that hasn't seen the work, judges the sheets against the reference pictures, the card, the CONTENT brief and palette, and §2. It answers the same two questions every time, each **yes, partly or no**:
+   - **detail and design:** does it match the pictures?
+   - **64 px:** does it read at a glance?
 
-   Look at every sheet. Fix shape, proportion, deformation (no collapsing joints, no parts passing through each other) and timing.
-2. **In-game sheets** (`npm run art:review`): Playwright in the installed Chrome renders the Lab's Models viewer and the real screens at 412 px wide into `art-review/` (gitignored). They show the same angles and faces, the secret variant (if any), six key frames of the main clips, the ranch stage and a battle. The game's renderer decides the final look, so this is the sheet that counts.
-3. **Fresh-eyes review:** a subagent that hasn't seen the work gets the in-game sheets, the breed's CONTENT brief and palette, §2, and the breed's reference pictures and card from `chatgpt/monsters/<NN>-<breed-id>/` (with the "which source wins" rules of `chatgpt/FOR-CLAUDE-CODE.md` §2). It lists what's off:
-   - off-brief or off-style;
-   - ugly deformation;
-   - unreadable at 64 px;
-   - too close to a famous character.
+   It also checks deformation in the clips and that the design is not too close to a famous character. It lists what landed since the last round and the top fixes, most important first. Its verdict is added to `art-review/<breed>-ultra/verdicts.txt`.
+6. **Rounds.** Fix the real problems and build again: **up to 3 review rounds**. After round 3 comes **one polish pass for defects only** (a geometry or texture fault, a tear when a joint bends; no taste changes), which the Claude session running the batch checks on the sheets itself, without a fourth reviewer. Taste items still open go to the owner as known issues in PROGRESS.
 
-   Fix the real problems; don't chase taste nitpicks.
-4. **Budgets and frame rate** (§3.6) are checked, and the art tests pass.
-5. **Lineup:** every batch ends with a lineup sheet of every finished breed side by side, in the same light and scale, Puddlepup first, so the style doesn't drift.
-6. **For the owner:**
-   - Name the files of the final sheets (the in-game sheets and the lineup) in the chat, so they open in VS Code with a click.
-   - PROGRESS says how each new breed should look and move.
-   - The phone checklist names what to look at.
+**For each batch:**
+7. **Lineup:** `npm run art:lineup -- puddlepup <breed…>` puts every finished look side by side at true size, Puddlepup first (the approved yardstick), in `art-review/lineup/`, so the style doesn't drift.
+8. **Budgets and tests:** `src/art/ultraLooks.test.ts` (the files, clips, variants and budgets of every look in the registry) and `npm run verify`.
+9. **The owner decides.** The batch goes into the game (Lab → 3D Gallery and Battle 3D, §3.3). The owner hears which files to open (the film sheets and the lineup), PROGRESS says how each new breed should look and move, and the phone checklist names what to look at. Their notes are applied before the next batch ships.
 
 **The quality bar.** A breed is done when:
-- it's clearly its brief from every angle, and charming at 64 px;
+- it's clearly its pictures from every angle, and charming at 64 px;
 - it shows no faceting at phone size;
 - its joints bend cleanly in every clip;
-- its feet meet the ground, with a contact shadow;
+- its feet meet the ground, with a contact shadow, and it stands at its true height beside Puddlepup;
 - its motion has anticipation, follow-through and lag, and its loops are seamless;
-- every face is distinct at 100 px;
-- its painted textures and markings read clearly at phone size and match its brief;
+- its face reads at 100 px (Ultra faces are baked for now; expressions come later, ART_2_DETAIL §9.1);
+- its painted textures and markings read clearly at phone size and match its brief, with no specks, glitter or dark seams (no shared or unbaked texels in the atlas);
 - it's lit by its scene;
-- it runs at 60 fps on the S25 Ultra.
+- it runs at 60 fps on the S25 Ultra, and its Lite copy still reads as the breed.
 
 ## 7. Scenes
 
@@ -328,7 +350,7 @@ A breed, scene or clip isn't done until it has been through all six steps.
 - **Body plans:** every drill works for all nine.
 - **Replacing the vignettes:** each scene replaces that drill's prop vignette in `DrillResult`. The old vignette stays for drills not built yet, and as a fallback.
 
-**Waterfall Stand (P2, the pilot scene).**
+**Waterfall Stand (P2, the pilot scene; now part of roadmap step 2, the walkable farm).**
 - **The set:** a mossy rock in a pool at the foot of a waterfall, with cliffs, ferns and mist.
 - **The action:**
   - The monster climbs onto the rock and braces.
@@ -394,6 +416,14 @@ Each P is one milestone in the CLAUDE.md workflow:
 5. commit `Art P<n>: <summary>` with a minor version bump, push, and check the deploy;
 6. the phone checklist, then stop.
 
+**The owner's roadmap (Nov 2026)** regroups what follows into four steps:
+1. **Every monster in 3D:** the batches of 5 below (they replace P3–P9). Each batch is one milestone with a minor version bump (batch 1: v1.23.0).
+2. **The walkable 3D farm:** P10, with P2's Waterfall Stand folded in. The ranch, the Monster Card and the cups switch to the Ultra monsters here.
+3. **3D event scenes.**
+4. **The 3D duel as the real battle.**
+
+How P11–P19 fit steps 3 and 4 is settled when they start.
+
 **P0 · One breed per monster** (rules and saves, no art). *Done when every monster is one whole breed everywhere.*
 - **The rules:** no sub breed anywhere. No sub palette, accent part or quirk technique; no blended stats, grades, guts or lifespan. A monster's name is its breed's name (secret variants keep theirs).
 - **The Shrine:** the sub step goes, but every random draw stays in the same order, so each phrase still makes the same breed, stats and personality.
@@ -415,30 +445,40 @@ Each P is one milestone in the CLAUDE.md workflow:
 - The review loop (§6).
 - The docs: CLAUDE.md, VISUAL_UPGRADE_PLAN §0, a new Art 2.0 section in BUILD_PLAN, GAME_DESIGN §22, CREDITS, the style text in CONCEPT_PROMPTS (§2.4), and `.gitignore` entries for `concept/` and `art-review/`.
 
-**P2 · Pilot scene (Waterfall Stand with Puddlepup).** *Done when the owner signs it off. From then on, P1 and P2 are the reference for the look.*
+**P1.1–P1.2 · Puddlepup at Art 2.1** (ART_2_DETAIL §9; Nov 2–7, 2026). *Done: the owner approved the look on Nov 7, 2026. Puddlepup is now the reference for every batch.*
+- A1, the Ultra pipeline (`lib/surface.py`, `lib/bake.py`, `build_ultra.py`, `tools/art/ultra.ts`); A2, the film runtime (`src/art3d/perf/`), first in Battle 3D.
+- Puddlepup rebuilt from its pictures with every ★ clip, Battle 3D's moves and Songheart Puddlepup, through the §6 review loop.
+
+**P2 · Pilot scene (Waterfall Stand with Puddlepup).** *Moved into roadmap step 2, the walkable 3D farm (owner, Nov 7, 2026), so the batches no longer wait for it. Done when the owner signs it off.*
 - The scene pipeline (§3.4, §3.5).
 - Waterfall Stand with all five endings (§7.1).
 - The ◆ clips and the wet look.
 - `DrillResult` plays the scene, and the sound markers drive the drill cue.
 - Sandbox → Preview scenes. Breeds without a model appear in the scene as Classic.
 
-**P3–P9 · Monsters by body plan** (§4). For each breed:
-- the full §3.1 build and the §6 review loop;
-- every §5 clip for its plan (P3 also finishes Puddlepup's, and adds Songheart Puddlepup);
-- its secret variant, if it has one;
-- live everywhere, and checked in Waterfall Stand.
+**Every monster in 3D: batches of 5** (roadmap step 1; they replace P3–P9's batches of 4). The owner, Nov 7, 2026: *"Create them the same way you have been, make them in batches of 5 for upload. After each finishes have an independent reviewer come in and check it against the photos and make suggestions; after you make 5 put them on the game and I will let you know if they are up to the quality I would like."*
 
-Each batch ends with a lineup sheet.
-- **P3, quadrupeds 1:** Tumblefox, Cobblemaw, Cinderlynx, Nimbusheep.
-- **P4, quadrupeds 2:** Starhowl, Petalphant, Rammerjack, Hearthwing (young and grown).
-- **P5, bipeds:** Quillion, Grumblestone, Pluckrex (young and grown), Gloomgrin.
-- **P6, floaters:** Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance.
-- **P7, shelled and blobs:** Moatshell, Reefclaw, Bloatoad, Scrollopus.
-- **P8, serpents and birds:** Coilfang, Aurelwyrm, Galeheron, Paladove (young and grown).
-- **P9, insects and constructs:** Nibblegrub, Velvesper, Gearhoot, Lootlid, and the cocoon.
+35 looks in all: the 31 breeds after Puddlepup, 3 grown forms and Nibblegrub's cocoon. For each:
+- the Ultra build (§3.1) and the §6 review loop;
+- the Ultra clip set (the ★ clips, Battle 3D's moves and the blink; §5);
+- its secret variants, if it has any;
+- its Lite copy;
+- a line in `src/art/ultraLooks.ts`, so it appears in Lab → 3D Gallery and in Battle 3D (§3.3).
+
+Each batch ends with a lineup sheet and the owner's verdict on the phone.
+
+| Batch | Looks |
+|---|---|
+| **B1** (v1.23.0): four-legged fur and wool | Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack |
+| **B2** | Stripeneck, Petalphant, Cobblemaw, Hearthwing (young and grown) |
+| **B3** | Quillion, Grumblestone, Gloomgrin, Pluckrex (young and grown), Plumdrake |
+| **B4** | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance |
+| **B5** | Moatshell, Reefclaw, Bloatoad, Scrollopus, Lootlid |
+| **B6** | Coilfang, Aurelwyrm, Galeheron, Paladove (young and grown) |
+| **B7** | Nibblegrub and its cocoon, Velvesper, Gearhoot |
 
 **P10–P12 · The farm and battles** (§7.2, §7.3).
-- **P10:** the farm.
+- **P10:** the farm (roadmap step 2, with Waterfall Stand from P2).
 - **P11:** battles.
 - **P12:** visible attacks.
 
@@ -463,9 +503,9 @@ Each batch ends with a lineup sheet.
 **After Art 2.0:** a new breed (such as the combo-only bull-warrior BUILD_PLAN mentions) is one short prompt: a recipe on an existing body plan, then the review loop.
 
 ## 9. Risks
-- **A breed still looks off after two rounds of feedback:** re-run the fix with Fable 5.1, put its reference pictures (`chatgpt/monsters/<NN>-<breed-id>/`) beside the in-game sheets again, or simplify the design.
-- **Style drift across batches:** the lineup sheet in every batch, with P1 and P2 as the reference.
+- **A breed still looks off after three review rounds:** the defect-only polish pass (§6), then the owner's call on what's left; or re-run the fix with Fable 5.1, put its reference pictures (`chatgpt/monsters/<NN>-<breed-id>/`) beside the film sheet again, or simplify the design.
+- **Style drift across batches:** the lineup sheet in every batch, with Puddlepup (approved Nov 7, 2026) as the reference.
 - **Frame rate or heat on weaker phones:** the Quality tiers. Lite drops outlines and springs and caps at 30 fps, and Classic is always there.
 - **Download size and repo history:** the budgets (§3.6), runtime caching, and committing finals only.
-- **WebGL lost or unavailable:** fall back to Classic without an error, and restore when the context returns.
+- **WebGL lost or unavailable:** fall back without an error to the portrait picture (or Classic if the picture is missing), and restore when the context returns.
 - **Long sessions:** a big batch may not fit one session. Finish what's done cleanly (verify, PROGRESS, commit), say what's left, and the next prompt continues it.

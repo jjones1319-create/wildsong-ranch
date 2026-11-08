@@ -121,6 +121,22 @@
    7
   ]
  },
+ "review": {
+  "centre": [
+   0,
+   0.07,
+   0.5
+  ],
+  "size": 1.85,
+  "head": {
+   "target": [
+    0,
+    -0.42,
+    0.76
+   ],
+   "size": 0.98
+  }
+ },
  "clips": {
   "idle": {
    "loop": true,
@@ -663,7 +679,9 @@
    "faces": []
   }
  },
- "build": {
+ "restHeightWithProps": 0.9858,
+ "build": "c05f2cbf62",
+ "buildStats": {
   "cards": {
    "total": 2199,
    "layers": [
@@ -676,11 +694,17 @@
    "head": 10399,
    "body": 19011
   },
-  "sourceTriangles": 3921290
+  "sourceTriangles": 3921290,
+  "uvOverlapTexels": {
+   "lo_body": 0,
+   "lo_eyes": 0,
+   "lo_fins": 0
+  }
  },
  "files": {
   "glb": "puddlepup.glb",
-  "glbWebp": "puddlepup.webp.glb"
+  "glbWebp": "puddlepup.webp.glb",
+  "lite": "puddlepup.lite.glb"
  },
  "textures": {
   "body": {
@@ -692,7 +716,8 @@
    "normal": {
     "ktx2": "puddlepup_normal.ktx2",
     "webp": "puddlepup_normal.webp",
-    "px": 2048
+    "px": 2048,
+    "ktx2Px": 1024
    },
    "orm": {
     "ktx2": "puddlepup_orm.ktx2",
@@ -708,7 +733,7 @@
    }
   }
  },
- "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use COLOR_1 (three: geometry attribute color_1) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false.",
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
   "triangles": 61099,
   "trianglesByMesh": {
@@ -719,50 +744,51 @@
    "lo_tuft": 110,
    "__variant_songheart-puddlepup": 1
   },
-  "vertices": 44186,
+  "vertices": 44314,
   "cards": 2199,
   "cardLayers": 2,
   "joints": 28,
   "animations": 32,
-  "animationBytes": 174824,
+  "animationBytes": 184492,
   "download": {
-   "glb": 4672376,
-   "glbKtx2": 4672376,
-   "glbWebp": 4475628,
+   "glb": 4955660,
+   "glbKtx2": 4955660,
+   "glbWebp": 4489548,
    "ktx2": {
-    "body": 2545848,
-    "variants": 847625
+    "body": 2799167,
+    "variants": 847609
    },
    "webp": {
-    "body": 2493502,
-    "variants": 703246
+    "body": 2482514,
+    "variants": 698170
    },
-   "totalKtx2": 4672376,
-   "totalWebp": 4475628
+   "totalKtx2": 4955660,
+   "totalWebp": 4489548
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 829685,
-     "webp": 677130
+     "ktx2": 831124,
+     "webp": 673786
     },
     "normal": {
      "px": 2048,
-     "ktx2": 828137,
-     "webp": 943176
+     "ktx2Px": 1024,
+     "ktx2": 1079060,
+     "webp": 943792
     },
     "orm": {
      "px": 2048,
-     "ktx2": 888026,
-     "webp": 873196
+     "ktx2": 888983,
+     "webp": 864936
     }
    },
    "songheart-puddlepup": {
     "base": {
      "px": 2048,
-     "ktx2": 847625,
-     "webp": 703246
+     "ktx2": 847609,
+     "webp": 698170
     }
    }
   },
@@ -816,6 +842,34 @@
     "TEXCOORD_0"
    ]
   },
+  "problems": []
+ },
+ "lite": {
+  "file": "puddlepup.lite.glb",
+  "build": "7a2e7fc725",
+  "bytes": 1072728,
+  "triangles": 11699,
+  "trianglesByMesh": {
+   "lo_body": 9724,
+   "lo_eyes": 624,
+   "lo_fins": 1350,
+   "__variant_songheart-puddlepup": 1
+  },
+  "simplified": {
+   "lo_fins": {
+    "from": 5568,
+    "to": 1350
+   },
+   "lo_body": {
+    "from": 46000,
+    "to": 9724
+   }
+  },
+  "joints": 28,
+  "animations": 32,
+  "atlasPx": 1024,
+  "textureBytes": 544168,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }
 }

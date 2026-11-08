@@ -10,7 +10,7 @@
  * PNGs are decoded and encoded with ffmpeg (the ffmpeg-static devDependency): no new dependency.
  */
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 export interface Raw { w: number; h: number; data: Uint8Array }
 
@@ -148,23 +148,41 @@ function hasDone(done: Uint8Array, region: Uint8Array, x: number, y: number, w: 
   return false
 }
 
-export interface PadReport { colour: number; orm: number; normal: number; variants: number }
+export interface PadReport { colour: number; orm: number; normal: number; variants: number; missed?: number }
 
 /**
  * Pad the atlas in `src` (atlas_base.png, atlas_normal.png, atlas_orm.png and each variant's atlas_<name>.png) into
- * `dst` under the same names. Returns how many texels each map filled.
+ * `dst` under the same names. Returns how many texels each map filled. `ormAlpha` keeps the ORM's alpha (the glow
+ * mask) as baked; without it the ORM is written RGB, as before.
  */
-export function padAtlas(ffmpeg: string, src: string, dst: string, variants: string[], layout: Layout = DEFAULT_LAYOUT): PadReport {
+export function padAtlas(ffmpeg: string, src: string, dst: string, variants: string[], layout: Layout = DEFAULT_LAYOUT,
+  opts: { ormAlpha?: boolean; coverage?: string } = {}): PadReport {
   const p = (dir: string, name: string) => `${dir}/atlas_${name}.png`
   const base = readPng(ffmpeg, p(src, 'base'))
   const orm = readPng(ffmpeg, p(src, 'orm'))
   const normal = readPng(ffmpeg, p(src, 'normal'))
   const written = writtenMask(base, orm)
-  const solid = solidMask(base, written)
   const region = regions(base.w, base.h, layout)
+  // build_ultra's coverage pass: island texels where every bake ray missed (black colour, roughness 0: a mirror in the
+  // game) count as unwritten, so the fill below takes them from their neighbours. The strip's tiles are never touched.
+  let missed = 0
+  if (opts.coverage && existsSync(opts.coverage)) {
+    const cov = readPng(ffmpeg, opts.coverage)
+    if (cov.w === base.w && cov.h === base.h) {
+      for (let i = 0; i < written.length; i++) {
+        if (written[i] && region[i] === 0 && cov.data[i * 4]! < 128) {
+          written[i] = 0
+          missed++
+        }
+      }
+    }
+  }
+  const solid = solidMask(base, written)
   const rep: PadReport = { colour: dilate(base, solid, region), orm: dilate(orm, solid, region), normal: dilate(normal, written, region), variants: 0 }
+  if (missed) rep.missed = missed
   writePng(ffmpeg, p(dst, 'base'), base, true)
-  writePng(ffmpeg, p(dst, 'orm'), orm, false)
+  // a breed with a glow channel keeps the ORM's alpha (the glow mask, build_ultra's glow pass); others write RGB
+  writePng(ffmpeg, p(dst, 'orm'), orm, opts.ormAlpha === true)
   writePng(ffmpeg, p(dst, 'normal'), normal, false)
   for (const v of variants) {
     const img = readPng(ffmpeg, p(src, v))

@@ -60,6 +60,11 @@ export class AttackFx {
   private shortTan = Math.tan((ART.duel.fov * Math.PI) / 360)
   /** The last impact's zoom (for the stats line). */
   private zoom = 1
+  /** Each side's nose reach and width beside Puddlepup's (1 = Puddlepup): its sockets sit further out on a bigger body. */
+  private readonly sizeK = [
+    { len: 1, width: 1 },
+    { len: 1, width: 1 },
+  ]
   /** CPU time of the last frame's update (ms), for the stats line. */
   cpuMs = 0
 
@@ -70,6 +75,11 @@ export class AttackFx {
     this.glow = new QuadBatch(F.maxQuads, map, true)
     scene.add(this.solid.mesh, this.glow.mesh)
     this.ctx = { pool: this.pool, q: this.quality(), seed: 0 }
+  }
+
+  /** A fighter's size beside Puddlepup (its nose reach and width over Puddlepup's, ART.duel.reference). */
+  setSize(side: number, frontK: number, widthK: number): void {
+    this.sizeK[side] = { len: frontK, width: widthK }
   }
 
   private flight(): Flight {
@@ -152,8 +162,8 @@ export class AttackFx {
     // the projectile ends where it strikes (it was due leadSec later: the burst takes over just short of the target)
     this.pool.forOwner(side, Math.min(hitNo - 1, 3), (p) => (p.life = Math.min(p.life, Math.max(now - p.t0, p.travel - F.miss.leadSec))))
     const dir = this.aim(side)
-    const at = this.at.copy(this.anchors[CHEST[foe]!]!).addScaledVector(dir, -0.15)
-    at.addScaledVector(this.feet.copy(this.eye).sub(at).setY(0).normalize(), F.impactFrontM)
+    const at = this.at.copy(this.anchors[CHEST[foe]!]!).addScaledVector(dir, -F.impactBackM * this.sizeK[foe]!.len)
+    at.addScaledVector(this.feet.copy(this.eye).sub(at).setY(0).normalize(), F.impactFrontM * this.sizeK[foe]!.width)
     const feet = this.feet.copy(this.anchors[FEET[foe]!]!)
     const S = (r.sizePct / 100) * (of > 1 ? 0.75 : 1) * (crit ? 1.2 : 1)
     // from afar every impact grows (the same for every family); its size on screen goes with z · √S
@@ -250,13 +260,13 @@ export class AttackFx {
     this.eye.copy(camera.position)
     const lens = camera as PerspectiveCamera
     if (lens.isPerspectiveCamera) this.shortTan = Math.tan((lens.fov * Math.PI) / 360) * Math.min(1, lens.aspect)
-    this.anchors[CHEST[0]].copy(root0).setY(root0.y + h0 * 0.55)
-    this.anchors[CHEST[1]].copy(root1).setY(root1.y + h1 * 0.55)
-    this.anchors[FEET[0]].copy(root0).setY(root0.y + 0.03)
-    this.anchors[FEET[1]].copy(root1).setY(root1.y + 0.03)
+    this.anchors[CHEST[0]].copy(root0).setY(root0.y + (h0 * F.chestPct) / 100)
+    this.anchors[CHEST[1]].copy(root1).setY(root1.y + (h1 * F.chestPct) / 100)
+    this.anchors[FEET[0]].copy(root0).setY(root0.y + F.feetM)
+    this.anchors[FEET[1]].copy(root1).setY(root1.y + F.feetM)
     for (let s = 0; s < 2; s++) {
       const d = this.aim(s)
-      this.anchors[FRONT[s]!]!.copy(this.anchors[CHEST[s]!]!).addScaledVector(d, 0.3)
+      this.anchors[FRONT[s]!]!.copy(this.anchors[CHEST[s]!]!).addScaledVector(d, F.frontM * this.sizeK[s]!.len)
     }
     for (let s = 0; s < 2; s++) this.emitTrail(s, now)
     this.glow.begin()

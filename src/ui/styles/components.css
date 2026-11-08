@@ -292,6 +292,73 @@
   min-height: 1.2em;
 }
 
+/* Monster Lab → 3D Gallery: the stage (drag turns, pinch zooms; the page doesn't scroll under a finger on it) */
+.gallery3d__stage {
+  position: relative;
+  height: min(50dvh, 520px);
+  min-height: 280px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #8a8b8f;
+  touch-action: none;
+  cursor: grab;
+}
+.gallery3d__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.gallery3d__note {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 0.5);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+.gallery3d__retry {
+  min-height: 44px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.gallery3d__zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.gallery3d__zoom .btn {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 20px;
+  color: #23303a;
+  background: rgb(255 255 255 / 0.82);
+  touch-action: manipulation;
+}
+.gallery3d__stats {
+  text-align: center;
+  min-height: 1.2em;
+  margin: -8px 0 0;
+}
+.gallery3d__moves .chip {
+  min-height: 44px;
+}
+
 /* Bottom sheet */
 .sheet-backdrop {
   position: fixed;

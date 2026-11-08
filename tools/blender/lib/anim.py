@@ -223,6 +223,19 @@ def clear_clip(arm: bpy.types.Object) -> None:
     R.reset_pose(arm)
 
 
+def rest_pose(arm: bpy.types.Object) -> None:
+    """The rest pose for review shots: no action and every NLA track muted (clear_clip unmutes them for the export, so a
+    bone would show frame 1 of the topmost track that keys it: Petalphant's 'rest' turnaround had the bud open)."""
+    ad = arm.animation_data
+    if ad is None:
+        R.reset_pose(arm)
+        return
+    ad.action = None
+    for t in ad.nla_tracks:
+        t.mute = True
+    R.reset_pose(arm)
+
+
 # --------------------------------------------------------------------------- motion helpers
 def bounce(t: float, n: int = 1) -> float:
     """|sin| bounce, n bounces over 0..1."""

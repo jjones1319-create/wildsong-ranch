@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
+import { isUltraId, looksFromQuery, ULTRA_IDS, ULTRA_LOOKS, type UltraId } from '../../../art/ultraLooks.ts'
 import { senseOfMonster, senseReasons } from '../../../core/battle/duelSense.ts'
 import type { Monster } from '../../../core/monster.ts'
 import { npcMonster } from '../../../core/npc.ts'
+import { BREED_BY_ID } from '../../../data/breeds.ts'
+import { SECRETS } from '../../../data/secrets.ts'
 import { BATTLE3D_TEXT as T } from '../../../data/text/battle3d.ts'
+import { GALLERY3D_TEXT } from '../../../data/text/gallery3d.ts'
 import { fill } from '../../../data/text/format.ts'
 import { BAND_LABELS } from '../../../data/text/labels.ts'
 import { UI_TEXT } from '../../../data/text/ui.ts'
@@ -34,6 +38,7 @@ import {
 } from '../../store/battleStore.ts'
 import { currentTier, reduceMotionNow } from '../../store/fxStore.ts'
 import { press } from './press.ts'
+import { Sheet } from '../../components/Controls.tsx'
 import { goSideways, isPortrait, leaveSideways } from './sideways.ts'
 import { ThumbStick } from './ThumbStick.tsx'
 
@@ -49,13 +54,39 @@ let arenaChoice: ArenaId = typeof location !== 'undefined' && new URLSearchParam
  */
 let uprightChosen = false
 
+/** `?debug`: the live stats line (fps, resolution, renderer, effect level, crowd); the review tools read stats() instead. */
+const DEBUG = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug')
+
+/** The speed button steps through these. */
+const SPEEDS = [1, 2, 4] as const
+
 type Upbringing = keyof typeof ART.duel.testUpbringing
 const UPBRINGINGS = Object.keys(ART.duel.testUpbringing) as Upbringing[]
 let upbringing: Upbringing = 'seasoned'
 
-/** The player's Puddlepup, raised the chosen way (§4.1: its battle sense on Auto comes from this). */
+/**
+ * §8 the fighters' looks (the 🐾 chips, or `?a=<look>&b=<look>`): any finished Ultra look, a breed or a grown form
+ * such as `hearthwing-grown` (src/art/ultraLooks.ts)
+ * on either side, Puddlepup by default.
+ */
+let breedChoice: [UltraId, UltraId] = typeof location !== 'undefined' ? looksFromQuery(location.search) : ['puddlepup', 'puddlepup']
+
+/** A look's registry entry (Puddlepup for one that left the registry). */
+const lookOf = (id: UltraId) => ULTRA_LOOKS[id] ?? ULTRA_LOOKS.puddlepup!
+
+/** A look's name on the chips: its breed's, "(grown)" for a grown form. */
+const lookName = (id: UltraId) => GALLERY3D_TEXT.lookName(BREED_BY_ID[lookOf(id).breed].name, lookOf(id).stage === 'grown')
+
+/** The CPU's look: a breed's first secret variant when both sides are that breed (so they can be told apart), else its own. */
+function rivalVariant(): string | null {
+  const [a, b] = breedChoice
+  return a === b ? (ULTRA_LOOKS[b]?.variants[0] ?? null) : null
+}
+
+/** The player's monster, raised the chosen way (§4.1: its battle sense on Auto comes from this). */
 function playerMonster(): Monster {
-  const m = npcMonster({ breed: 'puddlepup', total: 1600, seed: 31, name: 'Puddlepup' })
+  const breed = lookOf(breedChoice[0]).breed
+  const m = npcMonster({ breed, total: 1600, seed: 31, name: BREED_BY_ID[breed].name })
   const u = ART.duel.testUpbringing[upbringing]
   m.records.wins = Math.ceil(u.battles / 2)
   m.records.losses = Math.floor(u.battles / 2)
@@ -64,11 +95,16 @@ function playerMonster(): Monster {
   return m
 }
 
-/** The test's fighters: Puddlepup (the player) against Songheart Puddlepup (the CPU), docs/BATTLE_3D.md §8. */
+/**
+ * The test's fighters (docs/BATTLE_3D.md §8): the chosen breeds as NPC monsters, the player's raised the chosen way.
+ * Puddlepup against Puddlepup is the player against Songheart Puddlepup.
+ */
 function startDuel(): void {
   const a = playerMonster()
-  const b = npcMonster({ breed: 'puddlepup', total: 1600, seed: 32, name: 'Songheart' })
-  b.variantId = 'songheart-puddlepup'
+  const breed = lookOf(breedChoice[1]).breed
+  const variant = rivalVariant()
+  const b = npcMonster({ breed, total: 1600, seed: 32, name: SECRETS.find((x) => x.id === variant)?.adjective ?? BREED_BY_ID[breed].name })
+  b.variantId = variant
   startBattle({ a, b, aControl: 'player', personalityA: 'Steady', personalityB: 'Steady', tierA: 'expert', tierB: 'skilled', timerSec: 60, origin: 'lab', mode: 'duel' })
   setPaused(true)
 }
@@ -92,7 +128,24 @@ function Bars({ f, right }: { f: FighterView; right?: boolean }) {
 declare global {
   interface Window {
     /** For the review recordings (tools/art/battle3d-review.ts). */
-    __battle3d?: { phase: string; setCamera(c: DuelCamera): void; skipIntro(): void; stats(): DuelStats | null; auto(on: boolean): void; speed(x: 1 | 2 | 4): void; playerFires(): number; arena(id: ArenaId): void; crowdFame(fame: number): Promise<void>; preview(tech: string, side: 0 | 1, outcome: 'hit' | 'miss'): number; pause(on: boolean): void; slowMo(k: number): void; clock(): number }
+    __battle3d?: {
+      phase: string
+      setCamera(c: DuelCamera): void
+      skipIntro(): void
+      stats(): DuelStats | null
+      auto(on: boolean): void
+      speed(x: 1 | 2 | 4): void
+      playerFires(): number
+      arena(id: ArenaId): void
+      /** §8: each side's look (any finished Ultra look: a breed or a grown form; the fight restarts), and the looks now. */
+      breeds(a: string, b: string): void
+      breedsNow(): [UltraId, UltraId]
+      crowdFame(fame: number): Promise<void>
+      preview(tech: string, side: 0 | 1, outcome: 'hit' | 'miss'): number
+      pause(on: boolean): void
+      slowMo(k: number): void
+      clock(): number
+    }
   }
 }
 
@@ -101,6 +154,7 @@ export function Battle3DScreen() {
   const duel = useRef<Duel3D | null>(null)
   const [phase, setPhase] = useState<'loading' | 'intro' | 'fight' | 'error'>('loading')
   const [arenaId, setArenaId] = useState<ArenaId>(arenaChoice)
+  const [breeds, setBreeds] = useState<[UltraId, UltraId]>(breedChoice)
   const [cam, setCam] = useState<DuelCamera>('side')
   const [stats, setStats] = useState<DuelStats | null>(null)
   // the crowd's Fame (the test chip): how full the Guild arena's stands are
@@ -141,7 +195,7 @@ export function Battle3DScreen() {
         const m = await import('../../../art3d/duel/duel3d.ts')
         if (!alive || !canvas.current) return
         const d = await m.createDuel3D(
-          { canvas: canvas.current, arena: arenaId, me: 0, variants: [null, 'songheart-puddlepup'], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), leftHanded: settings.value.leftHanded, speed: () => speed.value, crowdFame: fame },
+          { canvas: canvas.current, arena: arenaId, me: 0, looks: breeds, variants: [null, rivalVariant()], lite: currentTier() === 'lite', reduceMotion: reduceMotionNow(), leftHanded: settings.value.leftHanded, speed: () => speed.value, crowdFame: fame },
           liveBattleState,
         )
         if (!alive) {
@@ -179,6 +233,11 @@ export function Battle3DScreen() {
         arenaChoice = id
         setArenaId(id)
       },
+      breeds: (x, y) => {
+        breedChoice = [isUltraId(x) ? x : 'puddlepup', isUltraId(y) ? y : 'puddlepup']
+        setBreeds(breedChoice)
+      },
+      breedsNow: () => breedChoice,
       playerFires: () => liveBattleState()?.log.filter((e) => e.kind === 'fire' && e.side === 0).length ?? 0,
       // §7 review: any technique's effects, picture only (tools/art/attack-fx-review.ts)
       preview: (tech, side, outcome) => duel.current?.preview(tech, side, outcome) ?? 0,
@@ -199,10 +258,16 @@ export function Battle3DScreen() {
       delete window.__battle3d
       leaveBattle()
     }
-  }, [arenaId])
+  }, [arenaId, breeds[0], breeds[1]])
   const cycleArena = () => {
     arenaChoice = ARENAS[(ARENAS.indexOf(arenaChoice) + 1) % ARENAS.length]!
     setArenaId(arenaChoice)
+  }
+  /** The 🐾 chip: the side's next finished breed (the fight restarts with it). */
+  const cycleBreed = (side: 0 | 1) => {
+    const next = ULTRA_IDS[(ULTRA_IDS.indexOf(breedChoice[side]) + 1) % ULTRA_IDS.length]!
+    breedChoice = side === 0 ? [next, breedChoice[1]] : [breedChoice[0], next]
+    setBreeds(breedChoice)
   }
 
   const v = view.value
@@ -249,6 +314,26 @@ export function Battle3DScreen() {
     const next = steps.find((s) => s > fame) ?? steps[0]
     setFame(next)
     void duel.current?.setCrowdFame(next)
+  }
+  const cycleSpeed = () => setSpeed(SPEEDS[(SPEEDS.indexOf(speed.value as 1 | 2 | 4) + 1) % SPEEDS.length]!)
+  // ⚙️ Setup: the test's choices in one sheet (one row of buttons upright, phone-first); the fight waits while it's open
+  const [setupOpen, setSetupOpen] = useState(false)
+  const pausedForSetup = useRef(false)
+  const openSetup = () => {
+    pausedForSetup.current = !paused.value
+    if (!paused.value) setPaused(true)
+    setSetupOpen(true)
+  }
+  const closeSetup = () => {
+    setSetupOpen(false)
+    if (pausedForSetup.current && !view.value?.outcome) setPaused(false)
+    pausedForSetup.current = false
+  }
+  /** A choice that restarts the fight closes the sheet (the restart brings its own start). */
+  const restartWith = (fn: () => void) => {
+    pausedForSetup.current = false
+    setSetupOpen(false)
+    fn()
   }
 
   return (
@@ -299,11 +384,9 @@ export function Battle3DScreen() {
             <button type="button" class={`btn ${a.auto ? 'btn--on' : ''}`} onClick={toggleAuto}>
               {B.auto}
             </button>
-            {([1, 2, 4] as const).map((x) => (
-              <button key={x} type="button" class={`btn ${speed.value === x ? 'btn--on' : ''}`} onClick={() => setSpeed(x)}>
-                {fill(B.speed, { n: x })}
-              </button>
-            ))}
+            <button type="button" class={`btn ${speed.value > 1 ? 'btn--on' : ''}`} aria-label={T.speedLabel(speed.value)} onClick={cycleSpeed}>
+              {fill(B.speed, { n: speed.value })}
+            </button>
             <button type="button" class="btn" aria-label={T.cameraLabel} onClick={switchCam}>
               {T.camera[cam]}
             </button>
@@ -313,23 +396,48 @@ export function Battle3DScreen() {
             <button type="button" class={`btn ${paused.value ? 'btn--on' : ''}`} aria-label={paused.value ? B.resume : B.pause} onClick={() => setPaused(!paused.value)} disabled={!!v.outcome}>
               {paused.value ? '▶' : '⏸'}
             </button>
-            <button type="button" class="btn b3d__arena" aria-label={T.arena.label(T.arena.names[arenaId])} onClick={cycleArena}>
-              {T.arena.chip(T.arena.short[arenaId])}
+            <button type="button" class="btn b3d__setupbtn" aria-label={T.setup.label} aria-haspopup="dialog" onClick={openSetup}>
+              {T.setup.chip}
             </button>
-            <button
-              type="button"
-              class="btn b3d__sense"
-              aria-label={T.upbringing.label(sense.sense, senseReasons(sense).map((r) => T.upbringing.why[r]).join(', '))}
-              onClick={cycleUpbringing}
-            >
-              {T.upbringing.chip(T.upbringing.names[raised], sense.sense)}
-            </button>
-            {stats?.crowd && (
-              <button type="button" class="btn b3d__fame" aria-label={T.crowdFameLabel(fame)} onClick={cycleFame}>
-                {T.crowdFame(fame)}
-              </button>
-            )}
           </div>
+
+          <Sheet open={setupOpen} title={T.setup.title} onClose={closeSetup}>
+            <div class="b3d__setup">
+              {([0, 1] as const).map((side) => (
+                <button
+                  key={`breed-${side}`}
+                  type="button"
+                  class="btn b3d__breed"
+                  data-side={side}
+                  disabled={ULTRA_IDS.length < 2}
+                  aria-label={T.breed.label(side, lookName(breeds[side]), ULTRA_IDS.length > 1)}
+                  onClick={() => restartWith(() => cycleBreed(side))}
+                >
+                  {T.breed.chip(side, lookName(breeds[side]))}
+                </button>
+              ))}
+              <button type="button" class="btn b3d__arena" aria-label={T.arena.label(T.arena.names[arenaId])} onClick={() => restartWith(cycleArena)}>
+                {T.arena.chip(T.arena.short[arenaId])}
+              </button>
+              <button
+                type="button"
+                class="btn b3d__sense"
+                aria-label={T.upbringing.label(sense.sense, senseReasons(sense).map((r) => T.upbringing.why[r]).join(', '))}
+                onClick={() => restartWith(cycleUpbringing)}
+              >
+                {T.upbringing.chip(T.upbringing.names[raised], sense.sense)}
+              </button>
+              {stats?.crowd && (
+                <button type="button" class="btn b3d__fame" aria-label={T.crowdFameLabel(fame)} onClick={cycleFame}>
+                  {T.crowdFame(fame)}
+                </button>
+              )}
+              <p class="small muted">{T.setup.note}</p>
+              <button type="button" class="btn btn--primary" onClick={closeSetup}>
+                {T.setup.close}
+              </button>
+            </div>
+          </Sheet>
 
           {effects.value.map((e) => {
             const p = duel.current?.project(e.side)
@@ -403,13 +511,13 @@ export function Battle3DScreen() {
         </>
       )}
 
-      {stats && (
+      {stats && (DEBUG || stats.arena === 'stand-in' || stats.monsters.includes('art2')) && (
         <p class="b3d__stats" aria-hidden="true">
-          {T.stats(stats.fps, stats.dpr, stats.backend, stats.level)}
+          {DEBUG && T.stats(stats.fps, stats.dpr, stats.backend, stats.level)}
           {stats.arena === 'stand-in' && <span> · {T.stand.arena}</span>}
-          {stats.monster === 'art2' && <span> · {T.stand.monster}</span>}
-          {settings.value.reduceMotion ? ` · ${T.reduceMotion}` : ''}
-          {stats.crowd && T.crowdStats(stats.crowd.people, stats.crowd.cutouts, stats.crowd.cpuMs)}
+          {stats.monsters.includes('art2') && <span> · {T.stand.monster}</span>}
+          {DEBUG && settings.value.reduceMotion ? ` · ${T.reduceMotion}` : ''}
+          {DEBUG && stats.crowd && T.crowdStats(stats.crowd.people, stats.crowd.cutouts, stats.crowd.cpuMs)}
         </p>
       )}
     </main>

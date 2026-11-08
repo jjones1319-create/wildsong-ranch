@@ -1,13 +1,13 @@
 # Art 2.1: monsters at the detail of the reference pictures
 
-**Status:** revision 2, Nov 1, 2026.
+**Status:** revision 2, Nov 1, 2026; **approved Nov 7, 2026**.
 - **The owner's targets:** the owner raised them (§1–§6): an **Ultra** tier for Galaxy S25-class phones, designed for the phone when it's hot.
 - **Tried in a working spike:** the spike and the Performance check (§7) try them out.
-- **Not yet in the game:** no monster is rebuilt and ART_2_PLAN §3.6 is unchanged until the owner approves the spike's look and the phone's Performance check result.
+- **Approved:** the owner approved Puddlepup's Ultra look (P1.1–P1.2, §9) on Nov 7, 2026. The other monsters are now built at this detail in batches of 5 (ART_2_PLAN §8; batch 1 in §9.4). They show in Lab → 3D Gallery and Battle 3D; normal play switches in the walkable-farm step.
 
-Approval then changes:
-- ART_2_PLAN §2.1 (shading and lines), §3.1 (the pipeline), §3.2 (the runtime), §3.6 (the budgets) and §6 (the review loop);
-- ART_2_PROMPTS, which gets a P1.1 step (§10).
+Approval changed (§10, applied Nov 7):
+- ART_2_PLAN §2.1 (shading and lines), §3.1 (the pipeline), §3.2 (the runtime), §3.3 (where they show), §3.6 (the budgets), §6 (the review loop) and §8 (the batches);
+- CLAUDE.md (the commands and tools).
 
 **Read with:**
 - `docs/ART_2_PLAN.md` (Art 2.0, which this extends);
@@ -441,7 +441,7 @@ What it asked for, most important first:
   - run the review loop with the pictures;
   - the owner runs the Performance check with the real model.
   - CONTENT §2.2's art brief gets the damp fur coat and the nose.
-- **Then** P2 (Waterfall Stand) and the P3–P9 batches, each breed with its surface kit.
+- **Then** the batches of 5 (ART_2_PLAN §8, replacing P3–P9), each breed with its surface kit. P2 (Waterfall Stand) moved into the walkable-farm step (roadmap step 2).
 
 ### 9.1 A1 and P1.1 result (Nov 2): the whole Puddlepup at Ultra, for the Battle 3D test
 **A1, the pipeline (built):**
@@ -563,8 +563,8 @@ The download grew 13% (KTX2) because a fuller atlas holds more detail; the padde
   - the fan below the fur is one sheet and still reads as a card: give it a rolled, thicker edge, or real translucency in the runtime;
   - the near ear shows only a strip of lining in three-quarter view.
 - **Runtime, not this asset:**
-  - outline glitter on the card edges;
-  - the fins' bloom in ko;
+  - outline glitter on the card edges (fixed in §9.3);
+  - the fins' bloom in ko (fixed in §9.3);
   - the shared clips' hit_heavy, ko and strike staging.
 - **Lids:** need short lying locks on the lid area and a fur tone (they read as smooth domes).
 - **Muzzle:** move the teal V's tip above the new bridge (`cream_mask`'s `tip`).
@@ -573,15 +573,104 @@ The download grew 13% (KTX2) because a fuller atlas holds more detail; the padde
   - in profile the head looks small for the longer body.
 - **Spike:** `detail_spike.py` shares `pack_atlas`, which now fills the width; the spike wasn't re-run.
 
-## 10. What approval changes in the other docs
+### 9.3 The 3D Gallery and the runtime for every breed (Nov 7)
+The owner chose: each batch of Ultra monsters shows in **Lab → 3D Gallery** and in **Battle 3D** (BATTLE_3D §8.4); normal play keeps the Art 2.0 models and the Classic drawings until a later step.
+- **The registry:** `src/art/ultraLooks.ts` (`ULTRA_LOOKS`), keyed by look id: a breed, or `<breed>-grown` for a grown form shipped as its own look (`stage: 'grown'`, e.g. Hearthwing's; `ultraIdFor(breed, grown)` picks it for a grown monster). Each entry: `<id>.glb` + `.json`, `heightUnits` (the recipe's HEIGHT_UNITS: the model is built `heightUnits / 150` m tall), the variants its file holds, the Lite copy, a fallback (Puddlepup's Art 2.0 model). Adding a shipped breed is one line; `src/art/ultraLooks.test.ts` then checks its files, the duel's clips, its variant holders and variant props, the build tags against the files, and the budgets (≤ 100k triangles, ≤ 8 MB; Lite ≤ 12k, ≤ 1.5 MB).
+- **The Gallery** (`#lab/gallery3d`, `src/ui/screens/lab/LabGallery3D.tsx` + `src/art3d/gallery/gallery3d.ts`, a lazy chunk on the same film renderer as Battle 3D): any registry breed on a turntable in the studio light; drag to turn and tilt, pinch or ＋ / － / ⤢ to zoom; the moves idle, walk, strike, cast, hit, big hit, knocked out, win (each plays once and settles back into idle; Idle stops any) and blink; a Look toggle for the variants the file holds; **Stand beside Puddlepup** (both at true size). Lite effects load the Lite copy at ≤ 1.5× resolution without MSAA; dynamic resolution as in the duel (`src/art3d/perf/dynres.ts`, shared). `ART.gallery3d` holds its numbers; Wren's words are in `src/data/text/gallery3d.ts`. Review and tests drive it through `window.__gallery3d` (`show`, `play`, `pose`, `turn`, `zoom`, `stats`, `snapshot`; `?backend=webgl` and `?fixed=1` for captures).
+- **Loading and caching:** the sidecar first (revalidated; the service worker serves `models/**/*.json` NetworkFirst), then the `.glb` as `?v=<build>` (CacheFirst by URL, 200 entries), so a re-shipped model updates on a phone that cached the old one. Lite: the file the sidecar's `lite` entry names.
+- **Parts:** any mesh may be missing; the sidecar's `meshes` map picks each part's film material (`lo_props`: the body's without sheen); `lo_props_<short>` shows only with its variant (`src/art3d/ultra/parts.ts`).
+- **The Gallery's framing:** the stands ride one turntable (side by side for "beside Puddlepup", a hand's gap between their widths) and the camera fits snugly to what stands there; a drag keeps the distance, ⤢ and a new breed fit again.
+- **Glow** (Nov 7; Starhowl's stars and mane tips, Cinderlynx's embers, later Hearthwing): the **ORM map's alpha** is a glow mask (R AO, G roughness, B clearcoat, A glow), used only when the sidecar has a top-level `glow: { strength, tint }` (an ORM without alpha can decode as 1). Emissive = (tint, or the part's base colour) × mask × strength, twinkling ±20% at 0.25 Hz with a phase per texel cell (`film.glow`; still under Reduce motion), on the body, fins, props and eyes (cards and the tuft read shared strip tiles and never glow). Glow is exempt from the brightness caps, so it blooms, but stays under `film.hdrMax`; Lite (no bloom) still shows the colour. `src/art3d/ultra/parts.ts glowOf` reads the entry (strength in (0, `film.glow.maxStrength`], tint `#rrggbb` or null); the registry test checks every shipped one. Checked with a hand-made ORM alpha (a grid of glowing dots, WebGL) and a glow entry on the shipped ORM (the whole body, WebGPU).
+- **Soft fins:** a sidecar `fins: { soft: true }` lets the fins take received shadows (Starhowl's mane locks looked flat).
+- **Runtime fixes** (the pilot's open issues, found again on the batch):
+  - *Dark hues kept (Nov 7):* flat swatches through the film path (the Gallery, WebGL and WebGPU) found two shifts. The fixed teal sheen colour Puddlepup used (`#86d3c8`) veiled every coat teal: Cinderlynx's violet `#3A3236` rendered at hue 166° (teal-grey) instead of 330°, with 41% of its pixels green-leaning. The strongly orange rims (`#ffd2a6`, `#ffd9b3`) then pushed violet and plum +16° toward brown. Now the sheen takes each texel's own colour (`film.sheenGain`), the rims keep 15% of their warmth, and the grade's highlight warmth (luminance 0.4–1 only) carries the warm look (`post.grade.warmth` 0.035). Swatches after: `#3A3236` hue 330° → about 334°, `#3B3240` 279° → 283°, `#2B2F6B` 236° → 237°, `#5A4E52` 340° → 343°, with about 1% of pixels green-leaning. The review viewer shares these materials, lights and the grade, so it changed too.
+  - *Soft card tips (Nov 8):* long cards (Starhowl's mane) rendered as flat planks with square, stair-stepped ends: the alpha was cut hard at 0.5, so every tapered tip (alpha below half) was chopped. With MSAA the strand's alpha (after the edge fade) is now its coverage over a soft ramp (`film.cardCoverage` 0.08 → 0.6), so tips taper and fade as in the Blender render; without MSAA (Lite, the lowest levels) a plain cut at `film.cardAlphaTest` 0.35 (alpha to coverage stays off there, so the white specks don't return). WebGPU swaps the card's opacity between the two (its built-in coverage would cut hard). Puddlepup's frames are unchanged; Tumblefox's outline is a little softer.
+  - *Card sheen in the strand's colour (Nov 8):* cards and the tuft take their colour from vertex colours over a shared grey-white strip tile, and their sheen took the tile's colour, so it laid a white veil over any coat that isn't white: Petalphant's green ear-root ruff read as white glitter, Cinderlynx's charcoal cheek ruff as silvery straw. Their sheen is now the vertex colour too (`content.ts` `sheenByVertex`; WebGPU `sheenNode`), like the body's per-texel sheen. Cinderlynx's ruff and tail now read charcoal and Starhowl's mane colours deeper; Puddlepup's frame is the same to the eye.
+  - *Per-look normal strength (Nov 8):* a sidecar `normal: { scale }` (a recipe's NORMAL_SCALE; 0 < scale ≤ 2) sets the body's and props' normal-map strength for that look instead of `film.normalScale` 0.6 (Hearthwing's scales want more relief than fur; `parts.ts normalScaleOf`). Eyes, fins and cards keep 0.6; absent, everything stays at 0.6.
+  - *Per-look card edge fade (Nov 8):* a sidecar `cards: { edgeFade: [lo, hi] }` (a recipe's CARD_EDGE_FADE) replaces `film.cardEdgeFade` for that look's cards, so a long mane can show its cards more face-on (`parts.ts cardEdgeFadeOf`; 0 ≤ lo < hi ≤ 1, else the default).
+  - *Clearcoat per texel (Nov 7):* the body and the props take their clearcoat from the ORM map's B channel (the coat each breed bakes: matte keratin 0, a glossy nose or pads high; `film.coatFromOrm`), not a uniform 0.12, so Rammerjack's matte horns lost their specular streak; Puddlepup's frame is unchanged (0.03% of pixels moved).
+  - *Soft creases (Nov 7):* the screen-space AO (GTAO) multiplied on top of each breed's own baked AO and turned Nimbusheep's wool creases near-black; it now never darkens a pixel below `post.aoFloor` (0.8). The darkest 5% of Nimbusheep's pixels went from luma 84–89 to 97 (side, back); the median and Puddlepup's look are unchanged (its median 159 either way).
+  - *Only glow blooms:* every lit surface is capped below the bloom threshold, hue kept: fins (`film.finMaxLum`), cards (`film.cardMaxLum`) and the rest (`film.surfaceMaxLum`: Nimbusheep's white wool under the warm rims turned into a glowing peach blob, from the back and the side).
+  - *Fin bloom in ko:* fins are capped below the bloom threshold (`film.finMaxLum`, hue kept). Under the re-shipped Puddlepup's normal light the fluke no longer clears it; with the key and rims at 2.5× the uncapped fluke blooms and the capped one doesn't.
+  - *Outline glitter and stair-steps:* with alpha to coverage on a single-sample target (Lite and the lowest levels; ANGLE on D3D11 here) the cards drew white specks along the outline; coverage is now on only with MSAA (`view.ts setCoverage`). Cards also get less specular (`film.cardSpecular`), a brightness cap below the threshold (`film.cardMaxLum`), and stay out of the AO pass and the shadows in Battle 3D too (they were in both).
+  - *A black frame:* a glossy prop's highlight (Rammerjack's horns) overflowed the half-float buffers and the bloom spread it over the whole frame; every film part is clamped to `film.hdrMax`.
+
+### 9.4 Batch 1 (Nov 7)
+The owner approved Puddlepup on Nov 7 and asked for the rest in batches of 5, each checked by an independent reviewer against the pictures (ART_2_PLAN §6 and §8). Batch 1 is four-legged fur and wool on the quadruped plan: **Tumblefox, Cinderlynx, Starhowl, Nimbusheep and Rammerjack**. They show in Lab → 3D Gallery and Battle 3D (§9.3). Each went through up to three fresh-eyes rounds, then a defect-only polish pass where one was needed (verdicts in `art-review/<breed>-ultra/verdicts.txt`); the taste items left are in PROGRESS as known issues.
+
+**Shipped in v1.23.0** (rounded; MB here are 1,048,576 bytes, as `tools/art/ultra.ts` and the tests count them, where §9.1–§9.2 used millions of bytes; the downloads include the UASTC normal maps, §9.5):
+
+| Look | Triangles | Fur cards | Joints | Variants | Glow | Download | Lite |
+|---|---|---|---|---|---|---|---|
+| Tumblefox | 68k | 3.5k in 3 layers | 31 | Town Crier, Glitch | none | 6.1 MB | 1.3 MB |
+| Cinderlynx | 69k | 3.9k in 3 | 30 | Bonfire | embers, ear tufts, tail flame | 5.1 MB | 1.2 MB |
+| Starhowl | 57k | 4.0k hair strands in 3 | 38 | none | its stars and mane tips | 4.2 MB | 1.1 MB |
+| Nimbusheep | 69k | 0.4k wool cards in 2 | 28 | Stormcrown | none | 4.4 MB | 0.9 MB |
+| Rammerjack | 71k | 2.3k in 3 | 37 | none | none | 4.0 MB | 1.0 MB |
+| Puddlepup (rebuilt, below) | 61k | 2.2k in 2 | 28 | Songheart | none | 4.7 MB | 1.0 MB |
+
+**What the pipeline gained** (every name is in `tools/blender/monsters/breeds/RECIPE.md`):
+- **Recipes:** variants 0..N (`VARIANTS`), with props only a variant wears (`lo_props_<short>`: Town Crier's bell and ribbon); every mesh optional; eyes per variant; tuft colour gradients; wool cards (`CARD_STYLE = 'wool'`); `UV_SMOOTH` (a lumpy coat unwraps into far fewer islands: Nimbusheep 1,746 → 376); `CARD_COLOUR_FROM` (cards take the bare skin's colour, not a lock's, at colour borders); `MEMBRANE_AO_BODY`; `MOUTH_SOCKET` / `SOCKET_POINTS`; per-pixel marks as node groups (`lib/marks.py`: 4,000 stars build in 5 s, was 525 s). A grown form is `<breed>_grown_ultra.py` with ID `<breed>-grown`.
+- **Quadruped plan options:** `size_k`, `tail_bones` / `tail_points` (Tumblefox's spiral), `ears`, `hooves`, `hocks` (digitigrade hind legs), `manes`, `props`, `neck_bones`, `trunk` with `bud`, `wings`, `jaw`, `strike_style` (`pounce`, `charge`, `kick`, `swipe`, `slam`) and `ko_leg_fold`. The shared clips were reworked after review (a stretched pounce, a recoil hit_heavy, a curled ko on the ground, a tucked win).
+- **Glow,** a channel of its own: a mask in the ORM map's alpha plus the sidecar's `glow` (§9.3).
+- **The Lite copy** of every look (`<breed>.lite.glb`): ≤ 12k triangles, ≤ 1.5 MB, no cards or tuft unless `LITE_KEEP` keeps them, `LITE_PROPS_TRIS` for prop-heavy breeds. Its WebP quality went from 82 / 88 / 80 to 78 / 84 / 76 with a 1.5 px blur on the normal map first, so every breed fits (Starhowl was over); the Ultra files are untouched.
+- **The sidecar:** `build` (a short hash of the `.glb`: the game asks for `?v=<build>`, so a re-shipped model reaches phones that cached the old one) and `restHeightWithProps` beside `restHeight`.
+- **Tools:** `npm run art:shape -- <breed>` (the shape preview), `npm run art:lineup -- <breed…>` (true size, Puddlepup first), `npm run art:ultra -- <breed> --lite-only`, `node tools/art/ultra-uv.ts <breed…> [--shipped]`, and the build-slot lock `tools/blender/slot.sh`. The review viewer and the lineup dress each mesh with the game's own rules (part kinds, glow, the luminance caps), so the sheets show what the phone shows.
+
+**Lessons for every batch:**
+- **UV overlaps.** Blender's packer let two areas share texels, so they baked into the same pixels: Tumblefox's belly over a front sock (a cream / plum checker), Puddlepup's cheeks under its ears (19,093 texels), Rammerjack's rope (its texture scrambled). The packer now finds such faces and projects them again, the build stops above 32 shared texels in any mesh, and `ultra-uv.ts` counts them on any export. Puddlepup was rebuilt from scratch with the fix (0 shared texels; side by side it looks the same, though every texture file changed), and every shipped look is now at 5 or fewer. The packer isn't repeatable, so any rerun of the build stage lays the atlas out again.
+- **The coverage mask.** Where every bake ray missed (the deepest crevices), the colour baked black and the roughness 0: a mirror, which showed as green flecks in Nimbusheep's wool seams. Each bake now writes `atlas_coverage.png`, and the padding fills those texels from their neighbours.
+- **The colour sheen bug.** The film renderer's fur sheen was a fixed teal tuned for Puddlepup, and the rims strongly orange, so on every breed dark violets and plums read green-grey or olive (Cinderlynx's coat, Tumblefox's mask). The sheen now takes each texel's own colour and the rims are near-neutral (§9.3); Puddlepup looks the same. Check dark hues with flat swatches through the film path, not only on the sheets.
+- **The slot lock.** Two builders that counted Blender processes at the same moment both started a build, and the process query sometimes came back empty. Every full build now holds one of two slots (`tools/blender/slot.sh`: an atomic folder per slot, reclaimed when its holder dies); shape previews don't need one. The release's `npm run verify` holds both, so the tests don't time out under Blender load. With the lock, the next batch's builds queue while the last one finishes its reviews.
+- **Reviews:** a round can find a new fault (round 3 found a baked fault on Tumblefox's sock). Hence the rule: three rounds, then one polish pass for defects only, checked by the session running the batch, then the owner.
+
+**Decided during the batch** (the owner hears these with the batch):
+- Town Crier Tumblefox's bell and ribbon are variant-only props, hidden on the base look and on Glitch.
+- Cinderlynx's pale chest, muzzle and belly follow the pictures (its CONTENT palette has no cream): a light warm tint made from `#5A4E52`; CONTENT is unchanged. Its ear tufts and tail flame are glowing flame-shaped props.
+- The reworked shared clips also change Puddlepup's approved clips; it was re-shipped with its mesh and textures unchanged, then rebuilt for the UV fix.
+- Without WebGL the ranch shows the precached 3D portrait picture, as it has since v1.13 (ART_2_PLAN §3.2 now says so).
+- Battle 3D's test choices (breeds, arena, upbringing, Fame) moved into a ⚙️ Setup sheet, so the top bar is one row on a 360 px phone.
+- Only real glow blooms; a glossy eye or prop no longer does.
+
+### 9.5 Batch 2 (Nov 7–8), shipped with batch 1
+The owner, Nov 7: *"After these are completely finished start the next batch and I will review all 10 at once."* So batch 2 shipped with batch 1 in v1.23.0, and the owner's verdict covers both: **Stripeneck, Petalphant, Cobblemaw, Hearthwing and Hearthwing (grown)**, the last as a look of its own (`hearthwing-grown`, "Hearthwing (grown)" in the chips). The process was the same as batch 1's: three fresh-eyes rounds, then one defect-only polish pass checked by the session. The exception was Starhowl (batch 1), which got rounds 4–6, the last two with a fresh builder.
+
+| Look | Triangles | Fur cards | Joints | Variants | Glow | Download | Lite |
+|---|---|---|---|---|---|---|---|
+| Stripeneck | 61k | 0.6k in 2 | 33 | Ezgi | none | 4.4 MB | 1.1 MB |
+| Petalphant | 91k | 1.5k in 2 | 37 | none | the ears' cream rim (0.5) | 3.5 MB | 0.8 MB |
+| Cobblemaw | 73k | 1.8k moss in 1 | 28 | Granite | none | 4.7 MB | 1.0 MB |
+| Hearthwing | 71k | none | 40 | none | the chest's heart and the spade tail (1.8) | 3.7 MB | 1.0 MB |
+| Hearthwing (grown) | 79k | none | 47 | none | the chest grate's seams and the tail (1.4) | 4.0 MB | 1.1 MB |
+
+Petalphant is above the 60–80k aim (the big ears and the bud are 25k of props) and under the 100k cap.
+
+**What the pipeline gained:**
+- **Plan options:** strike styles `kick` (Stripeneck's spinning double back-hoof kick), `slam` (Cobblemaw rears up and slams its front paws) and `lunge`; `wings` (fold, spread and beat clips); `jaw` with an open mouth in the strike and the smiles; `trunk` with a `bud` that opens in the cast; a new knock-aside `hit` for every look.
+- **Recipes:** `CARD_STYLE 'hair'` (thin shaded strands instead of leaf lobes, which read as paper blades in a long mane) and `CARD_EDGE_FADE`; `NORMAL_SCALE` (a scaled hide wants more relief; it needs `--stages export` to reach the sidecar); `AO_FLOOR`; `CLIP_CALM` per clip and part.
+- **Guards** (each found a real fault):
+  - **Held channels:** export dropped bone channels held constant through a clip, which lost the sleep pose, the tired and sad heads, the battle-idle bends and Petalphant's bud. Every look was re-exported, and an export check now counts every keyed channel in the `.glb`.
+  - **Stalled decimation:** a weighted decimation that stalled fell back to a plain one and flattened skin into big facets (Hearthwing grown's chest). A small overshoot is now kept with a warning; a large one, or any oversized face, stops the build.
+  - **Black bakes:** Cycles "out of SVM stack space" baked Starhowl's body black with exit code 0. A black bake now stops the build (`check_not_black`), Blender runs with `--python-exit-code 1`, and every shipped look was audited.
+  - **Lite colour:** WebP drops the colour where alpha is 0, which wrecked the ORM of the looks that glow. The Lite encode now floors the alpha (`WEBP_ALPHA_FLOOR`).
+- **Normal maps** are UASTC + zstd at 1024² instead of ETC1S at 2048². ETC1S's 4×4 blocks stepped on smooth skin and scales. It adds about 0.25 MB a look; the colour and ORM maps stay ETC1S.
+- **The final clips sweep:** before the release, a dry run regenerated each look's clips from the current plan and compared every key with its `rigged.blend`. Only the looks that differed were re-exported (6, for the new `hit`).
+
+**Decided during the batch** (the owner hears these with the batch):
+- Stripeneck's Ezgi variant has indigo hooves (its picture wins over the card's text); the eyes and ears face as in the hero.
+- Petalphant keeps the leaf sprout on its crown (in every picture, not on the card); it strikes with `charge` (head and trunk); toenails `#F3E3C8`; a leaf green made from its skin; the iris `#3B3B3B` warmed to brown (the pictures).
+- Cobblemaw keeps its baked moss strands; Granite's "polished sheen" waits, because roughness is shared by every variant.
+- Hearthwing's frills are modelled (in the pictures, not the card); 3-fingered wings, 4 toes; the spade tail glows and stays a solid spade, never a flame. The grown form has its own entry in the Gallery and Battle 3D.
+
+**Next time:** an optional recipe `prop_material` hook. Props bake their colour from vertex paint only, which limited Petalphant's ear fade.
+
+## 10. What approval changed in the other docs
+Puddlepup's Ultra look was approved on Nov 7, 2026. Applied the same day:
 - **ART_2_PLAN:**
-  - §2.1: film shading, no lines, 3D eyes and morphs;
-  - §3.1 and §3.2: point here;
-  - §3.6: the tables in §5;
-  - §6: references on every sheet, and the two fresh-eyes questions;
-  - §8: A1, A2 and P1.1 before P2.
-- **ART_2_PROMPTS:** a P1.1 prompt; every batch prompt reads this file.
-- **CLAUDE.md:**
-  - the tools: toktx (installed), and `npm run perf:dev` for the check page;
-  - the Ultra tier;
-  - "only `src/art3d/` imports three" now includes `src/art3d/perf/`.
+  - §2.1: the film look (no lines, 3D eye lenses; morphs come with the cinematic set);
+  - §3.1 and §3.2 point here; §3.3: the Ultra monsters show in the Gallery and Battle 3D until the walkable farm;
+  - §3.6: the Ultra and Lite budgets of §5.1;
+  - §6: the review loop as run (the references on every sheet, the two fresh-eyes questions, three rounds and a polish pass);
+  - §8: A1, A2 and P1.1–P1.2 done; P2 moved into the walkable-farm step; the batches of 5.
+- **CLAUDE.md:** the Ultra commands and the build-slot lock; the recipe contract, toktx (installed) and `npm run perf:dev` for the check page. "Only `src/art3d/` imports three" already covers `src/art3d/perf/`.
+- **Not yet:** `ART_2_PROMPTS.md` still has the old P3–P9 prompts and no P1.1 prompt.

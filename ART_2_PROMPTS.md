@@ -1,5 +1,7 @@
 # Art 2.0: how to run it, step by step
 
+> **Update (Nov 7, 2026):** you approved Puddlepup's new look, so the monster prompts **P3–P9 below are replaced**. The monsters now come in batches of 5 (B1–B7, listed in `docs/ART_2_PLAN.md` §8), and Claude builds each one by the recipe guide `tools/blender/monsters/breeds/RECIPE.md` and the batch steps in `docs/ART_2_PLAN.md` §6. **P2** (the waterfall scene) has moved into the walkable 3D farm step, so the batches no longer wait for it. The old prompts stay below for reference only.
+
 This file is for you. It walks you through the whole art overhaul one step at a time and has every prompt ready to copy. Everything runs in Claude Code inside VS Code, the way you've built the game so far. The details Claude needs are in `docs/ART_2_PLAN.md`; each prompt tells Claude to read it.
 
 **What happens:**
@@ -146,6 +148,8 @@ Keep to the budgets (§3.6). Run npm run verify, commit "Art P2: Waterfall Stand
 - Every ending is fun and clear.
 - It looks right in the waterfall's light.
 - Each ending lasts 3–5 seconds, and tapping skips it.
+
+> **P3–P9 are replaced (Nov 7, 2026):** don't use these prompts. The monsters now come in the batches of 5 (B1–B7) in `docs/ART_2_PLAN.md` §8. Claude builds each one by `tools/blender/monsters/breeds/RECIPE.md` and the batch steps in `docs/ART_2_PLAN.md` §6. The prompts below are kept for reference only.
 
 ### P3 · Four-legged monsters, part 1
 

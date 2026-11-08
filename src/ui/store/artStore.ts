@@ -15,7 +15,7 @@ export function lightPreset(season: Season, weather: Weather): LightPreset {
  * portrait shows. The main chunk never imports three; the 3D branch is loaded lazily by the components.
  */
 
-/** True once WebGL could not start on this device: everything shows Classic and Settings says why. */
+/** True once WebGL could not start on this device: no canvas is made (stills instead: portraitMode) and Settings says why. */
 export const art3dUnavailable = signal(false)
 /** True while the WebGL context is lost (iOS backgrounding, memory pressure): hosts fall back to Classic. */
 export const art3dLost = signal(false)
@@ -26,7 +26,8 @@ export type PortraitMode = 'classic' | 'image' | 'live'
 
 /**
  * `live` renders the model on a canvas (subject screens), `image` a cached picture of it (lists), `classic`
- * the SVG. Reduce motion turns subject screens into stills; no WebGL turns them into Classic.
+ * the SVG. Reduce motion and no WebGL turn subject screens into stills: the precached picture where there is one
+ * (no WebGL can't draw new ones), with the Classic drawing until it shows.
  */
 export function portraitMode(hasLook: boolean, mode: MonsterMode, unavailable: boolean, reduceMotion: boolean, live: boolean): PortraitMode {
   if (!hasLook || mode !== '3d') return 'classic'

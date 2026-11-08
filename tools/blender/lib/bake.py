@@ -25,6 +25,30 @@ STRIP = 0.125          # bottom share of the body atlas kept for the strip
 CELLS = 8              # strip cells: 0–1 tuft-lock tiles, 2–7 fur-card tiles
 LOCK_CELLS = (0, 1)
 CARD_CELLS = (2, 3, 4, 5, 6, 7)
+CARD_STYLES = ('fur', 'wool', 'hair')
+
+
+def card_cell_styles(style) -> dict[int, str]:
+    """{card cell: style} for a CARD_STYLE (one style on every cell) or per-layer styles (a tuple: the distinct styles,
+    in order, share the six cells: two styles three cells each, three styles two each)."""
+    styles = (style,) if isinstance(style, str) else tuple(style)
+    distinct = list(dict.fromkeys(styles))
+    for st in distinct:
+        if st not in CARD_STYLES:
+            raise ValueError(f'card style {st!r}: one of {CARD_STYLES}')
+    if len(distinct) > 3:
+        raise ValueError(f'card styles {distinct}: at most three different styles share the six card cells')
+    per = len(CARD_CELLS) // len(distinct)
+    return {c: distinct[min(i // per, len(distinct) - 1)] for i, c in enumerate(CARD_CELLS)}
+
+
+def layer_cells(style, layers: int) -> dict[int, tuple[int, ...]]:
+    """{card layer: its style's cells} (CARD_LAYER_STYLES; a single style gives every layer all six cells)."""
+    cs = card_cell_styles(style)
+    styles = (style,) * layers if isinstance(style, str) else tuple(style)
+    if len(styles) < layers:
+        raise ValueError(f'card styles {styles}: one per card layer ({layers})')
+    return {i: tuple(c for c in CARD_CELLS if cs[c] == styles[i]) for i in range(layers)}
 BASE_AO = 0.38         # share of the baked AO multiplied into the base colour (crevices stay dark on any renderer)
 
 
@@ -43,10 +67,234 @@ def _set_uvs(objs, uv_name: str, arrays: list[np.ndarray]) -> None:
         o.data.uv_layers[uv_name].data.foreach_set('uv', np.ascontiguousarray(arr, np.float32).ravel())
 
 
+def uv_overlap_faces(ob: bpy.types.Object, uv_name: str = 'UVMap', size: int = 2048) -> tuple[int, set[int]]:
+    """(texels claimed by two different triangles on a size x size grid over UV 0..1, the polygons involved). Adjacent
+    triangles of one island never share a texel centre, so any count is a real overlap: both faces would bake into the
+    same pixels. Object mode. (tools/art/ultra-uv.ts counts the same on an exported .glb.)"""
+    me = ob.data
+    if uv_name not in me.uv_layers or not len(me.polygons):
+        return 0, set()
+    me.calc_loop_triangles()
+    n = len(me.loop_triangles)
+    tl = np.empty(n * 3, np.int32)
+    me.loop_triangles.foreach_get('loops', tl)
+    tp = np.empty(n, np.int32)
+    me.loop_triangles.foreach_get('polygon_index', tp)
+    uv = np.empty(len(me.loops) * 2, np.float32)
+    me.uv_layers[uv_name].data.foreach_get('uv', uv)
+    tri = uv.reshape(-1, 2)[tl].reshape(n, 3, 2).astype(np.float64) * size
+    owner = np.full(size * size, -1, np.int64)
+    hit = np.zeros(size * size, bool)
+    bad: set[int] = set()
+    lo = np.clip(np.floor(tri.min(axis=1)).astype(np.int64), 0, size - 1)
+    hi = np.clip(np.ceil(tri.max(axis=1)).astype(np.int64), 0, size - 1)
+    for t in range(n):
+        (x0, y0), (x1, y1), (x2, y2) = tri[t]
+        area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
+        if abs(area) < 1e-9:
+            continue
+        sgn = 1.0 if area > 0 else -1.0
+        xs = np.arange(lo[t, 0], hi[t, 0] + 1) + 0.5
+        ys = np.arange(lo[t, 1], hi[t, 1] + 1) + 0.5
+        px, py = np.meshgrid(xs, ys)
+        w0 = sgn * ((x1 - px) * (y2 - py) - (x2 - px) * (y1 - py))
+        w1 = sgn * ((x2 - px) * (y0 - py) - (x0 - px) * (y2 - py))
+        w2 = sgn * ((x0 - px) * (y1 - py) - (x1 - px) * (y0 - py))
+        inside = (w0 > 0) & (w1 > 0) & (w2 > 0)
+        if not inside.any():
+            continue
+        k = (py[inside] - 0.5).astype(np.int64) * size + (px[inside] - 0.5).astype(np.int64)
+        prev = owner[k]
+        clash = (prev >= 0) & (prev != t)
+        if clash.any():
+            hit[k[clash]] = True
+            bad.add(int(tp[t]))
+            bad.update(int(tp[q]) for q in np.unique(prev[clash]))
+        owner[k] = t
+    return int(hit.sum()), bad
+
+
+def _uv_face_areas(ob: bpy.types.Object, uv_name: str) -> tuple[np.ndarray, np.ndarray]:
+    """(each polygon's UV area, its area in the scene), object mode."""
+    me = ob.data
+    starts = np.empty(len(me.polygons), np.int32)
+    me.polygons.foreach_get('loop_start', starts)
+    totals = np.empty(len(me.polygons), np.int32)
+    me.polygons.foreach_get('loop_total', totals)
+    uv = np.empty(len(me.loops) * 2, np.float32)
+    me.uv_layers[uv_name].data.foreach_get('uv', uv)
+    uv = uv.reshape(-1, 2).astype(np.float64)
+    nxt = np.arange(len(me.loops)) + 1
+    ends = starts + totals
+    nxt[ends - 1] = starts                                         # each polygon's last corner wraps to its first
+    cross = uv[:, 0] * uv[nxt, 1] - uv[nxt, 0] * uv[:, 1]
+    uva = np.abs(np.add.reduceat(cross, starts)) * 0.5 if len(starts) else np.zeros(0)
+    area = np.empty(len(me.polygons), np.float32)
+    me.polygons.foreach_get('area', area)
+    return uva, area.astype(np.float64)
+
+
+def _repair_overlaps(objs: list[bpy.types.Object], uv_name: str, angle_deg: float, island_margin: float, pack_margin: float) -> None:
+    """After a pack the islands are apart, so any overlap left is an island lying over itself (smart-project put a fold
+    and the skin under it, both facing its way, in one island: Tumblefox's belly over a front sock, Puddlepup's cheek
+    under its ear). Those faces are projected again on their own (at the pack's angle, then at a third of it, then
+    each face flat on its own), scaled to their object's texel density and packed with the rest. A pack without
+    overlaps is left exactly as it was."""
+    import bmesh
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    for o in objs:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objs[0]
+    for attempt in range(3):
+        bad = {o.name: uv_overlap_faces(o, uv_name)[1] for o in objs}
+        if not any(bad.values()):
+            return
+        C.log(f"atlas pack: overlapping UVs, projecting {sum(len(v) for v in bad.values())} faces again "
+              f"({', '.join(f'{k} {len(v)}' for k, v in bad.items() if v)}; pass {attempt + 1})")
+        dens = {}
+        for o in objs:
+            uva, area = _uv_face_areas(o, uv_name)
+            good = np.ones(len(area), bool)
+            good[list(bad[o.name])] = False
+            dens[o.name] = float(uva[good].sum() / max(area[good].sum(), 1e-12)) if good.any() else None
+        known = [d for d in dens.values() if d]
+        fallback = float(np.median(known)) if known else 1.0
+        if attempt < 2:
+            angle = angle_deg if attempt == 0 else angle_deg / 3.0
+            with bpy.context.temp_override(active_object=objs[0], object=objs[0], selected_objects=objs, selected_editable_objects=objs):
+                bpy.ops.object.mode_set(mode='EDIT')
+                for o in objs:
+                    bm = bmesh.from_edit_mesh(o.data)
+                    for f in bm.faces:
+                        f.select = f.index in bad[o.name]
+                    bmesh.update_edit_mesh(o.data)
+                bpy.ops.uv.smart_project(angle_limit=math.radians(angle), island_margin=island_margin, correct_aspect=True, scale_to_bounds=False)
+                bpy.ops.object.mode_set(mode='OBJECT')
+        else:
+            # each face flat on its own plane, its own island (far apart until the pack): cannot lie over itself
+            for o in objs:
+                if not bad[o.name]:
+                    continue
+                me = o.data
+                uvl = me.uv_layers[uv_name].data
+                co = np.empty(len(me.vertices) * 3, np.float32)
+                me.vertices.foreach_get('co', co)
+                co = co.reshape(-1, 3).astype(np.float64)
+                for j, fi in enumerate(sorted(bad[o.name])):
+                    poly = me.polygons[fi]
+                    nrm = np.array(poly.normal, np.float64)
+                    ref = np.array([0.0, 0.0, 1.0]) if abs(nrm[2]) < 0.9 else np.array([1.0, 0.0, 0.0])
+                    a1 = ref - nrm * float(ref @ nrm)
+                    a1 /= max(float(np.linalg.norm(a1)), 1e-12)
+                    a2 = np.cross(nrm, a1)
+                    q = co[[me.loops[li].vertex_index for li in poly.loop_indices]]
+                    xy = np.stack([q @ a1, q @ a2], axis=1)
+                    nxt = np.roll(xy, -1, axis=0) - xy
+                    turns = nxt[:, 0] * np.roll(nxt, -1, axis=0)[:, 1] - nxt[:, 1] * np.roll(nxt, -1, axis=0)[:, 0]
+                    if len(xy) > 3 and not ((turns > 0).all() or (turns < 0).all()):
+                        # a folded or twisted face lies over itself whichever way it is flattened: its corners go
+                        # round a circle of the same area instead (a few hidden faces, a fold in a prop or a coat)
+                        k = len(xy)
+                        rad = math.sqrt(max(poly.area, 1e-12) / (0.5 * k * math.sin(2 * math.pi / k)))
+                        ang = 2 * math.pi * np.arange(k) / k
+                        xy = np.stack([rad * np.cos(ang), rad * np.sin(ang)], axis=1)
+                    for li, (x, y) in zip(poly.loop_indices, xy):
+                        uvl[li].uv = (float(x) + 10.0 * j, float(y))
+        # the new islands at their object's texel density (they came back at the projector's own scale)
+        for o in objs:
+            if not bad[o.name]:
+                continue
+            uva, area = _uv_face_areas(o, uv_name)
+            sel = np.zeros(len(area), bool)
+            sel[list(bad[o.name])] = True
+            now = float(uva[sel].sum() / max(area[sel].sum(), 1e-12))
+            k = math.sqrt((dens[o.name] or fallback) / max(now, 1e-12))
+            me = o.data
+            starts = np.empty(len(me.polygons), np.int32)
+            me.polygons.foreach_get('loop_start', starts)
+            totals = np.empty(len(me.polygons), np.int32)
+            me.polygons.foreach_get('loop_total', totals)
+            lsel = np.repeat(sel, totals)
+            uv = np.empty(len(me.loops) * 2, np.float32)
+            me.uv_layers[uv_name].data.foreach_get('uv', uv)
+            uv = uv.reshape(-1, 2)
+            uv[lsel] *= k
+            me.uv_layers[uv_name].data.foreach_set('uv', uv.ravel())
+        with bpy.context.temp_override(active_object=objs[0], object=objs[0], selected_objects=objs, selected_editable_objects=objs):
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.uv.pack_islands(rotate=True, margin=pack_margin)
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+
+# texel_k is grouped in steps of this before projecting (each group unwrapped on its own)
+TEXEL_K_STEP = 0.1
+
+
+def _face_texel_k(o: bpy.types.Object) -> np.ndarray | None:
+    """The object's FACE float attribute texel_k (missing, zero or negative values count as 1), or None."""
+    a = o.data.attributes.get('texel_k')
+    if a is None or a.domain != 'FACE' or a.data_type != 'FLOAT':
+        return None
+    k = np.empty(len(o.data.polygons), np.float32)
+    a.data.foreach_get('value', k)
+    return np.where(k > 0.0, k, 1.0).astype(np.float64)
+
+
+def _texel_groups(objs, keep_faces: str | None) -> dict:
+    """{object: per-face group id (k rounded to TEXEL_K_STEP; -1 for own-UV faces)} when any object has texel_k
+    other than 1; else {} (the pack runs as it always did)."""
+    ks = {o.name: _face_texel_k(o) for o in objs}
+    if all(k is None or np.allclose(k, 1.0) for k in ks.values()):
+        return {}
+    out = {}
+    for o in objs:
+        k = ks[o.name] if ks[o.name] is not None else np.ones(len(o.data.polygons))
+        g = np.round(k / TEXEL_K_STEP).astype(np.int64)
+        if keep_faces and keep_faces in o.data.attributes:
+            kf = np.empty(len(o.data.polygons), np.float32)
+            o.data.attributes[keep_faces].data.foreach_get('value', kf)
+            g = np.where(kf > 0.5, -1, g)
+        out[o.name] = g
+    return out
+
+
+def _apply_texel_k(objs, uv_name: str, keep_faces: str | None) -> None:
+    """Scale each face's UVs by its texel_k group (islands never straddle groups); own-UV faces by their object's
+    mean k over them (an own unwrap is one island per part)."""
+    for o in objs:
+        k = _face_texel_k(o)
+        if k is None:
+            continue
+        me = o.data
+        g = np.round(k / TEXEL_K_STEP) * TEXEL_K_STEP
+        if keep_faces and keep_faces in me.attributes:
+            kf = np.empty(len(me.polygons), np.float32)
+            me.attributes[keep_faces].data.foreach_get('value', kf)
+            own = kf > 0.5
+            if own.any():
+                g = np.where(own, float(k[own].mean()), g)
+        totals = np.empty(len(me.polygons), np.int32)
+        me.polygons.foreach_get('loop_total', totals)
+        uv = np.empty(len(me.loops) * 2, np.float32)
+        me.uv_layers[uv_name].data.foreach_get('uv', uv)
+        uv = uv.reshape(-1, 2) * np.repeat(g, totals)[:, None].astype(np.float32)
+        me.uv_layers[uv_name].data.foreach_set('uv', uv.ravel())
+    C.log(f"atlas pack: texel_k applied ({', '.join(f'{o.name} {np.unique(np.round(_face_texel_k(o) / TEXEL_K_STEP) * TEXEL_K_STEP).round(2).tolist()}' for o in objs if _face_texel_k(o) is not None)})")
+
+
 def pack_atlas(objs: list[bpy.types.Object], uv_name: str, strip: float, angle_deg: float = 62.0,
-               island_margin: float = 0.005, pack_margin: float = 0.003, density: dict | None = None) -> None:
+               island_margin: float = 0.005, pack_margin: float = 0.003, density: dict | None = None, keep_faces: str | None = None) -> None:
     """Smart-project the objects together into `uv_name` at an even texel density, leaving the bottom `strip`.
     `density` {object name: k} scales an object's texel density by k (e.g. eyes up, smooth membranes down).
+    `keep_faces` names a FACE float attribute: faces where it is > 0.5 keep the UVs already in `uv_name` (a recipe's own
+    unwrap: a horn or a rope unrolled as one strip, where smart-project cuts many small islands); they are only scaled
+    to the common texel density and packed with the rest.
+    A FACE float attribute `texel_k` on any object (default 1) scales those faces' texel density by k (the head 1.6, the
+    belly 0.7): the faces are grouped by k in steps of TEXEL_K_STEP and each group is projected on its own, so no
+    island straddles two densities; an own-UV island takes its faces' mean k. Faces that end up sharing texels (an island lying over
+    itself) are projected again on their own (_repair_overlaps); build_ultra fails in words if any are left.
 
     The islands fill the whole 1 × (1 − strip) rectangle (P1.2; P1.1 packed into a square and used ~80% of the width):
     a first pack chooses each island's rotation; then the UVs are stretched by 1 / (1 − strip) in v, packed again into
@@ -68,14 +316,47 @@ def pack_atlas(objs: list[bpy.types.Object], uv_name: str, strip: float, angle_d
             fn()
             bpy.ops.object.mode_set(mode='OBJECT')
 
+    groups = _texel_groups(objs, keep_faces)
+
     def project() -> None:
+        if groups:
+            # one projection per density group (faces of other groups, and own-UV faces, unselected meanwhile)
+            import bmesh
+            for g in sorted({g for gs in groups.values() for g in gs.tolist() if g >= 0}):
+                for o in objs:
+                    bm = bmesh.from_edit_mesh(o.data)
+                    bm.faces.ensure_lookup_table()
+                    sel = groups[o.name] == g
+                    for f in bm.faces:
+                        f.select = bool(sel[f.index])
+                    bmesh.update_edit_mesh(o.data)
+                bpy.ops.uv.smart_project(angle_limit=math.radians(angle_deg), island_margin=island_margin, correct_aspect=True, scale_to_bounds=False)
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.uv.average_islands_scale()
+            return
+        if keep_faces:
+            # the recipe's own unwraps stay out of the projection (unselected), then join the rest for the scaling
+            import bmesh
+            for o in objs:
+                bm = bmesh.from_edit_mesh(o.data)
+                lay = bm.faces.layers.float.get(keep_faces)
+                if lay is not None:
+                    for f in bm.faces:
+                        if f[lay] > 0.5:
+                            f.select = False
+                    bmesh.update_edit_mesh(o.data)
         bpy.ops.uv.smart_project(angle_limit=math.radians(angle_deg), island_margin=island_margin, correct_aspect=True, scale_to_bounds=False)
+        if keep_faces:
+            bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.uv.average_islands_scale()
     edit(project)
     if density:
         arrs = _uv_arrays(objs, uv_name)
         _set_uvs(objs, uv_name, [a * float(density.get(o.name, 1.0)) for o, a in zip(objs, arrs)])
+    if groups:
+        _apply_texel_k(objs, uv_name, keep_faces)
     edit(lambda: bpy.ops.uv.pack_islands(rotate=True, margin=pack_margin))
+    _repair_overlaps(objs, uv_name, angle_deg, island_margin, pack_margin)
     keep = 1.0 - strip
     if strip > 0:
         _set_uvs(objs, uv_name, [a * np.array([1.0, 1.0 / keep], np.float32) for a in _uv_arrays(objs, uv_name)])
@@ -96,16 +377,25 @@ def pack_atlas(objs: list[bpy.types.Object], uv_name: str, strip: float, angle_d
             o.data.uv_layers.active = o.data.uv_layers['UVMap']
 
 
-def strip_uvs(ob: bpy.types.Object, cells: tuple[int, ...], uv_name: str = 'UVMap') -> None:
-    """Each element maps into one strip cell (across → u, along → v), picked by its random number."""
+def strip_uvs(ob: bpy.types.Object, cells: tuple[int, ...], uv_name: str = 'UVMap', by_layer: dict | None = None) -> None:
+    """Each element maps into one strip cell (across → u, along → v), picked by its random number; `by_layer`
+    {layer: cells} picks from its layer's cells instead (per-layer card styles: the element attribute 'layer')."""
     me = ob.data
     if uv_name not in me.uv_layers:
         me.uv_layers.new(name=uv_name)
     across = S.attr_array(ob, 'across')
     tpos = S.attr_array(ob, 'tpos')
     lrand = S.attr_array(ob, 'lrand')
-    pick = np.minimum((lrand * len(cells)).astype(int), len(cells) - 1)
-    cell = np.array(cells)[pick]
+    if by_layer:
+        layer = np.round(S.attr_array(ob, 'layer')).astype(int)
+        cell = np.zeros(len(lrand), np.int64)
+        for li, cs in by_layer.items():
+            m = layer == li
+            pick = np.minimum((lrand[m] * len(cs)).astype(int), len(cs) - 1)
+            cell[m] = np.array(cs)[pick]
+    else:
+        pick = np.minimum((lrand * len(cells)).astype(int), len(cells) - 1)
+        cell = np.array(cells)[pick]
     pad = 0.012
     u = (cell + pad + (np.clip(across, -1, 1) + 1) * 0.5 * (1 - 2 * pad)) / CELLS
     v = (pad + tpos * (1 - 2 * pad)) * STRIP
@@ -265,17 +555,89 @@ def strip_paint_material(name: str, rough_pass: bool = False, alpha_pass: bool =
     return m
 
 
-def strip_scene():
+def hair_tile(px: int, seed: int) -> dict:
+    """One 'hair' card tile, px x px, rows bottom-up (row 0 the card's root, tpos 0): 8-14 thin strands with alpha-0
+    gaps between them, each 10-20 px wide at 256 px, tapering over its top 40-60% to a fine point with a soft 2-3 px
+    falloff along the sides. The shading is in the tile (roots about 0.6x, lighter tips, a thin highlight line and a
+    darker edge per strand, a little brightness jitter between strands) and the normal rounds across each strand.
+    Painted in numpy (no strip geometry): 'value' (grey, the cards' vertex colour tints it), 'alpha', 'normal' (0..1),
+    'ao', 'rough'. (Starhowl's mane: the fur tiles' 2-3 broad, near-opaque, unshaded lobes read as cut-paper blades.)"""
+    rng = np.random.default_rng(seed)
+    k = px / 256.0
+    X, Y = np.meshgrid(np.arange(px) + 0.5, (np.arange(px) + 0.5) / px)
+    value = np.full((px, px), 0.94)
+    alpha = np.zeros((px, px))
+    nx = np.zeros((px, px))
+    ao = np.ones((px, px))
+    rough = np.full((px, px), 0.5)
+    n = int(rng.integers(8, 15))
+    widths = rng.uniform(10, 20, n) * k
+    gaps = rng.dirichlet(np.ones(n + 1) * 3.0) * max(px * 0.94 - widths.sum(), n * 2.0 * k)
+    left = px * 0.03 + np.cumsum(np.concatenate([[0.0], widths[:-1]])) + np.cumsum(gaps[:-1])
+    for i in range(n):
+        w = widths[i]
+        length = rng.uniform(0.72, 0.98)
+        taper0 = length * (1.0 - rng.uniform(0.4, 0.6))
+        bend = rng.normal(0.0, 0.025) * px
+        wave = rng.uniform(0.0, 0.008) * px
+        phase = rng.uniform(0, 2 * math.pi)
+        jitter = rng.uniform(0.9, 1.08)
+        t = Y / length
+        cx = left[i] + w / 2 + bend * t ** 2 + wave * np.sin(t * math.pi * 2.0 + phase)
+        hw = 0.5 * w * (1.0 - S.smooth(taper0 / length, 1.0, t) * 0.92)
+        d = np.abs(X - cx)
+        a = np.clip((hw - d) / (2.5 * k) + 0.5, 0.0, 1.0) * (t <= 1.0) * S.smooth(1.0, 0.97, t) * S.smooth(0.0, 0.04, Y)
+        u = np.clip((X - cx) / np.maximum(hw, 1e-6), -1.0, 1.0)
+        tc = np.clip(t, 0, 1)
+        shade = (0.6 + 0.42 * tc ** 0.7) * jitter
+        shade = shade * (1.0 - 0.16 * S.smooth(0.55, 1.0, np.abs(u))) + 0.14 * np.exp(-((u + 0.28) / 0.16) ** 2) * S.smooth(0.05, 0.25, t)
+        take = (a > 0.0) & (a >= alpha)
+        value = np.where(take, np.clip(shade, 0.0, 1.0), value)
+        alpha = np.maximum(alpha, a)
+        nx = np.where(take, u * 0.55, nx)
+        ao = np.where(take, 0.82 + 0.18 * tc, ao)
+        rough = np.where(take, 0.44 + 0.12 * np.abs(u), rough)
+    nz = np.sqrt(np.clip(1.0 - nx * nx, 0.0, 1.0))
+    normal = np.stack([nx * 0.5 + 0.5, np.full_like(nx, 0.5), nz * 0.5 + 0.5], axis=-1)
+    return {'value': value, 'alpha': alpha, 'normal': normal, 'ao': ao, 'rough': rough}
+
+
+def paint_hair_cells(imgs: dict, alpha: np.ndarray, cells: list[int]) -> None:
+    """Write 'hair' tiles into the baked strip's card cells (colour, normal, AO, roughness and the alpha array)."""
+    if not cells:
+        return
+    size = imgs['base'].size[0]
+    rows = int(round(size * STRIP))
+    cw = size // CELLS
+    arrs = {k: image_array(imgs[k]) for k in ('base', 'normal', 'ao', 'rc')}
+    for c in cells:
+        t = hair_tile(min(rows, cw), 100 + c)
+        r = slice(0, t['alpha'].shape[0])
+        x = slice(c * cw, c * cw + t['alpha'].shape[1])
+        arrs['base'][r, x, :3] = t['value'][..., None]
+        arrs['normal'][r, x, :3] = t['normal']
+        arrs['ao'][r, x, :3] = t['ao'][..., None]
+        arrs['rc'][r, x, 1] = t['rough']
+        arrs['rc'][r, x, 2] = 0.16
+        alpha[r, x] = t['alpha']
+    for k, a in arrs.items():
+        imgs[k].pixels.foreach_set(np.ascontiguousarray(a, dtype=np.float32).ravel())
+    C.log(f"strip: 'hair' tiles painted in card cells {cells}")
+
+
+def strip_scene(card_style='fur'):
     """The strip's high detail: per lock cell one tuft lock laid flat; per card cell a cluster of soft locks with
-    rounded tips at different lengths. The low is a plane whose UVs are the strip."""
+    rounded tips at different lengths (card_style 'wool': short crimped ringlets in a fluffy clump instead). The low is
+    a plane whose UVs are the strip."""
     rng = np.random.default_rng(5)
+    cs = card_cell_styles(card_style) if not isinstance(card_style, dict) else card_style
     parts = []
     for c in LOCK_CELLS:
         tpl = S.lock_template(28, 28, 3, strand=0.18)
         v = tpl[0]
         verts = np.stack([c + 0.5 + v[:, 0] * 0.5, 0.012 + v[:, 1] * 0.976, v[:, 2] * 0.14], axis=1)[None]
         parts.append(S.elements_object(f'strip_lock_{c}', verts, tpl, np.zeros((1, 3)), S.KIND_TUFT, rng))
-    for c in CARD_CELLS:
+    for c in [c for c in CARD_CELLS if cs[c] == 'fur']:
         k = 3 + (c % 2)
         for i in range(k):
             tpl = S.lock_template(16, 22, 3, strand=0.16)
@@ -290,6 +652,20 @@ def strip_scene():
             xr, yr = x * math.cos(ang) - y * math.sin(ang), x * math.sin(ang) + y * math.cos(ang)
             verts = np.stack([cx + xr, 0.01 + yr, v[:, 2] * 0.07 + 0.002 * i], axis=1)[None]
             parts.append(S.elements_object(f'strip_card_{c}_{i}', verts, tpl, np.zeros((1, 3)), S.KIND_CARD, rng))
+    for c in [c for c in CARD_CELLS if cs[c] == 'wool']:
+        # wool: five to seven short ringlets per tile, crimped side to side, wide and round-tipped, overlapping in a clump
+        k = 5 + (c % 3)
+        for i in range(k):
+            tpl = S.lock_template(14, 26, 2, strand=0.1)
+            v = tpl[0]
+            w = (1.25 / k) * (0.9 + 0.25 * rng.random())
+            cx = c + (i + 0.5) / k + rng.normal(0, 0.03)
+            ln = 0.45 + 0.4 * rng.random()
+            crimp = (0.05 + 0.04 * rng.random()) * np.sin(v[:, 1] * np.pi * (3.0 + 2.0 * rng.random()) + rng.uniform(0, np.pi))
+            x = v[:, 0] * w * 0.5 * (0.75 + 0.25 * S.smooth(0.0, 0.25, v[:, 1])) + crimp * S.smooth(0.05, 0.3, v[:, 1])
+            y = v[:, 1] * ln
+            verts = np.stack([cx + x, 0.01 + y, v[:, 2] * 0.11 + 0.003 * i], axis=1)[None]
+            parts.append(S.elements_object(f'strip_wool_{c}_{i}', verts, tpl, np.zeros((1, 3)), S.KIND_CARD, rng))
     hi = S.join_elements(parts, 'strip_hi', attrs=('tpos', 'kind', 'lrand', 'root', 'mouth', 'dots', 'across'))
     me = bpy.data.meshes.new('strip_lo')
     nx, ny = CELLS * 8, 16
@@ -308,13 +684,47 @@ def strip_scene():
 
 
 # ----------------------------------------------------------------------------- one texture set
+def _blur(a: np.ndarray, sigma: float) -> np.ndarray:
+    """A separable Gaussian blur of a 2-D array (zeros beyond the edges)."""
+    r = max(1, int(math.ceil(3.0 * sigma)))
+    x = np.arange(-r, r + 1, dtype=np.float64)
+    k = np.exp(-0.5 * (x / sigma) ** 2)
+    k /= k.sum()
+    for axis in (0, 1):
+        p = np.pad(a, [(r, r) if ax == axis else (0, 0) for ax in (0, 1)])
+        n = a.shape[axis]
+        a = sum(float(k[j]) * (p[j:j + n] if axis == 0 else p[:, j:j + n]) for j in range(2 * r + 1))
+    return a
+
+
+def treat_ao(ao: np.ndarray, written: np.ndarray, floor: float = 0.0, soften: float = 0.0) -> tuple[np.ndarray, int]:
+    """The recipe's AO_SOFTEN (a Gaussian blur of that many texels, only among the texels a bake wrote, so the empty
+    space between islands never darkens them) and AO_FLOOR (no written texel darker than it): narrow slots between
+    crossing clumps, crowded lock roots and deep wool seams otherwise bake near black, and the baked AO multiplies into
+    the base colour. `ao` is one channel; returns it and how many texels the floor raised."""
+    out = ao.astype(np.float64)
+    m = written.astype(np.float64)
+    if soften > 0:
+        num = _blur(out * m, soften)
+        den = _blur(m, soften)
+        out = np.where(written, num / np.maximum(den, 1e-6), out)
+    raised = 0
+    if floor > 0:
+        low = written & (out < floor)
+        raised = int(low.sum())
+        out = np.where(low, floor, out)
+    return out.astype(np.float32), raised
+
+
 def bake_set(prefix: str, size: int, out_dir: Path, plan, uv: str, with_strip: bool, paint, samples,
-             extra_colours: tuple[str, ...] = (), base_ao: float = BASE_AO) -> dict:
+             extra_colours: tuple[str, ...] = (), base_ao: float = BASE_AO, card_style='fur',
+             ao_floor: float = 0.0, ao_soften: float = 0.0) -> dict:
     """Bake one texture set for `plan` = [(low, sources, occluders)]: tangent normals, AO, base colour and roughness /
     coat (and optionally the strip), pack ORM (R AO, G roughness, B clearcoat mask), multiply `base_ao` of the AO into
     the colour, and save <prefix>_base.png (RGBA), _normal.png, _orm.png. `paint(pass)` assigns the sources' emission
     materials for 'base', 'rough' and each name in `extra_colours`; every extra colour pass is saved as
-    <prefix>_<name>.png on the same UVs with the base's strip copied in (its tiles are neutral)."""
+    <prefix>_<name>.png on the same UVs with the base's strip copied in (its tiles are neutral). `ao_floor` /
+    `ao_soften` (the recipe's AO_FLOOR / AO_SOFTEN; 0 = off) treat the islands' AO before it is packed (treat_ao)."""
     s_n, s_ao, s_e = samples
     imgs = {k: new_image(f'{prefix}_{k}', size, alpha=False, color=(0.5, 0.5, 1.0, 1.0) if k == 'normal' else (0.0, 0.0, 0.0, 1.0),
                          srgb=k == 'base') for k in ('base', 'normal', 'ao', 'rc')}
@@ -335,7 +745,7 @@ def bake_set(prefix: str, size: int, out_dir: Path, plan, uv: str, with_strip: b
         bake('EMIT', low, src, imgs['rc'], s_e, clear=k == 0, uv_layer=uv)
     alpha = None
     if with_strip:
-        s_lo, s_hi = strip_scene()
+        s_lo, s_hi = strip_scene(card_style)
         bake('NORMAL', s_lo, [s_hi], imgs['normal'], s_n, clear=False, cage=0.2, dist=0.3)
         bake('AO', s_lo, [s_hi], imgs['ao'], s_ao, clear=False, cage=0.2, dist=0.3)
         set_material([s_hi], strip_paint_material('strip_paint'))
@@ -348,7 +758,17 @@ def bake_set(prefix: str, size: int, out_dir: Path, plan, uv: str, with_strip: b
         alpha = image_array(a_img)[..., 0]
         bpy.data.objects.remove(s_lo, do_unlink=True)
         bpy.data.objects.remove(s_hi, do_unlink=True)
+        paint_hair_cells(imgs, alpha, [c for c, st in card_cell_styles(card_style).items() if st == 'hair'])
     ao = image_array(imgs['ao'])
+    if ao_floor > 0 or ao_soften > 0:
+        # the islands only (the strip's tiles are shared): the texels a bake wrote, by colour or AO
+        rows = int(round(ao.shape[0] * STRIP)) if with_strip else 0
+        isl = ao[rows:, :, 0]
+        written = (image_array(imgs['base'])[rows:, :, :3].max(axis=-1) > 0.002) | (isl > 0.002)
+        treated, raised = treat_ao(isl, written, ao_floor, ao_soften)
+        ao[rows:, :, :3] = treated[..., None]
+        imgs['ao'].pixels.foreach_set(np.ascontiguousarray(ao, dtype=np.float32).ravel())
+        C.log(f'{prefix}: AO softened {ao_soften:g} texels, floor {ao_floor:g} ({raised} texels raised to it)')
     rc = image_array(imgs['rc'])
     orm = np.ones_like(ao)
     orm[..., 0] = ao[..., 0]
@@ -386,7 +806,9 @@ def bake_set(prefix: str, size: int, out_dir: Path, plan, uv: str, with_strip: b
     save_png(imgs['orm'], out_dir / f'{prefix}_orm.png')
     for name in extra_colours:
         save_png(imgs[f'{name}_rgba'], out_dir / f'{prefix}_{name}.png')
-    q = np.percentile(ao[strip_rows:, :, 0], [5, 50, 95])
+    # over the texels a bake wrote (any colour or AO), not the empty space between the islands
+    covered = (image_array(imgs['base'])[strip_rows:, :, :3].max(axis=-1) > 0.002) | (ao[strip_rows:, :, 0] > 0.002)
+    q = np.percentile(ao[strip_rows:, :, 0][covered] if covered.any() else ao[strip_rows:, :, 0], [5, 50, 95])
     C.log(f'{prefix}: AO percentiles 5/50/95 = {q[0]:.2f} / {q[1]:.2f} / {q[2]:.2f} (healthy median ≈ 0.9)')
     return imgs
 
