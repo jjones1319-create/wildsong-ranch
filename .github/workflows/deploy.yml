@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # --ignore-scripts: the only install script that matters is ffmpeg-static's binary download (a dev tool for
+      # `npm run audio:samples`, never used by the tests or the build), and GitHub's release downloads can fail (504)
+      - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
