@@ -654,7 +654,7 @@ Spec: ART_2_PLAN §3.3, §3.6 (the Ultra and Lite budgets), §6 (the review loop
   - sidecars fetched network-first, and the `.glb` asked for as `?v=<build>`.
 - [x] 6. The five breeds through the review loop: Tumblefox (Town Crier, Glitch), Cinderlynx (Bonfire), Starhowl, Nimbusheep (Stormcrown), Rammerjack; the lineup with Puddlepup first.
 - [x] 7. Docs (ART_2_PLAN §3.6, §6, §8; ART_2_DETAIL §9.4, §10; CLAUDE.md), tests (`ultraLooks.test.ts`, `fighters.test.ts`, e2e `gallery3d.spec.ts`), `npm run verify`, PROGRESS, v1.23.0, commit, deploy.
-- [ ] 8. The owner's verdict on the phone, given for batches 1 and 2 together (the owner, Nov 7: *"After these are completely finished start the next batch and I will review all 10 at once"*), so both ship in v1.23.0. Their notes are applied before batch 3.
+- [x] 8. The owner's verdict on the phone, given for batches 1 and 2 together (the owner, Nov 7: *"After these are completely finished start the next batch and I will review all 10 at once"*), so both ship in v1.23.0. Their notes (Nov 12) are the upgrade round below.
 
 ### Batch 2: Stripeneck, Petalphant, Cobblemaw, Hearthwing young and grown (v1.23.0, with batch 1)
 - [x] 1. Recipes and shape previews, started while batch 1 finished its reviews (no full builds until batch 1 shipped).
@@ -674,6 +674,27 @@ Spec: ART_2_PLAN §3.3, §3.6 (the Ultra and Lite budgets), §6 (the review loop
   - Lite WebP keeps colour under zero alpha (the alpha floor);
   - new strike styles `kick`, `slam` and `lunge`, wings, the open mouth, the trunk cast.
 - [x] 7. The final clips sweep (a dry run compared every key with each look's rigged.blend; 6 looks re-exported for the new hit), docs, tests (`npm run verify` 1,233 green; e2e), PROGRESS, v1.23.0, commit, deploy, one phone checklist for all 10.
+
+### The upgrade round and Hearthwing's flight (v1.24.0)
+The owner, Nov 12, after v1.23.0: *"Do all of the upgrade. Bigger wings so it looks like it could actually fly (and it should in a special attack and in the ranch). After these do 2 at a time with the same review processes until you have 10 more done."*
+- [x] 1. Every v1.23.0 known weak spot fixed (PROGRESS v1.23.0, each look's `verdicts.txt`). Each look gets a builder round, then a fresh-eyes review against the pictures, then one more fix pass if the review finds something. First wave: Hearthwing young and grown, Starhowl, Petalphant, Cobblemaw, Stripeneck. Second wave: Cinderlynx, Tumblefox, Nimbusheep, Rammerjack.
+- [x] 2. Hearthwing's wings, both forms: about 2.9× standing height (young) and 3.5× (grown; the card says "much wider"), with scalloped membranes, finger struts, a muscular arm and a closed-fan fold; the tail tip is a flat, unlit leaf-spade (originality).
+- [x] 3. Flight clips for winged quadrupeds (`fly_takeoff`, `fly`, `fly_cast`, `fly_land`). They play in place; the game sets the height.
+- [x] 4. Battle 3D: Hearthwing takes off for its Special (Bellows Blaze) and its Signature (Hearthfire Torrent), breathes fire from the air and lands. This is presentation only; the duel's rules and timing are unchanged. Lab → 3D Gallery gets the flight moves.
+- [x] 5. The ranch shows the Ultra monsters (option A, by the owner's 10-minute rule; ART_2_DETAIL §9.6), and Hearthwing flies a lap about once a minute.
+- [x] 6. Shared pipeline and renderer: `VARIANT_ORM`, `VARIANT_CARDS_OFF`, `prop_material`, `BODY_SHEEN`, the opt-in quadruped knobs; the studio world, tone-map toe, warmth, roughness floor, rim facing and variant eyes (ART_2_DETAIL §9.7).
+- [ ] 7. Docs, tests, `npm run verify`, e2e, PROGRESS, v1.24.0, commit, deploy, phone checklist.
+
+### Batches 3 and 4, two at a time (from v1.25.0)
+Ten more breeds, two at a time, with the same review process as batches 1 and 2.
+- **The biped plan** (`plans/biped.py`, ART_2_PLAN §5 line 280) is for B3. Its prep started during the upgrade round, using shape previews and a stand-in recipe only; full builds wait for the upgrades.
+- **The floater plan** (`plans/floater.py`) is for B4.
+- [ ] 1. Quillion and Grumblestone (the biped plan's first pair).
+- [ ] 2. Gloomgrin and Plumdrake (biped wings).
+- [ ] 3. Pluckrex young and grown, and Wishlume (the floater plan's first).
+- [ ] 4. Ashwraith and Zipwisp.
+- [ ] 5. Mirrorkin and Frostlance.
+- [ ] 6. Docs, tests, `npm run verify`, e2e, PROGRESS, release, phone checklist.
 
 ## LATER (after v1.0)
 

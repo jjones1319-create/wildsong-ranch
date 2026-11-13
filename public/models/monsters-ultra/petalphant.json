@@ -7,13 +7,13 @@
  "restHeight": 1.2635,
  "bounds": {
   "min": [
-   -0.3862,
+   -0.3859,
    -0.9182,
    0
   ],
   "max": [
-   0.3862,
-   0.5424,
+   0.386,
+   0.4945,
    1.2635
   ]
  },
@@ -73,7 +73,6 @@
  "meshes": {
   "lo_body": "body",
   "lo_eyes": "eye",
-  "lo_cards": "card",
   "lo_props": "prop"
  },
  "face": {
@@ -676,37 +675,28 @@
    "faces": []
   }
  },
- "restHeightWithProps": 1.3968,
- "cards": {
-  "edgeFade": [
-   0.05,
-   0.35
-  ]
- },
+ "restHeightWithProps": 1.3974,
  "normal": {
-  "scale": 1
+  "scale": 1.3
  },
  "litePropsTris": 4500,
  "glow": {
-  "strength": 0.5,
+  "strength": 0.18,
   "tint": null
  },
- "build": "bff4f0d104",
+ "build": "715e5bee0f",
  "buildStats": {
   "cards": {
-   "total": 1535,
-   "layers": [
-    1129,
-    406
-   ]
+   "total": 0,
+   "layers": []
   },
   "tuftLocks": 0,
   "lyingLocks": {},
-  "sourceTriangles": 1669248,
+  "sourceTriangles": 1631100,
   "uvOverlapTexels": {
    "lo_body": 0,
    "lo_eyes": 0,
-   "lo_props": 0
+   "lo_props": 3
   }
  },
  "files": {
@@ -736,51 +726,50 @@
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 91308,
+  "triangles": 77772,
   "trianglesByMesh": {
-   "lo_body": 59996,
-   "lo_cards": 6140,
+   "lo_body": 52000,
    "lo_eyes": 624,
-   "lo_props": 24548
+   "lo_props": 25148
   },
-  "vertices": 58116,
-  "cards": 1535,
-  "cardLayers": 2,
-  "joints": 37,
+  "vertices": 45764,
+  "cards": 0,
+  "cardLayers": 0,
+  "joints": 38,
   "animations": 32,
-  "animationBytes": 200148,
+  "animationBytes": 201020,
   "download": {
-   "glb": 3627948,
-   "glbKtx2": 3627948,
-   "glbWebp": 2600344,
+   "glb": 3378876,
+   "glbKtx2": 3378876,
+   "glbWebp": 2317864,
    "ktx2": {
-    "body": 2033903,
+    "body": 2059963,
     "variants": 0
    },
    "webp": {
-    "body": 1006318,
+    "body": 998954,
     "variants": 0
    },
-   "totalKtx2": 3627948,
-   "totalWebp": 2600344
+   "totalKtx2": 3378876,
+   "totalWebp": 2317864
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 629927,
-     "webp": 262246
+     "ktx2": 633421,
+     "webp": 248612
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 846829,
-     "webp": 484624
+     "ktx2": 809558,
+     "webp": 459140
     },
     "orm": {
      "px": 2048,
-     "ktx2": 557147,
-     "webp": 259448
+     "ktx2": 616984,
+     "webp": 291202
     }
    }
   },
@@ -788,15 +777,6 @@
    "lo_body.001": [
     "JOINTS_0",
     "WEIGHTS_0",
-    "POSITION",
-    "NORMAL",
-    "TEXCOORD_0",
-    "TANGENT"
-   ],
-   "lo_cards": [
-    "JOINTS_0",
-    "WEIGHTS_0",
-    "COLOR_0",
     "POSITION",
     "NORMAL",
     "TEXCOORD_0",
@@ -823,8 +803,8 @@
  },
  "lite": {
   "file": "petalphant.lite.glb",
-  "build": "23a1b655e6",
-  "bytes": 802264,
+  "build": "29ffa04ca9",
+  "bytes": 807932,
   "triangles": 11788,
   "trianglesByMesh": {
    "lo_body": 6800,
@@ -833,18 +813,18 @@
   },
   "simplified": {
    "lo_props": {
-    "from": 24548,
+    "from": 25148,
     "to": 4364
    },
    "lo_body": {
-    "from": 59996,
+    "from": 52000,
     "to": 6800
    }
   },
-  "joints": 37,
+  "joints": 38,
   "animations": 32,
   "atlasPx": 1024,
-  "textureBytes": 232492,
+  "textureBytes": 229518,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

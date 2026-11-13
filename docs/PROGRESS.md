@@ -2,6 +2,94 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## The upgrade round and Hearthwing's flight (2026-11-13) · v1.24.0
+
+The owner, Nov 12, after v1.23.0: "Do all of the upgrade. Bigger wings so it looks like it could actually fly (and it should in a special attack and in the ranch)." Later: "After you finish the updates for the 1st 10 pause and put them into the game I would like to see them."
+
+**Live:**
+- **All 10 monsters upgraded** against their v1.23.0 known weak spots, each re-checked by fresh independent reviewers, up to 3 rounds, then a polish pass.
+- **Hearthwing flies:**
+  - much bigger wings (about 2.9× its height when young, 3.5× grown), with scalloped membranes, a proper fold and a flat leaf-spade tail tip;
+  - in Battle 3D, its Special (Bellows Blaze) and Signature (Hearthfire Torrent) take off, breathe fire from the air and land, inside the battle's normal timing, with the camera framing the whole flier;
+  - in Lab → 3D Gallery: 🪽 Take off, Fly, 🔥 Fly + breathe, Land;
+  - on the ranch, it flies a lap about once a minute.
+- **The ranch shows the new 3D monsters** (the owner's option A, taken by the 10-minute rule): every finished monster, Puddlepup included, in its live portrait. Lists, cards and cups are unchanged; Settings → Graphics → Monsters: Classic brings back the drawings; Lite phones load the lighter copies.
+- **Truer colours and materials for every 3D monster:**
+  - greens read sage, not mint; plums stay plum; whites stay cool;
+  - no chrome hooves or glassy legs;
+  - back views keep their shading;
+  - variants show their own eye colours.
+- **Variants:**
+  - Granite Cobblemaw is polished stone with no moss fibres;
+  - Stormcrown Nimbusheep's gold glows on its puffs' rims;
+  - Bonfire Cinderlynx has its own eyes and belly.
+
+**Done**
+- **Shared renderer** (ART_2_DETAIL §9.7):
+  - a soft grey studio world instead of RoomEnvironment;
+  - a hue-keeping tone-map toe;
+  - warmth only on warm pixels;
+  - a roughness floor and a clearcoat cap;
+  - rim lights that dim facing the camera;
+  - `variantEyesDiffer`; the eye glow by the breed's entry.
+- **Pipeline options:** `VARIANT_ORM`, `VARIANT_CARDS_OFF`, `prop_material`, `BODY_SHEEN`; fly clips; the opt-in quadruped knobs.
+- **Prep for the next 10:**
+  - the biped plan (`plans/biped.py`) and floater plan (`plans/floater.py`), each with every clip;
+  - Quillion's and Grumblestone's recipes and shape previews (not built yet).
+- **Code:**
+  - `src/art3d/ultra/flight.ts` and the flight cut (`cineShot.ts`);
+  - `src/art3d/ultra/portraitStage.ts` and `src/ui/components/MonsterUltra.tsx`;
+  - tests (`flight`, `studioRims`, `bodySheen`, `ultraAsset`, `ultraLooks`);
+  - e2e `gallery3d` (the fly chips).
+- **The GPU bake test:** the RTX A500 was about 1.8× slower than the CPU, so baking stays on the CPU.
+
+| Look | Triangles | Download | Lite |
+|---|---|---|---|
+| Puddlepup | 61k | 4.7 MB | 1.0 MB |
+| Tumblefox | 65k | 5.7 MB | 1.2 MB |
+| Cinderlynx | 68k | 5.0 MB | 1.2 MB |
+| Starhowl | 61k | 4.0 MB | 1.2 MB |
+| Nimbusheep | 83k | 4.7 MB | 1.0 MB |
+| Rammerjack | 76k | 3.8 MB | 1.0 MB |
+| Stripeneck | 68k | 4.6 MB | 1.0 MB |
+| Cobblemaw | 80k | 5.6 MB | 1.1 MB |
+| Petalphant | 78k | 3.2 MB | 0.8 MB |
+| Hearthwing | 73k | 3.8 MB | 1.1 MB |
+| Hearthwing (grown) | 80k | 4.0 MB | 1.1 MB |
+
+(MB = 1,048,576 bytes; downloaded when viewed, never precached.)
+
+**Known issues** (taste items for the owner's look):
+- **Hearthwing:**
+  - the open mouth is hard to see in the cast frames;
+  - the grown's head is a bit small;
+  - the young's back view.
+- **Rammerjack:**
+  - no forelock tuft (removed: every version read wrong);
+  - white card fringes on the chest and legs;
+  - streaks on the hip patches;
+  - the knit reads as a grid; faint horn ridges; long legs; a short muzzle.
+- **Tumblefox:** its pounce stays low (the move is shared with Puddlepup's approved one); from straight behind, the tail shows its rim, not a full spiral.
+- **Nimbusheep:** Stormcrown's gold reads as small rim patches; a tall crown peak; no happy face in the win.
+- **Petalphant:**
+  - a far ear tip peeks above the head in 3/4;
+  - no smile in the cast (painted mouth);
+  - the cooler CONTENT sage against the pictures' olive. The owner may warm the hex.
+- **Stripeneck:**
+  - the mane partly reads as a striped column;
+  - hit faces keep the painted smile;
+  - the neck is shorter than the turnaround;
+  - the zebra half is weak at 64 px.
+- **Cinderlynx:**
+  - the chevrons stack a little like a fishbone at the shoulders;
+  - pale fur-card flecks on the legs;
+  - the strike paw overlaps the face.
+- **Cobblemaw:** the slam's impact sits lowish; the face is still a little bulldog from the front.
+- **Starhowl:** the most reworked look. The mane is S-curved locks framing the face with rose tips that end in knobbly curls; the tail tip is pointed rose clumps; at 64 px the eyes and rose are faint; the legs read a little short.
+- **Housekeeping:** empty stray folders `C:\pv17` and `C:\art-review\` await the owner's OK to delete.
+
+**Next:** the owner looks at all 10 on the phone. Then the next 10 (Quillion and Grumblestone first), two at a time.
+
 ## Every monster in 3D, batches 1 and 2 (2026-11-08) · v1.23.0
 
 The owner, Nov 7: "Puddlepup looks good. Start step 1 of 4. Create them the same way… in batches of 5… have an independent reviewer come in and check it against the photos." Then: "After these are completely finished start the next batch and I will review all 10 at once." So batches 1 and 2 ship together (BUILD_PLAN "Every monster in 3D"; ART_2_DETAIL §9.3–§9.5).

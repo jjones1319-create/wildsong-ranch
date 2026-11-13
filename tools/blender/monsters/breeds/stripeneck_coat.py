@@ -28,10 +28,10 @@ from lib.surface import smooth, v3
 # the haunch). The back legs take plain horizontal rings below the haunch (stripe_phase's leg_w).
 STRIPE_FOCUS = (0.42, 0.42)      # (y, z); round 2: further back and down, so the barrel's arcs straighten into long diagonals
 STRIPE_Z = 0.85                  # heights count this much: the arcs stand a little taller than wide
-STRIPE_PERIOD = 0.098            # round 3: fewer, bolder stripes (review: an even barcode)
+STRIPE_PERIOD = 0.155            # review Nov 13: 5–6 bold bands on the barrel and rump (the 64 px read)
 LEG_TOP = 0.66                   # where the legs' rings meet the arcs (on the leg's outside)
 LEG_Y = 0.33
-LEG_PERIOD = 0.105               # round 3: sparser bands on the legs
+LEG_PERIOD = 0.14                # upgrade: bolder bands on the legs (round 3: 0.105)
 TAIL_PERIOD = 0.072
 
 

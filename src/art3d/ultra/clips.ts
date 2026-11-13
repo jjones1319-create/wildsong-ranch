@@ -11,6 +11,22 @@ export const DUEL_FALLBACK_OK = ['dash'] as const
 export const GALLERY_CLIPS = ['idle', 'walk', 'strike', 'cast', 'hit', 'hit_heavy', 'ko', 'win', 'blink'] as const
 export type GalleryClip = (typeof GALLERY_CLIPS)[number]
 
+/**
+ * Flight (the owner, Nov 12: Hearthwing "should fly in a special attack"): in-place clips (the root stays at the
+ * origin; the game raises and lowers the monster). A look flies only when its sidecar lists all four and its file
+ * holds them; any other look keeps its ground moves (no flight).
+ */
+export const FLY_CLIPS = ['fly_takeoff', 'fly', 'fly_cast', 'fly_land'] as const
+export type FlyClip = (typeof FLY_CLIPS)[number]
+
+/** Whether a look can fly: `has` says whether its sidecar lists a clip and its file holds it. */
+export function canFly(has: (clip: string) => boolean): boolean {
+  return FLY_CLIPS.every(has)
+}
+
+/** A Gallery move button: a ground move, or (for a look that flies) a flying one, shown after the ground moves. */
+export type GalleryMove = GalleryClip | FlyClip
+
 /** The Gallery's loops; every other move plays once and settles back into idle. */
 export const GALLERY_LOOPS: ReadonlySet<string> = new Set(['idle', 'walk'])
 

@@ -4,17 +4,17 @@
  "plan": "quadruped",
  "version": 2,
  "heightUnits": 165,
- "restHeight": 1.0998,
+ "restHeight": 1.0947,
  "bounds": {
   "min": [
    -0.2312,
-   -0.6104,
+   -0.6164,
    -0.0016
   ],
   "max": [
-   0.2705,
-   0.8497,
-   1.0998
+   0.2309,
+   0.8873,
+   1.0947
   ]
  },
  "bones": {
@@ -69,7 +69,7 @@
  },
  "face": {
   "mode": "baked",
-  "note": "The eyes are glossy gold lenses (lo_eyes) with the iris, the oval pupil, the catchlights and the upper lash line baked into the body atlas; the brows, the eye rings, the cheek ember dashes, the nose, the cat smile and the whisker dots are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid sculpted and painted under it. The embers (the spine herringbone, the tail end, the ear tufts, the cheek dashes, the claws) are painted in the atlas.",
+  "note": "The eyes are glossy gold lenses (lo_eyes) with the iris, the oval pupil, the catchlights and the upper lash line baked into the body atlas; the brows, the eye rings, the cheek ember dashes, the nose, the cat smile and the whisker dots are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid sculpted and painted under it. The embers (the spine herringbone, the tail end, the ear tufts, the cheek dashes, the claws) are painted in the atlas. The mouth opens: the lips are cut along the crease under the whisker pads, the lower jaw rides the jaw bone, and a mouth prop (palate, tongue, throat and two small fangs, inside the lips) shows when it does.",
   "eyeBones": [
    "eye.L",
    "eye.R"
@@ -134,8 +134,8 @@
   "head": {
    "target": [
     0,
-    -0.3796,
-    0.8792
+    -0.40891780846938425,
+    0.8617403147768153
    ],
    "size": 0.74
   }
@@ -682,28 +682,28 @@
    "faces": []
   }
  },
- "restHeightWithProps": 1.152,
- "litePropsTris": 3300,
+ "restHeightWithProps": 1.2204,
+ "litePropsTris": 5700,
  "glow": {
   "strength": 1,
   "tint": null
  },
- "build": "8382c95fda",
+ "build": "56fd72b81b",
  "buildStats": {
   "cards": {
-   "total": 3853,
+   "total": 3040,
    "layers": [
-    1955,
-    1152,
-    746
+    1722,
+    858,
+    460
    ]
   },
   "tuftLocks": 0,
   "lyingLocks": {
-   "head": 12777,
-   "body": 19363
+   "head": 12243,
+   "body": 18465
   },
-  "sourceTriangles": 4053666,
+  "sourceTriangles": 3893610,
   "uvOverlapTexels": {
    "lo_body": 0,
    "lo_eyes": 0,
@@ -744,59 +744,59 @@
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 69209,
+  "triangles": 68337,
   "trianglesByMesh": {
    "lo_body": 50000,
-   "lo_cards": 15412,
+   "lo_cards": 12160,
    "lo_eyes": 624,
-   "lo_props": 3172,
+   "lo_props": 5552,
    "__variant_bonfire-cinderlynx": 1
   },
-  "vertices": 57749,
-  "cards": 3853,
+  "vertices": 55667,
+  "cards": 3040,
   "cardLayers": 3,
   "joints": 30,
   "animations": 32,
-  "animationBytes": 209088,
+  "animationBytes": 209700,
   "download": {
-   "glb": 5320296,
-   "glbKtx2": 5320296,
-   "glbWebp": 4237860,
+   "glb": 5212160,
+   "glbKtx2": 5212160,
+   "glbWebp": 4115148,
    "ktx2": {
-    "body": 2820364,
-    "variants": 808685
+    "body": 2839717,
+    "variants": 750787
    },
    "webp": {
-    "body": 2039060,
-    "variants": 507568
+    "body": 2036628,
+    "variants": 456874
    },
-   "totalKtx2": 5320296,
-   "totalWebp": 4237860
+   "totalKtx2": 5212160,
+   "totalWebp": 4115148
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 778502,
-     "webp": 491172
+     "ktx2": 768736,
+     "webp": 480904
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 1097988,
-     "webp": 932724
+     "ktx2": 1103478,
+     "webp": 911012
     },
     "orm": {
      "px": 2048,
-     "ktx2": 943874,
-     "webp": 615164
+     "ktx2": 967503,
+     "webp": 644712
     }
    },
    "bonfire-cinderlynx": {
     "base": {
      "px": 2048,
-     "ktx2": 808685,
-     "webp": 507568
+     "ktx2": 750787,
+     "webp": 456874
     }
    }
   },
@@ -844,25 +844,25 @@
  },
  "lite": {
   "file": "cinderlynx.lite.glb",
-  "build": "7462688dfe",
-  "bytes": 1220028,
-  "triangles": 11753,
+  "build": "7a1281e290",
+  "bytes": 1291816,
+  "triangles": 11825,
   "trianglesByMesh": {
-   "lo_body": 7956,
+   "lo_body": 5648,
    "lo_eyes": 624,
-   "lo_props": 3172,
+   "lo_props": 5552,
    "__variant_bonfire-cinderlynx": 1
   },
   "simplified": {
    "lo_body": {
     "from": 50000,
-    "to": 7956
+    "to": 5648
    }
   },
   "joints": 30,
   "animations": 32,
   "atlasPx": 1024,
-  "textureBytes": 623816,
+  "textureBytes": 676178,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

@@ -97,6 +97,14 @@ def validate(recipe) -> None:
         shorts.append(sh)
     if len(set(shorts)) != len(shorts):
         raise SystemExit(f'variant short names collide: {shorts}')
+    for sh in getattr(recipe, 'VARIANT_CARDS_OFF', None) or ():
+        if sh not in shorts:
+            raise SystemExit(f'VARIANT_CARDS_OFF names {sh!r}, which is not one of the variants ({", ".join(shorts) or "none"})')
+    for sh in variant_orm(recipe):
+        if sh not in shorts:
+            raise SystemExit(f'VARIANT_ORM names {sh!r}, which is not one of the variants ({", ".join(shorts) or "none"})')
+        if sh + '_orm' in shorts:
+            raise SystemExit(f'variant short {sh!r}: its ORM file atlas_{sh}_orm.png would be variant {sh}_orm\'s colour map')
     if U.variant_prop_owners(recipe) and not hasattr(recipe, 'build_props'):
         raise SystemExit(f'{recipe.__name__}: VARIANTS list props but there is no build_props(high, quick)')
     if (hasattr(recipe, 'card_params') or any(hasattr(recipe, fn) for _n, fn, *_ in LOCK_LAYERS)) and not hasattr(recipe, 'flow'):
@@ -108,6 +116,28 @@ def validate(recipe) -> None:
         has_cards = hasattr(recipe, 'card_params') and int(getattr(recipe, 'CARD_LAYERS', 2)) > 0
         if strip == 0.0 and (has_cards or hasattr(recipe, 'tuft_frames')):
             raise SystemExit(f'{recipe.__name__}: ATLAS_STRIP = 0 needs a coat without fur cards and tuft (the strip holds their tiles)')
+
+
+def variant_orm(recipe) -> dict[str, dict]:
+    """VARIANT_ORM: {variant short: options} for the variants that bake their own ORM map (roughness, clearcoat and
+    glow mask) instead of sharing the breed's. Options: 'glow': {'strength', 'tint'} gives the variant its own glow
+    (a glow pass from the sources' `glow_<short>` attribute and the recipe's glow_material(name, marks, pal)); without it
+    the variant keeps the breed's glow, if any. The roughness and coat come from each source's `rough_<short>` colour
+    attribute (written by paint_sources like 'rough'), or 'rough' where a source has none."""
+    vo = getattr(recipe, 'VARIANT_ORM', None) or {}
+    if not isinstance(vo, dict):
+        raise SystemExit(f'{recipe.__name__}: VARIANT_ORM is a dict {{variant short: options}}')
+    out = {}
+    for sh, opts in vo.items():
+        opts = dict(opts or {})
+        bad = [k for k in opts if k != 'glow']
+        if bad:
+            raise SystemExit(f'VARIANT_ORM[{sh!r}]: unknown option(s) {", ".join(bad)} (only glow)')
+        g = opts.get('glow')
+        if g is not None and (not isinstance(g, dict) or float(g.get('strength', 0)) <= 0):
+            raise SystemExit(f'VARIANT_ORM[{sh!r}][\'glow\'] is {{"strength": > 0, "tint": "#rrggbb" or None}}')
+        out[sh] = opts
+    return out
 
 
 def atlas_strip(recipe) -> float:
@@ -760,6 +790,12 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
             mats[f'{kind}_base'] = BK.emission_attr_material(f'{kind}_base', 'paint')
             for vid, short, _pal in vs:
                 mats[f'{kind}_{short}'] = BK.emission_attr_material(f'{kind}_{short}', U.variant_attr(vid, recipe.ID))
+    if props and hasattr(recipe, 'prop_material'):
+        # prop_material(name, attr, pal, marks): the props' colour per pixel, like body_material (Petalphant's petal ears),
+        # instead of only their vertex paint
+        mats['prop_base'] = recipe.prop_material('prop_base', 'paint', recipe.PALETTE, marks)
+        for vid, short, pal in vs:
+            mats[f'prop_{short}'] = recipe.prop_material(f'prop_{short}', U.variant_attr(vid, recipe.ID), pal, marks)
     mats['eye'] = recipe.eye_material('eye_paint')
     mats['eye_rough'] = recipe.eye_material('eye_rough', True)
     if len(inspect.signature(recipe.eye_material).parameters) >= 3:
@@ -879,6 +915,54 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
             BK.save_png(BK.image_from_array('atlas_orm_glow', orm, srgb=False, alpha=True), out / 'atlas_orm.png')
         res['glow'] = {'strength': float(glow.get('strength', 1.0)), 'tint': glow.get('tint'), 'coverage': round(float((g > 0.05).mean()), 5)}
         C.log(f"glow: {res['glow']['coverage'] * 100:.2f}% of the atlas glows (ORM alpha)")
+    vorm = variant_orm(recipe)
+    if vorm:
+        res['variant_orm'] = {}
+        shared = BK.image_array(imgs['orm']).copy()
+        rows = int(round(shared.shape[0] * BK.STRIP)) if with_strip else 0
+        everything = body_srcs + fins + props
+        for vid, short, pal in vs:
+            if short not in vorm:
+                continue
+            opts = vorm[short]
+            with C.Timer(f'orm {short}'):
+                # the variant's roughness and coat (rough_<short>, else the shared 'rough'), on the same UVs
+                ra = f'rough_{short}' if all(f'rough_{short}' in o.data.attributes for o in everything) else 'rough'
+                rimg = new_image(f'atlas_rc_{short}', atlas_px, alpha=False, color=(0.0, 0.0, 0.0, 1.0), srgb=False)
+                BK.set_material(everything, BK.emission_attr_material(f'paint_rough_{short}', ra))
+                BK.set_material(eyes, mats['eye_rough'])
+                for k, (low, src_objs, _occ) in enumerate(plan):
+                    BK.bake('EMIT', low, src_objs, rimg, samples[2], clear=k == 0)
+                rc = BK.image_array(rimg)
+                orm_v = shared.copy()
+                # the islands take the variant's roughness and coat; the AO and the strip's tiles stay the breed's
+                orm_v[rows:, :, 1] = rc[rows:, :, 1]
+                orm_v[rows:, :, 2] = rc[rows:, :, 2]
+                vglow = opts.get('glow')
+                if vglow is not None:
+                    # the variant's own glow mask: glow_<short> on the sources (else none) and glow_material(name, marks, pal)
+                    gattr = f'glow_{short}'
+                    gv = new_image(f'atlas_glowpass_{short}', atlas_px, alpha=False, color=(0.0, 0.0, 0.0, 1.0), srgb=False)
+                    g_attr_v = MK.glow_material(f'glow_attr_{short}', attr=gattr)
+                    gm = getattr(recipe, 'glow_material', None)
+                    g_body_v = gm(f'glow_body_{short}', marks, pal) if gm and len(inspect.signature(gm).parameters) >= 3 else g_attr_v
+                    BK.set_material(body_srcs, g_body_v)
+                    BK.set_material(eyes + fins + props, g_attr_v)
+                    for k, (low, src_objs, _occ) in enumerate(plan):
+                        BK.bake('EMIT', low, src_objs, gv, samples[2], clear=k == 0)
+                    gvals = np.clip(BK.image_array(gv)[..., 0], 0.0, 1.0)
+                    orm_v[..., 3] = gvals
+                    spec = {'strength': float(vglow.get('strength', 1.0)), 'tint': vglow.get('tint'), 'coverage': round(float((gvals > 0.05).mean()), 5)}
+                elif glow is not None:
+                    orm_v[..., 3] = g                       # the breed's glow mask and spec, as on the usual look
+                    spec = res['glow']
+                else:
+                    spec = None
+                alpha = spec is not None
+                BK.save_png(BK.image_from_array(f'atlas_{short}_orm', orm_v, srgb=False, alpha=alpha),
+                            out / f'atlas_{short}_orm.png')
+                res['variant_orm'][short] = {'glow': spec, 'rough': ra}
+                C.log(f'orm {short}: its own roughness and coat ({ra})' + (f", glow {spec['coverage'] * 100:.2f}% of the atlas" if spec else ', no glow'))
     (out / 'stats_bake.json').write_text(json.dumps(res, indent=1), encoding='utf-8')
     save_blend(out, 'baked.blend')
     return res
@@ -1239,7 +1323,7 @@ def stage_clips(recipe, plan, out: Path, only: list[str] | None) -> list[A.ClipM
             clips = settle_ko(cb, plan, arm, P, clips)
         if not only or 'blink' in only:
             clips.append(blink_clip(cb, arm, getattr(recipe, 'BLINK_CLOSED', (1.0, 0.08, 1.0))))
-    want = plan.STAR_CLIPS + plan.MOVE_CLIPS + ['blink']
+    want = plan.STAR_CLIPS + plan.MOVE_CLIPS + ['blink'] + (list(getattr(plan, 'FLY_CLIPS', [])) if P.get('wings') else [])
     missing = [c for c in want if c not in [m.name for m in clips]]
     if missing and not only:
         C.log(f'WARNING missing clips: {missing}')
@@ -1278,6 +1362,12 @@ def present_meshes() -> dict[str, str]:
     out = {n: k for n, k in MESH_KINDS.items() if O.get(n) is not None}
     out.update({n: 'prop' for n in sorted(O.keys()) if n.startswith('lo_props_') and O[n].type == 'MESH'})
     return out
+
+
+def _vglow(baked: dict, short: str) -> dict | None:
+    """A variant ORM's glow for the sidecar ({strength, tint}), or None when that variant doesn't glow."""
+    g = ((baked.get('variant_orm') or {}).get(short) or {}).get('glow')
+    return {'strength': float(g['strength']), 'tint': g.get('tint')} if g else None
 
 
 def stage_export(recipe, plan, out: Path) -> Path:
@@ -1328,6 +1418,8 @@ def stage_export(recipe, plan, out: Path) -> Path:
     rig = json.loads((out / 'stats_rig.json').read_text(encoding='utf-8'))
     clips = json.loads((out / 'clips.json').read_text(encoding='utf-8'))
     build = json.loads((out / 'stats_build.json').read_text(encoding='utf-8'))
+    bpath = out / 'stats_bake.json'
+    baked = json.loads(bpath.read_text(encoding='utf-8')) if bpath.exists() else {}
     P = rig_params(recipe)
     closed = getattr(recipe, 'BLINK_CLOSED', (1.0, 0.08, 1.0))
     side = {
@@ -1353,6 +1445,10 @@ def stage_export(recipe, plan, out: Path) -> Path:
         # one colour map per variant (atlas_<short>.png → <breed>_<short>_base.*), the cards' and tuft's colours in COLOR_<i+1>
         'variants': {vid: {'textures': vid, 'colorAttribute': f'COLOR_{i + 1}', 'eyeColor': pal['eye'],
                            'palette': {k: pal[k] for k in ('body', 'belly', 'accent', 'eye')}, 'atlas': f'atlas_{short}.png',
+                           # a variant with its own ORM (VARIANT_ORM): its file, and its glow (or null: it doesn't glow)
+                           **({'orm': f'atlas_{short}_orm.png', 'glow': _vglow(baked, short)} if short in (baked.get('variant_orm') or {}) else {}),
+                           # VARIANT_CARDS_OFF: the runtime hides the fur cards on this variant (bare polished stone)
+                           **({'cards': False} if short in set(getattr(recipe, 'VARIANT_CARDS_OFF', None) or ()) else {}),
                            # the props only this variant wears: the runtime hides these meshes unless the variant is on
                            **({'meshes': [f'lo_props_{short}']} if f'lo_props_{short}' in kinds else {})}
                      for i, (vid, short, pal) in enumerate(vs)},
@@ -1376,6 +1472,13 @@ def stage_export(recipe, plan, out: Path) -> Path:
         # the normal map's strength in the game's film material (default ART.ultra.film.normalScale, 0.6): scaled and
         # stone breeds show their baked relief at about 1.0-1.2
         side['normal'] = {'scale': float(recipe.NORMAL_SCALE)}
+    if getattr(recipe, 'BODY_SHEEN', None) is not None:
+        # the body's sheen in the game's film material (default ART.ultra.film.furSheen, 0.45): a stone breed wants 0 (the
+        # fur sheen reads as felt with a soft halo on stone); validated like the runtime (parts.ts bodySheenOf)
+        sheen = float(recipe.BODY_SHEEN)
+        if not (0.0 <= sheen <= 1.0) or sheen != sheen:
+            raise ValueError(f'BODY_SHEEN must be within 0..1, got {recipe.BODY_SHEEN!r}')
+        side['body'] = {'sheen': sheen}
     if getattr(recipe, 'LITE_PROPS_TRIS', None):
         # the Lite copy's prop share (tools/art/ultra.ts; default 2.4k): signature props (Petalphant's ears and bud) survive
         side['litePropsTris'] = int(recipe.LITE_PROPS_TRIS)
@@ -1551,6 +1654,11 @@ def stage_review(recipe, out: Path, quick: bool) -> list[Path]:
     if Pr.get('wings') or Pr.get('trunk'):
         # batch 2: the wings wide open and the trunk raised, and the bud open
         poses += [('cast', 0.5), ('idle_happy', 0.3)]
+    if Pr.get('wings') and 'fly' in clips:
+        # Nov 12: the flight clips (framed wider: the working wings span about 2.5 x the standing height)
+        poses += [('fly', 0.2, 'fly_downstroke'), ('fly', 0.6, 'fly_upstroke'), ('fly_takeoff', 0.25, 'fly_takeoff_crouch'),
+                  ('fly_takeoff', 0.45, 'fly_takeoff_leap'), ('fly_cast', 0.5), ('fly_land', 0.3, 'fly_land_flare'),
+                  ('fly_land', 0.66, 'fly_land_touch')]
     for name, t, *lab in poses:
         m = clips.get(name)
         if m is None:
@@ -1564,6 +1672,8 @@ def stage_review(recipe, out: Path, quick: bool) -> list[Path]:
         bpy.context.view_layer.update()
         if name == 'blink':
             shot(f'pose_{name}', 20, 8, head_t, head_s)
+        elif name.startswith('fly'):
+            shot(f'pose_{lab[0] if lab else name}', 35, 14, (centre[0], centre[1], centre[2] + 0.25 * size), size * 1.9)
         else:
             shot(f'pose_{lab[0] if lab else name}', 35, 14, centre, size)
     A.clear_clip(arm)

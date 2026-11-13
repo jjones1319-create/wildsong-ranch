@@ -34,3 +34,15 @@ export function portraitMode(hasLook: boolean, mode: MonsterMode, unavailable: b
   if (live && !unavailable && !reduceMotion) return 'live'
   return 'image'
 }
+
+export type UltraPortraitMode = 'live' | 'still'
+
+/**
+ * Art 2.1 on the ranch (the owner's option A, Nov 12): a live portrait (a subject screen's) of a breed with an Ultra
+ * look shows the Ultra model, moving, or one still frame with Reduce motion. Settings → Graphics → Monsters: Classic,
+ * no WebGL and every non-live place (lists, thumbnails, cards, cups) keep the old rules (portraitMode): null.
+ */
+export function ultraPortraitMode(hasUltra: boolean, mode: MonsterMode, unavailable: boolean, reduceMotion: boolean, live: boolean): UltraPortraitMode | null {
+  if (!hasUltra || !live || mode !== '3d' || unavailable) return null
+  return reduceMotion ? 'still' : 'live'
+}

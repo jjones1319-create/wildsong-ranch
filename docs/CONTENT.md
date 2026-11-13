@@ -170,8 +170,9 @@ Each brief lists: body plan · signature features · palette (body / belly / acc
     - Palette: #F2C14E / #FFF4D6 / #D64545 / #6B2D0F.
 21. **Hearthwing**
     - **Quadruped dragon with two forms** (GAME_DESIGN §22, growth forms).
-      - **Young** (stages 1–4): a round, stubby dragonet with tiny flappy wings, a short snout, nub horns and a faint glow in its chest.
-      - **Grown** (stage 5+): a broad-winged dragon with a long neck and swept-back copper horns. The scales of its stocky chest part like a fireplace grate to show a molten glow. Ember-edged wing membranes and a spade-tipped tail.
+      - **Young** (stages 1–4): a round, stubby dragonet with big working wings (spread about 2.9× its height; the owner's change, Nov 12, 2026: "so it looks like it could actually fly"), a short snout, nub horns and a faint glow in its chest.
+      - **Grown** (stage 5+): a broad-winged dragon (spread about 3.5× its height) with a long neck and swept-back copper horns. The scales of its stocky chest part like a fireplace grate to show a molten glow. Ember-edged wing membranes and a spade-tipped tail; the spade is a flat leaf shape, never a flame.
+      - Both forms fly: they take off for their Special and Signature in Battle 3D and fly a lap on the ranch.
     - Palette: #1F6F6A / #E9D8B4 / #FF8A3D (horns #B87333) / #FFD166.
 22. **Grumblestone**
     - **Biped, hulking and hunched:** a boulder giant with a cracked granite shell. Violet crystals glow through the cracks like the inside of a geode.

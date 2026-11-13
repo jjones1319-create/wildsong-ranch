@@ -664,6 +664,51 @@ Petalphant is above the 60–80k aim (the big ears and the bud are 25k of props)
 
 **Next time:** an optional recipe `prop_material` hook. Props bake their colour from vertex paint only, which limited Petalphant's ear fade.
 
+### 9.6 The ranch shows the Ultra monsters (Nov 12, the owner's option A)
+The owner was asked whether the ranch should switch to the new models; with no answer after ten minutes, their standing rule took the recommended option A.
+- **Where:** every live portrait (`MonsterPortrait` with `live`: the ranch's main view, the Monster Sheet, the Farewell, the bond games, Pell's lab, the Echo Stones, the Lab editor) of a breed with an Ultra look (`ultraLookFor` in `src/art/models.ts`: the grown form's from Prime where the registry has one, a variant only where its file holds it) shows the Ultra model (`MonsterUltra.tsx`). Puddlepup moves from its Art 2.0 model to Ultra there. Lists, thumbnails, the cards' pictures, cups and every other non-live place stay as they were, and so does any breed without an Ultra look.
+- **The rule** (`ultraPortraitMode` in `src/ui/store/artStore.ts`, unit-tested): live and the look exists and Settings → Graphics → Monsters is 3D and WebGL works → the model, moving; with Reduce motion, one still frame. Otherwise the old rules (Classic, or the Art 2.0 path).
+- **Rendering** (`src/art3d/ultra/portraitStage.ts`, a lazy chunk): one shared WebGL canvas that hosts come and go from (a second host evicts the first, which shows its Classic drawing), the film materials with no post effects. Tone mapping, exposure, the studio's key, rims and sky fill and its room reflections, with the season's and weather's `lightPreset` colours (the key, the fill and the rims take them, and the key and the room's reflections dim with the preset's brightness beside a clear day's, so night is dark and blue and rain grey: `ART.ranch3d.mood`). The canvas is see-through over the ranch's picture, so the fur cards blend their alpha upward only: drawn as before, their partial coverage overwrote the opaque body's alpha and the picture showed through as pale specks in the fur. The variant's colours show. The Ultra faces are painted, not swapped, so the mood shows in the loop it rests in (`ranchIdleFor`: idle, idle_happy, idle_tired, idle_sad, idle_sick) and the ranch's acts (look round, hop, celebrate) play as before; it blinks.
+- **Phones:** Lite effects load the Lite copy, drawn without MSAA (the fur cards' plain alpha test) at 1.25× and 30 frames a second; otherwise at most 2× (`ART.ranch3d`). It draws only while its box is on screen (an IntersectionObserver) and the page is shown. The Classic drawing stays underneath until the model is ready, and comes back if WebGL is lost or unavailable.
+- **Flight on the ranch:** a look with the fly clips (Hearthwing) takes a lap about once a minute while you watch (45–75 s apart, never with Reduce motion, never while an act plays). It takes off, rises to 70% of its height, flies one circle round behind its spot over 3.6 s (turned along the circle), and lands. The camera eases back while it is up, and its shadow shrinks and fades on the grass (`flight.ts` lapPlan, lapPose, lapDelayMs, lapAllowed; unit-tested).
+
+### 9.7 The upgrade round (Nov 12–13, v1.24.0)
+The owner, after v1.23.0: *"Do all of the upgrade. Bigger wings so it looks like it could actually fly (and it should in a special attack and in the ranch)."* Every v1.23.0 known weak spot went back to its builder. A fresh reviewer judged each look again, up to three rounds (Hearthwing, Rammerjack, Tumblefox and Nimbusheep used them all), then one defect-only polish pass checked by the session. Taste items left over are in PROGRESS v1.24.0.
+
+**Shared renderer fixes,** found because several reviewers reported the same defect on different breeds:
+- **The studio world:** the film reflected three's RoomEnvironment, whose bright white panels turned near-mirror texels into chrome and glass (hooves, pads, legs, the gaps between wool puffs) and over-lit every colour 1.6–1.8× (sage read mint, teal glowed). A soft grey studio world (`ART.ultra.studio.world`, like the Blender sheets) replaces it, in WebGL, WebGPU and the ranch portraits.
+- **A hue-keeping tone-map toe** (`ART.ultra.post.toeKeep`): Neutral's toe lowered all three channels of a dark colour by one amount, which emptied the smallest and turned plum `#3B3240` violet. Brighter colours keep Neutral's own curve, so Puddlepup's approved look holds.
+- **Warmth only on warm pixels** (`grade.warmOnly`) and a near-neutral key (`#fffaf4`): cool whites stopped rendering warm.
+- **No mirrors:** body and prop roughness floor 0.3 (`film.minRoughness`), the clearcoat from ORM B capped at 0.5, cards' `cardMaxLum` 0.9. Every breed had baked its hooves, pads and painted pupils at roughness 0.05 with a full coat.
+- **Back views keep their shading:** the two rim lights behind the monster (together 2.7× the key) flattened any view from behind to plaster white or pale grey. They now dim within about 60° of the camera's direction (`aimStudioRims`, `ART.ultra.studio.rimFacing`), in Battle 3D and the review viewer; front, three-quarter and side views are pixel-identical.
+- **Card sheen** takes the strand's own vertex colour (`film.cardSheenSat` 1); glassy card tips turned out to be the cards' own pale colour, fixed in recipes.
+- **A variant's eyes** take the variant's colour atlas when its eye colour differs (`variantEyesDiffer`), and the eyes glow by the breed's own entry, never a variant's (Stormcrown's eyes had lit solid gold).
+- **Swatches after:** sage `#8FB996` renders `#84B08E`; plum `#3B3240` → `#2E2832`; white `#E9EEF6` → `#DCE0EA`; teal `#2FA79A` → `#1CAA9D`.
+
+**New recipe options** (`tools/blender/monsters/breeds/RECIPE.md`):
+- `VARIANT_ORM`: a variant's own roughness, coat and glow (Granite's satin polish, Stormcrown's gold);
+- `VARIANT_CARDS_OFF` (Granite has no moss fibres);
+- `prop_material` (Petalphant's ears painted per pixel);
+- `BODY_SHEEN` (stone breeds drop the fur sheen);
+- quadruped knobs, each defaulting to the old behaviour:
+  - fly clips for winged rigs;
+  - `charge_windup`, `charge_lunge`, `charge_dip`, `strike_trunk_raise`, `hit_head`, `hit_wing_open`, `cast_rear`, `cast_paw`, `ko_head_lift`;
+  - the `slam_*` amounts;
+- the `kick` and `swipe` strikes rewritten for their only users (Stripeneck, Cinderlynx).
+
+**Hearthwing's flight** (BATTLE_3D §8.5, §9.6 here):
+- **Wings:** about 2.9× standing height for the young and 3.5× for the grown, with scalloped membranes, finger struts and a closed-fan fold.
+- **Clips:** `fly_takeoff`, `fly`, `fly_cast` and `fly_land`, played in place.
+- **Battle 3D:** its Special and Signature are breathed from the air.
+- **The tail tip:** a flat, unlit leaf-spade. It must never read as a flame, an originality rule.
+
+**Originality closed this round:**
+- Hearthwing's glowing tail bulb;
+- Stormcrown's crackle-like gold, then its spots on near-black (now slate wool with rim highlights);
+- Cinderlynx's horizontal shoulder bars and dark face mask (now one narrow chevron chain and a cream muzzle; a mild fishbone stacking remains);
+- Tumblefox's saturated domino mask;
+- Cobblemaw's round-belly front (now a stone hood and a wide jaw).
+
 ## 10. What approval changed in the other docs
 Puddlepup's Ultra look was approved on Nov 7, 2026. Applied the same day:
 - **ART_2_PLAN:**

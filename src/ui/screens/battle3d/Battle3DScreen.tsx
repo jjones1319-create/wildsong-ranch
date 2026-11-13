@@ -390,7 +390,16 @@ export function Battle3DScreen() {
             <button type="button" class="btn" aria-label={T.cameraLabel} onClick={switchCam}>
               {T.camera[cam]}
             </button>
-            <button type="button" class="btn" onClick={skipToEnd} disabled={!!v.outcome}>
+            <button
+              type="button"
+              class="btn"
+              onClick={() => {
+                // a monster in the air lands at once (nothing plays out after a skip)
+                duel.current?.settle()
+                skipToEnd()
+              }}
+              disabled={!!v.outcome}
+            >
               {T.skip}
             </button>
             <button type="button" class={`btn ${paused.value ? 'btn--on' : ''}`} aria-label={paused.value ? B.resume : B.pause} onClick={() => setPaused(!paused.value)} disabled={!!v.outcome}>

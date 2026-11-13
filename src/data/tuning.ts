@@ -1450,6 +1450,81 @@ export const ART = {
       zoomInPct: 85,
     },
     /**
+     * Flight (the owner, Nov 12: Hearthwing "should fly in a special attack"; src/art3d/ultra/flight.ts), only for a
+     * look whose file has the flying clips (ultra/clips.ts FLY_CLIPS), never with Reduce motion. A ranged technique of
+     * `families` takes off during the wind-up (fly_takeoff; the rise starts on its `leap` marker, else liftoffPct into
+     * it) and climbs to peakPct of its standing height (lower, peakStepPct at a time down to minPeakPct, when its
+     * Special cut would otherwise stand beyond the fence: cineShot.ts flyShotInside); breathAtPct of the way through the climb (and at least
+     * minBreathSec before the landing) the cast's `release` (else releasePct into fly_cast; the cast cuts in
+     * castLeadSec before it) opens the jaw and the fire leaves the mouth, landing on the engine's tick; it hovers
+     * through the hits (a bobPct bob once a wingbeat), then comes down in the recovery (fly_land; the feet touch on
+     * its `land` marker, else touchPct into it) by the time it can act again. The clips play at most maxRate × the
+     * battle's speed and at least minRate (the landing at landRate × its own pace when there is time, the hover taking
+     * the rest); the hover lasts at least hoverMinSec (at ×1); if it can't fit, or above
+     * maxSpeed, it attacks from the ground as before. A melee technique of `hopFamilies` hops (hopPct high) as it
+     * lunges. KO'd in the air it falls in fallSec; Skip lands it in settleSec. The effects leave from its mouth once
+     * it is mouthBlendPct of the way up. Its contact shadow shrinks by shrinkPct and fades by fadePct at fullAtPct of
+     * its height off the floor. The cameras frame its hover height and its open wings (measured from the fly clip,
+     * plus spanMarginPct) for the whole flight: behind, it stands back behindBackPct of the span and up behindRaisePct
+     * of the height, looking up behindLookPct of a flying opponent's; the KO cut looks lookPct of its height higher.
+     * The Special cut: `cut`.
+     */
+    flight: {
+      families: ['Special', 'Signature'] as readonly string[],
+      hopFamilies: ['Hit'] as readonly string[],
+      peakPct: 120,
+      minPeakPct: 80,
+      peakStepPct: 10,
+      hopPct: 30,
+      bobPct: 3,
+      liftoffPct: 30,
+      releasePct: 55,
+      touchPct: 55,
+      breathAtPct: 35,
+      minBreathSec: 0.06,
+      castLeadSec: 0.06,
+      maxRate: 3,
+      minRate: 0.8,
+      landRate: 1.3,
+      hoverMinSec: 0.08,
+      maxSpeed: 2,
+      fallSec: 0.3,
+      settleSec: 0.2,
+      fadeSec: 0.08,
+      mouthBlendPct: 25,
+      shadow: { shrinkPct: 40, fadePct: 60, fullAtPct: 150 },
+      spanMarginPct: 10,
+      camera: { behindRaisePct: 80, behindLookPct: 60, behindBackPct: 40, lookPct: 45 },
+      /**
+       * The Special cut for a flier (duel/cineShot.ts flyShot; the owner, Nov 12: "the whole dragon in the air with
+       * wings spread, above the target", at most about 35–40% of the frame): the angles tried round the pair
+       * (azimuthsDeg from the line to the target: 0 behind the target, 90 side-on, 180 behind the flier), the
+       * elevations and lenses; each stands back (up to maxDistM, never below minCameraM) until everything is in the
+       * clear band with the flier's box at most maxCoverPct of the screen (the target's at most targetCoverPct). It
+       * must hide at most hiddenPct of the target, the flier above it on screen. The best scores least: coverWeight per
+       * percent the flier is smaller than coverGoalPct, outsidePenalty beyond the fence (the Guild's crowd, banners and
+       * gate posts stand there and block the view: only when nothing inside holds it, so inside a wider lens instead,
+       * up to the last of fovsDeg), sideWeight per degree from side-on, lensWeight per degree of lens, levelWeight per
+       * degree of tilt.
+       */
+      cut: {
+        azimuthsDeg: [0, 15, 30, 50, 70, 90, 110, 130, 150, 165] as readonly number[],
+        elevationsDeg: [-4, 4, 12, 24, 36] as readonly number[],
+        fovsDeg: [44, 58, 72, 86] as readonly number[],
+        maxCoverPct: 38,
+        coverGoalPct: 25,
+        coverWeight: 4,
+        targetCoverPct: 25,
+        hiddenPct: 15,
+        maxDistM: 24,
+        minCameraM: 0.4,
+        outsidePenalty: 1000,
+        sideWeight: 0.3,
+        lensWeight: 0.5,
+        levelWeight: 0.5,
+      },
+    },
+    /**
      * §7 attack effects (src/art3d/duel/fx*.ts; the owner, Nov 3: "build in the visuals for the attacks"): every
      * technique looks like its element and shape. Metres and seconds (at ×1). familyPct sizes everything and scales the
      * particle counts (Basic small → Heavy big → Special and Signature grand); quality gives each graphics setting its
@@ -1630,6 +1705,26 @@ export const ART = {
    * drag turns (deg per CSS px), the cross-fade, how long a move holds its last pose before idling (the ko longer),
    * seconds between blinks (cycled), the gap between two stands (m), and the margin round the fitted view.
    */
+  /**
+   * The ranch's live Ultra portraits (src/art3d/ultra/portraitStage.ts; the owner's option A, Nov 12): every subject
+   * screen's live portrait of a breed with an Ultra look shows it, one shared renderer with the film materials and no
+   * post effects, lit by the season and weather (`mood`). The pixel ratio is capped (dprCap; Lite: liteDprCap, at most
+   * liteFps frames a second); the body fills bodyPct of the box with headroom above. A look that flies (ultra/clips.ts) takes a lap now and then (flyLap: every
+   * minMs–maxMs while shown, never with Reduce motion): it rises to peakPct of its height, flies one circle radiusPct of
+   * its height round behind its spot over lapSec, and lands; the camera eases back up to zoomOut while it is up.
+   */
+  ranch3d: {
+    dprCap: 2,
+    liteDprCap: 1.25,
+    liteFps: 30,
+    bodyPct: 72,
+    floorPct: 10,
+    pitchDeg: 9,
+    shadow: { widthPct: 70, depthPct: 55, opacity: 0.32 },
+    /** The mood (ART.light): the key and the room's reflections dim with its brightness beside a clear day's, within these. */
+    mood: { min: 0.2, max: 1.15 },
+    flyLap: { minMs: 45_000, maxMs: 75_000, peakPct: 70, radiusPct: 55, lapSec: 3.6, zoomOut: 1.45 },
+  },
   gallery3d: {
     fov: 30,
     studioReachM: 2.5,
@@ -1653,11 +1748,17 @@ export const ART = {
     fitMargin: 1.12,
     /** How much of what stands there's depth the fit backs off for (percent: the near side looks bigger). */
     fitDepthPct: 50,
+    /**
+     * A look that flies (heights and clip timing: duel.flight): the camera follows it up by followPct of its height off
+     * the floor, and backs off for its hover height and open wings as it rises.
+     */
+    fly: { followPct: 70 },
   },
   ultra: {
     /** The pictures' studio: a soft key from the upper left, a warm rim from behind, a cool sky fill (cool shadows). */
     studio: {
-      key: { color: '#fff3e6', intensity: 2.6, azDeg: -45, elDeg: 42 },
+      /** Nov 12: the Blender sheets' key (linear 1, 0.97, 0.93); #fff3e6 warmed cool whites (Nimbusheep's wool read cream). */
+      key: { color: '#fffaf4', intensity: 2.6, azDeg: -45, elDeg: 42 },
       /**
        * Round 4: stronger and more to the side, so the warm edge shows on the outline in the front and 3/4 views.
        * Nov 7: 15% of round 4's warmth (it was #ffd2a6): a strongly orange rim multiplies a dark coat's colour and
@@ -1666,11 +1767,25 @@ export const ART = {
       rim: { color: '#fff9f4', intensity: 4.0, azDeg: 140, elDeg: 22 },
       /** Round 5: a second rim from the other back side, so the edge shows on both outlines in every view (was #ffd9b3). */
       rim2: { color: '#fffaf6', intensity: 3.0, azDeg: -150, elDeg: 26 },
+      /**
+       * Nov 13 (content.ts aimStudioRims): the rims dim as the camera comes round to their side, between these values of
+       * the cosine between the rim's direction and the camera's (horizontal, from the subject), down to minPct of
+       * themselves: only a rim within about 60° of the camera's direction dims, so every front, three-quarter and side
+       * view (each rim more than 60° away) is untouched, and a back view loses most of both.
+       */
+      rimFacing: { fromDot: 0.5, toDot: 0.9, minPct: 20 },
       sky: '#dfe9ff',
       ground: '#7c7466',
       /** Round 3: less fill and room light, so the coat keeps its teal and the cream doesn't clip (round 2 read washed out). */
       hemi: 1.35,
       environment: 0.45,
+      /**
+       * The world the film reflects and is lit by (Nov 12; perf/content.ts studioEnvironmentScene): the Blender sheets'
+       * soft grey (linear rgb × strength), groundPct as bright below the horizon. three's RoomEnvironment (until v1.23)
+       * has bright white light panels: near-mirror texels (hooves, pads, wool crevices, card tips) reflected them as
+       * chrome and glass, and its bright room lifted every colour (sage read mint, teal glowed).
+       */
+      world: { rgb: [0.82, 0.84, 0.88] as const, strength: 0.85, groundPct: 85 },
       background: '#8a8b8f',
       exposure: 1.0,
       shadowMapPx: 2048,
@@ -1688,10 +1803,23 @@ export const ART = {
        * keratin 0, a glossy nose, pads or hooves high) × gain, at most max. furCoat is only for a part without an ORM
        * map. A uniform coat gave matte horns a specular streak (Rammerjack).
        */
-      coatFromOrm: { gain: 1.0, max: 1.0 },
+      coatFromOrm: { gain: 1.0, max: 0.5 },
+      /**
+       * The least roughness a body or prop texel takes (Nov 12): the breeds bake hooves, pads and noses at 0.05 with a
+       * full coat (ORM G and B), a mirror, which read as chrome. Eyes keep their own gloss.
+       */
+      minRoughness: 0.3,
       furCoatRoughness: 0.35,
       furSheen: 0.45,
       cardSheen: 0.25,
+      /**
+       * How much of the strand's own colour (its vertex colour) a card's or tuft's sheen keeps; the rest is that
+       * colour's grey (1 = the strand's own colour, as shipped in v1.23.0; the strip tile's grey-white sheen before that
+       * laid a white veil over green or dark fur: Petalphant, Cinderlynx). Tested at 0.5 on Rammerjack's glossy-looking
+       * beard (Nov 12): no visible change, because those shards are flat cards catching the light in their own chestnut,
+       * which the recipe fixes (darker, narrower strands, lock shading).
+       */
+      cardSheenSat: 1,
       /** Cards fade in between these values of 1 − |N·V| (0 = facing the camera, 1 = edge-on): only the outline shows them. */
       cardEdgeFade: [0.25, 0.65] as const,
       /**
@@ -1740,7 +1868,7 @@ export const ART = {
       glow: { twinkleAmp: 0.2, twinkleHz: 0.25, cells: 512, maxStrength: 20 },
       cardSpecular: 0.35,
       cardEnv: 0.3,
-      cardMaxLum: 1.1,
+      cardMaxLum: 0.9,
       /**
        * Eyes: glossy but dark, so the iris stays the reference's deep teal. three uses the scene's environment strength
        * on materials without their own envMap, so the eye's reflections are cut with a weaker specular instead.
@@ -1763,7 +1891,16 @@ export const ART = {
       /** Only real highlights bloom (at 0.9 the lit cream and the fins glowed). */
       bloom: { strength: 0.18, radius: 0.5, threshold: 1.2 },
       /** warmth: added to highlights only (luminance 0.4 → 1), so dark coats keep their hue; it carries the rims' old warmth. */
-      grade: { saturation: 1.0, contrast: 1.02, warmth: 0.035, vignette: 0.08 },
+      grade: { saturation: 1.0, contrast: 1.02, warmth: 0.035, vignette: 0.08, warmOnly: [-0.02, 0.06] as const },
+      /**
+       * The film tone map (Nov 12; perf/content.ts): three's Neutral, except its toe. Neutral lowers all three channels
+       * of a dark colour by one amount, which empties the smallest one: Tumblefox's grey-plum mask (#3B3240) rendered
+       * violet (#3A1C42). The film's toe scales the colour instead (hue and saturation kept) up to a peak channel of
+       * toeKeep[0], blending into Neutral's own by toeKeep[1] (brighter colours are Neutral's, as approved).
+       * grade.warmOnly: the highlights' warmth only where the pixel is already warm (its red over its blue, from → to),
+       * so cream keeps it and cool whites stay cool.
+       */
+      toeKeep: [0.12, 0.45] as const,
       dof: { aperture: 0.002, maxBlur: 0.008 },
     },
     /**

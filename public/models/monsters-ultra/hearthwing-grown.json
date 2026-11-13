@@ -7,13 +7,13 @@
  "restHeight": 1.9759,
  "bounds": {
   "min": [
-   -0.5044,
+   -0.5351,
    -1.487,
    0.005
   ],
   "max": [
-   0.5087,
-   1.7104,
+   0.532,
+   1.5893,
    1.9759
   ]
  },
@@ -581,6 +581,82 @@
     }
    ]
   },
+  "fly_takeoff": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "leap",
+     "t": 0.3333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "beat",
+     "t": 0.2
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly_cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.6,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.8
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 1.3667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly_land": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.5333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
   "strafe_l": {
    "loop": true,
    "hold": false,
@@ -676,12 +752,12 @@
  "normal": {
   "scale": 1.1
  },
- "litePropsTris": 4000,
+ "litePropsTris": 5000,
  "glow": {
-  "strength": 1.4,
-  "tint": null
+  "strength": 2.2,
+  "tint": "#FF9A40"
  },
- "build": "70ec720ac4",
+ "build": "f992df9f5c",
  "buildStats": {
   "cards": {
    "total": 0,
@@ -689,9 +765,9 @@
   },
   "tuftLocks": 0,
   "lyingLocks": {},
-  "sourceTriangles": 1789792,
+  "sourceTriangles": 1737179,
   "uvOverlapTexels": {
-   "lo_body": 1,
+   "lo_body": 3,
    "lo_eyes": 0,
    "lo_fins": 0,
    "lo_props": 0
@@ -724,51 +800,51 @@
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 78885,
+  "triangles": 79924,
   "trianglesByMesh": {
-   "lo_body": 69987,
+   "lo_body": 69989,
    "lo_eyes": 624,
-   "lo_fins": 3926,
-   "lo_props": 4348
+   "lo_fins": 3548,
+   "lo_props": 5763
   },
-  "vertices": 50127,
+  "vertices": 50877,
   "cards": 0,
   "cardLayers": 0,
-  "joints": 47,
-  "animations": 32,
-  "animationBytes": 283620,
+  "joints": 45,
+  "animations": 36,
+  "animationBytes": 315572,
   "download": {
-   "glb": 4159636,
-   "glbKtx2": 4159636,
-   "glbWebp": 3175712,
+   "glb": 4143528,
+   "glbKtx2": 4143528,
+   "glbWebp": 3115924,
    "ktx2": {
-    "body": 2592564,
+    "body": 2519248,
     "variants": 0
    },
    "webp": {
-    "body": 1608638,
+    "body": 1491656,
     "variants": 0
    },
-   "totalKtx2": 4159636,
-   "totalWebp": 3175712
+   "totalKtx2": 4143528,
+   "totalWebp": 3115924
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 745430,
-     "webp": 403338
+     "ktx2": 707363,
+     "webp": 330020
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 1098735,
-     "webp": 769578
+     "ktx2": 1082685,
+     "webp": 757472
     },
     "orm": {
      "px": 2048,
-     "ktx2": 748399,
-     "webp": 435722
+     "ktx2": 729200,
+     "webp": 404164
     }
    }
   },
@@ -810,33 +886,33 @@
  },
  "lite": {
   "file": "hearthwing-grown.lite.glb",
-  "build": "477f46fc48",
-  "bytes": 1180300,
-  "triangles": 11802,
+  "build": "a895fd0468",
+  "bytes": 1198476,
+  "triangles": 11828,
   "trianglesByMesh": {
-   "lo_body": 6346,
+   "lo_body": 5496,
    "lo_eyes": 624,
-   "lo_fins": 952,
-   "lo_props": 3880
+   "lo_fins": 859,
+   "lo_props": 4849
   },
   "simplified": {
    "lo_fins": {
-    "from": 3926,
-    "to": 952
+    "from": 3548,
+    "to": 859
    },
    "lo_props": {
-    "from": 4348,
-    "to": 3880
+    "from": 5763,
+    "to": 4849
    },
    "lo_body": {
-    "from": 69987,
-    "to": 6346
+    "from": 69989,
+    "to": 5496
    }
   },
-  "joints": 47,
-  "animations": 32,
+  "joints": 45,
+  "animations": 36,
   "atlasPx": 1024,
-  "textureBytes": 425544,
+  "textureBytes": 395546,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

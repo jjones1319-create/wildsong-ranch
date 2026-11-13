@@ -4,17 +4,17 @@
  "plan": "quadruped",
  "version": 2,
  "heightUnits": 165,
- "restHeight": 1.0839,
+ "restHeight": 1.0881,
  "bounds": {
   "min": [
-   -0.4137,
+   -0.434,
    -0.6553,
    0.0005
   ],
   "max": [
-   0.4177,
-   0.5889,
-   1.0839
+   0.4248,
+   0.5879,
+   1.0881
   ]
  },
  "bones": {
@@ -95,6 +95,11 @@
     "belly": "#2E3440",
     "accent": "#F2D16B",
     "eye": "#E6ECF5"
+   },
+   "orm": true,
+   "glow": {
+    "strength": 0.75,
+    "tint": "#ffd36a"
    },
    "meshes": [
     "lo_props_stormcrown"
@@ -682,27 +687,30 @@
    "faces": []
   }
  },
- "restHeightWithProps": 1.0839,
- "build": "ce4a0f1b9e",
+ "restHeightWithProps": 1.0881,
+ "normal": {
+  "scale": 0.5
+ },
+ "litePropsTris": 1300,
+ "build": "cbf64fdad6",
  "buildStats": {
   "cards": {
-   "total": 425,
+   "total": 67,
    "layers": [
-    291,
-    134
+    67
    ]
   },
   "tuftLocks": 0,
   "lyingLocks": {
-   "head": 17918,
-   "body": 4356
+   "head": 16043,
+   "body": 4084
   },
-  "sourceTriangles": 4320582,
+  "sourceTriangles": 3912049,
   "uvOverlapTexels": {
-   "lo_body": 0,
+   "lo_body": 2,
    "lo_eyes": 0,
    "lo_props": 0,
-   "lo_props_stormcrown": 2
+   "lo_props_stormcrown": 0
   }
  },
  "files": {
@@ -734,65 +742,75 @@
     "ktx2": "nimbusheep_stormcrown_base.ktx2",
     "webp": "nimbusheep_stormcrown_base.webp",
     "px": 2048
+   },
+   "orm": {
+    "ktx2": "nimbusheep_stormcrown_orm.ktx2",
+    "webp": "nimbusheep_stormcrown_orm.webp",
+    "px": 2048
    }
   }
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 68890,
+  "triangles": 83465,
   "trianglesByMesh": {
-   "lo_body": 57989,
-   "lo_cards": 1700,
+   "lo_body": 73996,
+   "lo_cards": 268,
    "lo_eyes": 1840,
    "lo_props": 4760,
    "lo_props_stormcrown": 2600,
    "__variant_stormcrown-nimbusheep": 1
   },
-  "vertices": 43642,
-  "cards": 425,
-  "cardLayers": 2,
+  "vertices": 51391,
+  "cards": 67,
+  "cardLayers": 1,
   "joints": 28,
   "animations": 32,
-  "animationBytes": 157156,
+  "animationBytes": 157124,
   "download": {
-   "glb": 4561372,
-   "glbKtx2": 4561372,
-   "glbWebp": 3622528,
+   "glb": 4970520,
+   "glbKtx2": 4970520,
+   "glbWebp": 3438472,
    "ktx2": {
-    "body": 2674795,
-    "variants": 668381
+    "body": 2318436,
+    "variants": 1258780
    },
    "webp": {
-    "body": 2050492,
-    "variants": 353858
+    "body": 1386572,
+    "variants": 658612
    },
-   "totalKtx2": 4561372,
-   "totalWebp": 3622528
+   "totalKtx2": 4970520,
+   "totalWebp": 3438472
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 769467,
-     "webp": 509096
+     "ktx2": 645107,
+     "webp": 277308
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 1078485,
-     "webp": 914088
+     "ktx2": 1043113,
+     "webp": 794596
     },
     "orm": {
      "px": 2048,
-     "ktx2": 826843,
-     "webp": 627308
+     "ktx2": 630216,
+     "webp": 314668
     }
    },
    "stormcrown-nimbusheep": {
     "base": {
      "px": 2048,
-     "ktx2": 668381,
-     "webp": 353858
+     "ktx2": 559169,
+     "webp": 233410
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 699611,
+     "webp": 425202
     }
    }
   },
@@ -848,34 +866,34 @@
  },
  "lite": {
   "file": "nimbusheep.lite.glb",
-  "build": "c5b901a4bb",
-  "bytes": 989872,
-  "triangles": 11763,
+  "build": "39ca1ae6c4",
+  "bytes": 1024420,
+  "triangles": 11731,
   "trianglesByMesh": {
-   "lo_body": 7598,
+   "lo_body": 8632,
    "lo_eyes": 1840,
-   "lo_props": 1504,
-   "lo_props_stormcrown": 820,
+   "lo_props": 814,
+   "lo_props_stormcrown": 444,
    "__variant_stormcrown-nimbusheep": 1
   },
   "simplified": {
    "lo_props": {
     "from": 4760,
-    "to": 1504
+    "to": 814
    },
    "lo_props_stormcrown": {
     "from": 2600,
-    "to": 820
+    "to": 444
    },
    "lo_body": {
-    "from": 57989,
-    "to": 7598
+    "from": 73996,
+    "to": 8632
    }
   },
   "joints": 28,
   "animations": 32,
   "atlasPx": 1024,
-  "textureBytes": 494066,
+  "textureBytes": 519184,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

@@ -1,4 +1,4 @@
-import { HalfFloatType, NeutralToneMapping, PCFSoftShadowMap, PMREMGenerator, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three'
+import { CustomToneMapping, HalfFloatType, PCFSoftShadowMap, PMREMGenerator, SRGBColorSpace, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three'
 import type { Camera, Object3D, PerspectiveCamera, Scene, Texture } from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
@@ -8,7 +8,7 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { ART } from '../../data/tuning.ts'
-import { roomEnvironmentScene } from './content.ts'
+import { installFilmToneMapping, studioEnvironmentScene } from './content.ts'
 
 /**
  * Art 2.1 Performance check: one interface over the two renderers, so the A/B test draws the same scene, lights,
@@ -50,18 +50,21 @@ const GRADE_SHADER = {
     saturation: { value: ART.ultra.post.grade.saturation },
     contrast: { value: ART.ultra.post.grade.contrast },
     warmth: { value: ART.ultra.post.grade.warmth },
+    warmFrom: { value: ART.ultra.post.grade.warmOnly[0] },
+    warmTo: { value: ART.ultra.post.grade.warmOnly[1] },
     vignette: { value: ART.ultra.post.grade.vignette },
   },
   vertexShader: /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */ `
-uniform sampler2D tDiffuse; uniform float saturation; uniform float contrast; uniform float warmth; uniform float vignette;
+uniform sampler2D tDiffuse; uniform float saturation; uniform float contrast; uniform float warmth; uniform float vignette; uniform float warmFrom; uniform float warmTo;
 varying vec2 vUv;
 void main() {
   vec4 c = texture2D(tDiffuse, vUv);
   float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
   vec3 g = mix(vec3(l), c.rgb, saturation);
   g = (g - 0.5) * contrast + 0.5;
-  g += vec3(warmth, warmth * 0.4, -warmth) * smoothstep(0.4, 1.0, l);
+  // the highlights' warmth only where the pixel is already warm: cream keeps it, cool whites stay cool
+  g += vec3(warmth, warmth * 0.4, -warmth) * smoothstep(0.4, 1.0, l) * smoothstep(warmFrom, warmTo, c.r - c.b);
   vec2 d = vUv - 0.5;
   g *= 1.0 - vignette * smoothstep(0.35, 0.85, length(d) * 1.4);
   gl_FragColor = vec4(clamp(g, 0.0, 1.0), c.a);
@@ -126,14 +129,16 @@ export function createWebGLView(opts: ViewOptions): PerfView {
   // draw calls are counted over the whole frame (every pass), not just the last pass
   renderer.info.autoReset = false
   renderer.outputColorSpace = SRGBColorSpace
-  renderer.toneMapping = NeutralToneMapping
+  // the film tone map (content.ts): Neutral with a toe that keeps dark colours' hue
+  installFilmToneMapping()
+  renderer.toneMapping = CustomToneMapping
   renderer.toneMappingExposure = ART.ultra.studio.exposure
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFSoftShadowMap
   renderer.setPixelRatio(opts.dpr)
   renderer.setSize(opts.width, opts.height, false)
   const pmrem = new PMREMGenerator(renderer)
-  const environment = pmrem.fromScene(roomEnvironmentScene(), 0.04).texture
+  const environment = pmrem.fromScene(studioEnvironmentScene(), 0.04).texture
   pmrem.dispose()
   const gl = renderer.getContext() as WebGL2RenderingContext
   const timer = gl.getExtension('EXT_disjoint_timer_query_webgl2') as { TIME_ELAPSED_EXT: number; GPU_DISJOINT_EXT: number } | null

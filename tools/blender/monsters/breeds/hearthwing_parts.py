@@ -222,7 +222,7 @@ def tube(name: str, pts: np.ndarray, radii: np.ndarray, ref, seg: int = 12, flat
 
 
 def talon(name: str, root, direction, down, length: float, radius: float, curve: float = 0.35, rings: int = 9, seg: int = 10,
-          flat: float = 0.8, coll=None, ring_attrs: dict | None = None, blunt: bool = False) -> bpy.types.Object:
+          flat: float = 0.8, coll=None, ring_attrs: dict | None = None, blunt: bool = False, cap: float = 0.38) -> bpy.types.Object:
     """A curved claw: from `root` along `direction`, hooking toward `down` (curve x length at the tip), round at the
     root, a sharp point; `flat` < 1 makes it narrower side to side. `blunt`: an acorn (full almost to the end, then a
     rounded tip), for short, fat toe claws."""
@@ -234,7 +234,7 @@ def talon(name: str, root, direction, down, length: float, radius: float, curve:
     c = v3(root)[None] + d[None] * (length * t)[:, None] + dn[None] * (curve * length * t ** 2)[:, None]
     if blunt == 'cone':
         # round 3: a smooth cone tapering straight to a blunt, round point (a cap of 0.38 x the root's radius)
-        rt = 0.38 * radius
+        rt = cap * radius
         tc = 1.0 - rt / length
         cone = radius + (rt - radius) * np.clip(t / tc, 0.0, 1.0)
         cap = rt * np.sqrt(np.clip(1.0 - ((t - tc) / (1.0 - tc)) ** 2, 0.0, 1.0))

@@ -35,6 +35,7 @@ from lib.nodes import NB, new_mat
 from lib.surface import ell_soft, in_ellipsoid, norm, smooth, tangent, v3
 from monsters.breeds import cinderlynx_ears as E
 from monsters.breeds import cinderlynx_flames as FL
+from monsters.breeds import cinderlynx_mouth as MO
 
 ID = 'cinderlynx'
 LOOK = 'cinderlynx-ultra'
@@ -49,20 +50,32 @@ PALETTE = {'body': '#3A3236', 'belly': '#5A4E52', 'accent': '#FF7A2F', 'eye': '#
            'frost': '#A496AE', 'shadow': '#1C1830'}
 # Bonfire: "bigger, brighter golden flames along its spine and tail" (variant-bonfire-cinderlynx.png)
 VARIANTS = {'bonfire-cinderlynx': {'body': '#5A1F14', 'belly': '#A03A1E', 'accent': '#FFB300', 'eye': '#FFF0A8',
-                                   'frost': '#B8705C', 'shadow': '#2A0C10', 'ember_size': 1.5, 'flame_start': 0.5}}
+                                   'frost': '#B8705C', 'shadow': '#2A0C10', 'ember_size': 1.5, 'flame_start': 0.5,
+                                   # Nov 12: a warm tan bib (round 3: pinkish grey) and golden flames that keep their
+                                   # colour under the bloom (round 3: the pale-yellow core blew the tail out to white)
+                                   'pale_cream': '#F2D2A0', 'pale_lift': 0.3, 'ember_core': '#FFC83A',   # Nov 13: the rust belly
+                                   'ember_leaf': '#F0A000', 'ember_core_paint': '#FFC21E'}}
+# Nov 12 ("hit #FF7A2F in game"): the leaves' paint and glow, measured through the film renderer (calib.py: the
+# baked leaves recoloured, shipped and filmed): what lands on #FF7A2F with a #FFD15C core
+# (measured: the leaves' texels at #F05008 / glow 0.22 and the cores at #FFB82A / 0.35 film as leaf centres #FFC475 to
+# #FFC66C and orange bodies, against round 3's #FFBC87; the paint is about 7% brighter than those texels because the
+# bake's AO share darkens it by about that much)
+# Nov 13: the cores glow past the bloom threshold (a halo through the fur), the leaf bodies stay ember-orange
+EMBER_FILM = {'leaf': '#FF5709', 'core': '#FFC52D', 'leaf_glow': 0.3, 'core_glow': 1.3}
 
 NOSE_HEX = '#6A3934'
 MOUTH_HEX = '#211719'
 PAD_HEX = '#4B2C29'
 
 
-PALE_CREAM = '#F0E2D2'      # the warm cream the belly colour is lifted toward for the pale markings
+PALE_CREAM = '#E6C9A8'      # the warm cream the belly colour is lifted toward (Nov 12: warmer, a step darker)
 
 
 def colours(pal: dict) -> dict:
     """Every derived colour of a palette (the base or a variant)."""
     fur, belly, ember = pal['body'], pal['belly'], pal['accent']
-    pale = C.mix_hex(belly, PALE_CREAM, 0.66)
+    # Nov 12: a variant may lift its belly toward its own cream (Bonfire: a warm tan bib, not a pinkish grey)
+    pale = C.mix_hex(belly, pal.get('pale_cream', PALE_CREAM), pal.get('pale_lift', 0.6))
     return {
         'fur': fur, 'belly': belly, 'ember': ember,
         # round 2 (the coordinator's decision): the pictures decide markings, so the chest, the muzzle, the lower
@@ -72,12 +85,18 @@ def colours(pal: dict) -> dict:
         'ember_hot': C.mix_hex(ember, '#FFE9A8', 0.5),       # the claw tips
         # round 3: the embers are the ember colour with a gold core (the reviewer: #FF7A2F with a #FFD15C core; round
         # 2's paler mix read as peach paint, not hot coals)
-        'ember_core': pal['eye'],
+        'ember_core': pal.get('ember_core', pal['eye']),
+        # Nov 12: what the leaves are painted so they land on the ember colour in game (the film's tone mapping
+        # lifts and desaturates a bright orange; measured, see EMBER_FILM)
+        'ember_leaf': pal.get('ember_leaf', EMBER_FILM['leaf']),
+        'ember_core_paint': pal.get('ember_core_paint', EMBER_FILM['core']),
         'ember_deep': C.mix_hex(ember, '#B8320E', 0.35),     # the leaves' rims
         'brow': C.mix_hex(fur, '#0A0708', 0.78),             # round 2: dark brow strokes (1-hero, 4-details 2)
         'lash': '#0C0809',
         'eye_ring': C.mix_hex(belly, '#F0B898', 0.72),       # the pale ring round each eye (1-hero.png)
-        'ear_skin': C.mix_hex(C.mix_hex(ember, '#C9706E', 0.55), belly, 0.22),
+        'ear_skin': C.mix_hex('#E4968C', belly, 0.12),          # Nov 13: salmon pink (1-hero)
+        # Nov 13: the muzzle and cheeks lifted toward the hero's cream (breaks the dark-mask read)
+        'face_pale': C.mix_hex(belly, '#EEDCC4', 0.8),
         'ear_fur': C.mix_hex(pale, '#FFFFFF', 0.25),         # the pale fur filling the inner ear low down
         'frost': C.mix_hex(fur, pal.get('frost', '#A496AE'), 0.55),
         'shadow': C.mix_hex(fur, pal.get('shadow', '#1C1830'), 0.6),
@@ -189,14 +208,29 @@ HEAD_PIVOT = (0.0, -0.33, 0.70)
 HEAD_OFS = (0.0, -0.004, -0.026)       # round 3: the head held higher on a rising neck (it hung at back height)
 
 
+# Nov 13 (the review: the head points nose-up 15-20° in rest and walk): the whole head is pitched nose-down about
+# PITCH_PIVOT before it is scaled and moved (H); directions modelled head-local turn with it (Hd)
+HEAD_PITCH = 12.0
+PITCH_PIVOT = (0.0, -0.31, 0.75)
+_PC, _PS = math.cos(math.radians(HEAD_PITCH)), math.sin(math.radians(HEAD_PITCH))
+_RX = np.array([[1.0, 0.0, 0.0], [0.0, _PC, -_PS], [0.0, _PS, _PC]])      # about +X: the front (-y) goes down
+
+
+def Hd(d) -> np.ndarray:
+    """A head-local direction in world space."""
+    return np.asarray(d, np.float64) @ _RX.T
+
+
 def H(p) -> np.ndarray:
     """Head-local → world (points: (3,) or (n, 3))."""
-    return v3(HEAD_PIVOT) + (np.asarray(p, np.float64) - v3(HEAD_PIVOT)) * HEAD_K + v3(HEAD_OFS)
+    q = (np.asarray(p, np.float64) - v3(PITCH_PIVOT)) @ _RX.T + v3(PITCH_PIVOT)
+    return v3(HEAD_PIVOT) + (q - v3(HEAD_PIVOT)) * HEAD_K + v3(HEAD_OFS)
 
 
 def Hinv(p) -> np.ndarray:
     """World → head-local."""
-    return v3(HEAD_PIVOT) + (np.asarray(p, np.float64) - v3(HEAD_PIVOT) - v3(HEAD_OFS)) / HEAD_K
+    q = v3(HEAD_PIVOT) + (np.asarray(p, np.float64) - v3(HEAD_PIVOT) - v3(HEAD_OFS)) / HEAD_K
+    return (q - v3(PITCH_PIVOT)) @ _RX + v3(PITCH_PIVOT)
 
 
 def Hv(p) -> Vector:
@@ -204,11 +238,11 @@ def Hv(p) -> Vector:
 
 
 # round 3: the cranium about 15% smaller and flatter between the ears, so the face (cheeks and ruff) is the widest part
-HEAD_C_L = (0.0, -0.33, 0.858)
+HEAD_C_L = (0.0, -0.334, 0.858)       # Nov 13: with HEAD_R_L's shorter y, the dome behind the ears drops
 # round 3b: and flatter on top, between the ears (the reviewer: a shiny dome on the crown)
-HEAD_R_L = (0.132, 0.145, 0.106)
+HEAD_R_L = (0.132, 0.145, 0.1)       # Nov 12: flatter still (the residual 'domed head' note)
 EYE_R_L = 0.05
-EYE_C_L = {s: (0.088 * s, -0.452, 0.85) for s in (1, -1)}
+EYE_C_L = {s: (0.088 * s, -0.446, 0.85) for s in (1, -1)}      # Nov 13: sunk into the sockets (they bulged past the brow)
 NOSE_C_L = (0.0, -0.556, 0.803)
 MUZZLE_L = ((0.0, -0.528, 0.78), (0.068, 0.05, 0.045))
 PAD_L = ((0.024, -0.536, 0.775), (0.025 * 1.15, 0.025 * 0.82, 0.025 * 0.86))     # the right-hand whisker pad (head-local)
@@ -277,14 +311,17 @@ def ear_lookup(p: np.ndarray):
 # round 2: rising behind in a curve as in 1-hero, the tip leaning to the monster's left so that from the front the flame
 # shows beside the head, not as a crest behind it; the idle clips lift it further (CLIP_CALM)
 # round 3 (1-hero): dipping from the rump, then curving up into a curl (the idles curl it further)
-TAIL_PTS = [(0.0, 0.345, 0.588), (0.018, 0.47, 0.552), (0.055, 0.6, 0.56), (0.11, 0.705, 0.625), (0.168, 0.765, 0.735), (0.215, 0.775, 0.855)]
+# Nov 12: leaning further to the side, so the rump's ember chain shows from straight behind
+# Nov 13: sweeping back and up, lower at the tip (from the front its flame poked out beside the cheek)
+TAIL_PTS = [(0.0, 0.345, 0.588), (0.03, 0.47, 0.558), (0.08, 0.6, 0.572), (0.13, 0.71, 0.615), (0.17, 0.8, 0.68), (0.2, 0.875, 0.755)]
 TAIL_BONES = 5
 TAIL_CURVE = catmull(TAIL_PTS, 12)
 TAIL_S = arc_lengths(TAIL_CURVE)
 TAIL_LEN = float(TAIL_S[-1])
 # the tail's radius along it (0 root … 1 tip): slim at the root, bushier toward the ember end, rounded off at the tip
 # round 2: bushier, about a leg thick at the base, fuller toward the end (the cards add the brush)
-TAIL_RAD = ((0.0, 0.066), (0.18, 0.062), (0.5, 0.068), (0.75, 0.078), (0.9, 0.078), (0.97, 0.062), (1.0, 0.04))
+# Nov 12: thicker toward the plume (the hero's bushy flame brush)
+TAIL_RAD = ((0.0, 0.068), (0.18, 0.066), (0.5, 0.078), (0.6, 0.078), (0.7, 0.052), (0.84, 0.032), (1.0, 0.014))
 FLAME_START = 0.64          # where the tail starts to burn (share of its length): its last third
 
 
@@ -372,6 +409,7 @@ def head_parts() -> list[Part]:
         p.radius *= HEAD_K
         if p.r2 is not None:
             p.r2 *= HEAD_K
+        p.rot = (p.rot[0] + HEAD_PITCH, p.rot[1], p.rot[2])
         out.append(p)
     return out
 
@@ -383,15 +421,16 @@ def head_parts_local() -> list[Part]:
     # read as a round-faced kitten); the lynx ruff at the jaw corners comes from the fur cards
     return [
         Part('cranium', 'sphere', loc=HEAD_C_L, radius=1.0, scale=HEAD_R_L),
-        Part('forehead', 'sphere', loc=(0.0, -0.415, 0.905), radius=0.068, scale=(1.4, 0.85, 0.7)),
+        # Nov 13: a brow over the eyes and a stop down to the muzzle (the profile read seal-like)
+        Part('forehead', 'sphere', loc=(0.0, -0.425, 0.896), radius=0.068, scale=(1.4, 0.85, 0.6)),
         # the face's breadth at eye level, so the big eyes sit in the face instead of bulging past the skull
         Part('mask', 'sphere', loc=(0.0, -0.39, 0.85), radius=1.0, scale=(0.155, 0.07, 0.062)),
         Part('face', 'sphere', loc=(0.0, -0.43, 0.792), radius=1.0, scale=(0.112, 0.078, 0.062)),
         Part('cheek', 'sphere', loc=(0.11, -0.37, 0.795), radius=1.0, scale=(0.066, 0.07, 0.06), mirror=True),
-        Part('bridge', 'capsule', loc=(0.0, -0.462, 0.886), to=(0.0, -0.548, 0.81), radius=0.024),
+        Part('bridge', 'capsule', loc=(0.0, -0.47, 0.874), to=(0.0, -0.548, 0.81), radius=0.02),
         Part('snout', 'sphere', loc=(0.0, -0.508, 0.786), radius=1.0, scale=(0.058, 0.058, 0.046)),
         Part('pad', 'sphere', loc=(0.024, -0.536, 0.775), radius=0.025, scale=(1.15, 0.82, 0.86), mirror=True),
-        Part('chin', 'sphere', loc=(0.0, -0.512, 0.742), radius=0.022, scale=(1.15, 1.0, 0.7)),
+        Part('chin', 'sphere', loc=(0.0, -0.516, 0.74), radius=0.024, scale=(1.1, 1.0, 0.72)),    # Nov 13: a small chin
         Part('nose', 'sphere', loc=NOSE_C_L, radius=0.017, scale=(1.55, 1.0, 0.85)),
         Part('neck', 'capsule', loc=(0.0, -0.31, 0.78), to=(0.0, -0.255, 0.62), radius=0.092),
         Part('throat', 'capsule', loc=(0.0, -0.445, 0.73), to=(0.0, -0.36, 0.57), radius=0.052),
@@ -500,6 +539,7 @@ def whisker_mesh(name: str, high: bool) -> bpy.types.Object:
     S.add_attr(ob, 'whisker', np.ones(len(me.vertices)))
     S.add_attr(ob, 'flame_u', np.zeros(len(me.vertices)))
     S.add_attr(ob, 'flame_part', np.zeros(len(me.vertices)))
+    S.add_attr(ob, 'mouth_part', np.zeros(len(me.vertices)))
     return ob
 
 
@@ -508,25 +548,67 @@ def flame_mesh(name: str, high: bool) -> bpy.types.Object:
     ears = {}
     for s in (1, -1):
         tp, a, xo, nf = E.tip_frame(s)
-        ears[s] = (H(tp), a, xo, nf)
-    T = TAIL_CURVE[-1] - TAIL_CURVE[-3]
-    T = T / np.linalg.norm(T)
-    up = norm(v3((0.0, -T[2], T[1]))[None])[0]
-    ob = FL.build(name, high, ears, (TAIL_CURVE[-1], T, up, float(tail_radius(0.97))), HEAD_K)
+        ears[s] = (H(tp), Hd(a), Hd(xo), Hd(nf))
+    # Nov 12: the plume's stations along the tail's last third (centre, tangent, up, radius)
+    frames = []
+    m = len(TAIL_CURVE) - 1
+    for t in (0.62, 0.67, 0.72, 0.77, 0.82, 0.86, 0.9, 0.94, 0.97, 0.99):
+        i = int(round(t * m))
+        T = TAIL_CURVE[min(i + 2, m)] - TAIL_CURVE[max(i - 2, 0)]
+        T = T / np.linalg.norm(T)
+        up = norm(v3((0.0, -T[2], T[1]))[None])[0]
+        frames.append((TAIL_CURVE[i], T, up, float(tail_radius(t))))
+    ob = FL.build(name, high, ears, frames, HEAD_K)
     ob['prop'] = 'flames'
     S.add_attr(ob, 'whisker', np.zeros(len(ob.data.vertices)))
+    S.add_attr(ob, 'mouth_part', np.zeros(len(ob.data.vertices)))
     return ob
 
 
 # the Lite copy keeps the props whole: the flames (20 tongues, about 2.2k triangles) and the whiskers (544)
-LITE_PROPS_TRIS = 3300     # round 3b: 22 thin ear strands + the tail lick + the whiskers ≈ 3.2k
+LITE_PROPS_TRIS = 5700     # Nov 13: 28 ear wisps + 40 tail strands ≈ 3.8k, the whiskers 0.5k and the mouth 1.2k
 
 
 def build_props(high: bool, quick: bool) -> list[bpy.types.Object]:
-    """hi_* / lo_*: the eight whiskers (rigid on the head) and the ember flames (the ear tufts on ear.*.2, the tail's
-    flame lick on the last tail bone): prop_weight_regions."""
+    """hi_* / lo_*: the eight whiskers (rigid on the head), the ember flames (the ear tufts on ear.*.2, the tail's
+    flame lick on the last tail bone) and the mouth (Nov 12: the inner skin, the throat and the fangs behind the cut lips,
+    cinderlynx_mouth; made from the cut low body, so only once it exists): prop_weight_regions."""
     tag = 'hi' if high else 'lo'
-    return [whisker_mesh(f'{tag}_whiskers', high), flame_mesh(f'{tag}_flames', high)]
+    out = [whisker_mesh(f'{tag}_whiskers', high), flame_mesh(f'{tag}_flames', high)]
+    lo = bpy.data.objects.get('lo_body')
+    if lo is not None and lo.get('mouth_cut'):
+        out.append(MO.mouth_mesh(f'{tag}_mouth', lo, Hinv, H, HEAD_K, inside=_inside_of(lo), target=MOUTH_TRIS))
+    return out
+
+
+def _inside_of(ob: bpy.types.Object):
+    """points → bool: inside `ob`'s closed surface (by its nearest face's side)."""
+    bm = bmesh.new()
+    bm.from_mesh(ob.data)
+    bvh = BVHTree.FromBMesh(bm)
+    bm.free()
+
+    def inside(pts: np.ndarray) -> np.ndarray:
+        out = []
+        for p in pts:
+            hit = bvh.find_nearest(Vector(tuple(map(float, p))))
+            out.append(hit[0] is not None and (Vector(tuple(map(float, p))) - hit[0]).dot(hit[1]) < -0.002)
+        return np.asarray(out, bool)
+    return inside
+
+
+def carve_low(ob: bpy.types.Object) -> None:
+    """Nov 12: the mouth's cut along the lip line, on the low body before its decimation (cinderlynx_mouth)."""
+    MO.cut(ob, Hinv, HEAD_K)
+    ob['mouth_cut'] = 1
+
+
+# the jaw opens (the swipe's snarl, the cast, the happy smiles). Its automatic heat weights are merged into the head
+# first (they covered the whole muzzle, so the upper lip dropped with the jaw and the mouth stayed a slit);
+# body_weight_regions then gives only the lower jaw to `jaw`, and rig_p's jaw_open keeps the smiles (Starhowl's way)
+MERGE_INTO_HEAD = ('jaw', 'eye.L', 'eye.R')
+MOUTH_TRIS = 1200           # the mouth prop's triangles (its inner skin decimated away from the lips)
+MOUTH_SOCKET = tuple(map(float, H((0.0, -0.562, 0.7515))))    # at the lips (effects start there, not inside the snout)
 
 
 def prop_weight_regions(co: np.ndarray, attr, names: list[str], mesh: str | None = None):
@@ -534,12 +616,23 @@ def prop_weight_regions(co: np.ndarray, attr, names: list[str], mesh: str | None
     bone."""
     part = attr('flame_part')
     whisk = attr('whisker') > 0.5
+    mp = attr('mouth_part')
     out = [(whisk, {'head': np.ones(int(whisk.sum()))})]
+    # the mouth: the palate, the throat and the fangs on the head; the floor and tongue with the lower jaw's own blend
+    up = (mp > 0.5) & ~whisk
+    out.append((up, {'head': np.ones(int(up.sum()))}))
+    dn = (mp < -0.5) & ~whisk
+    if dn.any():
+        w = MO.jaw_weight(Hinv(co[dn]))
+        out.append((dn, {'jaw': w, 'head': 1.0 - w}))
+    whisk = whisk | up | dn
     for s, tag in ((1, 'L'), (-1, 'R')):
         m = (np.abs(part - s) < 0.1) & ~whisk
         out.append((m, {f'ear.{tag}.2': np.ones(int(m.sum()))}))
     m = (part > 1.5) & ~whisk
-    out.append((m, {tail_bone_names()[-1]: np.ones(int(m.sum()))}))
+    if m.any():
+        # the plume's tongues ride the tail's last bones (they root along its last third)
+        out.append((m, U.chain_weights(co[m], rig_p()['tail_points'], tail_bone_names(), 'hips')))
     return out
 
 
@@ -576,7 +669,10 @@ def eye_surround(p: np.ndarray) -> np.ndarray:
         r = np.sqrt(xe * xe + ye * ye)
         # widest above the eye (up to the brow), narrower at the sides and below (the pale face takes over there)
         reach = 1.22 + 0.2 * smooth(-0.2, 0.6, ye / np.maximum(r, 1e-6))
-        out = np.maximum(out, 0.85 * smooth(reach + 0.22, reach - 0.08, r) * (ze > -0.035))
+        # Nov 12 (the review: a mid-grey brow and eye area read as a tabby): only the closed lid under the lens is
+        # light (the blink); round the open eye the coat stays charcoal
+        # Nov 13: the closed lid is the coat (fur-coloured, under the dark lash line), only a touch lighter
+        out = np.maximum(out, 0.3 * smooth(1.04, 0.96, r) * (ze > -0.035))
     return out
 
 
@@ -626,6 +722,9 @@ def carve(ob: bpy.types.Object) -> None:
     bulge, lash = closed_lid(co)
     disp = -0.0018 * groove - 0.0035 * nos - 0.003 * cleft - 0.0012 * lash      # round 3: the closed lid is flush
     S.set_positions(ob, co + vn * disp[:, None])
+    # Nov 12: the lips' line where the low body is cut (a thin dark rim at rest; the lips' edges when the mouth opens)
+    lip = np.exp(-(MO.lip_f(hl) / 0.0024) ** 2) * MO.cut_region(hl)
+    groove = np.maximum(groove, 0.0 * lip)        # Nov 13: no painted line at the cut (it read as a second mouth)
     S.base_attrs(ob, co, {'mouth': groove})
     S.add_attr(ob, 'lash', lash)
     S.add_attr(ob, 'lid', bulge)
@@ -740,8 +839,14 @@ def _zones(p: np.ndarray) -> dict[str, np.ndarray]:
 
 def decimate_keep(co: np.ndarray) -> np.ndarray:
     z = zones(co)
-    return np.clip(z['face'] * 1.0 + z['muzzle'] * 1.0 + (z['eye_d'] < 0.075) * 1.0 + z['toes'] * 0.75 + z['paw'] * 0.25
-                   + (z['ear'] & (z['ear_u'] > 0.6)) * 0.6, 0, 1)
+    hl = Hinv(co)
+    # Nov 12: the cut lips keep every vertex; the muzzle round them a little less (the mouth's inner skin copies it)
+    fl = np.abs(MO.lip_f(hl))
+    lips = MO.cut_region(hl) * (smooth(0.004, 0.002, fl) * 1.0)
+    near_mouth = MO.cut_region(hl) & (fl < 0.03)
+    face = np.where(near_mouth, 0.55, z['face'] * 1.0 + z['muzzle'] * 1.0)
+    return np.clip(face + (z['eye_d'] < 0.075) * 1.0 + z['toes'] * 0.75 + z['paw'] * 0.25
+                   + (z['ear'] & (z['ear_u'] > 0.6)) * 0.6 + lips, 0, 1)
 
 
 # ----------------------------------------------------------------------------- how the fur lies
@@ -756,7 +861,8 @@ def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
     g = norm(p - v3((0.0, NOSE_C.y - 0.04, NOSE_C.z + 0.01)))
     wd = smooth(0.84, 0.74, hz)[:, None]
     # round 2: the cheek fur flares out sideways (2-turnaround.png front), it doesn't hang down like a beard
-    cheek_dir = norm(np.stack([np.sign(x) * 1.0, np.full(k, 0.3), np.full(k, -0.4)], axis=1))
+    # Nov 12: out, back and down (the review: radial needles; the reference's ruff sweeps down and back in tiers)
+    cheek_dir = norm(np.stack([np.sign(x) * 0.65, np.full(k, 0.6), np.full(k, -0.7)], axis=1))
     g_head = norm(g * (1 - wd) + cheek_dir * wd * 1.2)
     face_up = norm(np.stack([hl[:, 0] * 3.0, np.full(k, 0.25), np.ones(k)], axis=1))
     wf = (smooth(-0.44, -0.48, hy) * smooth(0.85, 0.88, hz) * smooth(0.1, 0.05, np.abs(hl[:, 0])))[:, None]
@@ -764,13 +870,14 @@ def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
     # the ears: up toward the tip
     g_head = np.where(z['ear'][:, None], z['ear_up'], g_head)
     # the ruff: back and down
-    g_head = np.where(z['ruff'][:, None], norm(np.stack([np.sign(x) * 0.55, np.full(k, 0.65), np.full(k, -0.5)], axis=1)), g_head)
+    g_head = np.where(z['ruff'][:, None], norm(np.stack([np.sign(x) * 0.45, np.full(k, 0.7), np.full(k, -0.75)], axis=1)), g_head)
     side = np.clip(np.abs(n[:, 0]) * 1.2, 0, 1)[:, None]
     g_torso = norm(v3((0.0, 1.0, -0.08)) * (1 - side) + v3((0.0, 0.4, -1.0)) * side)
     g = np.where(z['torso'][:, None], g_torso, g_head)
     g = np.where(z['belly'][:, None], np.tile(v3((0.0, 0.5, -0.8)), (k, 1)), g)
     # the bib fans out across the chest (round 3)
-    g = np.where(z['bib'][:, None], norm(np.stack([np.sign(x) * 0.45, np.full(k, -0.15), np.full(k, -1.0)], axis=1)), g)
+    # Nov 12: one V bib, the fur pointing down and a little in toward the middle (round 3's fan split it in two lappets)
+    g = np.where(z['bib'][:, None], norm(np.stack([-np.sign(x) * 0.22, np.full(k, -0.12), np.full(k, -1.0)], axis=1)), g)
     g = np.where(z['leg'][:, None], np.tile(v3((0.0, 0.08, -1.0)), (k, 1)), g)
     g_tail = z['tail_T']
     # toward the ember end the fur flares out a little, like flames
@@ -855,7 +962,7 @@ def body_lock_params(p, n):
 
 
 CARD_LAYERS = 3
-CARD_SHADE = 1.0      # the cards take the skin's colour as it is (its locks already carry the frosted tips)
+CARD_SHADE = 0.82     # Nov 13: darker than the skin (the cards' edges read as pale fringes, frost, calico at 64 px)
 # round 3b: crowded lock roots under the cheek ruff and the bib baked near black, so the cards that take their colour
 # there read as dark slats (RECIPE.md: AO_FLOOR, AO_SOFTEN)
 AO_FLOOR = 0.35
@@ -878,11 +985,11 @@ def card_params(p, n, layer: int):
     on_leaf = (leaf_np(em['sigma'], em['tau'], 1.3) * em['env']) > 0.08
     crest = head & (hax < 0.06) & (hz > 0.86) & ~z['ear']
     if layer == 0:
-        L = np.where(head, 0.048, 0.05)
+        L = np.where(head, 0.048, 0.036)          # Nov 13: short and sleek on the body
         W = np.where(head, 0.028, 0.034)
         lift = np.full(k, _rad(4))
         L = np.where(z['cheek'], 0.058, L)
-        L = np.where(z['leg'], 0.045, L)
+        L = np.where(z['leg'], 0.03, L)
         W = np.where(z['leg'], 0.03, W)
         L = np.where(z['tail'], 0.065, L)
         sp = np.where(head, 0.02, 0.021)
@@ -890,6 +997,13 @@ def card_params(p, n, layer: int):
         # no cards up the ears (dark notches past the rims; the lying locks cover the backs)
         skip = (z['face'] | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.085) | (z['chin'] & (hy < -0.45)) | z['ear_inner']
                 | (z['ear'] & (z['ear_u'] > 0.1)) | (z['leg'] & (zz < 0.09)) | z['sole'])
+        # Nov 12: the cheek ruff in three tiers (this the shortest, inner one), soft clumps sweeping down and back
+        ruff0 = head & ~z['ear'] & (hax > 0.085) & (hy > -0.44) & (hy < -0.24) & (hz > 0.69) & (hz < 0.9)
+        L = np.where(ruff0, 0.055, L)
+        W = np.where(ruff0, 0.032, W)
+        lift = np.where(ruff0, _rad(12), lift)
+        sp = np.where(ruff0, 0.016, sp)
+        skip = skip & ~(ruff0 & ~(z['eye_d'] < 0.085))
     elif layer == 1:
         L = np.full(k, 0.07)
         W = np.full(k, 0.034)
@@ -900,7 +1014,8 @@ def card_params(p, n, layer: int):
         ruff_c = head & ~z['ear'] & (hax > 0.08) & (hy > -0.44) & (hy < -0.24) & (hz > 0.69) & (hz < 0.9)
         neck = z['ruff'] & ~ruff_c & (hy > -0.33)
         # round 3: the bib starts under the jaw (not off the chin) and fans across the chest between the forelegs
-        bib = z['bib'] & ~z['chin'] & (zz < 0.64)
+        # Nov 12: on the chest only (under the jaw it hung as two lappets, a stole, and hid the open mouth)
+        bib = z['bib'] & ~z['chin'] & (zz < 0.6)
         belly = z['belly'] & (zz < 0.45)
         clump = np.zeros(k, bool)
         for lg in LEGS:
@@ -917,23 +1032,23 @@ def card_params(p, n, layer: int):
             leg_back |= z['legs'][lg] & (y > back_y - 0.03) & (zz > 0.12)
         tail = z['tail']
         # round 3: bigger, denser clumps so the cheeks are the widest part of the face (a diamond)
-        L = np.where(ruff_c, 0.13, L)
-        W = np.where(ruff_c, 0.034, W)                  # round 3b: narrower, softer clumps (they read as flat slats)
-        lift = np.where(ruff_c, _rad(30), lift)
-        sp = np.where(ruff_c, 0.014, sp)
+        L = np.where(ruff_c, 0.088, L)                 # Nov 12: the ruff's middle tier
+        W = np.where(ruff_c, 0.034, W)
+        lift = np.where(ruff_c, _rad(18), lift)
+        sp = np.where(ruff_c, 0.016, sp)
         L = np.where(neck, 0.05, L)
         lift = np.where(neck, _rad(6), lift)
         sp = np.where(neck, 0.04, sp)
         # the bib: a short fluffy pale bib fanning across the chest between the forelegs
-        L = np.where(bib, 0.062, L)
-        W = np.where(bib, 0.038, W)
-        lift = np.where(bib, _rad(12), lift)
+        L = np.where(bib, 0.058, L)
+        W = np.where(bib, 0.042, W)
+        lift = np.where(bib, _rad(10), lift)
         sp = np.where(bib, 0.022, sp)
         # small spiky clumps break the smooth tube outlines (1-hero, 4-details 6)
         spiky = clump | leg_back | belly
-        L = np.where(spiky, 0.068, L)
+        L = np.where(spiky, 0.05, L)
         W = np.where(spiky, 0.028, W)
-        lift = np.where(spiky, _rad(22), lift)
+        lift = np.where(spiky, _rad(14), lift)
         sp = np.where(spiky, 0.028, sp)
         L = np.where(tail, 0.12, L)
         W = np.where(tail, 0.056, W)
@@ -946,9 +1061,9 @@ def card_params(p, n, layer: int):
         # and a second layer of the lynx ruff's clumps
         tt = z['tail_t']
         ruff2 = head & ~z['ear'] & (hax > 0.09) & (hy > -0.42) & (hy < -0.26) & (hz > 0.7) & (hz < 0.88)
-        L = np.where(ruff2, 0.12, 0.13 + 0.07 * smooth(0.25, 0.85, tt))
+        L = np.where(ruff2, 0.112, 0.13 + 0.07 * smooth(0.25, 0.85, tt))     # Nov 12: the ruff's outer tier
         W = np.where(ruff2, 0.03, 0.06)
-        lift = np.where(ruff2, _rad(40), _rad(32) + _rad(14) * smooth(0.5, 0.95, tt))
+        lift = np.where(ruff2, _rad(24), _rad(32) + _rad(14) * smooth(0.5, 0.95, tt))
         sp = np.where(ruff2, 0.018, 0.019 - 0.004 * smooth(0.4, 0.9, tt))
         skip = ~(z['tail'] | ruff2) | (z['tail'] & (tt < 0.03))
     # none on the inner ear's skin, none where the pale marking meets the fur (a pale card over charcoal glittered),
@@ -956,6 +1071,14 @@ def card_params(p, n, layer: int):
     # round 3: and none on the crown (their dark roots showed as rectangles)
     skip = (skip | (z['ear_inner'] & (z['ear_v'] > 0.25)) | ((light > 0.08) & (light < 0.92)) | (on_leaf & (z['tail_t'] < FLAME_START))
             | crest | (z['crown'] & ~z['ear'])
+            # Nov 12: none in the tail's flame (the plume's tongues are the flame; the cards there were straws and
+            # shards), none on the lower jaw or under it (they hid the open mouth)
+            # Nov 13: the fur runs on a little into the flame (cards there take the flame's start: a gradient out of
+            # the black fur, no hem), and the spine chain's band is left bare so the embers show through
+            | (z['tail'] & (z['tail_t'] > FLAME_START + 0.08)) | (MO.jaw_weight(hl) > 0.02)
+            | ((em['env'] > 0.15) & (np.abs(em['tau']) < 0.5) & ~(z['tail'] & (z['tail_t'] > FLAME_START)))
+            | ((light > 0.5) & ~z['bib'])
+            | (z['bib'] & (zz > 0.6) & ~(head & ~z['chin']))
             # round 3b: and no pale cards on the hind half (the inner thighs and the rump showed leftover pale cards)
             | ((light > 0.08) & (y > 0.1)))
     return np.where(skip, np.nan, sp), L, W, lift, z
@@ -978,9 +1101,11 @@ def tuft_colours(pal: dict, tpos: np.ndarray, lrand: np.ndarray) -> np.ndarray:
     lr = np.asarray(lrand, np.float64)[:, None]
     # round 3b: the tips end in the gold core (#FFD15C), not the pale hot mix (it read peach in the film)
     deep, ember, hot = lin(col['ember_deep']), lin(col['ember']), lin(col['ember_core'])
-    k1 = smooth(0.0, 0.45, t)
-    k2 = smooth(0.45, 1.0, t)
-    rgb = deep[None] * (1 - k1) + ember[None] * k1
+    # Nov 12: the ember colour at the root, gold at the tips (no pale core: it blew out to white under the bloom)
+    hot = lin(col['ember_core_paint'])
+    k1 = smooth(0.0, 0.15, t)
+    k2 = smooth(0.35, 1.0, t) * 0.9
+    rgb = deep[None] * (1 - k1) * 0.3 + ember[None] * (1 - (1 - k1) * 0.3)
     rgb = rgb * (1 - k2) + hot[None] * k2
     return rgb * (0.88 + 0.24 * lr)
 
@@ -1011,18 +1136,30 @@ SPINE_KEYS = [  # (point, period of the pattern (m), half width of the band (m),
 ]
 # the shoulder's line (down the front of the shoulder) and the hind leg's (down the back of the thigh to the hock),
 # 2-turnaround.png side view; both sides
-LIMB_KEYS = {
-    'shoulder': [((0.108, -0.115, 0.585), 0.052), ((0.118, -0.135, 0.505), 0.05), ((0.11, -0.17, 0.43), 0.046)],
-    'hind': [((0.1, 0.32, 0.58), 0.055), ((0.108, 0.345, 0.48), 0.052), ((0.1, 0.37, 0.38), 0.048), ((0.097, 0.425, 0.275), 0.044)],
-}
+# Nov 13 (the review: a bar cluster on the shoulders and a one-sided ladder on the thigh): no limb lines; the one spine
+# chain carries the embers
+LIMB_KEYS: dict = {}
 # (row, τ, phase, half length, half width, keep): round 2, a fused herringbone (round 1's two parallel rows of even
 # ovals read as a dotted line): fat diamonds on the midline, the chevron arms' inner tips touching them
 # round 3b: the flanking leaves smaller, angled back along the body (28°, not 48°) and staggered row to row, so the
 # chain reads as one herringbone on the midline (round 3's centre, side and outer leaves lined up into bars across the
 # back in the 3/4 view and the clips)
-EMBER_ROWS = ((0, 0.0, 0.0, 0.44, 0.22, 1.0), (1, 0.46, 0.5, 0.3, 0.11, 0.95), (-1, -0.46, 0.5, 0.3, 0.11, 0.95),
-              (2, 0.86, 0.22, 0.21, 0.08, 0.7), (-2, -0.86, 0.22, 0.21, 0.08, 0.7))
-EMBER_TILT = math.radians(28)      # the side rows' leaves angle back and out from the curve (chevrons)
+# Nov 12 (from straight behind the chain read as a dotted line): the midline diamonds touch, one continuous chain; the
+# chevron arms sit between them with their inner tips on it, angled back 38° (a V from behind, short angled marks from
+# the side, not bars); a sparse outer row lies nearly along the body (20°). The 7th value is the row's own tilt.
+# Nov 13 (final round, the originality must): ONE chain of leaves, staggered two abreast along the spine, each leaf much
+# longer along the spine than across and angled only a little outward, so the back camera sees chevrons, never bars
+EMBER_ROWS = ((1, 0.2, 0.0, 0.42, 0.12, 1.0, 12.0), (-1, -0.2, 0.5, 0.42, 0.12, 1.0, 12.0))
+# Nov 12 (from behind: horizontal arcs and dots, a famous fire kitten's stripes): one chain of nested, forward-pointing
+# chevrons that touch: each midline diamond carries two arms from its middle, swept back 50° (a '^' from behind); no
+# outer row
+EMBER_TILT = math.radians(28)      # (the default tilt of a row without its own)
+
+
+def _row_tilt(row_spec) -> float:
+    row = row_spec[0]
+    deg = row_spec[6] if len(row_spec) > 6 else math.degrees(EMBER_TILT)
+    return math.radians(deg) * (1 if row > 0 else -1 if row < 0 else 0)
 EMBER_JITTER = (0.65, 0.6)         # leaf size = (a + b · random) per leaf: uneven, like hot coals
 
 
@@ -1130,12 +1267,13 @@ def ember_coords(p: np.ndarray, pal: dict | None = None) -> dict[str, np.ndarray
 def leaf_np(sig: np.ndarray, tau: np.ndarray, size: float = 1.0, seed: int = 0) -> np.ndarray:
     """The herringbone in numpy (the shape preview; the bake draws the same thing per pixel in `body_material`)."""
     out = np.zeros(len(sig))
-    for row, tr, ph, a, b, keep in EMBER_ROWS:
+    for spec in EMBER_ROWS:
+        row, tr, ph, a, b, keep = spec[:6]
         u = sig - ph
         cell = np.floor(u)
         lx = u - cell - 0.5
         ly = tau - tr
-        th = EMBER_TILT * np.sign(row)
+        th = _row_tilt(spec)
         xr = lx * math.cos(th) + ly * math.sin(th)
         yr = -lx * math.sin(th) + ly * math.cos(th)
         h = np.sin(cell * 12.9898 + row * 78.233 + seed) * 43758.5453
@@ -1164,10 +1302,13 @@ def light_mask(p: np.ndarray, z: dict) -> np.ndarray:
     face = np.maximum(ell_soft(p, MUZZLE[0], tuple(r * 1.25 for r in MUZZLE[1]), 0.15), ell_soft(hl, (0.0, -0.505, 0.745), (0.07, 0.06, 0.04), 0.2))
     # the lower face: below a line that runs under the eyes, from the top of the nose out to the cheeks
     under = smooth(0.012, -0.006, hz - (0.8 + 0.035 * smooth(0.0, 0.06, hax) - 0.03 * smooth(0.11, 0.17, hax)))
-    face = np.maximum(face, under * z['head'] * (hy < -0.36) * ~z['ear'] * smooth(0.19, 0.15, hax))
+    # Nov 12: not out to the cheeks' edges (the ruff there takes the dark coat: pale ruff cards read as straw)
+    face = np.maximum(face, under * z['head'] * (hy < -0.36) * ~z['ear'] * smooth(0.155, 0.12, hax))
     face = np.where(z['ear'], 0.0, face)
-    throat = ell_soft(hl, (0.0, -0.4, 0.68), (0.1, 0.09, 0.09), 0.2) * smooth(-0.3, -0.36, hy)
-    bib_w = 0.095 + 0.05 * smooth(0.45, 0.68, zz)       # round 2: a broad bib between the forelegs
+    # Nov 13: the throat's pale only at the front (it wrapped the neck like a collar), and the bib narrows to a point
+    # between the forelegs
+    throat = ell_soft(hl, (0.0, -0.42, 0.68), (0.06, 0.08, 0.09), 0.2) * smooth(-0.3, -0.36, hy)
+    bib_w = 0.02 + 0.09 * smooth(0.38, 0.6, zz) - 0.05 * smooth(0.62, 0.72, zz)
     bib = smooth(bib_w + 0.012, bib_w - 0.012, ax) * smooth(-0.19, -0.24, y) * smooth(0.36, 0.4, zz) * smooth(0.78, 0.74, zz)
     bib *= ~z['tail']
     light = np.maximum(face, np.maximum(throat, bib) * (~z['head'] | z['chin'] | (hz < 0.74)))
@@ -1200,7 +1341,8 @@ def ear_skin_mask(z: dict) -> np.ndarray:
     """0..1: the inner ear's bare salmon skin, high up toward the outer edge of the cup (round 3, 1-hero)."""
     u, v = z['ear_u'], z['ear_v']
     cup = z['ear_inner'].astype(float)
-    return cup * smooth(0.48, 0.66, v) * smooth(0.95, 0.85, v) * smooth(0.32, 0.48, u) * smooth(0.88, 0.76, u)
+    # Nov 13: salmon skin over most of the cup, cream tufts only low and at the rim
+    return cup * smooth(0.14, 0.3, v) * smooth(0.97, 0.88, v) * smooth(0.12, 0.26, u) * smooth(0.9, 0.8, u)
 
 
 def ear_paint(p: np.ndarray, z: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -1276,6 +1418,10 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     light = _light_of(ob, root, pos, kind, tpos)
     # round 2: the pale marking (1-hero.png, 2-turnaround.png), the belly colour lifted toward cream (`colours`)
     rgb = lin(col['fur'])[None, :] * (1 - light[:, None]) + lin(col['pale'])[None, :] * light[:, None]
+    # Nov 13: the muzzle and cheeks take the hero's lighter cream (the bib keeps the warmer, darker pale)
+    hz_r = Hinv(root)[:, 2]
+    face_k = light * (zones(root)['head'] & (hz_r > 0.72)).astype(float)
+    rgb = rgb * (1 - face_k[:, None]) + lin(col['face_pale'])[None, :] * face_k[:, None]
     zr = zones(root)
     skin, efur = ear_paint(root, zr)
     rgb = rgb * (1 - efur[:, None]) + lin(col['ear_fur'])[None, :] * efur[:, None]
@@ -1293,6 +1439,8 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     root_k = np.where(is_lock, 0.42 * (1.0 - np.clip(tpos, 0, 1)) ** 1.5, 0.0) * (1.0 - light) * (1.0 - skin) * (1.0 - eye_k)
     rgb = rgb * (1 - root_k[:, None]) + lin(col['shadow'])[None, :] * root_k[:, None]
     frost = 0.3 * tip * (1.0 - skin) * (1.0 - efur)
+    # Nov 12: the brow, crown and eye area keep the charcoal coat (their frosted tips read mid grey, a tabby)
+    frost = frost * (1.0 - 0.7 * (zr['head'] & ~zr['muzzle'] & (light < 0.5)))
     frost_col = (lin(col['frost'])[None, :] * (1 - light[:, None])
                  + lin(C.mix_hex(col['pale'], '#FFF8EE', 0.45))[None, :] * light[:, None])
     rgb = rgb * (1 - frost[:, None]) + frost_col * frost[:, None]
@@ -1310,6 +1458,9 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     rough = rough * (1 - glossy) + 0.28 * glossy
     # round 3b: a matte crown (its sheen read as a shiny dome)
     rough = np.where(zr['crown'] & ~zr['ear'], np.maximum(rough, 0.86), rough)
+    # Nov 13: the forehead and the bridge matte too (a specular band read as a vinyl helmet)
+    rough = np.where(zr['head'] & ~zr['ear'] & ~zr['nose'], np.maximum(rough, 0.9), rough)
+    coat = np.where(zr['head'] & ~zr['nose'], np.minimum(coat, 0.01), coat)
     coat = coat * (1 - glossy) + 0.7 * glossy
     # round 2: the ear tips burn where the ember tufts grow (the tufts are tuft locks, which can't glow; the skin and
     # the lying locks under them can), and the high tuft locks baked at their roots glow too
@@ -1358,7 +1509,10 @@ def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object
         co = co.reshape(-1, 3).astype(np.float64)
         fu = S.attr_array(ob, 'flame_u').astype(np.float64) if 'flame_u' in ob.data.attributes else np.zeros(n)
         is_flame = (S.attr_array(ob, 'flame_part') != 0) if 'flame_part' in ob.data.attributes else np.zeros(n, bool)
+        mp = S.attr_array(ob, 'mouth_part').astype(np.float64) if 'mouth_part' in ob.data.attributes else np.zeros(n)
         root = smooth(0.06, 0.02, np.abs(Hinv(co)[:, 0]) - 0.03)[:, None]
+        mouth_rgb = mouth_colours(co, mp)
+        is_mouth = np.abs(mp) > 0.5
         for attr, pal in [('paint', PALETTE)] + [(U.variant_attr(vid, ID), var) for vid, var in VARIANTS.items()]:
             c = colours(pal)
             # the whiskers: pale, a little glossy, slightly darker at the root
@@ -1366,12 +1520,33 @@ def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object
             # the flames: deep ember at the root, the ember colour, hot yellow-orange at the tips (tuft_colours)
             flame = tuft_colours(pal, fu, np.full(n, 0.5))
             rgb = np.where(is_flame[:, None], flame, rgb)
+            rgb = np.where(is_mouth[:, None], mouth_rgb, rgb)
             S.set_colour_attr(ob, attr, rgb)
-        rough = np.where(is_flame, 0.55, 0.42)
-        coat = np.where(is_flame, 0.0, 0.35)
+        rough = np.where(is_flame, 0.55, np.where(is_mouth, 0.5, 0.42))
+        coat = np.where(is_flame, 0.0, np.where(is_mouth, 0.25, 0.35))
         S.set_colour_attr(ob, 'rough', np.stack([np.ones(n), rough, coat], axis=1))
         # the flames glow, hotter toward their tips; the whiskers don't
-        S.add_attr(ob, 'glow', np.where(is_flame, 0.6 + 0.4 * np.clip(fu, 0, 1), 0.0))
+        S.add_attr(ob, 'glow', np.where(is_flame, 0.45 + 0.35 * np.clip(fu, 0, 1), 0.0))   # capped (no white core)
+
+
+# the mouth's colours (the same on every variant): a dark rose palate and gums, a pink tongue down the middle of the
+# floor, a deep throat and ivory fangs (3-faces happy)
+# Nov 13: darker inside (it read as a pale pink tongue tip); a dark lip rim so the closed seam reads as a hairline
+MOUTH_COLS = {'palate': '#3A1419', 'gum': '#4A1A22', 'tongue': '#B04A5A', 'throat': '#14060A', 'fang': '#F4EEE4', 'lip': '#1A1012'}
+
+
+def mouth_colours(co: np.ndarray, mp: np.ndarray) -> np.ndarray:
+    hl = Hinv(co)
+    f = MO.lip_f(hl)
+    rgb = np.tile(lin(MOUTH_COLS['palate']), (len(co), 1))
+    tongue = smooth(0.026, 0.016, np.abs(hl[:, 0])) * smooth(-0.44, -0.47, hl[:, 1]) * smooth(-0.0015, -0.005, f)
+    floor = np.where((mp < -0.5)[:, None], lin(MOUTH_COLS['gum'])[None] * (1 - tongue[:, None]) + lin(MOUTH_COLS['tongue'])[None] * tongue[:, None], rgb)
+    rgb = np.where((mp < -0.5)[:, None], floor, rgb)
+    rgb = np.where((np.abs(mp - 2) < 0.5)[:, None], lin(MOUTH_COLS['throat'])[None], rgb)
+    rgb = np.where((np.abs(mp - 3) < 0.5)[:, None], lin(MOUTH_COLS['fang'])[None], rgb)
+    # the lips' inner rims, dark where the inner skin meets the cut
+    rim = smooth(0.008, 0.002, np.abs(f)) * (np.abs(mp) < 1.5)
+    return rgb * (1 - rim[:, None]) + lin(MOUTH_COLS['lip'])[None] * rim[:, None]
 
 
 # ----------------------------------------------------------------------------- marks: the explicit, crisp ones
@@ -1397,9 +1572,18 @@ def forehead_crest() -> list[tuple]:
         for s in (1, -1):
             d = up * math.cos(math.radians(44)) + v3((s, 0.0, 0.0)) * math.sin(math.radians(44))
             out.append((tuple(base + d * a * 0.9 + v3((0.005 * s, 0.0, 0.0))), tuple(d), a, 0.0068, 'crest'))
-    for p, a, b in (((0.0, -0.37, 1.0), 0.02, 0.0085), ((0.0, -0.305, 1.002), 0.019, 0.008), ((0.0, -0.243, 0.982), 0.018, 0.0075),
-                    ((0.0, -0.19, 0.94), 0.017, 0.007), ((0.0, -0.16, 0.875), 0.016, 0.0065)):
-        out.append((p, (0.0, 1.0, -0.4), a, b, 'crown'))
+    # Nov 12: over the crown to the nape, the same chain as the back: touching diamonds, each with two arms swept back
+    # (round 3's five separate diamonds read as a dotted line from behind)
+    crown = [v3(q) for q in ((0.0, -0.395, 0.998), (0.0, -0.345, 1.004), (0.0, -0.293, 0.995), (0.0, -0.243, 0.974),
+                             (0.0, -0.2, 0.94), (0.0, -0.168, 0.895))]
+    for i, q in enumerate(crown):
+        nxt = crown[min(i + 1, len(crown) - 1)] - crown[max(i - 1, 0)]
+        back = norm(nxt[None])[0]
+        sz = 1.0 - 0.15 * i / (len(crown) - 1)
+        out.append((tuple(q), tuple(back), 0.027 * sz, 0.0095 * sz, 'crown'))
+        for s in (1, -1):
+            d = back * math.cos(math.radians(50)) + v3((s, 0.0, 0.0)) * math.sin(math.radians(50))
+            out.append((tuple(q + back * 0.006 + d * 0.013 * sz), tuple(d), 0.015 * sz, 0.005 * sz, 'crown'))
     return out
 
 
@@ -1420,10 +1604,10 @@ def make_marks(hi_body: bpy.types.Object):
     bvh = BVHTree.FromObject(hi_body, bpy.context.evaluated_depsgraph_get())
     leaves = []
     for p, d, a, b, kind in forehead_crest():
-        leaves.append(_snap(bvh, H(p), d, a * HEAD_K, b * HEAD_K, kind))
+        leaves.append(_snap(bvh, H(p), Hd(d), a * HEAD_K, b * HEAD_K, kind))
     for s in (1, -1):
         for p, d, a, b, kind in cheek_embers():
-            leaves.append(_snap(bvh, H((p[0] * s, p[1], p[2])), (d[0] * s, d[1], d[2]), a * HEAD_K, b * HEAD_K, kind))
+            leaves.append(_snap(bvh, H((p[0] * s, p[1], p[2])), Hd((d[0] * s, d[1], d[2])), a * HEAD_K, b * HEAD_K, kind))
     for leg in LEGS:
         for t in toe_centres(leg):
             # the claw slit: a thin glowing crescent down the front of the toe, into its tip (1-hero, 4-details 3)
@@ -1463,12 +1647,13 @@ def _herringbone(nb: NB, size: float):
     tau = nb.attribute('ember_t').outputs['Fac']
     mask = None
     core = None
-    for row, tr, ph, a, b, keep in EMBER_ROWS:
+    for spec in EMBER_ROWS:
+        row, tr, ph, a, b, keep = spec[:6]
         u = nb.math('SUBTRACT', sig, ph)
         cell = nb.math('FLOOR', u)
         lx = nb.math('SUBTRACT', nb.math('SUBTRACT', u, cell), 0.5)
         ly = nb.math('SUBTRACT', tau, tr)
-        th = EMBER_TILT * (1 if row > 0 else -1 if row < 0 else 0)
+        th = _row_tilt(spec)
         ct, st = math.cos(th), math.sin(th)
         xr = nb.math('ADD', nb.math('MULTIPLY', lx, ct), nb.math('MULTIPLY', ly, st))
         yr = nb.math('ADD', nb.math('MULTIPLY', lx, -st), nb.math('MULTIPLY', ly, ct))
@@ -1607,7 +1792,7 @@ def body_material(name: str, attr: str, pal: dict, marks, glow: bool = False) ->
     # the tail's flame end: deep ember at the front, hot toward the tip
     core_gold = nb.rgb(C.lin(col['ember_core']))
     # the tail's last third: charcoal → ember orange → the gold core toward the tip
-    flame_col = nb.mix(L['flame_hot'], ember, core_gold)
+    flame_col = nb.mix(L['flame_hot'], ember, nb.rgb(C.lin(col['ember_core_paint'])))
     flame_col = nb.mix(nb.math('SUBTRACT', 1.0, L['flame']), flame_col, deep)
     fl = nb.math('MULTIPLY', L['flame'], nb.math('GREATER_THAN', nb.attribute('tail_t').outputs['Fac'], 0.0))
     if not glow:
@@ -1618,11 +1803,12 @@ def body_material(name: str, attr: str, pal: dict, marks, glow: bool = False) ->
     else:
         fcol = flame_col
     c = nb.mix(fl, c, fcol)
-    leaf_col = nb.mix(L['core'], ember, core_gold)
+    leaf_col = nb.mix(L['core'], nb.rgb(C.lin(col['ember_leaf'])), nb.rgb(C.lin(col['ember_core_paint'])))
     c = nb.mix(L['leaf'], c, leaf_col)
     c = nb.mix(L['spark'], c, hot)
     if L['dashes'] is not None:
-        mark_col = nb.mix(L['dcore'], ember, core_gold)
+        # Nov 12: the forehead mark and the cheek fans read yellow: mostly the ember colour, a small hot core
+        mark_col = nb.mix(nb.math('MULTIPLY', L['dcore'], 0.55), nb.rgb(C.lin(col['ember_leaf'])), nb.rgb(C.lin(col['ember_core_paint'])))
         c = nb.mix(L['dashes'], c, mark_col)
     if L['claws'] is not None:
         c = nb.mix(L['claws'], c, hot)
@@ -1632,11 +1818,12 @@ def body_material(name: str, attr: str, pal: dict, marks, glow: bool = False) ->
         # dashes and the claw tips
         # round 3b: the leaves glow less (the bloom washed their centres to pale apricot, #FFBC87 measured); the tail's
         # flame end and the claws keep their full glow
-        g = nb.math('MAXIMUM', nb.math('MULTIPLY', L['leaf'], 0.45), nb.math('MULTIPLY', L['core'], 0.62))
-        g = nb.math('MAXIMUM', g, nb.math('MULTIPLY', fl, nb.math('ADD', 0.55, nb.math('MULTIPLY', L['flame_hot'], 0.45))))
+        g = nb.math('MAXIMUM', nb.math('MULTIPLY', L['leaf'], EMBER_FILM['leaf_glow']), nb.math('MULTIPLY', L['core'], EMBER_FILM['core_glow']))
+        g = nb.math('MAXIMUM', g, nb.math('MULTIPLY', fl, nb.math('ADD', 0.35, nb.math('MULTIPLY', L['flame_hot'], 0.25))))
         g = nb.math('MAXIMUM', g, nb.math('MULTIPLY', L['spark'], 0.6))
         if L['dashes'] is not None:
-            g = nb.math('MAXIMUM', g, nb.math('MAXIMUM', nb.math('MULTIPLY', L['dashes'], 0.5), nb.math('MULTIPLY', L['dcore'], 0.62)))
+            g = nb.math('MAXIMUM', g, nb.math('MAXIMUM', nb.math('MULTIPLY', L['dashes'], EMBER_FILM['leaf_glow']),
+                                              nb.math('MULTIPLY', L['dcore'], EMBER_FILM['core_glow'])))
         if L['claws'] is not None:
             g = nb.math('MAXIMUM', g, L['claws'])
         g = nb.math('MAXIMUM', g, nb.attribute('glow').outputs['Fac'])     # the per-vertex glow (ear tips, tuft roots)
@@ -1732,6 +1919,10 @@ def rig_p() -> dict:
         # The jaw stays merged into the head: the model has a closed, painted smile and no mouth cavity, so opening the
         # jaw would only stretch the chin
         'strike_style': 'swipe',
+        'swipe_lift': -20.0,        # Nov 12: the paw rakes low, so the forearm doesn't sit over the muzzle like a tube
+        'jaw_open': True,           # the smiles and the win open the mouth too (the jaw is merged, then given back)
+        # Nov 12: the jaw hinges behind the mouth's corners and runs to the chin; the lower jaw's skin rides it
+        'jaw': {'head': tuple(map(float, H(MO.HINGE_L))), 'tail': tuple(map(float, H(MO.CHIN_L)))},
     }
 
 
@@ -1768,15 +1959,20 @@ def body_weight_regions(co: np.ndarray, names: list[str]):
     if zt.any():
         pts = rig_p()['tail_points']
         out.append((zt, U.chain_weights(co[zt], pts, tail_bone_names(), 'hips')))
+    # Nov 12: the lower jaw (below the cut lips, fading back to the hinge and down into the throat) rides the jaw
+    w = MO.jaw_weight(Hinv(co))          # (the chin and the lower jaw lie below the 'head' zone)
+    jm = w > 0.004
+    if jm.any():
+        out.append((jm, {'jaw': w[jm], 'head': 1.0 - w[jm]}))
     return out
 
 
 CLIP_CALM = {
     '*': {'ear': 0.6, 'tail': 0.85},
     # round 2: the tail curls up in the idles like 1-hero (the plan lifts tail.1..N; this lifts them further)
-    'battle_idle': {'ear': 0.6, 'tail': 1.5},
-    'idle_happy': {'ear': 0.6, 'tail': 1.4},
-    'idle': {'ear': 0.6, 'tail': 1.3},
+    'battle_idle': {'ear': 0.6, 'tail': 1.1},     # Nov 13: the tail lower, so its tip stays off the cheek from the front
+    'idle_happy': {'ear': 0.6, 'tail': 1.1},
+    'idle': {'ear': 0.6, 'tail': 1.0},
     'ko': {'ear': 0.2, 'tail': 0.45},
     'hit_heavy': {'ear': 0.3, 'tail': 0.55},
     'win': {'ear': 0.4, 'tail': 0.6},
@@ -1789,7 +1985,9 @@ FACE_NOTE = ('The eyes are glossy gold lenses (lo_eyes) with the iris, the oval 
              'the whisker dots are baked into the body. No face sheet and no morphs: expressions in clips\' `faces` are '
              'hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed '
              'lid\'s lash line and sinks into the head, showing the closed lid sculpted and painted under it. The embers '
-             '(the spine herringbone, the tail end, the ear tufts, the cheek dashes, the claws) are painted in the atlas.')
+             '(the spine herringbone, the tail end, the ear tufts, the cheek dashes, the claws) are painted in the atlas.'
+             ' The mouth opens: the lips are cut along the crease under the whisker pads, the lower jaw rides the jaw bone, and '
+             'a mouth prop (palate, tongue, throat and two small fangs, inside the lips) shows when it does.')
 
 REVIEW = {
     'centre': (0.0, 0.17, 0.55),

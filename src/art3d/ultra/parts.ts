@@ -10,7 +10,7 @@ import type { Kind } from '../perf/content.ts'
  */
 
 /** The sidecar's per-variant entries, as far as the parts go. */
-export type VariantParts = Readonly<Record<string, { meshes?: readonly string[] } | undefined>>
+export type VariantParts = Readonly<Record<string, { meshes?: readonly string[]; cards?: boolean } | undefined>>
 
 /** GLTFLoader drops these characters from node names (PropertyBinding.sanitizeNodeName). */
 export function sanitizeNodeName(name: string): string {
@@ -73,11 +73,21 @@ export function variantOfPart(name: string, variants?: VariantParts): string | n
 }
 
 /**
+ * Whether a variant hides the fur cards (a recipe's VARIANT_CARDS_OFF; the sidecar's `variants[vid].cards: false`):
+ * Granite Cobblemaw is bare polished stone, and its moss cards read as fibres on it.
+ */
+export function variantCardsOff(active: string | null, variants?: VariantParts): boolean {
+  return active !== null && variants?.[active]?.cards === false
+}
+
+/**
  * Whether a part shows for the active look (`active`: a variant id, or null for the breed's usual look): every
- * always-worn part does; a variant's own props only with that variant; the colour holders never.
+ * always-worn part does, except the fur cards on a variant that hides them; a variant's own props only with that
+ * variant; the colour holders never.
  */
 export function partVisible(name: string, active: string | null, variants?: VariantParts): boolean {
   if (name.startsWith('__variant_')) return false
+  if (variantCardsOff(active, variants) && partKind(name) === 'card') return false
   const owner = variantOfPart(name, variants)
   return owner === null || owner === active
 }
@@ -137,4 +147,51 @@ export function cardEdgeFadeOf(sidecar: unknown): readonly [number, number] | nu
 export function normalScaleOf(sidecar: unknown): number | null {
   const s = (sidecar as { normal?: { scale?: unknown } } | null)?.normal?.scale
   return typeof s === 'number' && Number.isFinite(s) && s > 0 && s <= 2 ? s : null
+}
+
+/**
+ * The sidecar's `body: { sheen }` (a recipe's BODY_SHEEN): the body's fur sheen, instead of film.furSheen (a stone
+ * breed wants none: on Cobblemaw's jaw, chest and legs it read as felt with a soft halo). Null when absent or invalid
+ * (finite, 0 ≤ sheen ≤ 1): the film's default.
+ */
+export function bodySheenOf(sidecar: unknown): number | null {
+  const s = (sidecar as { body?: { sheen?: unknown } } | null)?.body?.sheen
+  return typeof s === 'number' && Number.isFinite(s) && s >= 0 && s <= 1 ? s : null
+}
+
+/**
+ * Whether a variant ships its own ORM map (a recipe's VARIANT_ORM; the sidecar's `variants[vid].orm: true`): its own
+ * roughness, clearcoat and glow mask, carried by its `__variant_<vid>` holder. Otherwise (and for the usual look) the
+ * breed's shared ORM, exactly as before.
+ */
+export function variantHasOwnOrm(sidecar: unknown, variant: string | null): boolean {
+  if (!variant) return false
+  const v = (sidecar as { variants?: Record<string, { orm?: unknown } | undefined> } | null)?.variants?.[variant]
+  return v?.orm === true
+}
+
+/**
+ * Whether a variant's eyes differ from the usual look's (its `variants[vid].eyeColor` against the sidecar's
+ * `palette.eye`). Its colour atlas then holds its own eye colours (a recipe's eye_material with the palette parameter),
+ * so the eyes take that atlas too; otherwise they keep the usual look's, exactly as before.
+ */
+export function variantEyesDiffer(sidecar: unknown, variant: string | null): boolean {
+  if (!variant) return false
+  const s = sidecar as { palette?: { eye?: unknown }; variants?: Record<string, { eyeColor?: unknown } | undefined> } | null
+  const own = s?.variants?.[variant]?.eyeColor
+  const base = s?.palette?.eye
+  return typeof own === 'string' && typeof base === 'string' && own.toLowerCase() !== base.toLowerCase()
+}
+
+/**
+ * The glow for the look on show: a variant with its own ORM glows by its own `variants[vid].glow` (null: it doesn't
+ * glow, even on a breed that does; missing: the breed's glow), as its ORM's alpha holds its own mask; any other look
+ * glows by the breed's `glow`.
+ */
+export function glowFor(sidecar: unknown, variant: string | null, maxStrength: number): GlowSpec | null {
+  if (variantHasOwnOrm(sidecar, variant)) {
+    const v = (sidecar as { variants: Record<string, { glow?: unknown }> }).variants[variant!]!
+    if ('glow' in v) return glowOf({ glow: v.glow }, maxStrength)
+  }
+  return glowOf(sidecar, maxStrength)
 }

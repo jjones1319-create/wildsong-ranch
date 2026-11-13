@@ -57,6 +57,10 @@ CORE = (0.11, 0.19)                                       # the shell's solid ce
 # review 2: the inner turns were thinner than the outer coil, so the centre was a shadowed pocket of grey cards; from the
 # top of the spiral on, every turn is at least this thick out of the plane: the disc's faces are flush
 FLUSH = (460.0, 520.0, 0.19)
+# upgrade round 2 (from behind the tail was an orange ball with a salmon fade, no spiral: the root sweep bulges 2-4 cm
+# past the inner disc on the back face): the disc reaches this much further out on the back (−NX) face, flush with the
+# sweep, so the spiral shows from behind as in 2-turnaround's back view
+BACK_FLUSH = 0.036
 
 
 def _catmull(xs: np.ndarray, ys: np.ndarray, x: np.ndarray) -> np.ndarray:
@@ -93,6 +97,8 @@ def _build():
 
 
 PATH = _build()
+# each sample's out-of-plane radius as parts() makes it
+ZR = np.maximum(PATH['rho'] * (1.0 + (K - 1.0) * smooth(0.0, 0.12, PATH['s'])), PATH['zmin'])
 LENGTH = PATH['length']
 BASE = PATH['P'][0]
 TIP = PATH['P'][-1]
@@ -145,11 +151,107 @@ def parts() -> list[Part]:
         zr = max(rho * kk, float(c['zmin'][0]))
         out.append(Part(f'tail{k:03d}', 'sphere', loc=tuple(c['P'][0]), radius=1.0, scale=(rho, rho * 0.95, zr),
                         rot=_euler(across, T)))
+        back = BACK_FLUSH * float(smooth(FLUSH[0], FLUSH[1], c['theta'][0]))
+        if back > 0.004:
+            out.append(Part(f'tailb{k:03d}', 'sphere', loc=tuple(c['P'][0] - NX * back), radius=1.0, scale=(rho, rho * 0.95, zr),
+                            rot=_euler(across, T)))
         s += max(0.006, 0.15 * rho) / LENGTH
         k += 1
     out.append(Part('tailcore', 'sphere', loc=tuple(O + NX * 0.004), radius=1.0, scale=(CORE[0], CORE[0], CORE[1]),
                     rot=_euler(AX, BX)))
+    out.append(Part('tailcoreb', 'sphere', loc=tuple(O + NX * (0.004 - BACK_FLUSH)), radius=1.0, scale=(CORE[0], CORE[0], CORE[1]),
+                    rot=_euler(AX, BX)))
     return out
+
+
+# v1.23.0 (the owner: "do all of the upgrade"): from the back of the spiral round to its top, the outer coil and the
+# turn inside it (θ and θ + 360°) were two round brushes meeting in a V-groove ~9 cm deep, which rendered as a thin black
+# crease (the bake's AO and the lying locks' shadows filled it, in the low back a step between the flush inner disc and
+# the deeper root sweep). The bridge fills it: a closed slab from one brush's centre line to the other's, whose faces run
+# from one brush's face to the other's and dip BRIDGE_DIP at the middle, so the spiral reads as the orange / cream border
+# with a soft line between the coils, never a slot.
+# upgrade round 2: from the root (a black seam where the cream coil sat on the tail's root) into the spiral's eye
+BRIDGE = (256.0, 470.0)        # the outer coil's θ° (the turn inside it is θ + 360°; the tip past 810°)
+BRIDGE_RAMP = 26.0             # the slab grows from its mid-plane over this many degrees at each end
+BRIDGE_DIP = 0.014             # its faces dip this far at the middle
+BRIDGE_INSET = 0.004           # and stay this far inside the brushes' faces on the centre lines (the brushes keep the crest)
+BRIDGE_MIN = 0.03              # its least half thickness (where it ramps in, inside the coils' overlap)
+
+
+def _at_theta(th: np.ndarray) -> dict:
+    """The centre line by spiral angle: r, w, s and the brush's out-of-plane radius (as parts() makes it)."""
+    th = np.clip(np.asarray(th, float), CTRL[0, 0], CTRL[-1, 0])
+    out = {k: np.interp(th, PATH['theta'], PATH[k]) for k in ('r', 'w', 'rho', 'zmin', 's')}
+    kk = 1.0 + (K - 1.0) * smooth(0.0, 0.12, out['s'])
+    out['zr'] = np.maximum(out['rho'] * kk, out['zmin'])
+    out['back'] = BACK_FLUSH * smooth(FLUSH[0], FLUSH[1], th)
+    return out
+
+
+def _bridge_grid(n_th: int = 120, n_t: int = 14):
+    """The slab's front (+NX) and back faces: (n_th, n_t, 3) points each, t 0 on the inner turn's centre line … 1 on the
+    outer coil's."""
+    ths = np.linspace(BRIDGE[0], BRIDGE[1], n_th)
+    o, i = _at_theta(ths), _at_theta(ths + 360.0)
+    a = np.radians(ths)
+    radial = np.cos(a)[:, None] * AX[None] + np.sin(a)[:, None] * BX[None]
+    t = np.linspace(0.0, 1.0, n_t)[None, :]
+    rr = i['r'][:, None] + (o['r'] - i['r'])[:, None] * t
+    wc = i['w'][:, None] + (o['w'] - i['w'])[:, None] * t
+    dip = BRIDGE_INSET + BRIDGE_DIP * np.sin(np.pi * t)
+    front = (i['w'] + i['zr'])[:, None] + ((o['w'] + o['zr']) - (i['w'] + i['zr']))[:, None] * t - dip
+    ib, ob_ = i['w'] - i['zr'] - i['back'], o['w'] - o['zr'] - o['back']
+    back = ib[:, None] + (ob_ - ib)[:, None] * t + dip
+    ramp = (smooth(BRIDGE[0], BRIDGE[0] + BRIDGE_RAMP, ths) * smooth(BRIDGE[1], BRIDGE[1] - BRIDGE_RAMP, ths))[:, None]
+    hf = np.maximum((front - wc) * ramp, BRIDGE_MIN)
+    hb = np.maximum((wc - back) * ramp, BRIDGE_MIN)
+    base = O[None, None] + rr[..., None] * radial[:, None, :]
+    F = base + (wc + hf)[..., None] * NX[None, None]
+    B = base + (wc - hb)[..., None] * NX[None, None]
+    return F, B
+
+
+def bridge(name: str = 'tailbridge'):
+    """The bridge as a closed mesh (joined into the voxel body with the other extras)."""
+    import bmesh
+    import bpy
+    F, B = _bridge_grid()
+    n_th, n_t = F.shape[:2]
+    bm = bmesh.new()
+    vf = [[bm.verts.new(tuple(F[a, b])) for b in range(n_t)] for a in range(n_th)]
+    vb = [[bm.verts.new(tuple(B[a, b])) for b in range(n_t)] for a in range(n_th)]
+    for a in range(n_th - 1):
+        for b in range(n_t - 1):
+            bm.faces.new((vf[a][b], vf[a + 1][b], vf[a + 1][b + 1], vf[a][b + 1]))
+            bm.faces.new((vb[a][b], vb[a][b + 1], vb[a + 1][b + 1], vb[a + 1][b]))
+        for b in (0, n_t - 1):
+            bm.faces.new((vf[a][b], vb[a][b], vb[a + 1][b], vf[a + 1][b]))
+    for a in (0, n_th - 1):
+        for b in range(n_t - 1):
+            bm.faces.new((vf[a][b], vf[a][b + 1], vb[a][b + 1], vb[a][b]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def bridge_blend(p: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Points between a bridged pair of coils: (mask, s of the inner turn, s of the outer coil, t 0 inner … 1 outer, how
+    much of the bridge is there: 0 … 1 over its ramps), so the skin there blends the two coils' bones instead of tearing
+    at the seam when the tail bends."""
+    q = p - O[None]
+    u, v = q @ AX, q @ BX
+    th_o = np.degrees(np.arctan2(v, u)) + 360.0          # (180°, 540°]: the bridged outer coil is BRIDGE[0] … BRIDGE[1]
+    on = (th_o >= BRIDGE[0]) & (th_o <= BRIDGE[1])
+    o, i = _at_theta(th_o), _at_theta(th_o + 360.0)
+    rr = np.hypot(u, v)
+    t = np.clip((rr - i['r']) / np.maximum(o['r'] - i['r'], 1e-6), 0.0, 1.0)
+    on &= (rr > i['r']) & (rr < o['r']) & (np.abs(q @ NX) < 0.26)
+    ramp = smooth(BRIDGE[0], BRIDGE[0] + BRIDGE_RAMP, th_o) * smooth(BRIDGE[1], BRIDGE[1] - BRIDGE_RAMP, th_o)
+    return on, i['s'], o['s'], t, ramp
 
 
 def lookup(p: np.ndarray, margin: float = 0.1) -> dict:
@@ -160,7 +262,7 @@ def lookup(p: np.ndarray, margin: float = 0.1) -> dict:
     the tail's box get d = 9."""
     k = len(p)
     res = {'s': np.zeros(k), 'theta': np.zeros(k), 'd': np.full(k, 9.0), 'rho': np.full(k, 0.05), 'zmin': np.zeros(k), 'out': np.zeros(k),
-           'T': np.tile(v3((0, 1, 0)), (k, 1))}
+           'T': np.tile(v3((0, 1, 0)), (k, 1)), 'proj': np.zeros(k), 'ip': np.full(k, 9.0), 'op': np.full(k, 9.0), 'zr': np.full(k, 0.05)}
     P = PATH['P']
     ext = PATH['rho'].max() * K + margin
     lo, hi = P.min(0) - ext, P.max(0) + ext
@@ -184,6 +286,13 @@ def lookup(p: np.ndarray, margin: float = 0.1) -> dict:
         res['zmin'][ii] = PATH['zmin'][j]
         res['out'][ii] = (u * PATH['radial'][j]).sum(1)
         res['T'][ii] = PATH['T'][j]
+        # upgrade round 2: the point's own radius in the spiral's plane against its coil's (a crisp border on the
+        # faces, where `out` is only a guess: the salmon fade on the back of the tail)
+        q = p[ii] - O[None]
+        res['proj'][ii] = np.hypot(q @ AX, q @ BX) - PATH['r'][j]
+        res['ip'][ii] = np.linalg.norm(inplane, axis=1)
+        res['op'][ii] = np.abs(dv @ NX) * K
+        res['zr'][ii] = ZR[j]
     return res
 
 
@@ -196,14 +305,31 @@ def reach(L: dict) -> np.ndarray:
 
 
 def zone(p: np.ndarray, L: dict | None = None) -> tuple[np.ndarray, dict]:
-    """(on the tail, the lookup): the brush and its fur, past the first few centimetres of the root."""
+    """(on the tail, the lookup): the brush and its fur, past the first few centimetres of the root. Upgrade round 2:
+    by each coil's own section (an ellipse ρ across, zr out of the plane) plus the bridge and the core: the round reach
+    took the back under the disc for tail (cream flecks on the flank)."""
     if L is None:
         L = lookup(p)
-    on = (L['d'] < reach(L)) & (L['s'] > 0.03)
+    k = smooth(0.05, 0.2, L['s'])
+    m = 0.012 + 0.02 * k
+    zr = L['zr'] + BACK_FLUSH * smooth(FLUSH[0], FLUSH[1], L['theta'])     # the back face's extra reach (generous both ways)
+    ell = (L['ip'] / (L['rho'] * (1.0 + 0.12 * k) + m)) ** 2 + (L['op'] / (zr * (1.0 + 0.1 * k) + m)) ** 2 < 1.0
+    q = p - O[None]
+    core = (np.hypot(q @ AX, q @ BX) < CORE[0] + 0.02) & (q @ NX < CORE[1] + 0.03) & (q @ NX > -(CORE[1] + BACK_FLUSH + 0.03))
+    br, _si, _so, _t, ramp = bridge_blend(p)
+    on = (ell | core | (br & (ramp > 0.05))) & (L['d'] < reach(L) + 0.02) & (L['s'] > 0.03)
     return on, L
 
 
-CREAM_THETA = (378.0, 705.0)        # cream on the coil's outer half from here … all of it (the tip's hook) from here
+CREAM_THETA = (378.0, 738.0)
+# final round (the orange band read thin and broken): the cream takes only the outer part of each coil, from this share
+# of the brush's radius out from its centre line, so the orange band is wider
+CREAM_SHIFT = 0.22
+
+
+def border(L: dict) -> np.ndarray:
+    """Signed distance (in the spiral's plane) from the orange / cream border on each coil (+ on the cream side)."""
+    return L['proj'] - CREAM_SHIFT * L['rho']        # cream on the coil's outer half from here … all of it (the tip's hook) from here
 
 
 def cream(L: dict) -> np.ndarray:
@@ -211,6 +337,6 @@ def cream(L: dict) -> np.ndarray:
     coil cream and its inner half orange, so the orange tongue winds in between the cream coils to the centre
     (2-turnaround.png side, 4-details.png panel 4); the last ~100° (the hook at the centre) all cream. Round 2: with
     every inner turn cream, the spiral read as a plain cream disc."""
-    outer = smooth(-0.18, 0.18, L['out']) * smooth(CREAM_THETA[0] - 12.0, CREAM_THETA[0] + 12.0, L['theta'])
+    outer = smooth(-0.008, 0.008, border(L)) * smooth(CREAM_THETA[0] - 5.0, CREAM_THETA[0] + 5.0, L['theta'])
     hook = smooth(CREAM_THETA[1] - 15.0, CREAM_THETA[1] + 15.0, L['theta'])
     return np.maximum(outer, hook)

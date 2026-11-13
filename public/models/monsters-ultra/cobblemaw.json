@@ -4,17 +4,17 @@
  "plan": "quadruped",
  "version": 2,
  "heightUnits": 225,
- "restHeight": 1.4816,
+ "restHeight": 1.4759,
  "bounds": {
   "min": [
-   -0.6569,
-   -1.134,
-   -0.0141
+   -0.6703,
+   -1.2635,
+   -0.0081
   ],
   "max": [
-   0.6567,
-   0.9544,
-   1.4816
+   0.6555,
+   0.9413,
+   1.4759
   ]
  },
  "bones": {
@@ -95,6 +95,9 @@
     "accent": "#4A4A52",
     "eye": "#F2B544"
    },
+   "orm": true,
+   "glow": null,
+   "cards": false,
    "holder": "__variant_granite-cobblemaw"
   }
  },
@@ -678,25 +681,28 @@
    "faces": []
   }
  },
- "restHeightWithProps": 1.4816,
+ "restHeightWithProps": 1.4759,
  "normal": {
   "scale": 1.1
  },
- "build": "6d5390129c",
+ "body": {
+  "sheen": 0
+ },
+ "build": "87b5237026",
  "buildStats": {
   "cards": {
-   "total": 1784,
+   "total": 3638,
    "layers": [
-    1784
+    3638
    ]
   },
   "tuftLocks": 0,
   "lyingLocks": {
-   "body": 27198
+   "body": 37079
   },
-  "sourceTriangles": 3688148,
+  "sourceTriangles": 4319956,
   "uvOverlapTexels": {
-   "lo_body": 2,
+   "lo_body": 0,
    "lo_eyes": 0,
    "lo_props": 0
   }
@@ -730,69 +736,79 @@
     "ktx2": "cobblemaw_granite_base.ktx2",
     "webp": "cobblemaw_granite_base.webp",
     "px": 2048
+   },
+   "orm": {
+    "ktx2": "cobblemaw_granite_orm.ktx2",
+    "webp": "cobblemaw_granite_orm.webp",
+    "px": 2048
    }
   }
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 72713,
+  "triangles": 80127,
   "trianglesByMesh": {
-   "lo_body": 64000,
-   "lo_cards": 7136,
+   "lo_body": 63998,
+   "lo_cards": 14552,
    "lo_eyes": 624,
    "lo_props": 952,
    "__variant_granite-cobblemaw": 1
   },
-  "vertices": 51450,
-  "cards": 1784,
+  "vertices": 63091,
+  "cards": 3638,
   "cardLayers": 1,
   "joints": 28,
   "animations": 32,
-  "animationBytes": 166460,
+  "animationBytes": 167352,
   "download": {
-   "glb": 4900716,
-   "glbKtx2": 4900716,
-   "glbWebp": 4106920,
+   "glb": 5909424,
+   "glbKtx2": 5909424,
+   "glbWebp": 5000252,
    "ktx2": {
-    "body": 2677683,
-    "variants": 798375
+    "body": 2608698,
+    "variants": 1570166
    },
    "webp": {
-    "body": 1983082,
-    "variants": 699192
+    "body": 1941118,
+    "variants": 1328594
    },
-   "totalKtx2": 4900716,
-   "totalWebp": 4106920
+   "totalKtx2": 5909424,
+   "totalWebp": 5000252
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 753702,
-     "webp": 467300
+     "ktx2": 754428,
+     "webp": 455152
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 1148475,
-     "webp": 1018890
+     "ktx2": 1114734,
+     "webp": 975080
     },
     "orm": {
      "px": 2048,
-     "ktx2": 775506,
-     "webp": 496892
+     "ktx2": 739536,
+     "webp": 510886
     }
    },
    "granite-cobblemaw": {
     "base": {
      "px": 2048,
-     "ktx2": 798375,
-     "webp": 699192
+     "ktx2": 830217,
+     "webp": 801586
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 739949,
+     "webp": 527008
     }
    }
   },
   "attributes": {
-   "lo_body.001": [
+   "lo_body.002": [
     "JOINTS_0",
     "WEIGHTS_0",
     "POSITION",
@@ -835,8 +851,8 @@
  },
  "lite": {
   "file": "cobblemaw.lite.glb",
-  "build": "f2e832a246",
-  "bytes": 1049224,
+  "build": "a58dd58cdc",
+  "bytes": 1188208,
   "triangles": 11687,
   "trianglesByMesh": {
    "lo_body": 10110,
@@ -846,14 +862,14 @@
   },
   "simplified": {
    "lo_body": {
-    "from": 64000,
+    "from": 63998,
     "to": 10110
    }
   },
   "joints": 28,
   "animations": 32,
   "atlasPx": 1024,
-  "textureBytes": 512990,
+  "textureBytes": 637558,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

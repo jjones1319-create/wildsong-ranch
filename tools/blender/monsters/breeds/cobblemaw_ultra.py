@@ -48,6 +48,10 @@ PALETTE = {'body': '#6E7486', 'belly': '#8E94A4', 'accent': '#7FAF5A', 'eye': '#
 VARIANTS = {
     'granite-cobblemaw': {'body': '#8E8E96', 'belly': '#C9C9CF', 'accent': '#4A4A52', 'eye': '#F2B544', 'granite': True},
 }
+# round 4: Granite bakes its own roughness and coat (rough_granite, written by paint_sources): polished plates
+VARIANT_ORM = {'granite': {}}
+# round 4: Granite is bare polished stone (the variant picture has no moss): its look hides the moss cards
+VARIANT_CARDS_OFF = {'granite'}
 
 # colours CONTENT has no hex for (the card's parts; the pictures show where they go)
 NOSE_HEX = '#3B3F47'             # round 3: a dark slate pad, matte (round 2 read as a glossy black ball)
@@ -55,7 +59,7 @@ MOUTH_HEX = '#2B262C'
 EAR_IN_HEX = '#6B5254'           # the ears' cupped inside: a dusky mauve-brown (1-hero)
 CLAW_HEX = '#6E5B44'             # the claws: glossy warm taupe pebbles (4-details panel 3, its swatch)
 TUSK_HEX = ('#EDE2C6', '#CDB98F', '#F7F0DE', '#BFA67A')     # ivory, root, tip, growth rings
-LICHEN_PALE = '#D3D5CB'           # round 2: crusty white patches, small and crisp (4-details panel 5)
+LICHEN_PALE = '#B9BDB3'           # round 2: crusty white patches, small and crisp (4-details panel 5)
 LICHEN_ORANGE = '#C98F35'
 LASH_HEX = '#26232A'
 
@@ -64,9 +68,11 @@ LASH_HEX = '#26232A'
 # keeps its strip of card tiles; CARD_SHADE darkens the colour they take from the moss under their roots
 CARD_LAYERS = 1
 CARD_STYLE = 'wool'
+CARD_COLOUR_FROM = 'paint'       # round 5: each tuft the moss paint at its root (no grey or brown strays off a stone)
 CARD_SHADE = 1.0                 # round 3: the tufts keep the moss's green (0.74 sank them to a dark lawn)
 # the game applies body normals at 0.6 by default; the stone facets, chips and hairline cracks need about full strength
 NORMAL_SCALE = 1.1
+BODY_SHEEN = 0                   # round 5: stone, not felt (no fur sheen or rim halo on the body)
 BODY_TRIS = 64000                       # the cobbles' silhouette (Puddlepup 46k for a smooth pup)
 # the low body and the weight proxy at 9 mm voxels (the default 5.5 mm): on this big body the proxy, collapsed from
 # ~860k to 24k triangles, defeated Blender's heat solve (every bone empty, distance weights instead; 7.5 mm fails too,
@@ -100,24 +106,26 @@ def colours(pal: dict) -> dict:
     }
     if granite:
         out.update({
-            'stone': hide,                               # round 2: the plates average the variant's #8E8E96
+            'stone': C.shade_hex(hide, 0.72),            # round 5: darker (the back view blew to near white)
             'stone_dark': C.shade_hex(hide, 0.72, cool=0.02),
             'stone_top': C.mix_hex(hide, '#B4B4BA', 0.3),
             # the seams: one dark grout tone (the moss strands' relief stays in the shared normal map; flat colour keeps
             # it reading as gritty stone, not bristles)
             # round 3: the seams (and the cards over them) a mid-dark grey, so the cards read as thin seams, not soot
-            'moss': C.mix_hex(moss, hide, 0.35), 'moss_deep': C.mix_hex(moss, hide, 0.25), 'moss_tip': C.mix_hex(moss, hide, 0.45),
+            # round 4: the picture's thin dark seams (the cards over them can only be hidden by a per-variant card switch)
+            'moss': C.mix_hex(moss, hide, 0.3), 'moss_deep': C.mix_hex(moss, hide, 0.15), 'moss_tip': C.mix_hex(moss, hide, 0.4),
             'lichen_pale': None, 'lichen_orange': None,
         })
     else:
         out.update({
             # the cobbles: a mid stone grey a little lighter and warmer than the hide (1-hero), varied per stone
-            'stone': C.mix_hex(hide, '#5E5E5B', 0.45),          # round 2: at or a little below the hide's value
-            'stone_dark': C.mix_hex(C.shade_hex(hide, 0.58, cool=0.02), '#3A3936', 0.35),
-            'stone_top': C.mix_hex(hide, '#8C8B86', 0.4),
+            # round 5: a mid warm grey a little lighter than the hide (1-hero ~#7E766F lit); it read as charcoal
+            'stone': '#85827D',              # final: mid grey (it read as khaki loaves)
+            'stone_dark': '#5C5A57',
+            'stone_top': '#A09D98',
             # moss: green all the way down (deep green in the grooves, yellow-green tips), never grey
             # round 3: the CONTENT green, dark only at the roots, yellow-green tips (~#A8BF60; 4-details panel 5)
-            'moss': moss, 'moss_deep': C.mix_hex(moss, '#2E4A1E', 0.5), 'moss_tip': C.mix_hex(moss, '#B6C65E', 0.75),
+            'moss': moss, 'moss_deep': C.mix_hex(moss, '#2E4A1E', 0.45), 'moss_tip': C.mix_hex(moss, '#BCC860', 0.85),   # round 4: in-game average lifted toward #7FAF5A
             'lichen_pale': LICHEN_PALE, 'lichen_orange': LICHEN_ORANGE,
         })
     return out
@@ -153,19 +161,20 @@ HEAD_C = Vector(hp((0.0, -0.80, 1.16)))       # the rig's head centre
 HEAD_R = hr(0.26)
 EYE_C = {s: Vector(hp((0.152 * s, -0.885, 1.215))) for s in (1, -1)}
 EYE_R = hr(0.054)                              # round 2: ~15% bigger
-EYE_DEPTH = (0.62, 0.28)
+EYE_DEPTH = (0.55, 0.44)                       # round 5: seated deeper
 EYE_SPREAD = 1.0
 EYE_SHAPE = (1.12, 0.94)                       # the lens's width and height (an almond under the heavy lid)
 # round 3: a wide flat nose pad (about 1.5x wider than tall) sitting on a short broad snout that blends into the cheeks
-NOSE_C = Vector(hp((0.0, -1.088, 1.168)))
-NOSE_R = hr((0.106, 0.036, 0.068))
-NOSE2 = (hp((0.0, -1.084, 1.125)), hr((0.07, 0.03, 0.03)))       # a soft lower lobe
-SNOUT = (hp((0.0, -0.965, 1.14)), hr((0.2, 0.15, 0.105)))
-JAW = (hp((0.0, -0.86, 0.905)), hr((0.34, 0.25, 0.2)))      # round 3: one rounded mass, no stacked rings
+NOSE_C = Vector(hp((0.0, -1.2, 1.148)))       # round 5: on the tip of a muzzle about 1.5x longer
+NOSE_R = hr((0.1, 0.042, 0.064))
+NOSE2 = (hp((0.0, -1.207, 1.108)), hr((0.066, 0.034, 0.03)))       # a soft lower lobe
+SNOUT = (hp((0.0, -1.0, 1.13)), hr((0.22, 0.2, 0.108)))
+JAW = (hp((0.0, -0.9, 0.93)), hr((0.38, 0.25, 0.19)))       # round 5: under the muzzle (no underbite)      # round 3: one rounded mass, no stacked rings
 # the heavy stone brows: a curved ridge over each eye, lower and thicker at the inner end (grumpy, 3-faces neutral)
 # round 2: one heavy hide brow ridge across the forehead (3-faces), a little arched over each eye, level (no scowl)
 # round 3: two heavy hide brow mounds over the eyes that dip above the nose (not a headband), pebbles riding on top
-BROW = [(hp(c), hr(r)) for c, r in [((0.13, -0.93, 1.305), (0.118, 0.066, 0.056)), ((0.225, -0.875, 1.312), (0.062, 0.05, 0.042))]]
+# round 5: the inner ends raised clear of the eyes (grumpy but gentle, not angry): the iris and a sliver of white show
+BROW = [(hp(c), hr(r)) for c, r in [((0.115, -0.95, 1.33), (0.11, 0.08, 0.058)), ((0.222, -0.9, 1.318), (0.078, 0.066, 0.05))]]   # final: heavy, the eyes deep under it
 MOUTH_AXIS_Y = hy(-0.75)                           # the mouth line is described round this vertical axis (theta, z)
 # round 3: round bear ears ~1.3x bigger, up at the head's corners, facing forward, clear of the stones
 EAR_C = {s: v3(hp((0.285 * s, -0.66, 1.345))) for s in (1, -1)}
@@ -182,14 +191,20 @@ def _ell(name: str, c, r, mirror: bool = False, rot=(0, 0, 0)) -> Part:
 def head_parts() -> list[Part]:
     return [
         _ell('cranium', *CRANIUM),
-        _ell('bridge', hp((0.0, -0.96, 1.225)), hr((0.1, 0.085, 0.07))),
+        _ell('bridge', hp((0.0, -1.0, 1.212)), hr((0.1, 0.16, 0.066))),
+        _ell('muzzletip', hp((0.0, -1.13, 1.13)), hr((0.15, 0.09, 0.085))),
         _ell('snout', *SNOUT),
         _ell('nose', tuple(NOSE_C), NOSE_R),
         _ell('nose2', *NOSE2),
         # round 3: no flews; the broad snout blends into the cheeks, a broad jaw sweeps into the chest (4-details 1, 4)
-        _ell('jowl', hp((0.205, -0.83, 1.06)), hr((0.15, 0.14, 0.125)), mirror=True),
+        _ell('jowl', hp((0.23, -0.86, 1.05)), hr((0.17, 0.15, 0.13)), mirror=True),      # final: wide cheeks at the tusks
+        _ell('muzzleside', hp((0.125, -1.03, 1.11)), hr((0.12, 0.17, 0.09)), mirror=True),   # round 4: snout into cheeks
+        _ell('chin', hp((0.0, -1.06, 1.0)), hr((0.16, 0.12, 0.075))),      # round 5: the lower lip under the muzzle
         _ell('jaw', *JAW),
-        _ell('throat', hp((0.0, -0.78, 0.77)), hr((0.32, 0.22, 0.22))),    # the jaw sweeps into the chest (no crease)
+        # round 4: the jaw sweeps into the chest in one slope (the old throat's underside was the second chin): the
+        # throat meets the jaw's front at the jaw's lower curve, the bib carries it down between the front legs
+        # round 5: one tilted egg (top forward), tangent to the jaw's front, tapering back into the belly
+        _ell('chestfront', (0.0, -0.74, 0.62), (0.28, 0.18, 0.28), rot=(25, 0, 0)),    # final: a third smaller, set back
         _ell('neck', hp((0.0, -0.66, 1.0)), hr((0.37, 0.24, 0.3))),
     ] + [_ell(f'brow{i}', c, r, mirror=True) for i, (c, r) in enumerate(BROW)]
 
@@ -197,11 +212,11 @@ def head_parts() -> list[Part]:
 # ============================================================================= body, legs, feet, claws, tail
 LEGS = {'FL': (0.37, -0.40), 'FR': (-0.37, -0.40), 'BL': (0.33, 0.45), 'BR': (-0.33, 0.45)}
 LEG_TOP = {'F': 0.62, 'B': 0.60}
-LEG_R = {'F': (0.23, 0.185), 'B': (0.22, 0.178)}
+LEG_R = {'F': (0.25, 0.175), 'B': (0.25, 0.17)}     # round 4: tapered (wide haunch, narrower ankle)
 FOOT = {'F': (0.21, 0.24, 0.095), 'B': (0.19, 0.23, 0.095)}       # radii of the flat foot
 FOOT_DY = {'F': -0.07, 'B': -0.05}                                  # the foot's centre ahead of the leg
 CLAW_DX = (-0.158, 0.0, 0.158)
-CLAW_R = ((0.074, 0.096, 0.049), (0.078, 0.1, 0.052), (0.074, 0.096, 0.049))      # across, long, thick (a nail)
+CLAW_R = ((0.074, 0.096, 0.06), (0.078, 0.1, 0.064), (0.074, 0.096, 0.06))       # round 5: thicker domes      # across, long, thick (a nail)
 CLAW_PITCH = 18.0                       # degrees the nail tips front-down (blunt, curving to the ground)
 TAIL_POINTS = [(0.0, 0.62, 0.80), (0.0, 0.735, 0.815), (0.0, 0.85, 0.83)]
 
@@ -239,7 +254,7 @@ def leg_parts(leg: str) -> list[Part]:
         # the toe lobe behind each claw (the foot's front reads as three fat toes)
         a = math.radians(yaw)
         back = v3((-math.sin(a), math.cos(a), 0.0)) * 0.035
-        ps.append(_ell(f'toe{leg}{i}', tuple(v3(c) + back + v3((0.0, 0.0, -0.022))), (0.078, 0.09, 0.06), rot=(0, 0, yaw)))
+        ps.append(_ell(f'toe{leg}{i}', tuple(v3(c) + back + v3((0.0, 0.0, -0.012))), (0.088, 0.095, 0.072), rot=(0, 0, yaw)))
     return ps
 
 
@@ -336,7 +351,7 @@ def mouth_theta(p: np.ndarray) -> np.ndarray:
 
 
 MOUTH_TH = [0.0, 15.0, 30.0, 42.0, 52.0, 60.0, 66.0, 70.0]
-MOUTH_Z = [hz(z) for z in (1.045, 1.047, 1.053, 1.063, 1.079, 1.1, 1.122, 1.138)]     # round 2: corners up into the cheeks
+MOUTH_Z = [hz(z) for z in (1.03, 1.033, 1.044, 1.064, 1.092, 1.118, 1.138, 1.152)]     # round 2: corners up into the cheeks
 
 
 def mouth_z(th: np.ndarray) -> np.ndarray:
@@ -357,7 +372,7 @@ def crown_z(p: np.ndarray) -> np.ndarray:
 def z_low(y: np.ndarray) -> np.ndarray:
     """The lower edge of the cobbled coat along the body (2-turnaround side): low over the shoulder and the haunch."""
     return np.interp(y, [-0.80, -0.62, -0.46, -0.3, -0.12, 0.0, 0.3, 0.46, 0.65, 0.95],
-                     [0.80, 0.56, 0.40, 0.44, 0.52, 0.55, 0.53, 0.47, 0.50, 0.58])
+                     [0.80, 0.56, 0.40, 0.44, 0.52, 0.55, 0.55, 0.52, 0.53, 0.58])
 
 
 def leg_masks(p: np.ndarray) -> dict[str, np.ndarray]:
@@ -390,6 +405,21 @@ def claw_dist(p: np.ndarray) -> np.ndarray:
     return d
 
 
+def claw_local_best(p: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Per point: the nearest nail's ellipsoid radius (1 = on its surface) and the point in that nail's frame over its
+    radii (x across, y along: -1 the tip ... +1 the root, z up)."""
+    best = np.full(len(p), 9.0)
+    loc = np.zeros((len(p), 3))
+    for leg in LEGS:
+        for c, r, yaw in claw_centres(leg):
+            q = _claw_local(p, c, yaw) / v3(r)
+            d = np.linalg.norm(q, axis=1)
+            closer = d < best
+            best = np.where(closer, d, best)
+            loc = np.where(closer[:, None], q, loc)
+    return best, loc
+
+
 def claw_mask(p: np.ndarray, grow: float = 1.0) -> np.ndarray:
     """0..1: on a claw (the nails' ellipsoids in their own frames, a little grown)."""
     return smooth(grow * 1.06, grow * 0.94, claw_dist(p))
@@ -416,7 +446,7 @@ def zones(p: np.ndarray, n: np.ndarray | None = None) -> dict[str, np.ndarray]:
     eye_d = np.minimum(np.linalg.norm(p - v3(EYE_C[1]), axis=1), np.linalg.norm(p - v3(EYE_C[-1]), axis=1))
     cz = crown_z(p)
     face = head & ~E['on'] & (z < cz) & (y < hy(-0.74)) & (ax < hr(0.36)) & (z > hz(0.78))
-    muzzle = (in_ellipsoid(p, hp((0.0, -1.03, 1.12)), hr((0.19, 0.14, 0.1))) < 1.0) & (z > mz - 0.004)
+    muzzle = (in_ellipsoid(p, hp((0.0, -1.09, 1.12)), hr((0.2, 0.19, 0.1))) < 1.0) & (z > mz - 0.004)
     nose = (in_ellipsoid(p, tuple(NOSE_C), tuple(r * 1.12 for r in NOSE_R)) < 1.0) | (in_ellipsoid(p, NOSE2[0], tuple(r * 1.15 for r in NOSE2[1])) < 1.0)
     # the lower jaw: the face below the mouth line (and the chin and the jaw's sides back to the throat)
     jaw = head & ~E['on'] & (z < mz) & (np.abs(th) < 78) & (y < hy(-0.70))
@@ -452,11 +482,16 @@ def cover(p: np.ndarray, n: np.ndarray, z: dict) -> np.ndarray:
     # the body: above the ragged lower line
     body = smooth(-0.015, 0.025, zz - (z['z_low'] + rag))
     # the throat and the chest stay bare between the shoulders (front view: pale from the chin to the belly)
-    front = (y < -0.5) & (ax < 0.33 + 0.04 * smooth(0.95, 0.6, zz) + rag) & (zz < 1.02)
+    front = (y < -0.5) & (ax < 0.26 + 0.04 * smooth(0.95, 0.6, zz) + rag) & (zz < 1.02)     # final: stones on the shoulders' front
     body = np.where(front, 0.0, body)
     # the head: the crown and everything behind the cheeks
-    hz = smooth(-0.01, 0.02, zz - (z['crown_z'] + rag * 0.4))
-    c = np.where(z['head'], hz, body)
+    # final round: a hood (2-turnaround): the crown, down over the brow sides, round the ears and down the nape,
+    # joining the shoulder stones in one mound; the eyes, the brows' inner ends, the muzzle and the jaw stay bare
+    crown = smooth(-0.01, 0.02, zz - (z['crown_z'] + rag * 0.4))
+    side = smooth(hr(0.19), hr(0.25), ax + rag * 0.5) * smooth(hy(-0.9), hy(-0.84), y) * smooth(hz(1.07), hz(1.13), zz)
+    nape = smooth(hy(-0.8), hy(-0.72), y + rag * 0.5) * smooth(hz(0.96), hz(1.02), zz)
+    hood = np.maximum(np.maximum(crown, side), nape) * smooth(0.085, 0.115, z['eye_d'])
+    c = np.where(z['head'], hood, body)
     c = np.where(z['tail'], 1.0, c)
     c = np.where(z['ear'] | z['jaw'] | z['claw'] | z['nose'], 0.0, c)
     c = np.where(ear_dist(p) < EAR_R * 1.3, 0.0, c)
@@ -485,7 +520,7 @@ def _plate_params(p: np.ndarray, n: np.ndarray, z: dict):
     ok = (z['cover'] > 0.55) & (ear_dist(p) > EAR_R * 1.75)
     # round 2: packed edge to edge (0.6 x the spacing, small fillers in every gap: moss only in the narrow seams) and
     # standing about half their height proud (the outline lumpy, not a dome)
-    rad = sp * 0.63
+    rad = sp * 0.62                       # final: gaps ~10-15% of a stone, filled with moss
     hgt = np.clip(sp * 0.34, 0.032, 0.075)
     return np.where(ok, sp, np.nan), rad, hgt
 
@@ -514,10 +549,10 @@ def make_plates(co: np.ndarray, vn: np.ndarray) -> dict:
     # fillers only in the wide gaps: at least ~4 cm from every big stone's edge (round 2 pass 2: fillers in every gap
     # made bubble-wrap and left no moss seams); the moss keeps the 1-3 cm seams between the stones
     # medium stones, then small ones, each only where it keeps a 1-1.5 cm seam to every stone already laid
-    mid = U.plate_layout(co, vn, np.where(_clear_of(co, vn, big, 0.062) & (z['cover'] > 0.6), 0.12, np.nan), 0.05, 0.034,
+    mid = U.plate_layout(co, vn, np.where(_clear_of(co, vn, big, 0.065) & (z['cover'] > 0.6), 0.115, np.nan), 0.05, 0.034,
                          SEED + 3, aspect=1.15, wobble=0.22)
     laid = _merge(big, mid)
-    clear = _clear_of(co, vn, laid, 0.044)
+    clear = _clear_of(co, vn, laid, 0.048)
     gap = clear & (z['cover'] > 0.6)
     sp2 = np.where(gap, 0.072, np.nan)
     # the pebbles along the brow: a band just above the crown line on the face
@@ -529,7 +564,7 @@ def make_plates(co: np.ndarray, vn: np.ndarray) -> dict:
     fill = _merge(mid, small)
     # strays: loose stones below the coat's edge on the shoulders, flanks and haunches (1-hero)
     below = (co[:, 2] < z['z_low'] - 0.02) & (co[:, 2] > z['z_low'] - 0.2) & z['torso'] & ~z['chest'] & ~z['belly']
-    below &= co[:, 2] > 0.44
+    below &= (co[:, 2] > 0.44) & (np.abs(co[:, 0]) > 0.33) & (co[:, 1] > -0.5) & (co[:, 2] > z['z_low'] - 0.1)
     sp3 = np.where(below & (K.hash3(np.floor(co / 0.07).astype(np.int64), 9) < 0.35), 0.22, np.nan)
     strays = U.plate_layout(co, vn, sp3, 0.036, 0.02, SEED + 2, aspect=1.15, wobble=0.14)
     plates = _merge(_merge(big, fill), strays)
@@ -545,28 +580,54 @@ EDGE_SOFT = 0.25                # rounds the stones' walls a little where they s
 
 
 def moss_height(co: np.ndarray, cov: np.ndarray, fuzz: bool) -> tuple[np.ndarray, np.ndarray]:
-    """The moss mound in the coat's grooves (metres) and, on the high source, its fuzz (−1..1): soft clumps of about
-    2 cm with fine bumps of about 8 mm."""
-    clump = K.fbm(co, 1 / 0.035, 41, 2)
-    h = MOSS_H * cov * (0.8 + 0.35 * clump)
-    fz = np.zeros(len(co))
+    """Round 4: the moss as soft cushions in the gaps (clumps of about 3 cm, 0.6-2.2 cm tall), and its light (-1..1):
+    the clumps' tops yellow-green, their roots and the hollows deep; the high source adds a fine fuzz."""
+    clump = smooth(0.25, 0.85, K.value_noise(co, 1 / 0.03, 41))
+    h = cov * (0.008 + 0.019 * clump ** 1.3)          # round 5b: more moss in every seam
+    fz = clump * 2.0 - 1.0
     if fuzz:
-        fz = np.clip(0.6 * K.fbm(co, 1 / 0.009, 43, 2) + 0.4 * K.fbm(co, 1 / 0.0045, 47, 1), -1, 1)
+        fz = np.clip(0.65 * fz + 0.35 * (0.6 * K.fbm(co, 1 / 0.009, 43, 2) + 0.4 * K.fbm(co, 1 / 0.0045, 47, 1)), -1, 1)
     return h, fz
+
+
+def facet_cut(co: np.ndarray, pid: np.ndarray, plates: dict, hp: np.ndarray, scale: float) -> np.ndarray:
+    """Round 4: each stone cut into flat facets with real edges (4-details panel 5): a flat, slightly tilted top and six
+    bevels round its shoulder, their planes different on every stone; the dome stays below them."""
+    on = pid >= 0
+    if not on.any():
+        return hp
+    i = pid[on]
+    c, t, nrm = plates['c'][i], plates['t'][i], plates['n'][i]
+    bt = np.cross(nrm, t)
+    d = co[on] - c
+    s_ = (d * t).sum(1) / plates['a'][i]
+    q_ = (d * bt).sum(1) / plates['b'][i]
+    H = plates['h'][i] * scale
+    ang = U.plate_hash(i, 12) * 2 * np.pi
+    out = np.minimum(hp[on], H * (0.86 + 0.1 * U.plate_hash(i, 11) + 0.12 * U.plate_hash(i, 13) * (s_ * np.cos(ang) + q_ * np.sin(ang))))
+    for k in range(6):
+        phi = 2 * np.pi * k / 6 + 0.9 * U.plate_hash(i, 20 + k)
+        u = s_ * np.cos(phi) + q_ * np.sin(phi)
+        u0 = 0.55 + 0.25 * U.plate_hash(i, 30 + k)          # round 5: chipped edges on rounded cobbles (no hex tiles)
+        g = 0.9 + 0.7 * U.plate_hash(i, 40 + k)
+        out = np.minimum(out, H * (1.0 - g * np.maximum(0.0, u - u0)))
+    res = hp.copy()
+    res[on] = np.maximum(out, 0.0)
+    return res
 
 
 def coat_field(co: np.ndarray, vn: np.ndarray, plates: dict, z: dict, scale: float, fuzz: bool) -> dict:
     """The cobbles and the moss together: h (metres along the normal), plate (0..1 on a visible stone), moss (0..1),
     rim, top, pid, fuzz."""
     f = U.plate_field(co, vn, plates, 'cobble', scale, edge_soft=EDGE_SOFT)
-    hp = f['h']
+    hp = facet_cut(co, f['pid'], plates, f['h'], scale)
     cov = z['cover']
     # a ring of moss round each stray stone
     stray = (f['pid'] >= 0) & (plates['kind'][np.clip(f['pid'], 0, None)] > 1.5)
     hm, fz = moss_height(co, cov, fuzz)
     hm = hm * scale * (1.0 - z['tail'])                # no moss on the tail's knob of cobbles
     if fuzz:
-        hm = hm + 0.002 * fz * cov
+        hm = hm + 0.0015 * fz * cov
     vis = smooth(-0.002, 0.003, hp - hm)                 # the stone shows where it stands above the moss
     h = np.maximum(hp, hm)
     moss = cov * (1.0 - vis)
@@ -621,12 +682,14 @@ def card_params(p, n, layer: int):
     rising above the stones' edges and spilling over them; a few hundred, 2.5-4 cm."""
     z = zones(p, n)
     k = len(p)
-    moss = moss_gaps(p, n, z, 0.008)
+    moss = moss_gaps(p, n, z, -0.002)
+    # round 5: no tufts on the brow or the face below the crown (stray sprigs), short dense mounds on the crown
+    moss &= ~(z['head'] & (p[:, 2] < z['crown_z'] + 0.03))
     clump = K.value_noise(p, 1 / 0.04, 101)
-    L = 0.03 * (0.8 + 0.5 * clump)
+    L = 0.038 * (0.8 + 0.5 * clump) * np.where(z['head'], 0.6, 1.0)
     W = np.full(k, 0.03)
-    lift = np.full(k, math.radians(34.0))
-    return np.where(moss, 0.026, np.nan), L, W, lift, z
+    lift = np.full(k, math.radians(44.0))
+    return np.where(moss, 0.018, np.nan), L, W, lift, z
 
 
 # ============================================================================= carving (the high source)
@@ -686,8 +749,8 @@ def _face_marks(co: np.ndarray, z: dict) -> dict:
     curl = np.zeros(len(co))
     for s in (1, -1):
         cc = v3(hp((0.256 * s, -0.868, 1.146)))
-        curl = np.maximum(curl, np.exp(-(np.linalg.norm(co - cc, axis=1) / 0.012) ** 2))
-    groove = np.maximum(groove, 0.6 * curl)
+        curl = np.maximum(curl, np.exp(-(np.linalg.norm(co - cc, axis=1) / 0.016) ** 2))
+    groove = np.maximum(groove, 0.85 * curl)
     nos = np.zeros(len(co))
     for s in (1, -1):
         dd = np.sqrt(((x - hr(0.046) * s) / 1.5) ** 2 + (zz - (NOSE_C.z - hr(0.016))) ** 2)
@@ -708,16 +771,71 @@ def eye_socket(co: np.ndarray) -> np.ndarray:
         xe, ye, ze = q @ v3(xax), q @ v3(yax), q @ v3(look)
         r = np.sqrt((xe / (EYE_R * EYE_SHAPE[0])) ** 2 + (ye / (EYE_R * EYE_SHAPE[1])) ** 2)
         ring = smooth(0.85, 1.05, r) * smooth(1.6, 1.12, r) * (ze > -0.03) * (ze < 0.05)
-        d = np.maximum(d, 0.005 * ring)
+        d = np.maximum(d, 0.008 * ring)
     return -d
 
 
 _LAST: dict = {}
 
 
+def _region_smooth(ob: bpy.types.Object, mask: np.ndarray, iterations: int, factor: float = 0.6) -> None:
+    """Blender's Smooth modifier on the masked vertices only (a vertex group in four weight steps)."""
+    if len(mask) == 0 or float(mask.max()) <= 0.0:
+        return
+    vg = ob.vertex_groups.new(name='ws_region_smooth')
+    for lo_, hi_ in ((0.0, 0.25), (0.25, 0.5), (0.5, 0.75), (0.75, 1.01)):
+        idx = np.nonzero((mask > lo_) & (mask <= hi_))[0]
+        if len(idx):
+            vg.add(idx.tolist(), float(min(1.0, hi_)), 'REPLACE')
+    sm = ob.modifiers.new('ws_region_smooth', 'SMOOTH')
+    sm.factor = factor
+    sm.iterations = int(iterations)
+    sm.vertex_group = vg.name
+    C.apply_modifiers(ob)                    # a new mesh: look the group up again by name
+    left = ob.vertex_groups.get('ws_region_smooth')
+    if left is not None:
+        ob.vertex_groups.remove(left)
+
+
+def smooth_masks(co: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """0..1 per vertex: the jaw-to-chest front below the mouth (the stacked rolls), and the snout's sides (where it
+    meets the cheeks), never the nose pad, the eyes, the mouth line or the stones."""
+    z = zones(co)
+    x, y, zz = co[:, 0], co[:, 1], co[:, 2]
+    ax = np.abs(x)
+    jaw = (smooth(-0.5, -0.64, y) * smooth(0.3, 0.42, zz) * smooth(z['mouth_z'] - 0.025, z['mouth_z'] - 0.07, zz)
+           * smooth(0.47, 0.37, ax) * (1.0 - z['cover']) * (1.0 - z['leg'] * smooth(0.45, 0.3, zz)))
+    nose = in_ellipsoid(co, tuple(NOSE_C), tuple(r * 1.5 for r in NOSE_R)) < 1.0
+    snout = (smooth(hy(-0.9), hy(-0.96), y) * smooth(z['mouth_z'] + 0.012, z['mouth_z'] + 0.03, zz) * smooth(hz(1.27), hz(1.22), zz)
+             * smooth(hr(0.05), hr(0.09), ax) * smooth(hr(0.32), hr(0.26), ax) * smooth(0.07, 0.1, z['eye_d']) * ~nose)
+    return np.clip(jaw, 0.0, 1.0), np.clip(snout, 0.0, 1.0)
+
+
+def leg_smooth_mask(co: np.ndarray) -> np.ndarray:
+    """0..1: the legs below the coat, from above the toes to the coat's edge (the union's creases between the thigh,
+    the column, the heel and the foot melt into one tapered leg); never the nails or the toes."""
+    z = zones(co)
+    zz = co[:, 2]
+    m = z['leg'] * smooth(0.1, 0.16, zz) * smooth(z['z_low'] + 0.05, z['z_low'] - 0.01, zz) * smooth(1.5, 2.1, claw_dist(co))
+    return np.clip(m, 0.0, 1.0)
+
+
+def smooth_front(ob: bpy.types.Object) -> None:
+    """Round 4: melt the stacked rolls under the jaw (the voxel union's creases between the jaw, throat, chest and belly)
+    into one rounded mass sweeping into the chest, and blend the snout into the cheeks. The reach is the same on every
+    voxel size (about 8.5 cm for the jaw, 2.5 cm for the snout), so the high and low bodies agree."""
+    co, _vn = S.mesh_arrays(ob)
+    edge = math.sqrt(max(S.mesh_area(ob), 1e-9) / max(len(co), 1))
+    jaw, snout = smooth_masks(co)
+    _region_smooth(ob, jaw, int(np.clip((0.085 / edge) ** 2, 8, 1800)))
+    _region_smooth(ob, leg_smooth_mask(co), int(np.clip((0.04 / edge) ** 2, 6, 260)))
+    _region_smooth(ob, snout, int(np.clip((0.025 / edge) ** 2, 4, 120)), 0.5)
+
+
 def carve(ob: bpy.types.Object) -> None:
     """The high source: the cobbles and the moss, then the stone detail (grain and cracks on the hide, pits and chips
     on the stones, fuzz on the moss), the face's grooves and the closed lids."""
+    smooth_front(ob)
     co, vn = S.mesh_arrays(ob)
     z = zones(co, vn)
     plates = make_plates(co, vn)
@@ -728,32 +846,41 @@ def carve(ob: bpy.types.Object) -> None:
     gr = K.grain(co)
     # round 2: a few long hairline cracks (the 8.5 cm polygon network read as crazed porcelain)
     ck_big = K.cracks(co, 0.24, 0.0022, 61, warp=0.06) * smooth(-0.1, 0.25, K.fbm(co, 1 / 0.3, 62, 2))
-    ck_fine = K.cracks(co, 0.07, 0.0012, 67, warp=0.02) * smooth(0.15, 0.5, K.fbm(co, 1 / 0.2, 69, 2))
+    pf1, _pf2, _pfid = K.voronoi(co, 0.011, 87)                  # distinct pits (4-details hide swatch)
+    dimples = smooth(0.0032, 0.0012, pf1) * smooth(-0.3, 0.2, K.fbm(co, 1 / 0.05, 88, 2))
     face_soft = 1.0 - 0.6 * smooth(0.12, 0.06, z['eye_d']) - 0.5 * z['nose']
     vary = 0.55 + 0.45 * smooth(-0.4, 0.4, K.fbm(co, 1 / 0.25, 63, 2))
-    crack = np.clip(np.maximum(ck_big, 0.5 * ck_fine) * face_soft * vary * (1.0 - 0.3 * light) * (1.0 - 0.35 * z['head']), 0.0, 1.0)
+    ck_mid = K.cracks(co, 0.12, 0.0016, 64, warp=0.04) * smooth(0.05, 0.35, K.fbm(co, 1 / 0.2, 66, 2))
+    crack = np.clip(np.maximum(ck_big, 0.8 * ck_mid * (0.4 + 0.6 * light)) * face_soft * vary * (1.0 - 0.35 * z['head'] * (1 - light)), 0.0, 1.0)
     pitted = np.clip(K.fbm(co, 1 / 0.007, 79, 1) - 0.18, 0.0, 1.0)      # fine pits (4-details hide swatch)
-    grain_amp = 0.0016 * (1.0 - 0.35 * light) * (1.0 - 0.5 * z['nose'])
+    grain_amp = 0.0005 * (1.0 - 0.35 * light) * (1.0 - 0.5 * z['nose'])       # final: no fleece
     weather = K.fbm(co, 1 / 0.025, 65, 2)                       # broad weathered dips and swellings
-    d_hide = (grain_amp * gr + 0.0013 * weather * (1.0 - 0.5 * face_soft * z['face']) - 0.0034 * crack - 0.0026 * pitted) * hide * (1.0 - z['claw'])
+    d_hide = (grain_amp * gr + 0.0013 * weather * (1.0 - 0.5 * face_soft * z['face']) - 0.0034 * crack - 0.0008 * pitted - 0.0024 * dimples) * hide * (1.0 - z['claw'])
     # the stones: pits over the crown, chipped edges near the rim
     pits = K.fbm(co, 1 / 0.007, 71, 2)
     # round 2: chipped faceted edges (flat cuts that break at the cell walls) near the rims, flatter facets on the crowns
-    chips = K.facets(co, 0.025, 73) * smooth(0.1, 0.8, f['rim'])
+    chips = K.facets(co, 0.025, 73) * smooth(0.05, 0.7, f['rim'])
     flats = K.facets(co, 0.045, 77) * (0.6 + 0.4 * smooth(0.2, 0.7, f['rim']))      # round 3: facets over the whole stone
     dents = np.clip(-K.fbm(co, 1 / 0.05, 75, 2) - 0.2, 0.0, 1.0)
-    d_stone = (0.0016 * pits - 0.014 * chips - 0.0065 * flats - 0.004 * dents) * f['plate']
+    # round 4: crusty lichen as a carved attribute (fine ragged patches with a little relief) on the upper faces
+    ln = K.fbm(co, 1 / 0.011, 83, 3) + 0.45 * K.fbm(co, 1 / 0.0045, 85, 2)
+    crust = smooth(0.3, 0.36, K.fbm(co, 1 / 0.035, 89, 3) + 0.25 * K.fbm(co, 1 / 0.006, 91, 1)) * smooth(0.1, 0.5, f['top'])   # final: ~20%
+    lichen = np.maximum(smooth(0.3, 0.36, ln) * (0.25 + 0.75 * smooth(0.05, 0.5, f['top'])), crust) * f['plate']
+    d_stone = (0.0024 * pits - 0.018 * chips - 0.003 * flats - 0.004 * dents) * f['plate'] + 0.001 * lichen
+    # round 4: nails with a flat top and a crisp edge (not pills)
+    cd, cl = claw_local_best(co)
+    claw_flat = 0.0 * cd                    # round 5: domed again (the flat tops read as spatulas in profile)
     # the claws: a smooth, pebble surface with a lip where they meet the toe; the soles a little pebbled
     fm = _face_marks(co, z)
     d_face = -0.0035 * fm['groove'] - 0.02 * fm['nostril'] - 0.0018 * fm['philtrum'] - 0.003 * fm['claw_lip']
     bulge, lash = closed_lid(co)
     d_lid = 0.0035 * bulge - 0.0012 * lash
-    disp = f['h'] + d_hide + d_stone + d_face + d_lid + eye_socket(co)
+    disp = f['h'] + d_hide + d_stone + d_face + d_lid + eye_socket(co) + claw_flat
     S.set_positions(ob, co + vn * disp[:, None])
     S.base_attrs(ob, co, {'mouth': fm['groove']})
     for name, val in (('plate', f['plate']), ('plate_rim', f['rim']), ('plate_top', f['top']),
                       ('plate_id', f['pid'].astype(np.float64)), ('moss', f['moss']), ('fuzz', f['fuzz']),
-                      ('crack', crack), ('lash', lash), ('lid', bulge), ('nostril', fm['nostril']), ('clawm', claw_mask(co, 1.04)),
+                      ('crack', crack), ('lash', lash), ('lid', bulge), ('nostril', fm['nostril']), ('clawm', claw_mask(co, 1.04)), ('claw_u', cl[:, 1]), ('lichen', lichen),
                       ('cover', z['cover'])):
         S.add_attr(ob, name, np.asarray(val, np.float64))
     _LAST.clear()
@@ -768,11 +895,14 @@ def carve(ob: bpy.types.Object) -> None:
 def carve_low(ob: bpy.types.Object) -> None:
     """The low body takes the same cobbles at 0.85 and the moss mound (no fuzz), so the stones reach the silhouette and
     the bake's cage (2 cm out, 5 cm in) still finds them."""
+    smooth_front(ob)
     co, vn = S.mesh_arrays(ob)
     z = zones(co, vn)
     plates = make_plates(co, vn)
     f = coat_field(co, vn, plates, z, LOW_SCALE, False)
-    S.set_positions(ob, co + vn * (f['h'] + eye_socket(co))[:, None])
+    cd, cl = claw_local_best(co)
+    claw_flat = 0.0 * cd
+    S.set_positions(ob, co + vn * (f['h'] + eye_socket(co) + claw_flat)[:, None])
     C.log(f'carve_low: {int((f["plate"] > 0.5).sum())} of {len(co)} vertices on a stone, height up to {float(f["h"].max()) * 1000:.1f} mm')
 
 
@@ -868,7 +998,7 @@ def eye_material(name: str, rough_pass: bool = False) -> bpy.types.Material:
 # ============================================================================= the tusks (rigid props)
 # round 2: stubbier (about 20% shorter, the width about 0.6 of the visible length), a slight outward tilt
 # round 3: ~25% shorter and thicker (width ~0.6 of the visible length), smooth ivory (no rings), at the mouth corners
-TUSK = {'base': hp((0.232, -1.0, 1.0)), 'tip': hp((0.252, -0.99, 1.078)), 'bend': hr((0.006, 0.008, 0.0)), 'r': hr((0.042, 0.025)),
+TUSK = {'base': hp((0.27, -0.99, 1.05)), 'tip': hp((0.294, -1.02, 1.14)), 'bend': hr((0.006, 0.008, 0.0)), 'r': hr((0.042, 0.025)),
         'flat': 0.88, 'rings': False}
 
 
@@ -890,9 +1020,9 @@ def light_mask(p: np.ndarray, z: dict) -> np.ndarray:
     jaw = z['head'] * smooth(0.012, -0.012, zz - z['mouth_z']) * smooth(80, 70, np.abs(z['theta'])) * smooth(hy(-0.66), hy(-0.74), y)
     jaw = np.where(z['ear'], 0.0, jaw)
     w = 0.29 + 0.04 * smooth(0.6, 0.35, zz)
-    throat = (~z['head'] | (zz < 0.9)) * smooth(-0.52, -0.6, y) * smooth(w + 0.03, w - 0.03, ax) * smooth(1.0, 0.92, zz)
+    throat = (~z['head'] | (zz < 0.9)) * smooth(-0.52, -0.6, y) * smooth(w + 0.01, w - 0.01, ax) * smooth(1.0, 0.92, zz)
     zb = np.interp(y, [-0.6, -0.3, 0.0, 0.3, 0.55], [0.5, 0.44, 0.4, 0.42, 0.46])
-    belly = z['torso'] * ~z['leg'] * smooth(zb + 0.03, zb - 0.03, zz) * smooth(0.4, 0.32, ax)
+    belly = z['torso'] * ~z['leg'] * smooth(zb + 0.012, zb - 0.012, zz) * smooth(0.37, 0.34, ax)
     m = np.maximum(np.maximum(jaw, throat), belly)
     m = np.where(z['leg'] & (zz < 0.35), m * smooth(0.25, 0.35, zz), m)
     return np.clip(m * (1.0 - z['cover']), 0.0, 1.0)
@@ -912,7 +1042,7 @@ def _paint_inputs(ob: bpy.types.Object) -> dict:
     get = lambda nm, d=0.0: S.attr_array(ob, nm).astype(np.float64) if nm in ob.data.attributes else np.full(len(root), d)  # noqa: E731
     I = {'root': root, 'kind': kind, 'tpos': tpos, 'z': z, 'light': light_mask(root, z), 'plate': get('plate'),
          'moss': get('moss'), 'rim': get('plate_rim', 1.0), 'top': get('plate_top'), 'pid': get('plate_id', -1.0),
-         'fuzz': get('fuzz'), 'crack': get('crack'), 'claw': claw_mask(root), 'mottle': K.fbm(root, 1 / 0.14, 81, 3),
+         'fuzz': get('fuzz'), 'crack': get('crack'), 'claw': claw_mask(root), 'claw_u': get('claw_u', 0.0), 'mottle': K.fbm(root, 1 / 0.14, 81, 3),
          'mottle2': K.fbm(root, 1 / 0.05, 83, 2)}
     _PAINT[ob.name] = I
     return I
@@ -942,7 +1072,7 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     warm = (ph2 - 0.5)[:, None] * 0.16
     stone = stone * (1.0 + np.array([[1.0, 0.2, -0.8]]) * warm)
     stone = stone * (1 - 0.45 * I['top'][:, None]) + lin(col['stone_top'])[None] * 0.45 * I['top'][:, None] * (0.9 + 0.2 * ph[:, None])
-    rimk = (smooth(0.5, 1.0, I['rim']) * 0.5)[:, None]
+    rimk = (smooth(0.5, 1.0, I['rim']) * 0.35)[:, None]
     stone = stone * (1 - rimk) + lin(col['stone_dark'])[None] * rimk
     if granite:
         stone = lin(col['stone'])[None] * (0.92 + 0.16 * ph)[:, None]
@@ -977,7 +1107,10 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     ein = (z['ear_in'] * smooth(0.74, 0.5, z['ear_r']) * (1 - I['plate']) * (1 - I['moss']))[:, None]
     rgb = rgb * (1 - ein) + lin(col['ear_in'])[None] * ein
     cl = I['claw'][:, None]
-    ctone = lin(col['claw'])[None] * (1 - 0.4 * smooth(0.04, 0.1, I['root'][:, 2]))[:, None] + lin(col['claw_tip'])[None] * 0.4 * smooth(0.04, 0.1, I['root'][:, 2])[:, None]
+    tipk = smooth(0.1, -0.75, I['claw_u'])[:, None]
+    cut = (smooth(0.35, 0.8, I['claw_u']) * 0.55)[:, None]
+    ctone = lin('#76685A')[None] * (1 - tipk) + lin('#8E7F6C')[None] * tipk      # round 5: warm olive-brown-grey stone
+    ctone = ctone * (1 - cut) + lin('#4A4238')[None] * cut
     rgb = rgb * (1 - cl) + ctone * cl
     # roughness and clear coat: matte hide, slightly glossier stones, soft moss, glossy claws and nose
     rough = np.full(k, 0.84) - 0.06 * I['light']
@@ -989,8 +1122,17 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     coat = coat * (1 - mz)
     nose = ell_soft(I['root'], tuple(NOSE_C), tuple(r * 1.1 for r in NOSE_R), 0.1)
     gl = np.maximum(I['claw'], nose)
-    rough = rough * (1 - gl) + np.where(I['claw'] > nose, 0.26, 0.6) * gl
-    coat = coat * (1 - gl) + np.where(I['claw'] > nose, 0.6, 0.08) * gl
+    rough = rough * (1 - gl) + np.where(I['claw'] > nose, 0.6, 0.6) * gl       # round 5: satin, no coat (not pewter)
+    coat = coat * (1 - gl) + np.where(I['claw'] > nose, 0.0, 0.08) * gl
+    if granite:
+        # round 4: polished granite plates (crisp highlights, a clear coat), the hide a touch smoother; seams stay matte
+        pk = I['plate']
+        # round 5: a matte base under a full coat: the coat's highlight follows the mesh (one soft dome), the base's
+        # bumpy normal no longer breaks it into crumpled foil
+        rough = rough * (1 - pk) + 0.55 * pk
+        coat = coat * (1 - pk) + 0.3 * pk
+        hk = (1 - pk) * (1 - mz) * (1 - gl)
+        rough = rough - 0.1 * hk
     return {'paint': rgb, 'shade': np.ones(k), 'rough': np.stack([np.ones(k), rough, coat], axis=1)}
 
 
@@ -1002,13 +1144,22 @@ def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object
         S.set_colour_attr(ob, 'rough', a['rough'])
         S.add_attr(ob, 'shade', a['shade'])
         for vid, pal in VARIANTS.items():
-            S.set_colour_attr(ob, U.variant_attr(vid, ID), paint_arrays(ob, pal)['paint'])
+            va = paint_arrays(ob, pal)
+            S.set_colour_attr(ob, U.variant_attr(vid, ID), va['paint'])
+            if _short(vid) in VARIANT_ORM:
+                S.set_colour_attr(ob, f'rough_{_short(vid)}', va['rough'])
     for ob in props:
         rgb, rc = K.tusk_paint(ob, *TUSK_HEX)
         S.set_colour_attr(ob, 'paint', rgb)
         S.set_colour_attr(ob, 'rough', rc)
         for vid in VARIANTS:
             S.set_colour_attr(ob, U.variant_attr(vid, ID), rgb)
+            if _short(vid) in VARIANT_ORM:
+                S.set_colour_attr(ob, f'rough_{_short(vid)}', rc)      # every source needs it, or the bake uses 'rough'
+
+
+def _short(vid: str) -> str:
+    return vid[:-len(ID) - 1] if vid.endswith('-' + ID) else vid
 
 
 def _mell(nb: NB, p, c, r, soft=0.08):
@@ -1030,6 +1181,7 @@ def body_material(name: str, attr: str, pal: dict, marks=None) -> bpy.types.Mate
     # the moss strands (lying locks) count as moss
     moss = nb.math('MAXIMUM', nb.attribute('moss').outputs['Fac'], nb.math('SUBTRACT', 1.0, is_body))
     hide = nb.math('MULTIPLY', nb.math('SUBTRACT', 1.0, plate), nb.math('SUBTRACT', 1.0, moss))
+    hide = nb.math('MULTIPLY', hide, nb.math('SUBTRACT', 1.0, nb.attribute('clawm').outputs['Fac']))   # no specks on the nails
     # the hide: fine light and dark specks (weathered rock), a few orange lichen dots
     sp = nb.noise(pos, 210.0, 2.0, 0.6)
     light_sp = nb.math('MULTIPLY', nb.smooth(sp, 0.6, 0.7), hide)
@@ -1049,38 +1201,51 @@ def body_material(name: str, attr: str, pal: dict, marks=None) -> bpy.types.Mate
     # the stones
     if granite:
         # the variant picture: speckled granite stones, a plain grey hide (only a faint trace of speckle on it)
-        stone_w = nb.math('MAXIMUM', plate, nb.math('MULTIPLY', hide, 0.12))
-        for scale, k in ((170.0, 1.0),):
+        stone_w = nb.math('MAXIMUM', plate, nb.math('MULTIPLY', hide, 0.22))     # round 5: the hide speckled too
+        # round 4: dense mixed grains as in the picture (black, white, a warm tan-pink), a coarse and a finer set,
+        # their lookup warped so the grains are ragged, not cell polygons (the round-3 "popcorn" was too fine and sparse)
+        wn = nb.new('ShaderNodeTexNoise')
+        nb.put(wn.inputs['Vector'], pos)
+        wn.inputs['Scale'].default_value = 45.0
+        wn.inputs['Detail'].default_value = 2.0
+        wpos = nb.vmath('ADD', pos, nb.vmath('MULTIPLY', nb.vmath('SUBTRACT', wn.outputs['Color'], (0.5, 0.5, 0.5)), (0.012, 0.012, 0.012)))
+        for scale, k, (pb, pw, pp), off in ((70.0, 1.0, (0.8, 0.88, 0.94), (0.37, 1.3, 0.71)), (150.0, 0.85, (0.78, 0.87, 0.94), (2.1, 0.4, 1.9))):
             vo = nb.new('ShaderNodeTexVoronoi', feature='F1')
-            nb.put(vo.inputs['Vector'], nb.vmath('ADD', pos, (0.37 * k, 1.3 * k, 0.71 * k)))
+            nb.put(vo.inputs['Vector'], nb.vmath('ADD', wpos, off))
             vo.inputs['Scale'].default_value = scale
             vo.inputs['Randomness'].default_value = 1.0
             cr, cg, cb = nb.sep_rgb(vo.outputs['Color'])[:3]
             w = nb.math('MULTIPLY', stone_w, k)
-            c = nb.mix(nb.math('MULTIPLY', nb.smooth(cr, 0.86, 0.875), w), c, nb.rgb(C.lin('#2A2A30')))
-            c = nb.mix(nb.math('MULTIPLY', nb.smooth(cg, 0.86, 0.875), w), c, nb.rgb(C.lin('#E2E2E6')))
-            c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(cb, 0.92, 0.935), w), 0.9), c, nb.rgb(C.lin('#B39A90')))
+            c = nb.mix(nb.math('MULTIPLY', nb.smooth(cr, pb, pb + 0.012), w), c, nb.rgb(C.lin('#24242A')))
+            c = nb.mix(nb.math('MULTIPLY', nb.smooth(cg, pw, pw + 0.012), w), c, nb.rgb(C.lin('#D4D4D8')))
+            c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(cb, pp, pp + 0.012), w), 0.9), c, nb.rgb(C.lin('#A0806E')))
     else:
         # round 2: the stones mottled mid-to-dark grey (4-details panel 5)
         smot = nb.noise(pos, 16.0, 4.0, 0.6)
-        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(smot, 0.48, 0.66), plate), 0.25), c, nb.rgb(C.lin(col['stone_dark'])))
-        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(smot, 0.46, 0.3), plate), 0.2), c, nb.rgb(C.lin(col['stone_top'])))
+        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(smot, 0.48, 0.66), plate), 0.28), c, nb.rgb(C.lin(col['stone_dark'])))
+        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(smot, 0.46, 0.3), plate), 0.32), c, nb.rgb(C.lin(col['stone_top'])))
+        # round 4: a finer grey mottle inside each stone (4-details panel 5's grainy stone)
+        fmot = nb.noise(nb.vmath('ADD', pos, (0.9, 2.3, 0.4)), 55.0, 3.0, 0.6)
+        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(fmot, 0.52, 0.66), plate), 0.3), c, nb.rgb(C.lin(col['stone_dark'])))
+        c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(fmot, 0.44, 0.32), plate), 0.22), c, nb.rgb(C.lin(col['stone_top'])))
         # round 3: crusty pale lichen over ~15-30% of each stone's upper face (it lifts the tops above the hide's value)
-        upper = nb.math('ADD', 0.35, nb.math('MULTIPLY', nb.smooth(nb.attribute('plate_top').outputs['Fac'], 0.05, 0.5), 0.65))
-        crust = nb.noise(pos, 10.0, 6.0, 0.72)
-        crust_m = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(crust, 0.555, 0.572), plate), upper)
-        c = nb.mix(nb.math('MULTIPLY', crust_m, 0.92), c, nb.rgb(C.lin(col['lichen_pale'])))
-        crusty = nb.math('MULTIPLY', crust_m, nb.smooth(nb.noise(pos, 140.0, 2.0, 0.6), 0.6, 0.7))
-        c = nb.mix(nb.math('MULTIPLY', crusty, 0.4), c, nb.rgb(C.lin('#9EA196')))
+        # round 4: the lichen is carved (fine ragged patches on the upper faces), mottled inside
+        lich = nb.math('MULTIPLY', nb.attribute('lichen').outputs['Fac'], plate)
+        c = nb.mix(nb.math('MULTIPLY', lich, 0.8), c, nb.rgb(C.lin(col['lichen_pale'])))
+        crusty = nb.math('MULTIPLY', lich, nb.smooth(nb.noise(pos, 140.0, 2.0, 0.6), 0.58, 0.7))
+        c = nb.mix(nb.math('MULTIPLY', crusty, 0.45), c, nb.rgb(C.lin('#8F9488')))
+        # some crusts yellow-ochre (4-details panel 5), patch by patch
+        ochre = nb.math('MULTIPLY', lich, nb.smooth(nb.noise(nb.vmath('ADD', pos, (3.1, 0.7, 2.2)), 12.0, 2.0, 0.5), 0.6, 0.66))
+        c = nb.mix(nb.math('MULTIPLY', ochre, 0.4), c, nb.rgb(C.lin('#A08C50')))
         # ochre and orange lichen rings (small rosettes with a paler centre)
         vr = nb.voronoi(nb.vmath('ADD', pos, (1.3, 0.2, 0.7)), 26.0)
         ring = nb.math('MULTIPLY', nb.smooth(vr, 0.07, 0.1), nb.smooth(vr, 0.17, 0.13))
         rpatch = nb.smooth(nb.noise(nb.vmath('ADD', pos, (0.5, 2.0, 0.3)), 4.0, 2.0, 0.5), 0.36, 0.46)
         c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', ring, rpatch), nb.math('MULTIPLY', plate, 0.95)), c, nb.rgb(C.lin('#B98B34')))
         # the crusts' edges: little islands of pale specks around each crust
-        isl = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(crust, 0.54, 0.59), nb.smooth(nb.noise(pos, 90.0, 1.0, 0.5), 0.6, 0.66)), plate)
-        c = nb.mix(nb.math('MULTIPLY', isl, 0.7), c, nb.rgb(C.lin(col['lichen_pale'])))
-        orange = nb.smooth(nb.voronoi(nb.vmath('ADD', pos, (0.3, 0.9, 0.1)), 34.0), 0.14, 0.08)
+        isl = nb.math('MULTIPLY', nb.smooth(nb.noise(pos, 90.0, 1.0, 0.5), 0.66, 0.7), nb.math('MULTIPLY', plate, nb.attribute('plate_top').outputs['Fac']))
+        c = nb.mix(nb.math('MULTIPLY', isl, 0.5), c, nb.rgb(C.lin(col['lichen_pale'])))
+        orange = nb.smooth(nb.voronoi(nb.vmath('ADD', pos, (0.3, 0.9, 0.1)), 24.0), 0.2, 0.12)     # final: bigger orange splotches
         opatch = nb.smooth(nb.noise(nb.vmath('ADD', pos, (2.0, 0.0, 1.0)), 5.0, 2.0, 0.5), 0.42, 0.52)
         c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', orange, opatch), nb.math('MULTIPLY', plate, 0.9)), c, nb.rgb(C.lin(col['lichen_orange'])))
         pits = nb.math('MULTIPLY', nb.smooth(nb.noise(pos, 260.0, 1.0, 0.5), 0.33, 0.27), plate)
@@ -1097,9 +1262,9 @@ def body_material(name: str, attr: str, pal: dict, marks=None) -> bpy.types.Mate
     ve.inputs['Scale'].default_value = 16.0
     few = nb.smooth(nb.noise(nb.vmath('ADD', pos, (4.0, 1.0, 2.0)), 9.0, 2.0, 0.5), 0.5, 0.56)
     hair = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(ve.outputs['Distance'], 0.012, 0.004), claw), few)
-    c = nb.mix(nb.math('MULTIPLY', hair, 0.7), c, nb.rgb(C.lin('#3E352B')))
+    c = nb.mix(nb.math('MULTIPLY', hair, 0.15), c, nb.rgb(C.lin('#B8AC9C')))      # round 5: white veins
     scr = nb.noise(nb.vmath('MULTIPLY', pos, (60.0, 8.0, 60.0)), 3.0, 3.0, 0.7)
-    c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(scr, 0.66, 0.72), claw), 0.55), c, nb.rgb(C.lin('#D9D3C6')))
+    c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(scr, 0.66, 0.72), claw), 0.35), c, nb.rgb(C.lin('#B5A792')))
     # the nose (a crisp edge), its nostrils and the smile line
     nose = nb.math('MAXIMUM', _mell(nb, pos, tuple(NOSE_C), tuple(r * 1.05 for r in NOSE_R), 0.06), _mell(nb, pos, NOSE2[0], tuple(r * 1.1 for r in NOSE2[1]), 0.08))
     c = nb.mix(nb.math('MULTIPLY', nose, is_body), c, nb.rgb(C.lin(col['nose'])))
@@ -1171,12 +1336,16 @@ def rig_p() -> dict:
         'leg_radius': 0.2,
         'stride': 0.2,
         'strike_style': 'slam',               # 5-poses attack: rears up on the hind legs, slams both front paws down
-        'props': [{'name': 'tusks', 'parent': 'head', 'head': hp((0.0, -0.98, 1.0)), 'tail': hp((0.0, -0.98, 1.13))}],
+        # round 5 (5-poses attack): rears higher with both forepaws over the head; lands them far forward and wide
+        'slam_rear': 58.0, 'slam_paws': (-140.0, -10.0, -20.0), 'slam_ahead': 0.42, 'slam_wide': 24.0, 'slam_squash': 0.06,
+        'slam_dip': -3.0,
+        'jaw': {'head': hp((0.0, -0.86, 1.06)), 'tail': hp((0.0, -1.12, 1.0))},
+        'props': [{'name': 'tusks', 'parent': 'jaw', 'head': hp((0.0, -0.98, 1.0)), 'tail': hp((0.0, -0.98, 1.13))}],
     }
 
 
 # the ears and the eyes' bones never take heat weights (the ears get theirs from body_weight_regions)
-MERGE_INTO_HEAD = ('jaw', 'eye.L', 'eye.R', 'ear.L.1', 'ear.L.2', 'ear.R.1', 'ear.R.2')
+MERGE_INTO_HEAD = ('eye.L', 'eye.R', 'ear.L.1', 'ear.L.2', 'ear.R.1', 'ear.R.2')   # round 5: the jaw moves its skin
 
 
 def ear_zone(p: np.ndarray):
@@ -1202,6 +1371,14 @@ def body_weight_regions(co: np.ndarray, names: list[str]) -> list:
             out.append((on, {'head': w['head'], f'ear.{tag}.1': w['1'], f'ear.{tag}.2': w['2']}))
     if z['tail'].any():
         out.append((z['tail'], U.chain_weights(co[z['tail']], TAIL_POINTS, ['tail.1', 'tail.2'], 'hips')))
+    # round 5: the lower jaw (below the mouth line, the chin and the jaw's front) rides the jaw bone
+    if 'jaw' in names:
+        yy, zz = co[:, 1], co[:, 2]
+        wj = (smooth(z['mouth_z'] + 0.003, z['mouth_z'] - 0.006, zz) * smooth(hy(-0.72), hy(-0.84), yy)
+              * smooth(hz(0.74), hz(0.84), zz) * (1.0 - z['ear']))
+        mj = z['head'] & (wj > 0.002)
+        if mj.any():
+            out.append((mj, {'jaw': wj[mj], 'head': 1.0 - wj[mj]}))
     # the claws ride their foot bones rigidly
     for leg, m in z['legs'].items():
         cl = m & (claw_mask(co, 1.15) > 0.3)
@@ -1228,7 +1405,8 @@ def decimate_keep(co: np.ndarray) -> np.ndarray:
 def uv_smooth_mask(co: np.ndarray) -> np.ndarray:
     """UV_SMOOTH's strength: the cobbled coat smooths fully, the legs and body partly, the face and ears not at all."""
     z = zones(co)
-    m = np.clip(z['cover'], 0.0, 1.0)
+    m = np.clip(z['cover'], 0.0, 1.0) * np.where(z['head'], 0.2, 0.45)
+    m = m * (1.0 - light_mask(co, z))         # final: the throat and chest keep their own UVs (stretched streaks)
     m = np.maximum(m, 0.3 * z['torso'])
     # round 2: the legs and the tail keep their own shape (smoothing them stretched the leg columns' texture and
     # crushed the tail's island into a chrome-smooth spot)

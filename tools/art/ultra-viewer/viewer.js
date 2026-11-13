@@ -7,11 +7,11 @@ import { AnimationMixer, Box3, Group, PerspectiveCamera, Scene, Vector3 } from '
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { buildStudio, dirFrom, filmMaterial, SITE } from '../../../src/art3d/perf/content.ts'
+import { aimStudioRims, buildStudio, dirFrom, filmMaterial, SITE } from '../../../src/art3d/perf/content.ts'
 import { createWebGLView } from '../../../src/art3d/perf/view.ts'
 // the game's own part rules (src/art3d/ultra/ultraAsset.ts dresses a look with these), so the sheets match the phone:
 // the material kind per mesh (props are 'prop', not 'body'), which parts show, the glow channel, soft fins
-import { glowOf, partKind, partVisible, softFinsOf } from '../../../src/art3d/ultra/parts.ts'
+import { bodySheenOf, cardEdgeFadeOf, glowFor, normalScaleOf, partKind, partVisible, softFinsOf, variantEyesDiffer, variantHasOwnOrm } from '../../../src/art3d/ultra/parts.ts'
 import { ART } from '../../../src/data/tuning.ts'
 
 const host = document.getElementById('host')
@@ -71,14 +71,19 @@ async function loadLook(view, look, o) {
  */
 function dress(gltf, o, meta = null) {
   let variantMap = null
+  let variantOrm = null
   let variantColour = 'color_1'
   gltf.scene.traverse((m) => {
-    if (m.isMesh && m.name === `__variant_${o.variant}`) variantMap = m.material.map
+    if (m.isMesh && m.name === `__variant_${o.variant}`) {
+      variantMap = m.material.map
+      // a variant's own ORM (VARIANT_ORM), as the game swaps it in (ultraAsset.ts)
+      if (variantHasOwnOrm(meta, o.variant ?? null)) variantOrm = m.material.roughnessMap ?? m.material.aoMap ?? null
+    }
   })
   if (o.colorAttribute) variantColour = o.colorAttribute.toLowerCase()
   let triangles = 0
   let cards = 0
-  const glow = glowOf(meta, ART.ultra.film.glow.maxStrength)
+  const glow = glowFor(meta, o.variant ?? null, ART.ultra.film.glow.maxStrength)
   const softFins = softFinsOf(meta)
   gltf.scene.traverse((m) => {
     if (!m.isMesh) return
@@ -98,8 +103,13 @@ function dress(gltf, o, meta = null) {
     // o.raw: the glb's own materials as loaded; otherwise the game's film material (the card edge fade, the luminance
     // caps, the glow), built from this mesh's own maps
     if (!o.raw && mat?.map) {
-      const base = variantMap && kind !== 'eye' ? variantMap : mat.map
-      m.material = filmMaterial(kind, { base, normal: mat.normalMap ?? null, orm: mat.roughnessMap ?? mat.aoMap ?? null }, { glow })
+      // as the game's ultraAsset.ts: the eyes take the variant's atlas only when its eyes differ
+      const base = variantMap && (kind !== 'eye' || variantEyesDiffer(meta, o.variant ?? null)) ? variantMap : mat.map
+      const orm = variantOrm && kind !== 'eye' ? variantOrm : (mat.roughnessMap ?? mat.aoMap ?? null)
+      // the eyes keep the shared ORM, so they glow by the breed's own entry (as the game's ultraAsset.ts)
+      const partGlow = kind === 'eye' && variantOrm ? glowFor(meta, null, ART.ultra.film.glow.maxStrength) : glow
+      // the look's own card edge fade and normal strength, as the game's ultraAsset.ts passes them
+      m.material = filmMaterial(kind, { base, normal: mat.normalMap ?? null, orm }, { glow: partGlow, cardEdgeFade: cardEdgeFadeOf(meta), normalScale: normalScaleOf(meta), bodySheen: bodySheenOf(meta) })
     } else if (o.raw && variantMap) mat.map = variantMap
     m.castShadow = kind !== 'card'
     m.receiveShadow = kind !== 'fin' || softFins
@@ -132,7 +142,9 @@ async function shot(o) {
   camera.layers.enable(1)
   aim(camera, o.target ?? [0, 0.02, 0.5], o.az ?? 35, o.el ?? 14, o.frame ?? 1.75)
   const st = o.studio ?? { focus: [0, 0.5, 0], reach: 1.6 }
-  buildStudio(scene, view.environment, new Vector3(...st.focus), st.reach)
+  const studio = buildStudio(scene, view.environment, new Vector3(...st.focus), st.reach)
+  // the rims stay behind the monster as this camera sees it (as in the game: content.ts aimStudioRims)
+  aimStudioRims(studio, camera.position, new Vector3(...st.focus))
   if (o.clip) {
     const clip = gltf.animations.find((a) => a.name === o.clip)
     if (!clip) throw new Error(`no clip ${o.clip}; have ${gltf.animations.map((a) => a.name).join(',')}`)
@@ -199,7 +211,7 @@ async function lineup(o) {
   camera.position.copy(target).add(dirFrom(0, o.el ?? 8).multiplyScalar(dist))
   camera.lookAt(target)
   camera.updateProjectionMatrix()
-  buildStudio(scene, view.environment, target, Math.max(total, maxH) * 0.6)
+  aimStudioRims(buildStudio(scene, view.environment, target, Math.max(total, maxH) * 0.6), camera.position, target)
   const png = await finish(view, scene, camera)
   const labels = items.map((it) => {
     const b = visibleBox(it.g)

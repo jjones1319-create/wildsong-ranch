@@ -1,5 +1,6 @@
 import type { BreedId } from '../data/types.ts'
 import { formForStage } from './monster/render.ts'
+import { ultraIdFor, ultraVariant, type UltraId } from './ultraLooks.ts'
 
 /**
  * Art 2.0 (ART_2_PLAN §3.1, §3.3): which breeds have a Blender-built model, and which look a monster uses.
@@ -53,4 +54,13 @@ export function hasModel(breed: BreedId): boolean {
 /** A stable id for a (look, variant) pair: file names of build-time portraits and cache keys. */
 export function lookKey(ref: LookRef): string {
   return ref.variant ? `${ref.look}.${ref.variant}` : ref.look
+}
+
+/**
+ * Art 2.1 on the ranch (the owner's option A, Nov 12): the Ultra look a monster shows in a live portrait (its grown
+ * form's from Prime when the registry has one) and the variant, if that look's file holds it; null for a breed without.
+ */
+export function ultraLookFor(breed: BreedId, variantId: string | null, stage: number): { id: UltraId; variant: string | null } | null {
+  const id = ultraIdFor(breed, formForStage(breed, stage) === 'grown')
+  return id ? { id, variant: ultraVariant(id, variantId) } : null
 }

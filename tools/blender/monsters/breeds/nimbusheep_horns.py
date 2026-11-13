@@ -21,13 +21,14 @@ from lib import surface as S
 from lib.surface import norm, smooth, v3
 from monsters.breeds.nimbusheep_wool import HEAD_DY
 
-TILT = math.radians(30)            # round 3: the spiral reads from the side as well as the hero's three-quarter            # the coil's plane turns this far to face forward (a spiral from the front and the side)
+TILT = math.radians(50)            # the coil's plane turns this far to face forward (round 3: 30; Nov 12 review: the coil shows from the front)
 COIL_C = (0.28, -0.3 + HEAD_DY, 0.8)  # beside the temple, at eye level (moves with the head)        # the coil's centre (left horn)
 PHI0 = math.radians(128)           # where the horn leaves the head: up and a little forward of the centre
 SWEEP = math.radians(530)           # about 1.47 turns, so about 1.3 show past the wool
-R_COIL = (0.08, 0.006)             # the centre line's radius at the root and at the tip
+R_COIL = (0.08, 0.012)             # the centre line's radius at the root and at the tip (Nov 12: the tip sits against the last turn)
 W_AXIAL = (-0.055, 0.012)          # round 3: the curl stays in the coil's plane (a hole showed at the centre)            # offset along the coil's axis (outward) at the root and once it has swung out
-TUBE_R = (0.05, 0.006)             # the tube's radius at the root and at the tip
+TUBE_R = (0.06, 0.012)             # the tube's radius at the root and at the tip (Nov 12 review: root 20% thicker; a tip thick
+                                    # enough to close the spiral's centre: an open serrated hole showed there)
 FLAT = 0.86                         # the tube's cross-section: this much thinner along the coil's axis
 GROOVES = 28                        # ring grooves along the horn (review: about 20 per turn)
 GROOVE = (0.07, 0.16)               # groove depth (share of the radius) and width (share of a groove's spacing)
@@ -52,12 +53,13 @@ def coil_radius(t):
 
 def axial(t):
     t = np.asarray(t, float)
-    return W_AXIAL[0] + (W_AXIAL[1] - W_AXIAL[0]) * (1.0 - (1.0 - np.clip(t / 0.5, 0, 1)) ** 2) + 0.012 * t
+    # Nov 13 review: a slight outward helix (the coil was flat, like an ammonite)
+    return W_AXIAL[0] + (W_AXIAL[1] - W_AXIAL[0]) * (1.0 - (1.0 - np.clip(t / 0.5, 0, 1)) ** 2) + 0.03 * t
 
 
 def tube_radius(t):
     t = np.asarray(t, float)
-    return TUBE_R[0] + (TUBE_R[1] - TUBE_R[0]) * t ** 1.7
+    return TUBE_R[0] + (TUBE_R[1] - TUBE_R[0]) * t ** 1.35       # Nov 13: fuller inner turns, so they close on each other
 
 
 def path(s: int, t) -> np.ndarray:

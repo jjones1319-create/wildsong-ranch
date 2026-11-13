@@ -96,7 +96,7 @@ def march(origin: np.ndarray, direction: np.ndarray, sink: float = 0.004, far: f
 # ----------------------------------------------------------------------------- one lock: a curve and its ribbon
 def grow(root: np.ndarray, out: np.ndarray, fall: np.ndarray, L: np.ndarray, n: int, clear: np.ndarray,
          waves: np.ndarray, amp: np.ndarray, phase: np.ndarray, curl: np.ndarray, bend: float = 0.35,
-         hook: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+         hook: np.ndarray | None = None, hook_out: float = 0.6) -> tuple[np.ndarray, np.ndarray]:
     """Many locks at once (k of them): each centre line (k × n × 3) and the body's outward direction along it. A lock
     leaves the skin along `out`, turns to `fall` over the first `bend` of its length, waves sideways, curls its tip
     out, and drapes over the body (pushed `clear[:, 0]` → `clear[:, 1]` off the skin)."""
@@ -143,7 +143,7 @@ def grow(root: np.ndarray, out: np.ndarray, fall: np.ndarray, L: np.ndarray, n: 
         # round 3: the tip curls (sideways, the way its last wave leans, and out from the body)
         lean = np.sign(np.sin(2 * math.pi * waves + phase))[:, None, None]
         h = (hook[:, None] * smooth(0.7, 1.0, s) ** 2)[..., None]
-        P = P + (A * lean * 0.8 + O * 0.6) * h
+        P = P + (A * lean * 0.8 + O * hook_out) * h
     return P, O
 
 
@@ -372,7 +372,7 @@ def crown_locks(seed: int = 12):
 # ----------------------------------------------------------------------------- the tail: aurora locks and the star
 TAIL_PTS: list = []          # set by the recipe (the spine's points, base → tip)
 STAR_C = np.zeros(3)
-STAR_R = (0.07, 0.031, 0.02)    # outer radius, inner radius, half thickness at the centre
+STAR_R = (0.098, 0.043, 0.027)    # outer radius, inner radius, half thickness at the centre
 
 
 def configure_tail(points, star_c) -> None:

@@ -8,8 +8,9 @@ import { ART } from '../../data/tuning.ts'
 import { buildStudio, setFilmClock } from '../perf/content.ts'
 import { createDynRes, type DynRes } from '../perf/dynres.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
-import { GALLERY_LOOPS, resolveClipName, type GalleryClip } from '../ultra/clips.ts'
-import { blinkClipOf, NO_AO_LAYER, heldVariants, loadUltraAsset, makeUltraModel, type UltraAsset, type UltraKind, type UltraModel } from '../ultra/ultraAsset.ts'
+import { FLY_CLIPS, GALLERY_LOOPS, resolveClipName, type FlyClip, type GalleryMove } from '../ultra/clips.ts'
+import { breathPlan, landingPlan, liftAt, takeoffPlan, type FlightPlan, type FlyStep, type FlyTimes } from '../ultra/flight.ts'
+import { blinkClipOf, flyTimesOf, NO_AO_LAYER, heldVariants, loadUltraAsset, makeUltraModel, wingspanOf, type UltraAsset, type UltraKind, type UltraModel } from '../ultra/ultraAsset.ts'
 
 /**
  * Lab → 3D Gallery: one finished Ultra breed on a turntable in the film look (the Art 2.1 renderer of Battle 3D and the
@@ -18,6 +19,8 @@ import { blinkClipOf, NO_AO_LAYER, heldVariants, loadUltraAsset, makeUltraModel,
  */
 
 const G = ART.gallery3d
+const FL = ART.duel.flight
+const isFly = (m: string): m is FlyClip => (FLY_CLIPS as readonly string[]).includes(m)
 const BASE = import.meta.env.BASE_URL
 
 export interface GalleryOptions {
@@ -47,15 +50,25 @@ export interface GalleryStats {
   triangles: number
   /** The clip playing on the shown breed (after fallbacks), or null while loading. */
   clip: string | null
+  /** Whether the shown look flies (its flying moves are on the buttons), how high it is now and its open wingspan (m). */
+  flies: boolean
+  liftM: number
+  spanM: number
 }
 
 export interface Gallery3D {
   /** Show a breed (loads it once; resolves when it stands there). */
   show(s: GalleryShow): Promise<void>
-  /** Play a move on the shown breed: idle and walk loop; the rest play once and settle back into idle. */
-  play(clip: GalleryClip): void
-  /** Review only: hold the shown breed in a move at a share of its length (0–1); null lets it play on. */
-  pose(clip: GalleryClip | null, t?: number): void
+  /**
+   * Play a move on the shown breed: idle and walk loop; the rest play once and settle back into idle. A look that
+   * flies: take off (then hover), fly, breathe in the air (taking off first from the floor) and land; a ground move
+   * in the air lands first.
+   */
+  play(clip: GalleryMove): void
+  /** Whether the shown look flies (its sidecar and file have the flying clips). */
+  flies(): boolean
+  /** Review only: hold the shown breed in a move at a share of its length (0–1), at that moment's height; null lets it play on. */
+  pose(clip: GalleryMove | null, t?: number): void
   /** Turn the turntable (degrees) and tilt the camera (degrees). */
   turn(yawDeg: number, pitchDeg: number): void
   /** Zoom by a factor (>1 closer), or back to the fitted view with 0. */
@@ -84,6 +97,13 @@ interface Stand {
   nextBlink: number
   blinks: number
   triangles: number
+  /** Flight: its flying clips' times and open wingspan (null: it doesn't fly), the flight now, its next clip, its height. */
+  fly: { times: FlyTimes; spanM: number } | null
+  flight: FlightPlan | null
+  flyStep: number
+  lift: number
+  /** A ground move asked for in the air: it plays once it has landed. */
+  queued: string | null
 }
 
 function makeLoader(renderer: unknown): GLTFLoader {
@@ -160,12 +180,20 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     const look = ULTRA_LOOKS[id]
     const heightM = (ART.duel.monsterHeightM * (look ? ultraHeightPct(look) : 100)) / 100
     const u = makeUltraModel(asset, variant, heightM)
+    // a look that flies: measured with its wings open before it is placed
+    const clips = asset.clips
+    const times = flyTimesOf(asset, clips)
+    const flyClip = clips.find((c) => c.name === 'fly')
+    const fly = times && flyClip ? { times, spanM: (wingspanOf(u, asset.meta, flyClip) * (100 + FL.spanMarginPct)) / 100 } : null
     const root = new Group()
     root.add(u.model)
     const mixer = new AnimationMixer(u.model)
     const actions = new Map<string, AnimationAction>()
-    for (const c of asset.clips) actions.set(c.name, mixer.clipAction(c))
-    const s: Stand = { look: id, asset, u, root, mixer, actions, current: '', backAt: 0, blink: blinkClipOf(asset), nextBlink: G.blinkGapsSec[0]!, blinks: 1, triangles: countTriangles(u.model) }
+    for (const c of clips) actions.set(c.name, mixer.clipAction(c))
+    const s: Stand = {
+      look: id, asset, u, root, mixer, actions, current: '', backAt: 0, blink: blinkClipOf(asset), nextBlink: G.blinkGapsSec[0]!, blinks: 1, triangles: countTriangles(u.model),
+      fly, flight: null, flyStep: 0, lift: 0, queued: null,
+    }
     playOn(s, 'idle')
     return s
   }
@@ -186,6 +214,66 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     s.current = clip
     // a one-shot holds its last pose a moment (the ko longer), then settles back into idle
     s.backAt = loop ? 0 : s.mixer.time + next.getClip().duration + (name === 'ko' ? G.koHoldSec : G.holdSec)
+  }
+
+  /** A flight's clip (ultra/flight.ts): the flight decides what follows, not the settle-back. */
+  function playStep(s: Stand, st: FlyStep): void {
+    const next = s.actions.get(st.clip)
+    if (!next) return
+    const prev = s.actions.get(s.current)
+    next.reset()
+    next.setLoop(st.loop ? LoopRepeat : LoopOnce, st.loop ? Infinity : 1)
+    next.clampWhenFinished = !st.loop
+    next.timeScale = st.rate
+    next.time = Math.min(next.getClip().duration, st.offset)
+    next.enabled = true
+    next.setEffectiveWeight(1)
+    next.play()
+    if (prev && prev !== next) prev.crossFadeTo(next, G.fadeSec, false)
+    s.current = st.clip
+    s.backAt = 0
+  }
+
+  /** Each frame: the flight's clips as their times come, its height, and what follows once it has landed. */
+  function flyOn(s: Stand): void {
+    const f = s.flight
+    if (!f) return
+    while (s.flyStep < f.steps.length && now >= f.steps[s.flyStep]!.at) playStep(s, f.steps[s.flyStep++]!)
+    s.lift = liftAt(f, now)
+    if (now >= f.end) {
+      s.flight = null
+      s.lift = 0
+      const next = s.queued ?? 'idle'
+      s.queued = null
+      playOn(s, next)
+    }
+  }
+
+  /** A flying move on a stand that flies (see Gallery3D.play). */
+  function flyMove(s: Stand, move: FlyClip): void {
+    const F = s.fly
+    if (!F) return
+    const up = s.flight !== null && s.flight.end === Infinity
+    const height = s.u.size.height
+    const restart = (p: FlightPlan) => {
+      s.flight = p
+      // the steps already played stay played
+      s.flyStep = p.steps.filter((x) => x.at < now).length
+    }
+    if (move === 'fly_land') {
+      if (up) restart(landingPlan(s.flight!, now, F.times))
+      return
+    }
+    // landing: it finishes coming down first
+    if (s.flight && !up) return
+    // from the floor (or while landing) every flying move takes off first
+    const base = up ? s.flight! : takeoffPlan(now, F.times, height)
+    if (!up) {
+      s.flight = base
+      s.flyStep = 0
+    }
+    if (move === 'fly_cast') restart(breathPlan(base, up ? now : base.top, F.times))
+    else if (move === 'fly' && up) restart({ ...base, steps: [...base.steps.filter((x) => x.at < now), { clip: 'fly', at: now, rate: 1, loop: true, offset: 0 }] })
   }
 
   function blinkOn(s: Stand): void {
@@ -210,6 +298,8 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
       a.root.position.set(-sep / 2, 0, 0)
       b.root.position.set(sep / 2, 0, 0)
     } else if (stands[0]) stands[0].root.position.set(0, 0, 0)
+    // measured standing on the floor (a flight's height and wings are added in aim)
+    for (const s of stands) s.root.position.y = 0
     turntable.rotation.y = (yaw * Math.PI) / 180
     turntable.updateMatrixWorld(true)
     const box = new Box3()
@@ -218,6 +308,7 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
         if ((o as Mesh).isMesh && o.visible) box.union(new Box3().setFromObject(o))
       })
     }
+    for (const s of stands) s.root.position.y = s.lift
     if (box.isEmpty()) return
     box.getCenter(target)
     const size = box.getSize(new Vector3())
@@ -227,11 +318,27 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     fitDist = Math.max(((size.x / 2) * G.fitMargin) / tanH, ((size.y / 2) * G.fitMargin) / tanV) + ((size.z / 2) * G.fitDepthPct) / 100
   }
 
+  /**
+   * The camera on what stands there; a flying monster: it follows it up (followPct of its height off the floor) and
+   * backs off for its hover height and open wings, as far as it is up.
+   */
   function aim(): void {
-    const d = fitDist / zoomK
+    const s = stands[0]
+    let d = fitDist
+    const look = target.clone()
+    if (s?.fly && s.lift > 0) {
+      const peak = (s.u.size.height * FL.peakPct) / 100
+      const k = Math.min(1, s.lift / Math.max(1e-3, peak))
+      const tanV = Math.tan((G.fov * Math.PI) / 360)
+      const tanH = tanV * camera.aspect
+      const wide = Math.max(((s.fly.spanM / 2) * G.fitMargin) / tanH, (((s.u.size.height + peak) / 2) * G.fitMargin) / tanV)
+      d += Math.max(0, wide - fitDist) * k
+      look.y += (s.lift * G.fly.followPct) / 100
+    }
+    d /= zoomK
     const p = (pitch * Math.PI) / 180
-    camera.position.set(target.x, target.y + Math.sin(p) * d, target.z + Math.cos(p) * d)
-    camera.lookAt(target)
+    camera.position.set(look.x, look.y + Math.sin(p) * d, look.z + Math.cos(p) * d)
+    camera.lookAt(look)
     camera.updateMatrixWorld()
   }
 
@@ -256,9 +363,12 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
       layout()
     }
     for (const s of stands) {
+      const held = frozen && s === stands[0]
+      if (!held) flyOn(s)
       if (s.backAt && s.mixer.time >= s.backAt) playOn(s, 'idle')
       if (now >= s.nextBlink) blinkOn(s)
-      if (!(frozen && s === stands[0])) s.mixer.update(dt)
+      if (!held) s.mixer.update(dt)
+      s.root.position.y = s.lift
     }
     aim()
     // the glow's twinkle (still with Reduce motion)
@@ -316,7 +426,19 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
       const s = stands[0]
       frozen = clip !== null
       if (!s || !clip) return
-      playOn(s, clip)
+      s.flight = null
+      s.queued = null
+      s.lift = 0
+      if (isFly(clip)) {
+        if (!s.fly || !s.actions.has(clip)) return
+        // at that moment's height: the take-off climbing, the hover, the landing coming down
+        const T = s.fly.times
+        const up = takeoffPlan(0, T, s.u.size.height)
+        const at = Math.min(1, Math.max(0, t))
+        s.lift = clip === 'fly_takeoff' ? liftAt(up, at * T.takeoffSec) : clip === 'fly_land' ? liftAt(landingPlan(up, 10, T), 10 + at * T.landSec) : liftAt(up, 10)
+        s.root.position.y = s.lift
+        playStep(s, { clip, at: now, rate: 1, loop: false, offset: 0 })
+      } else playOn(s, clip)
       const a = s.actions.get(s.current)
       if (!a) return
       // jump straight into the move (no cross-fade), at that moment
@@ -329,9 +451,19 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     play(clip) {
       const s = stands[0]
       if (!s) return
+      frozen = false
       if (clip === 'blink') blinkOn(s)
-      else playOn(s, clip)
+      else if (isFly(clip)) flyMove(s, clip)
+      else if (s.flight) {
+        // a ground move in the air: it lands first (from wherever it is), then plays it
+        if (s.flight.end === Infinity && s.fly) {
+          s.flight = landingPlan(s.flight, now, s.fly.times)
+          s.flyStep = s.flight.steps.length - 1
+        }
+        s.queued = clip
+      } else playOn(s, clip)
     },
+    flies: () => !!stands[0]?.fly,
     turn(dYaw, dPitch) {
       yaw = (yaw + dYaw) % 360
       pitch = Math.min(G.pitchMaxDeg, Math.max(G.pitchMinDeg, pitch + dPitch))
@@ -346,7 +478,10 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     stats() {
       const avg = frames.length ? frames.reduce((p, c) => p + c, 0) / frames.length : 16.7
       const s = stands[0]
-      return { backend: v.backend, fps: 1000 / avg, dpr: dyn.dpr(), level: dyn.level(), look: shown?.look ?? 'puddlepup', kind: s?.asset.kind ?? null, triangles: s?.triangles ?? 0, clip: s?.current || null }
+      return {
+        backend: v.backend, fps: 1000 / avg, dpr: dyn.dpr(), level: dyn.level(), look: shown?.look ?? 'puddlepup', kind: s?.asset.kind ?? null, triangles: s?.triangles ?? 0, clip: s?.current || null,
+        flies: !!s?.fly, liftM: +(s?.lift ?? 0).toFixed(3), spanM: +(s?.fly?.spanM ?? 0).toFixed(2),
+      }
     },
     snapshot() {
       // drawn and read in one task (the drawing buffer is not kept between frames)

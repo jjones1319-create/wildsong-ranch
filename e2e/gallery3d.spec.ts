@@ -14,7 +14,8 @@ declare global {
     __gallery3d?: {
       ready: boolean
       phase: string
-      stats(): { look: string; clip: string | null; triangles: number; kind: string | null } | null
+      stats(): { look: string; clip: string | null; triangles: number; kind: string | null; flies?: boolean; liftM?: number } | null
+      show(look: string): void
       snapshot(): string | null
     }
   }
@@ -85,6 +86,25 @@ test.describe('3D Gallery (Art 2.1)', () => {
     await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 5_000 }).toMatch(/^(strike|shove)$/)
     // and it settles back into idle on its own
     await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 15_000 }).toMatch(/idle/)
+    expect(errors).toEqual([])
+  })
+
+  test('a look that flies takes off from its 🪽 button and draws in the air', async ({ page }) => {
+    test.setTimeout(240_000)
+    const errors = collectErrors(page)
+    await page.setViewportSize({ width: 412, height: 915 })
+    await page.goto(`${BASE}?backend=webgl#lab/gallery3d`)
+    await page.waitForFunction(() => window.__gallery3d?.phase === 'ready', undefined, { timeout: 180_000 })
+    // Hearthwing (its file has the flying clips)
+    await page.evaluate(() => window.__gallery3d!.show('hearthwing'))
+    await page.waitForFunction(() => window.__gallery3d?.phase === 'ready' && window.__gallery3d.stats()?.look === 'hearthwing', undefined, { timeout: 180_000 })
+    expect((await page.evaluate(() => window.__gallery3d!.stats()))?.flies).toBe(true)
+    const takeoff = page.locator('.gallery3d__moves [data-clip="fly_takeoff"]')
+    await takeoff.click()
+    // its flying clips play and it rises off the floor
+    await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 5_000 }).toMatch(/^fly/)
+    await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.liftM ?? 0, { timeout: 5_000 }).toBeGreaterThan(0.3)
+    expect(await drawnShare(page)).toBeGreaterThan(0.02)
     expect(errors).toEqual([])
   })
 })

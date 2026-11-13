@@ -32,36 +32,41 @@ VARIANTS: dict = {}
 
 ATLAS_STRIP = 0                      # no fur cards, no tuft: the islands take the whole atlas
 BODY_TRIS = 64000
-ATLAS_DENSITY = {'lo_eyes': 1.3, 'lo_fins': 0.5, 'lo_props': 0.6}   # round 3: more of the atlas for the body
+ATLAS_DENSITY = {'lo_eyes': 1.3, 'lo_fins': 0.42, 'lo_props': 0.6}   # Nov 12: the working wings are about 4x the area
 UV_SMOOTH = 120                      # round 3: the scaly body unwraps smoothed into far fewer, larger islands (uv_smooth_mask)
-GLOW = {'strength': 1.8, 'tint': None}    # round 2: the chest's heart and the spade glow clearly in-game
+GLOW = {'strength': 2.2, 'tint': '#FF9F45'}   # Nov 12: the bloom stays orange (it went cream to white on the cream bib)    # round 2: the chest's heart and the spade glow clearly in-game
 BLINK_CLOSED = (0.74, 0.04, 0.2)
-MOUTH_SOCKET = (0.0, -0.515, 0.622)  # at the lips (the attack's flame puff; the plan's default sat 5 cm inside the snout)
+MOUTH_SOCKET = (0.0, -0.566, 0.622)  # at the lips (the attack's flame puff; the plan's default sat 5 cm inside the snout)
 MERGE_INTO_HEAD = ('eye.L', 'eye.R')  # round 2: the jaw moves the lower jaw's skin (the strike's snap, the open smiles)
 AO_FLOOR = 0.35                      # round 2: the deeper scales' crevices never bake near black
 AO_SOFTEN = 1.0
 MEMBRANE_AO_BODY = False             # the folded wings leave no baked shadow on the flank (it stayed when they spread)
-LITE_PROPS_TRIS = 3200               # Lite keeps the claws, horns, wing bones and frill spines whole (36 parts, 2.9k)
-NORMAL_SCALE = 1.1                   # the baked scales' relief at full strength in the game's film material (default 0.6)
+LITE_PROPS_TRIS = 4200               # Lite keeps the claws, horns, wing bones and frill spines whole (36 parts, 2.9k)
+NORMAL_SCALE = 1.3                   # the baked scales' relief at full strength in the game's film material (default 0.6)
 
 HEAD_C = (0.0, -0.25, 0.765)
-NOSE_C = (0.0, -0.528, 0.712)
+NOSE_C = (0.0, -0.605, 0.705)
 
 G_YOUNG = {
     'k': 1.0, 'k_face': 1.0,
     'head_c': HEAD_C, 'head_r': (0.2, 0.21, 0.185),
-    'eye': {'r': 0.068, 'shape': (1.0, 1.06), 'depth': (0.6, 0.33), 'x': 0.127, 'z': 0.73, 'out': 0.006, 'fwd': 0.62,
-            'iris': 0.86, 'pupil': 0.5, 'shift': (0.06, 0.04), 'rim': 0.1},
-    'nose_c': NOSE_C, 'nose_r': (0.034, 0.014, 0.019),
+    # Nov 12 round 2: sunk about a third deeper (no lens edge in profile), a teal upper lid and a lid line with lashes
+    # instead of the dark ring, a rounder closed lid
+    'eye': {'r': 0.074, 'shape': (1.0, 1.06), 'depth': (0.6, 0.42), 'x': 0.122, 'z': 0.73, 'out': 0.004, 'fwd': 0.56,
+            'iris': 0.95, 'pupil': 0.56, 'shift': (0.06, 0.04), 'rim': 0.12, 'lid_top': 0.1, 'lid_paint': 0.9,
+            'lid_dome': 0.006},
+    'nose_c': NOSE_C, 'nose_r': (0.018, 0.009, 0.011),
     'lid': (0.08, 0.16, 0.95),
     'head_parts': [
         Part('head', 'sphere', loc=HEAD_C, radius=1.0, scale=(0.2, 0.21, 0.185)),
-        Part('snout', 'sphere', loc=(0.0, -0.47, 0.695), radius=1.0, scale=(0.062, 0.072, 0.05)),
-        Part('bridge', 'sphere', loc=(0.0, -0.44, 0.745), radius=1.0, scale=(0.05, 0.07, 0.042)),
-        Part('muzzle', 'sphere', loc=(0.0, -0.43, 0.64), radius=1.0, scale=(0.092, 0.085, 0.058)),
-        Part('nose', 'sphere', loc=NOSE_C, radius=1.0, scale=(0.034, 0.018, 0.02)),
-        Part('cheek', 'sphere', loc=(0.11, -0.365, 0.645), radius=0.056, scale=(1.0, 0.9, 0.82), mirror=True),
-        Part('jowl', 'sphere', loc=(0.14, -0.29, 0.645), radius=0.062, scale=(0.85, 1.0, 0.9), mirror=True),
+        # Nov 12 round 2: one short rounded snout (the ridge between the eyes flattened into the brow, the nose knob 40%
+        # smaller, the cream chin pulled back behind the nose tip)
+        Part('snout', 'sphere', loc=(0.0, -0.5, 0.69), radius=1.0, scale=(0.062, 0.11, 0.054)),
+        Part('bridge', 'sphere', loc=(0.0, -0.46, 0.73), radius=1.0, scale=(0.045, 0.09, 0.03)),
+        Part('muzzle', 'sphere', loc=(0.0, -0.47, 0.64), radius=1.0, scale=(0.08, 0.1, 0.052)),
+        Part('nose', 'sphere', loc=NOSE_C, radius=1.0, scale=(0.018, 0.011, 0.012)),
+        Part('cheek', 'sphere', loc=(0.1, -0.365, 0.648), radius=0.047, scale=(1.0, 0.9, 0.82), mirror=True),
+        Part('jowl', 'sphere', loc=(0.13, -0.29, 0.648), radius=0.052, scale=(0.85, 1.0, 0.9), mirror=True),
         Part('neck', 'capsule', loc=(0.0, -0.3, 0.5), to=(0.0, -0.28, 0.65), radius=0.165),
         Part('nape', 'sphere', loc=(0.0, -0.14, 0.66), radius=0.15, scale=(1.0, 1.0, 0.95)),
     ],
@@ -82,12 +87,16 @@ G_YOUNG = {
         'arm_dx': 0.01, 'arm_z': {'F': 0.25, 'B': 0.2}, 'arm_r': {'F': 0.093, 'B': 0.093}, 'arm_scale': (1.0, 1.05, 1.35),
         'paw_dy': 0.025, 'paw_z': 0.064, 'paw_r': 0.107, 'paw_scale': (1.12, 1.0, 0.62),
         'heel_dy': 0.03, 'heel_z': 0.07, 'heel_r': 0.075,
-        'claw': (0.066, 0.029, 0.18), 'claw_blunt': 'cone', 'hip_z': {'F': 0.38, 'B': 0.34},
+        'claw': (0.05, 0.028, 0.14), 'claw_blunt': 'cone', 'claw_cap': 0.55, 'hip_z': {'F': 0.38, 'B': 0.34},
     },
     'tail': {'pts': [(0.0, 0.3, 0.37), (0.0, 0.45, 0.325), (0.0, 0.6, 0.305), (0.0, 0.72, 0.318), (0.0, 0.805, 0.36)],
              'rad': [0.128, 0.102, 0.076, 0.056, 0.044], 'bones': 4, 'tall': 1.2},
-    'spade': {'base': (0.0, 0.77, 0.33), 'tip': (0.0, 0.95, 0.56), 'width': 0.2, 'thick': 0.19, 'bulge': 0.4, 'curl': 0.03, 'taper': 1.0,
-              'saturated': True, 'collar': 0.15},
+    # Nov 12 round 2 (originality): the card's spade, a flat leaf / arrowhead about a quarter as thick as wide, a centre
+    # ridge, a faint steady glow (never a round glowing bud)
+    # Nov 12 final (originality): a short, flat, rounded leaf-spade about 1.3 x as long as wide, its broad face to the
+    # side, a midrib, a teal cup where it joins; one flat orange (no glow, no spots, no hot tip)
+    'spade': {'base': (0.0, 0.78, 0.34), 'tip': (0.0, 0.95, 0.58), 'width': 0.23, 'thick': 0.06, 'bulge': 0.5, 'curl': 0.0,
+              'taper': 1.0, 'profile': True, 'flat': True, 'collar': 0.24, 'midrib': (0.004, 0.01), 'keep': 0.6},
     'spikes': {
         # the dorsal row, big over the shoulders (2-turnaround side: 12 from the nape to the spade)
         'dorsal': [(-0.115, 0.08), (-0.035, 0.1), (0.05, 0.108), (0.135, 0.104), (0.215, 0.095), (0.29, 0.084)],
@@ -117,57 +126,63 @@ G_YOUNG = {
         # spine directions (left side), top to bottom, and their lengths: fanning back and out behind the cheek
         'dirs': [(0.5, 0.42, 0.78), (0.78, 0.5, 0.36), (0.86, 0.46, -0.06), (0.7, 0.38, -0.6)],
         'lens': [0.16, 0.21, 0.21, 0.155],
-        'scallop': 0.27, 'cup': 0.04, 'curl': 0.035, 'relief': 0.0018, 'spine_r': (0.0105, 0.0026),
+        'scallop': 0.27, 'cup': 0.04, 'curl': 0.035, 'relief': 0.0018, 'spine_r': (0.0105, 0.0026), 'spine_start': 0.05,
     },
     # round 2: the smaller second frill above and behind the main one (1-hero)
     'frill2': {
         'root_top': (0.15, -0.13, 0.86), 'root_bot': (0.165, -0.16, 0.795),
         'dirs': [(0.4, 0.45, 0.8), (0.65, 0.55, 0.5), (0.8, 0.55, 0.2)],
         'lens': [0.09, 0.12, 0.11],
-        'scallop': 0.27, 'cup': 0.025, 'curl': 0.02, 'relief': 0.0014, 'spine_r': (0.0078, 0.002),
+        'scallop': 0.27, 'cup': 0.025, 'curl': 0.02, 'relief': 0.0014, 'spine_r': (0.0078, 0.002), 'spine_start': 0.05,
     },
     'wings': {
-        'parent': 'chest', 'name': 'wing', 'scallop': 0.13,
-        # folded at rest, as 2-turnaround's side view: the wrist up by the shoulder, the fingers laid back over the flank
-        # the elbow tucked down the flank under the membrane (no arm bone along the back)
-        'shoulder': (0.125, -0.06, 0.5), 'elbow': (0.22, 0.03, 0.38), 'wrist': (0.25, -0.08, 0.53),
-        'fingers': [(0.3, 0.345, 0.455), (0.388, 0.233, 0.28), (0.45, 0.083, 0.143)],
-        'attach': (0.21, 0.2, 0.25),
-        # open (directions only): the arm raised up and out, the fingers fanning out and down (1-hero's far wing)
-        'spread': {'elbow': (0.25, -0.05, 0.66), 'wrist': (0.36, -0.04, 0.86),
-                   'fingers': [(0.72, 0.0, 0.66), (0.62, 0.12, 0.42), (0.45, 0.2, 0.36)]},
+        'parent': 'chest', 'name': 'wing', 'scallop': 0.26,
+        # Nov 12 final: folded as a closed fan: the wrist and its claw the high point just behind the shoulder, the forearm along the flank down to the elbow,
+        # the fingers bundled beside it (tips inside the membrane); spread: the arm raised, the hand out, the fingers fanning out and down
+        'shoulder': (0.12, 0.0, 0.5), 'elbow': (0.33, 0.32, 0.35), 'wrist': (0.24, 0.06, 0.62),
+        'fingers': [(0.262, 0.756, 0.424), (0.29, 0.74, 0.38), (0.31, 0.72, 0.33)],
+        'attach': (0.15, 0.38, 0.38),
+        'spread': {'elbow': (0.77, 0.0, 1.26), 'wrist': (1.72, 0.05, 1.56), 'fingers': [(2.72, 0.0, 1.81), (2.57, 0.35, 1.21), (2.17, 0.55, 0.81)]},
     },
-    'wing': {'billow': 0.014, 'res_high': (80, 140), 'res_quick': (24, 40), 'res_low': (6, 12), 'relief': 0.0012,
-             'arm_r': (0.062, 0.054, 0.046), 'lead_r': (0.042, 0.012), 'finger_r': (0.014, 0.005), 'wclaw': (0.046, 0.019),
-             'arm_bands': 14, 'veins': 'branch', 'vein_n': 4, 'vein_w': 0.028, 'vein_relief': 0.0009, 'glow': 0.18, 'arm_power': 3,
-             'wrist_bulge': 0.05, 'wrist_cap': 0.9, 'rigid_bones': True},
+    'wing': {'billow': 0.06, 'res_high': (80, 140), 'res_quick': (24, 40), 'res_low': (7, 14), 'relief': 0.0016,
+             # a thick, scaled arm tapering from the shoulder (no rings), a round knuckle and a copper claw at the wrist, the
+             # leading finger ending blunt (no needle), the fingers raised teal struts
+             'arm_r': (0.075, 0.05, 0.042), 'lead_r': (0.03, 0.013), 'finger_r': (0.02, 0.008), 'wclaw': (0.075, 0.026),
+             'wclaw_dir': (0.2, -0.85, 0.5), 'arm_rings': False, 'elbow_bulge': 0.0, 'knuckle_lo': 9, 'arm_seg_lo': 10,
+             'finger_teal': True, 'clean_skin': True,
+             'arm_bands': 16, 'veins': 'branch', 'vein_n': 5, 'vein_w': 0.022, 'vein_relief': 0.0011, 'glow': 0.34, 'arm_power': 3,
+             'mid_lite': 0.55, 'backlit': True, 'finger_dark': 0.45,
+             'wrist_bulge': 0.0, 'wrist_cap': 0.25, 'rigid_bones': True, 'knuckle': 0.95, 'shoulder_dome': True},
     'horn': {'path': [(0.15, -0.2, 0.825), (0.182, -0.194, 0.885), (0.192, -0.172, 0.94), (0.166, -0.138, 0.988)],
              'r0': 0.046, 'r_tip': 0.007, 'rings': 5, 'groove': 0.1},
-    'mouth': {'z': 0.622, 'half': 0.075, 'curve': 0.016, 'curl': 0.02, 'dip': 0.004, 'width': 0.0024, 'zmin': 0.55,
-              'front': ([0.0, 0.04, 0.065, 0.085], [-0.511, -0.502, -0.484, -0.452])},
+    'mouth': {'z': 0.622, 'half': 0.07, 'curve': 0.016, 'curl': 0.02, 'dip': 0.004, 'width': 0.0024, 'zmin': 0.55,
+              'front': ([0.0, 0.04, 0.06, 0.072], [-0.564, -0.549, -0.526, -0.496])},
     # round 2: the lower jaw's skin (below the smile, from the mouth's corners forward) rides the jaw bone
-    'jaw_skin': {'y0': -0.4, 'y1': -0.44, 'depth': 0.09},
+    'jaw_skin': {'y0': -0.42, 'y1': -0.46, 'depth': 0.09},
+    # Nov 13: a real mouth behind lips cut along the smile (hearthwing_mouth): the fire breath shows open jaws
+    'mouth_cut': {'corner_y': -0.485, 'x_max': 0.08, 'z_band': 0.035, 'back_y': -0.455, 'hinge_y': -0.44, 'jaw_z0': 0.09,
+                  'fang_y': -0.552, 'tris': 1000},
     'nostril': {'dx': 0.015, 'dz': 0.008, 'r': 0.0032},
-    'zone': {'head': ((0.0, -0.31, 0.75), (0.32, 0.31, 0.29), 0.52), 'muzzle': ((0.0, -0.46, 0.66), (0.11, 0.1, 0.09)),
+    'zone': {'head': ((0.0, -0.31, 0.75), (0.32, 0.31, 0.29), 0.52), 'muzzle': ((0.0, -0.5, 0.66), (0.11, 0.13, 0.09)),
              'face': (-0.36, 0.55, 0.86, 0.22), 'leg_top': {'F': 0.3, 'B': 0.22}, 'leg_r': 0.15, 'tail_y': 0.33, 'tail_r': 0.2},
     'cream': {
         'face_line': ([0.0, 0.045, 0.075, 0.12, 0.19, 0.24], [0.672, 0.674, 0.695, 0.7, 0.705, 0.68]), 'face_y': (-0.215, -0.235),
         'eye_patch': (1.62, 1.52, 0.075, 0.004), 'v_teal': (0.026, 0.35, 0.712),
         'bib': ([0.1, 0.22, 0.35, 0.48, 0.58, 0.66], [0.12, 0.135, 0.135, 0.12, 0.105, 0.11]), 'bib_y': (-0.22, -0.245), 'bib_top': (0.68, 0.62),
         'crisp': 0.25,
-        'belly': ([-0.3, -0.15, 0.0, 0.2, 0.3, 0.42], [0.3, 0.24, 0.215, 0.2, 0.17, 0.15]),
+        'belly': ([-0.3, -0.15, 0.0, 0.2, 0.3, 0.42], [0.24, 0.19, 0.17, 0.16, 0.15, 0.14]),
         'paw_rim': ((0.15, 0.17, 0.055), 0.035),
     },
     # round 2: pointed leaf scales (about 1.4:1, a midrib) at about 3x the relief, overlapping so each tip casts a shadow
     'scales': {'body': 0.032, 'head': 0.02, 'snout': 0.012, 'leg': 0.024, 'paw': 0.017, 'tail': (0.028, 0.016), 'spade': 0.016,
-               'band': 0.05, 'h_body': 0.013, 'h_head': 0.0085, 'h_fine': 0.003, 'h_band': 0.006, 'overlap': 1.25, 'aspect': 1.4,
+               'band': 0.05, 'h_body': 0.019, 'h_head': 0.0105, 'contrast': 0.7, 'h_fine': 0.003, 'h_band': 0.006, 'overlap': 1.25, 'aspect': 1.4,
                'inset': 0.0008, 'leaf': 0.85, 'rib_h': 0.0012, 'cream_skip': 0.88, 'majority': 7, 'h_spade': 0.006,
                'uv_blade': 0.85},
     # the chest's chevrons: rows of leaf plates in V's down the cream chest (4-details panel 5)
     'chevron': {'centre': (0.0, -0.44, 0.37), 'radii': (0.13, 0.09, 0.17), 'rows': 5, 'angle': 48, 'seam': 0.0065, 'h': 0.008,
                 'outline': False},
     # a faint warm heart in the middle of the chest
-    'glow': {'centre': (0.0, -0.45, 0.37), 'radii': (0.06, 0.07, 0.075), 'heart': 1.0, 'seam': 0.12, 'warm': 1.0, 'seam_warm': 0.1,
+    'glow': {'centre': (0.0, -0.45, 0.37), 'radii': (0.075, 0.08, 0.09), 'heart': 1.0, 'seam': 0.45, 'warm': 1.0, 'seam_warm': 0.4,
              'seam_paint': 0.0, 'under': 0.0},
     'fleck_z': 0.4, 'spike_orange': 0.35,
     # brows (in eye radii from the eye's centre: across, up, half axes): a short thick arc above each eye
@@ -175,12 +190,12 @@ G_YOUNG = {
     # round 2: one continuous thick arched brow per eye (eye radii: across, up, half thickness), thickest in the middle
     'brow_arc': [(-0.78, 1.2, 0.05), (-0.42, 1.48, 0.08), (0.0, 1.6, 0.095), (0.42, 1.55, 0.088), (0.82, 1.36, 0.06)],
     'blush': ((0.15, -0.37, 0.66), (0.05, 0.065, 0.042)),
-    'dots': [(0.048, 0.645), (0.06, 0.652), (0.054, 0.635), (0.067, 0.642), (0.072, 0.657), (0.062, 0.665)], 'dots_y': -0.53,
+    'dots': [(0.048, 0.645), (0.06, 0.652), (0.054, 0.635), (0.067, 0.642), (0.072, 0.657), (0.062, 0.665)], 'dots_y': -0.56,
     'rig': {'hip': (0.0, 0.24, 0.4), 'chest': (0.0, -0.22, 0.42), 'head_r': 0.19, 'knee_back': 0.03, 'ankle_z': 0.045,
             'foot_len': 0.13, 'leg_radius': 0.1, 'stride': 0.14, 'horn_bone': ((0.0, -0.19, 0.89), (0.0, -0.15, 0.99)),
             # round 2: the jaw hinges at the mouth's corners and runs to the chin's tip
-            'jaw': {'head': (0.0, -0.42, 0.63), 'tail': (0.0, -0.52, 0.6)}},
-    'ember': False,
+            'jaw': {'head': (0.0, -0.44, 0.63), 'tail': (0.0, -0.57, 0.6)}, 'cast_paw': 0.0, 'cast_rear': 8, 'hit_wing_open': 0.0},
+    'ember': False, 'lid_teal': True,
 }
 
 FORM = HF.Form(G_YOUNG, PALETTE)
@@ -189,6 +204,8 @@ HF.export(FORM, globals())
 CLIP_CALM = {
     '*': {'ear': 0.6, 'tail': 0.85},
     'ko': {'ear': 0.25, 'tail': 0.5, 'wing': 0.6},
+    # Nov 13: the big folded wings stay folded at rest (a slight opening lifted them into a sail)
+    'battle_idle': {'wing': 0.2}, 'idle': {'wing': 0.3}, 'idle_happy': {'wing': 0.5}, 'run': {'wing': 0.4},
     'hit_heavy': {'ear': 0.35, 'tail': 0.6},
     'win': {'ear': 0.5},
     'strike': {'ear': 0.4},

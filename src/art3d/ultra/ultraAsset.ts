@@ -1,12 +1,14 @@
-import { AnimationClip, Box3, BufferGeometry, Mesh, MeshStandardMaterial, Object3D, Texture } from 'three'
-import type { Material } from 'three'
+import { AnimationClip, AnimationMixer, Box3, BufferGeometry, Mesh, MeshStandardMaterial, Object3D, Texture, Vector3 } from 'three'
+import type { Material, SkinnedMesh } from 'three'
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { buildTagOf, ULTRA_LOOKS, ultraLook, versionedUrl, type UltraId, type UltraLook } from '../../art/ultraLooks.ts'
 import type { BreedId } from '../../data/types.ts'
 import { filmMaterial } from '../perf/content.ts'
 import { ART } from '../../data/tuning.ts'
-import { cardEdgeFadeOf, glowOf, normalScaleOf, partKind, partVisible, softFinsOf, variantOfPart } from './parts.ts'
+import { canFly } from './clips.ts'
+import { flyTimes, type FlyTimes } from './flight.ts'
+import { bodySheenOf, cardEdgeFadeOf, glowFor, normalScaleOf, partKind, partVisible, softFinsOf, variantCardsOff, variantEyesDiffer, variantHasOwnOrm, variantOfPart } from './parts.ts'
 
 
 /**
@@ -25,7 +27,7 @@ export interface UltraMeta {
   heightUnits?: number
   clips?: Record<string, { loop?: boolean; hold?: boolean; seconds?: number; rootSpeed?: number; markers?: { name: string; t: number }[] }>
   /** Each variant's colour holder, its cards' colour set, and its own props (`lo_props_<short>`, hidden on other looks). */
-  variants?: Record<string, { holder?: string; colorAttribute?: string; meshes?: string[] }>
+  variants?: Record<string, { holder?: string; colorAttribute?: string; meshes?: string[]; orm?: boolean; glow?: unknown; cards?: boolean }>
   /** Mesh name → part kind (`lo_cards: "card"`). */
   meshes?: Record<string, string>
   face?: { blinkClip?: string }
@@ -37,10 +39,14 @@ export interface UltraMeta {
   cards?: unknown
   /** `{ scale }`: the body's and props' normal-map strength (parts.ts normalScaleOf). */
   normal?: unknown
+  /** `{ sheen }`: the body's sheen instead of the fur's (parts.ts bodySheenOf; 0 for a stone breed). */
+  body?: unknown
   /** The 10-hex sha1 of the .glb (older sidecars: an object of build statistics). */
   build?: unknown
   /** The Lite copy (tools/art/ultra.ts): its file beside this one and its own build tag. */
   lite?: { file?: unknown; build?: unknown }
+  /** Socket → bone (`socket_mouth: "jaw"`, `socket_wing_L`…). */
+  sockets?: Record<string, unknown>
 }
 
 export interface UltraAsset {
@@ -171,6 +177,8 @@ function ownerOf(o: Object3D, root: Object3D, variants: UltraMeta['variants']): 
 export function makeUltraModel(asset: UltraAsset, variant: string | null, heightM: number): UltraModel {
   const model = cloneSkinned(asset.scene)
   const variantMap = new Map<string, Texture>()
+  /** A variant's own ORM map (VARIANT_ORM): its holder's metallicRoughness/occlusion texture. */
+  const variantOrmMap = new Map<string, Texture>()
   const film = asset.kind !== 'art2'
   const variants = asset.meta?.variants
   /** Parts one variant wears (a bell, a ribbon): left out of the measuring, so every look stands the same height. */
@@ -182,8 +190,10 @@ export function makeUltraModel(asset: UltraAsset, variant: string | null, height
     // each variant's colour map rides on a hidden mesh named __variant_<id>
     const vm = /^__variant_(.+)$/.exec(m.name)
     if (vm) {
-      const map = (m.material as MeshStandardMaterial).map
-      if (map) variantMap.set(vm[1]!, map)
+      const hm = m.material as MeshStandardMaterial
+      if (hm.map) variantMap.set(vm[1]!, hm.map)
+      const orm = hm.roughnessMap ?? hm.aoMap
+      if (orm) variantOrmMap.set(vm[1]!, orm)
       m.visible = false
       return
     }
@@ -210,13 +220,27 @@ export function makeUltraModel(asset: UltraAsset, variant: string | null, height
   model.scale.setScalar(scale)
   model.position.y = -box.min.y * scale
   const size: UltraSize = { height: heightM, front: Math.max(0.05, box.max.z * scale), back: Math.max(0.05, -box.min.z * scale), width: Math.max(0.05, (box.max.x - box.min.x) * scale) }
+  // a variant without fur cards (VARIANT_CARDS_OFF) hides them after the measuring, so it stands as tall as the others
+  if (variantCardsOff(variant, variants)) {
+    model.traverse((o) => {
+      if ((o as Mesh).isMesh && partKind(o.name, asset.meta?.meshes) === 'card') o.visible = false
+    })
+  }
   const variantBase = variant ? (variantMap.get(variant) ?? null) : null
+  const variantEyes = variantEyesDiffer(asset.meta, variant)
+  // a variant with its own ORM (its roughness, clearcoat and glow mask) swaps it in; any other look keeps the shared one
+  const variantOrm = variant && variantHasOwnOrm(asset.meta, variant) ? (variantOrmMap.get(variant) ?? null) : null
   const colourSet = (variant ? asset.meta?.variants?.[variant]?.colorAttribute : undefined)?.toLowerCase() ?? 'color_1'
-  // the glow channel, only when the sidecar says the breed glows (an ORM map without alpha can decode as 1)
-  const glow = glowOf(asset.meta, ART.ultra.film.glow.maxStrength)
+  // the glow channel, only when the sidecar says the look glows (an ORM map without alpha can decode as 1); a variant
+  // with its own ORM glows by its own entry
+  const glow = glowFor(asset.meta, variant, ART.ultra.film.glow.maxStrength)
+  // the eyes keep the shared ORM (below), so they glow by the breed's own entry: a variant's glow on the shared map
+  // (whose alpha can decode as 1) lit Stormcrown Nimbusheep's eyes solid gold
+  const eyeGlow = variantOrm ? glowFor(asset.meta, null, ART.ultra.film.glow.maxStrength) : glow
   const softFins = softFinsOf(asset.meta)
   const cardEdgeFade = cardEdgeFadeOf(asset.meta)
   const normalScale = normalScaleOf(asset.meta)
+  const bodySheen = bodySheenOf(asset.meta)
   const materials: Material[] = []
   model.traverse((o) => {
     const m = o as Mesh
@@ -227,8 +251,10 @@ export function makeUltraModel(asset: UltraAsset, variant: string | null, height
       // their edge fade and the eyes their own gloss; glTF can't carry those
       const kind = partKind(m.name, asset.meta?.meshes)
       if (!kind || !mat?.map) return
-      const base = variantBase && kind !== 'eye' ? variantBase : mat.map
-      const made = filmMaterial(kind, { base, normal: mat.normalMap ?? null, orm: mat.roughnessMap ?? mat.aoMap ?? null }, { glow, cardEdgeFade, normalScale })
+      // a variant's colour atlas on every part; on the eyes only when its eyes differ (Bonfire Cinderlynx's #FFF0A8)
+      const base = variantBase && (kind !== 'eye' || variantEyes) ? variantBase : mat.map
+      const orm = variantOrm && kind !== 'eye' ? variantOrm : (mat.roughnessMap ?? mat.aoMap ?? null)
+      const made = filmMaterial(kind, { base, normal: mat.normalMap ?? null, orm }, { glow: kind === 'eye' ? eyeGlow : glow, cardEdgeFade, normalScale, bodySheen })
       m.material = made
       materials.push(made)
       // a variant's cards and tufts take their colour from the second vertex-colour set (the model's notes)
@@ -270,4 +296,53 @@ export function heldVariants(asset: UltraAsset): string[] {
 export function blinkClipOf(asset: UltraAsset): string | null {
   const name = asset.meta?.face?.blinkClip ?? 'blink'
   return asset.clips.some((c) => c.name === name) ? name : null
+}
+
+/**
+ * The look's flying clips' times when it flies (ultra/clips.ts canFly: its sidecar lists all four and its file holds
+ * them), else null: no flight, its ground moves as before.
+ */
+export function flyTimesOf(asset: UltraAsset, clips: readonly AnimationClip[]): FlyTimes | null {
+  const held = new Map(clips.map((c) => [c.name, c] as const))
+  const listed = asset.meta?.clips ?? {}
+  if (!canFly((n) => held.has(n) && n in listed)) return null
+  return flyTimes((n) => held.get(n)!.duration, listed)
+}
+
+/**
+ * Its open wings' span (m) on a fitted copy, measured from its membranes (the `fin` parts) through the fly clip's
+ * beat: what the cameras frame while it flies. Its width when it has no membranes. Call it before the copy is placed
+ * (it measures across the copy's own x).
+ */
+export function wingspanOf(u: UltraModel, meta: UltraMeta | null, fly: AnimationClip): number {
+  const fins: SkinnedMesh[] = []
+  u.model.traverse((o) => {
+    const m = o as SkinnedMesh
+    if (m.isSkinnedMesh && m.visible && partKind(m.name, meta?.meshes) === 'fin') fins.push(m)
+  })
+  if (!fins.length) return u.size.width
+  const mixer = new AnimationMixer(u.model)
+  const action = mixer.clipAction(fly)
+  action.play()
+  const v = new Vector3()
+  let left = 0
+  let right = 0
+  const samples = 4
+  for (let k = 0; k < samples; k++) {
+    mixer.setTime((k / samples) * fly.duration)
+    u.model.updateMatrixWorld(true)
+    for (const m of fins) {
+      m.skeleton.update()
+      const n = m.geometry.getAttribute('position')?.count ?? 0
+      for (let i = 0; i < n; i++) {
+        m.getVertexPosition(i, v)
+        v.applyMatrix4(m.matrixWorld)
+        left = Math.min(left, v.x)
+        right = Math.max(right, v.x)
+      }
+    }
+  }
+  action.stop()
+  mixer.uncacheRoot(u.model)
+  return Math.max(u.size.width, right - left)
 }

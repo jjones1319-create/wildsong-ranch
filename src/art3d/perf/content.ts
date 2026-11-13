@@ -1,5 +1,5 @@
 import {
-  Color, DoubleSide, FrontSide, Group, HemisphereLight, DirectionalLight, InstancedMesh, Mesh, MeshBasicMaterial, MeshPhysicalMaterial,
+  BackSide, Color, DoubleSide, Float32BufferAttribute, FrontSide, ShaderChunk, SphereGeometry, Group, HemisphereLight, DirectionalLight, InstancedMesh, Mesh, MeshBasicMaterial, MeshPhysicalMaterial,
   NoColorSpace, Object3D, PlaneGeometry, Scene, ShadowMaterial, SRGBColorSpace, Texture, TextureLoader, Vector2, Vector3, AdditiveBlending,
   CanvasTexture, Matrix4, Quaternion,
 } from 'three'
@@ -7,7 +7,6 @@ import type { Camera, WebGLRenderer } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { ART } from '../../data/tuning.ts'
 
 /**
@@ -150,6 +149,8 @@ export interface FilmOptions {
   cardEdgeFade?: readonly [number, number] | null
   /** A look's own normal-map strength for its body and props (its sidecar's normal.scale), instead of film.normalScale. */
   normalScale?: number | null
+  /** A look's own sheen on its body (its sidecar's body.sheen; 0 for stone), instead of film.furSheen. */
+  bodySheen?: number | null
 }
 
 /** The glow's twinkle: the shared clock (seconds) and amplitude (0 with Reduce motion); setFilmClock each frame. */
@@ -196,7 +197,8 @@ export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): 
     clearcoat: kind === 'fin' ? f.finCoat : kind === 'eye' ? f.eyeCoat : kind === 'card' ? 0 : f.furCoat,
     clearcoatRoughness: kind === 'eye' ? 0.05 : f.furCoatRoughness,
     // a prop is the body's material without the fur's sheen (hard horns, rope, a bell)
-    sheen: kind === 'fin' || kind === 'eye' || kind === 'prop' ? 0 : kind === 'card' ? f.cardSheen : f.furSheen,
+    // the body may take the look's own (a stone breed: none; absent: film.furSheen, as before)
+    sheen: kind === 'fin' || kind === 'eye' || kind === 'prop' ? 0 : kind === 'card' ? f.cardSheen : kind === 'body' && typeof opts.bodySheen === 'number' ? opts.bodySheen : f.furSheen,
     // the sheen in the fur's own colour (each texel's), so it never tints a coat another hue
     sheenColor: new Color(f.sheenGain, f.sheenGain, f.sheenGain),
     sheenColorMap: tex.base,
@@ -222,6 +224,9 @@ export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): 
   }
   const maxLum = maxLumOf(kind)
   m.userData.maxLum = maxLum
+  // no mirrors on a body or a prop: a hoof, pad or nose baked at roughness 0.05 read as chrome (film.minRoughness)
+  const minRough = kind === 'body' || kind === 'prop' ? f.minRoughness : 0
+  if (minRough > 0) m.userData.minRoughness = minRough
   m.userData.hdrMax = f.hdrMax
   // cards and the tuft read shared strip tiles: they never glow (the pipeline's notes)
   const glow = opts.glow && tex.orm && opts.glow.strength > 0 && kind !== 'card' && kind !== 'lock' ? opts.glow : null
@@ -239,9 +244,10 @@ export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): 
     m.userData.coverageRamp = [f.cardCoverage[0], f.cardCoverage[1]]
   }
   // cards and the tuft take their colour from the vertex colours over a shared grey-white strip tile: their sheen gets
-  // the vertex colour too, so it stays the strand's own colour (the tile alone laid a white veil over green or dark fur)
+  // the vertex colour too (the tile alone laid a white veil over green or dark fur), half desaturated
+  // (film.cardSheenSat) so a saturated coat doesn't turn into glossy shards
   const sheenByVertex = kind === 'card' || kind === 'lock'
-  if (sheenByVertex) m.userData.sheenByVertex = true
+  if (sheenByVertex) m.userData.sheenByVertex = f.cardSheenSat
   const g = f.glow
   m.onBeforeCompile = (sh) => {
     if (sheenByVertex) {
@@ -249,8 +255,15 @@ export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): 
         '#include <lights_physical_fragment>',
         `#include <lights_physical_fragment>
 #if defined( USE_SHEEN ) && ( defined( USE_COLOR ) || defined( USE_COLOR_ALPHA ) )
-  material.sheenColor *= vColor.rgb;
+  material.sheenColor *= mix( vec3( dot( vColor.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) ), vColor.rgb, ${f.cardSheenSat.toFixed(3)} );
 #endif`,
+      )
+    }
+    if (minRough > 0) {
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <roughnessmap_fragment>',
+        `#include <roughnessmap_fragment>
+  roughnessFactor = max( roughnessFactor, ${minRough.toFixed(3)} );`,
       )
     }
     if (coatMask) {
@@ -314,7 +327,7 @@ totalEmissiveRadiance += filmGlow;`,
 #include <opaque_fragment>`,
     )
   }
-  m.customProgramCacheKey = () => `film-${kind}-${edge ? `fade${edge[0]}_${edge[1]}` : ''}-${maxLum}-${f.hdrMax}-${glow ? (glow.tint ? 'glow-tint' : 'glow') : ''}-${coatMask ? `coat${coatMask.gain}-${coatMask.max}` : ''}-${edge ? f.cardCoverage.join('_') : ''}`
+  m.customProgramCacheKey = () => `film-${kind}-r${minRough}-${edge ? `fade${edge[0]}_${edge[1]}` : ''}-${maxLum}-${f.hdrMax}-${glow ? (glow.tint ? 'glow-tint' : 'glow') : ''}-${coatMask ? `coat${coatMask.gain}-${coatMask.max}` : ''}-${edge ? f.cardCoverage.join('_') : ''}`
   return m
 }
 
@@ -375,9 +388,90 @@ export function buildStudio(scene: Scene, environment: Texture | null, focus: Ve
   return { key, rim, rim2, hemi, ground }
 }
 
-/** A procedural environment for reflections (no files): three's RoomEnvironment scene, prefiltered by the renderer. */
-export function roomEnvironmentScene(): Scene {
-  return new RoomEnvironment()
+/**
+ * The rims light the subject's outline from behind as the camera sees it. Seen from behind (Battle 3D's behind camera,
+ * a back view in the review) they faced the camera and lit the whole back at about 2.7 times the key: a flat, pale
+ * plaster, dark wool turned pale grey (Nov 13). So each rim dims as the camera comes round to its side
+ * (studio.rimFacing: full while the rim is behind the subject, which every front and three-quarter view keeps, down to
+ * minPct of itself when it faces the camera). Horizontal directions from `focus`; call it whenever the camera moves.
+ */
+export function aimStudioRims(studio: Pick<Studio, 'rim' | 'rim2'>, eye: Vector3, focus: Vector3): void {
+  const F = U.studio.rimFacing
+  const cx = eye.x - focus.x
+  const cz = eye.z - focus.z
+  const cl = Math.hypot(cx, cz) || 1
+  for (const [light, base] of [
+    [studio.rim, U.studio.rim.intensity],
+    [studio.rim2, U.studio.rim2.intensity],
+  ] as const) {
+    const lx = light.position.x - light.target.position.x
+    const lz = light.position.z - light.target.position.z
+    const d = (lx * cx + lz * cz) / ((Math.hypot(lx, lz) || 1) * cl)
+    const t = Math.min(1, Math.max(0, (d - F.fromDot) / (F.toDot - F.fromDot)))
+    const k = t * t * (3 - 2 * t)
+    light.intensity = base * (1 - k * (1 - F.minPct / 100))
+  }
+}
+
+/**
+ * The film's world for reflections and room light (no files; prefiltered by the renderer): the Blender sheets' soft
+ * grey dome, a touch darker below the horizon (ART.ultra.studio.world). It replaced three's RoomEnvironment, whose
+ * white light panels turned every near-mirror texel into chrome or glass.
+ */
+export function studioEnvironmentScene(): Scene {
+  const W = U.studio.world
+  const scene = new Scene()
+  const g = new SphereGeometry(50, 48, 24)
+  const pos = g.getAttribute('position')
+  const col: number[] = []
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i) / 50
+    const k = W.strength * (y > 0 ? 1 : W.groundPct / 100 + (1 - W.groundPct / 100) * (1 + y))
+    col.push(W.rgb[0] * k, W.rgb[1] * k, W.rgb[2] * k)
+  }
+  g.setAttribute('color', new Float32BufferAttribute(col, 3))
+  scene.add(new Mesh(g, new MeshBasicMaterial({ vertexColors: true, side: BackSide })))
+  return scene
+}
+
+/** The old name (the Performance check and the views call it). */
+export const roomEnvironmentScene = studioEnvironmentScene
+
+/**
+ * The film tone map, GLSL (renderers set CustomToneMapping after installFilmToneMapping): three's Neutral, except that
+ * its toe scales a dark colour (hue and saturation kept) instead of lowering every channel by one amount, blending into
+ * Neutral's own between post.toeKeep's peaks (ART.ultra.post.toeKeep).
+ */
+export function filmToneGlsl(): string {
+  const [lo, hi] = U.post.toeKeep
+  return `vec3 CustomToneMapping( vec3 color ) {
+  const float StartCompression = 0.8 - 0.04;
+  const float Desaturation = 0.15;
+  color *= toneMappingExposure;
+  float x = min( color.r, min( color.g, color.b ) );
+  float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+  float pk = max( color.r, max( color.g, color.b ) );
+  vec3 kept = color * max( pk - offset, 0.0 ) / max( pk, 1e-5 );
+  color = mix( kept, color - offset, smoothstep( ${lo.toFixed(3)}, ${hi.toFixed(3)}, pk ) );
+  float peak = max( color.r, max( color.g, color.b ) );
+  if ( peak < StartCompression ) return color;
+  float d = 1. - StartCompression;
+  float newPeak = 1. - d * d / ( peak + d - StartCompression );
+  color *= newPeak / peak;
+  float g = 1. - 1. / ( Desaturation * ( peak - newPeak ) + 1. );
+  return mix( color, vec3( newPeak ), g );
+}`
+}
+
+let filmToneInstalled = false
+
+/** Put the film tone map in three's CustomToneMapping slot (once; WebGL shaders and the OutputPass read it). */
+export function installFilmToneMapping(): void {
+  if (filmToneInstalled) return
+  const stub = 'vec3 CustomToneMapping( vec3 color ) { return color; }'
+  const chunk = ShaderChunk as unknown as Record<string, string>
+  if (chunk.tonemapping_pars_fragment?.includes(stub)) chunk.tonemapping_pars_fragment = chunk.tonemapping_pars_fragment.replace(stub, filmToneGlsl())
+  filmToneInstalled = true
 }
 
 /** Pick the part to show: 'head' (with fins, tuft and cards), 'paw', or 'all'. */

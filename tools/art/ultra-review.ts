@@ -73,6 +73,32 @@ function shotList(side: UltraSide): [string, ShotOpts][] {
       ['clip_cast', { ...B, az: 20, el: 14, clip: 'cast', t: 0.5, size: 500 }],
       ['clip_idle_happy', { ...B, az: 35, el: 14, clip: 'idle_happy', t: 0.3, size: 500 }],
     ] as [string, ShotOpts][] : []),
+    // Nov 12: a rig with the flight clips (plans/quadruped.py FLY_CLIPS) shows them, framed for wings about 2.5 x the height
+    ...(hasFlight(side) ? flightShots(side, F) : []),
+  ]
+}
+
+/** The flight clips (fly, fly_takeoff, fly_cast, fly_land): plans/quadruped.py adds them only to a rig with wings. */
+function hasFlight(side: UltraSide): boolean {
+  return 'fly' in (side.clips ?? {})
+}
+
+function flightShots(side: UltraSide, F: ReturnType<typeof framing>): [string, ShotOpts][] {
+  const h = side.restHeight
+  const W: ShotOpts = { target: [0, F.body.target[1], Math.round(0.75 * h * 100) / 100], frame: Math.round(3.9 * h * 100) / 100, studio: F.studio, size: 500 }
+  return [
+    ['fly_front', { ...W, az: 0, el: 6, clip: 'fly', t: 0.2 }],
+    ['fly_side', { ...W, az: 90, el: 6, clip: 'fly', t: 0.0 }],
+    ['fly_top', { ...W, az: 35, el: 14, clip: 'fly', t: 0.0 }],
+    ['clip_fly', { ...W, az: 35, el: 14, clip: 'fly', t: 0.2 }],
+    ['clip_fly_up', { ...W, az: 35, el: 14, clip: 'fly', t: 0.65 }],
+    ['clip_fly_takeoff', { ...W, az: 35, el: 14, clip: 'fly_takeoff', t: 0.25 }],
+    ['clip_fly_takeoff_leap', { ...W, az: 35, el: 14, clip: 'fly_takeoff', t: 0.45 }],
+    ['clip_fly_cast', { ...W, az: 35, el: 14, clip: 'fly_cast', t: 0.5 }],
+    ['clip_fly_land', { ...W, az: 35, el: 14, clip: 'fly_land', t: 0.3 }],
+    ['clip_fly_land_touch', { ...W, az: 35, el: 14, clip: 'fly_land', t: 0.66 }],
+    // the tail tip close up (Nov 12: the spade's shape is an originality check)
+    ['tail_tip', { target: [0, Math.round(((side.bounds.max as number[])[1] - 0.12 * h) * 100) / 100, Math.round(0.5 * h * 100) / 100], frame: Math.round(0.55 * h * 100) / 100, studio: F.studio, az: 120, el: 15, size: 500 }],
   ]
 }
 
@@ -192,6 +218,8 @@ ${shotOr('clip_battle_idle', 'battle_idle', 230)}${shotOr('clip_walk', 'walk', 2
 ${shotOr('clip_strike_windup', 'strike (wind-up)', 230)}${shotOr('clip_strike', 'strike (impact)', 230)}${shotOr('clip_hit', 'hit', 230)}${shotOr('clip_hit_heavy', 'hit_heavy', 230)}${shotOr('clip_ko', 'ko (end)', 230)}${shotOr('clip_win', 'win (airborne)', 230)}${shotOr('clip_blink', 'blink (closed)', 230)}
 </div>
 ${hasWingsOrTrunk(side) ? `<div class="row">${shotOr('clip_cast', partLabels(side).cast, 230)}${shotOr('clip_idle_happy', partLabels(side).happy, 230)}${TURN.turnWings ? ref(pic('2-turnaround.png'), TURN.turnWings, 'Reference: wings spread', 230) : ''}</div>` : ''}
+${hasFlight(side) ? `<div class="row">${shotOr('fly_front', 'fly: wings spread, front (mid-downstroke)', 230)}${shotOr('fly_side', 'fly: side (top of the stroke)', 230)}${shotOr('fly_top', 'fly: top of the upstroke', 230)}${shotOr('clip_fly', 'fly (mid-downstroke)', 230)}${shotOr('clip_fly_up', 'fly (upstroke)', 230)}</div>
+<div class="row">${shotOr('clip_fly_takeoff', 'fly_takeoff (crouch, wings up)', 230)}${shotOr('clip_fly_takeoff_leap', 'fly_takeoff (leap)', 230)}${shotOr('clip_fly_cast', 'fly_cast (release)', 230)}${shotOr('clip_fly_land', 'fly_land (flare)', 230)}${shotOr('clip_fly_land_touch', 'fly_land (touch down)', 230)}${shotOr('tail_tip', 'the tail tip (spade)', 230)}</div>` : ''}
 <h2>4 · Variants (${vids.length})</h2>
 ${variantRows || '<p>No variants.</p>'}
 <h2>5 · Other side, formats and the Lite copy</h2>

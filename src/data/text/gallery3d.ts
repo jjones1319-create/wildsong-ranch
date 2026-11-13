@@ -30,6 +30,10 @@ export const GALLERY3D_TEXT = {
     ko: '💤 Knocked out',
     win: '🎉 Win',
     blink: '😌 Blink',
+    fly_takeoff: '🪽 Take off',
+    fly: '🪽 Fly',
+    fly_cast: '🔥 Fly + breathe',
+    fly_land: '🪽 Land',
   },
   stats: (fps: number, triangles: number, dpr: number, backend: string, level: string) => `${fps.toFixed(0)} fps · ${triangles.toLocaleString('en')} triangles · ${dpr.toFixed(2)}× · ${backend} · ${level}`,
 } as const

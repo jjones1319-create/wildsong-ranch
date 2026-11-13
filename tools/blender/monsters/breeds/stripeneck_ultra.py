@@ -69,8 +69,13 @@ def colours(pal: dict) -> dict:
         # charcoal's shadowed and lifted tones keep its violet hue (review lesson: no grey or green darks)
         'char_soft': C.mix_hex(char, '#5A4E5C', 0.35),
         'fetlock': C.mix_hex(tan, cream, 0.45),
-        'char_paint': C.shade_hex(char, 1.4),        # the same hue, lifted (Ezgi's midnight stays indigo)
-        'cream_paint': C.shade_hex(cream, 0.95),
+        # upgrade (review: the zebra half fades to grey at 64 px): less lift on the charcoal, the cream a touch lower
+        # review Nov 12: the stripes rendered #1B181A on near white; the card is #2F2B30 on #F4EBDA (Ezgi keeps contrast)
+        'char_paint': C.shade_hex(char, 1.25),       # review Nov 13: darker (the 64 px read); Ezgi's midnight stays indigo
+        'cream_paint': C.shade_hex(cream, 0.86),
+        # upgrade (review: bright white spiky cuffs, a greyish bib): a warm cream for the fetlock cuffs and the bib
+        'cuff': C.mix_hex(cream, tan, 0.2),
+        'bib': C.mix_hex(cream, tan, 0.1),
         'muzzle': C.shade_hex(C.mix_hex(cream, tan, 0.08), 0.97),
         'freckle': C.mix_hex(cream, patch, 0.35),
         'brow': C.mix_hex(char, patch, 0.15),
@@ -163,7 +168,8 @@ def blink_pivot(s: int):
 
 
 BLINK_CLOSED = (0.74, 0.04, 0.2)
-ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 0.5}
+ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 0.9}       # the props hold the ears now
+LITE_PROPS_TRIS = 4500                                  # the ears are signature parts (RECIPE.md)
 BODY_TRIS = 54000
 
 
@@ -200,8 +206,9 @@ EYE_C = eye_centres()
 
 # the dark brows: one smooth arc over each eye, thickest in the middle (2-turnaround front, 3-faces neutral): front-view
 # (x, z) points and the half thickness along them (brow_mask)
-BROW_ARC = [(0.05, 1.686), (0.068, 1.701), (0.087, 1.711), (0.106, 1.716), (0.125, 1.714), (0.143, 1.706), (0.158, 1.693),
-            (0.172, 1.677)]
+# upgrade (review: a low brow that looks a little stern, the lash fringe up at brow level): 6 mm higher
+BROW_ARC = [(0.05, 1.692), (0.068, 1.707), (0.087, 1.717), (0.106, 1.722), (0.125, 1.72), (0.143, 1.712), (0.158, 1.699),
+            (0.172, 1.683)]
 BROW_THICK = [0.0045, 0.0062, 0.0075, 0.008, 0.008, 0.0072, 0.006, 0.0045]
 
 
@@ -231,14 +238,15 @@ def neck_parts() -> list[Part]:
     straight and forward (y ≈ −0.545) down to z ≈ 0.9 and the base flares into the chest (round 1's throat sat 3–4 cm
     behind the turnaround's while the chest bulged from z 1.0, so the neck read short: review round 1)."""
     return [
-        Part('neck1', 'sphere', loc=(0.0, -0.405, 1.47), radius=1.0, scale=(0.108, 0.13, 0.14)),
+        # upgrade (review: a straight, even column from chin to chest): the throat 1.2 cm further back near the head
+        Part('neck1', 'sphere', loc=(0.0, -0.399, 1.47), radius=1.0, scale=(0.105, 0.124, 0.14)),
         Part('neck2', 'sphere', loc=(0.0, -0.405, 1.33), radius=1.0, scale=(0.113, 0.14, 0.14)),
         Part('neck3', 'sphere', loc=(0.0, -0.395, 1.19), radius=1.0, scale=(0.126, 0.15, 0.14)),
         Part('neck4', 'sphere', loc=(0.0, -0.383, 1.06), radius=1.0, scale=(0.148, 0.165, 0.14)),
         Part('neck5', 'sphere', loc=(0.0, -0.37, 0.95), radius=1.0, scale=(0.175, 0.175, 0.13)),
         # build 1: the low body showed faint rings between the ellipsoids; these fill the waists between them
-        Part('neck01', 'sphere', loc=(0.0, -0.41, 1.53), radius=1.0, scale=(0.106, 0.125, 0.1)),
-        Part('neck12', 'sphere', loc=(0.0, -0.405, 1.4), radius=1.0, scale=(0.11, 0.135, 0.12)),
+        Part('neck01', 'sphere', loc=(0.0, -0.404, 1.53), radius=1.0, scale=(0.103, 0.119, 0.1)),
+        Part('neck12', 'sphere', loc=(0.0, -0.401, 1.4), radius=1.0, scale=(0.108, 0.131, 0.12)),
         Part('neck23', 'sphere', loc=(0.0, -0.4, 1.26), radius=1.0, scale=(0.12, 0.145, 0.12)),
         Part('neck34', 'sphere', loc=(0.0, -0.389, 1.125), radius=1.0, scale=(0.137, 0.158, 0.12)),
     ]
@@ -248,10 +256,10 @@ def leg_parts(leg: str) -> list[Part]:
     x, y = LEGS[leg]
     if leg[0] == 'F':
         return [
-            Part(f'forearm{leg}', 'tube', loc=(x, y, 0.8), to=(x, y - 0.004, 0.47), radius=0.08, r2=0.067),
-            Part(f'knee{leg}', 'sphere', loc=(x, y - 0.006, 0.455), radius=1.0, scale=(0.07, 0.071, 0.072)),
-            # round 3 (review): a small knee knob in front
-            Part(f'kneecap{leg}', 'sphere', loc=(x, y - 0.042, 0.46), radius=1.0, scale=(0.05, 0.034, 0.046)),
+            # upgrade (review: straight stilts with no knee): the forearm narrows into a knee that stands proud of it
+            Part(f'forearm{leg}', 'tube', loc=(x, y, 0.8), to=(x, y - 0.004, 0.49), radius=0.08, r2=0.06),
+            Part(f'knee{leg}', 'sphere', loc=(x, y - 0.008, 0.455), radius=1.0, scale=(0.075, 0.076, 0.07)),
+            Part(f'kneecap{leg}', 'sphere', loc=(x, y - 0.05, 0.462), radius=1.0, scale=(0.056, 0.042, 0.054)),
             Part(f'cannon{leg}', 'tube', loc=(x, y - 0.004, 0.44), to=(x, y - 0.006, 0.2), radius=0.055, r2=0.056),
             Part(f'fetlock{leg}', 'sphere', loc=(x, y - 0.006, 0.152), radius=1.0, scale=(0.068, 0.074, 0.066)),
             Part(f'skirt{leg}', 'sphere', loc=(x, y - 0.01, 0.112), radius=1.0, scale=(0.073, 0.082, 0.032)),
@@ -277,6 +285,8 @@ def torso_parts() -> list[Part]:
         # round 2: a deeper, rounder chest and barrel (the belly at ~0.6 m: back to belly ≈ 25% of the height, review
         # round 1 asked ~1.3× deeper), the chest's front no further forward than the throat (the neck reads long)
         Part('chest', 'sphere', loc=(0.0, -0.335, 0.83), radius=1.0, scale=(0.245, 0.195, 0.225)),
+        # upgrade (review: no chest in front of the legs): the breast bulges forward of the throat line (the cream bib)
+        Part('breast', 'sphere', loc=(0.0, -0.47, 0.82), radius=1.0, scale=(0.165, 0.11, 0.13)),
         Part('barrel', 'sphere', loc=(0.0, -0.03, 0.86), radius=1.0, scale=(0.27, 0.4, 0.25)),
         Part('belly', 'sphere', loc=(0.0, -0.06, 0.71), radius=1.0, scale=(0.22, 0.33, 0.12)),
         Part('rump', 'sphere', loc=(0.0, 0.255, 0.91), radius=1.0, scale=(0.25, 0.25, 0.228)),
@@ -303,7 +313,8 @@ def all_parts() -> list[Part]:
 def body_extras() -> list[bpy.types.Object]:
     """The ear slabs, the brush mane's crest, the hooves' toes and the tail tuft's clumps (new objects on every call; the
     build consumes them)."""
-    out = [SP.ear_slab(s) for s in (1, -1)] + [SP.mane_mesh(), SP.forelock_mesh()]
+    # review Nov 12: the ears are props (build_props): the voxel body tore their rims and streaked the pink
+    out = [SP.mane_mesh(), SP.forelock_mesh()]
     for leg, (x, y) in LEGS.items():
         out.extend(SP.hoof_toes(x, y - 0.012))
     out.extend(SP.tuft_meshes())
@@ -420,12 +431,12 @@ def patch_spacing(p: np.ndarray) -> np.ndarray:
     sp = np.where(z['head'], 0.05 + 0.018 * smooth(-0.5, -0.38, y), sp)
     sp = np.where(z['face'] & (zz > 1.64), 0.04, sp)
     leg = z['leg'] & (np.abs(y - LEGS['FL'][1]) < 0.15)
-    sp = np.where(leg, 0.064 + 0.036 * smooth(0.2, 0.6, zz), sp)
+    sp = np.where(leg, 0.09 + 0.035 * smooth(0.2, 0.6, zz), sp)      # upgrade: about as wide as the leg
     none = z['muzzle'] | z['ear'] | z['ossi'] | z['pom'] | z['mane'] | z['tail'] | z['hoof'] | (z['fetlock'] & (zz < 0.15))
     none |= (z['leg'] & (y > 0.0)) | (z['eye_d'] < EYE_R * 1.7) | (z['belly'] & (zz < 0.7))
     # round 2 (review: 3-faces neutral): small spots only on the crown, the forehead's sides and the cheeks; the bridge,
     # the middle of the forehead and round the eyes plain tan
-    clear_face = z['head'] & (((y < -0.52) & (zz < 1.64)) | ((np.abs(x) < 0.05) & (y < -0.5) & (zz < 1.74))
+    clear_face = z['head'] & (((y < -0.52) & (zz < 1.64)) | ((np.abs(x) < 0.05) & (y < -0.5) & (zz < 1.665))
                               | (z['eye_d'] < EYE_R * 2.0))
     none |= clear_face | (z['head'] & (zz < 1.47) & (y < -0.45))
     b = coat_blend(p, z)
@@ -483,13 +494,14 @@ def coat_masks(p: np.ndarray, z: dict, seeds: K.Seeds) -> dict[str, np.ndarray]:
         else:
             front_leg |= msk
     # patches: smaller and sparser down the front legs
-    rho_k = np.where(front_leg, 0.82 + 0.18 * smooth(0.25, 0.55, zz), 1.0)
+    rho_k = np.where(front_leg, 0.94 + 0.06 * smooth(0.25, 0.55, zz), 1.0)
     # round 3 (review: round patches up to a near-vertical line): each patch's own place in the blend (its centre's),
     # so the last rows stretch into lozenges and drop out whole, patch by patch, on a ragged edge instead of a line
     sc_ = seeds.c
     seed_b = K.blend(sc_) * (sc_[:, 2] < 1.0) * ~((sc_[:, 2] < 0.66) & (np.abs(sc_[:, 1] - LEGS['FL'][1]) < 0.15))
-    pm = K.patch_masks(p, seeds, b, rho_k, smooth(0.03, 0.22, seed_b))
-    keep = np.where(pm['i'] >= 0, smooth(0.34, 0.25, seed_b[np.maximum(pm['i'], 0)]), 1.0)
+    # review Nov 13 (a seam, not a zone): the last rows stretch harder and reach further into the band
+    pm = K.patch_masks(p, seeds, b, rho_k, smooth(0.0, 0.3, seed_b))
+    keep = np.where(pm['i'] >= 0, smooth(0.44, 0.32, seed_b[np.maximum(pm['i'], 0)]), 1.0)
     allowed = ~(z['muzzle'] | z['ear'] | z['ossi'] | z['pom'] | z['mane'] | z['fore'] | z['tail'] | z['hoof'])
     # the stripes: arcs round a focus under the flank, chevroned rings down the back legs, rings along the tail
     phase = K.stripe_phase(p, back_leg * smooth(K.LEG_TOP + 0.05, K.LEG_TOP - 0.07, zz), chev)
@@ -512,8 +524,10 @@ def coat_masks(p: np.ndarray, z: dict, seeds: K.Seeds) -> dict[str, np.ndarray]:
     fade = keep * (1.0 - smooth(0.4, 0.55, b))                          # whole patches drop out; a soft net behind
     patch = pm['patch'] * fade * allowed
     outline = pm['outline'] * fade * allowed
-    duty = (0.46 + 0.09 * smooth(0.45, 0.85, b)) * lens * z_str          # bold: a stripe about as wide as its gap
-    duty = np.where(back_leg, 0.5 * smooth(0.3, 0.6, b), duty)          # the legs' bands (sparser: LEG_PERIOD)
+    # upgrade (review: the zebra half fades to grey at 64 px): the stripes a little wider than the cream between them
+    # review Nov 13: 5–6 bold, dark bands; the first ones thin where they leave the patches (no charcoal saddle blob)
+    duty = (0.3 + 0.32 * smooth(0.35, 0.8, b)) * lens * z_str
+    duty = np.where(back_leg, 0.6 * smooth(0.3, 0.6, b), duty)          # the legs' bands, darker (LEG_PERIOD)
     duty = np.where(z['stalk'], 0.42, duty)
     # stripes taper out on the lowest legs (cream fetlocks) and under the belly
     duty = duty * smooth(0.17, 0.26, zz) * (1 - z['belly'] * smooth(0.72, 0.62, zz) * 0.8)
@@ -532,11 +546,16 @@ def coat_masks(p: np.ndarray, z: dict, seeds: K.Seeds) -> dict[str, np.ndarray]:
     # the cream areas: the bib, the belly line, the fetlocks' lighter fur, the muzzle
     # round 4: a small soft cream patch low between the front legs (a wide one muddied the chest's patches)
     # round 3 (review): the cream chest bib between the front legs (2-turnaround front)
-    cream = np.maximum(z['bib'] * ell_soft(p, (0.0, -0.5, 0.78), (0.11, 0.17, 0.17), 0.45) * 0.85, 0.0)
+    # review Nov 12 (a pale disc like a sticker): a soft cream blend from the chest down to the belly
+    # review Nov 13 (ghost patches through a bleached smudge): a clean cream bib with a soft but definite edge
+    cream = np.maximum(z['bib'] * ell_soft(p, (0.0, -0.52, 0.75), (0.105, 0.19, 0.2), 0.3), 0.0)
     cream = np.maximum(cream, z['belly'] * smooth(0.7, 0.62, zz))
     mz = ell_soft(p, MUZZLE[0], tuple(r * 1.08 for r in MUZZLE[1]), 0.12) * (zz < 1.585)
+    # review Nov 12: the nostrils sit on the cream muzzle bulb (3-faces neutral), not on the tan above it
+    mz = np.maximum(mz, ell_soft(p, (0.0, -0.72, 1.525), (0.085, 0.055, 0.042), 0.35) * (p[:, 1] < -0.68))
     lighter = np.maximum(z['fetlock'] * smooth(FETLOCK_Z + 0.05, FETLOCK_Z - 0.02, zz), 0.0)
-    return {'b': b, 'patch': patch * (1 - cream * 0.85) * (1 - mz), 'outline': outline * (1 - cream * 0.5) * (1 - mz), 'rnd': pm['rnd'],
+    # upgrade (review: the bib a greyish smudge): no patch or rim shows through the cream bib or belly
+    return {'b': b, 'patch': patch * (1 - cream) * (1 - mz), 'outline': outline * (1 - cream) * (1 - mz), 'rnd': pm['rnd'],
             'stripe': stripe * (1 - cream * 0.6), 'cream': cream, 'muzzle': mz, 'lighter': lighter}
 
 
@@ -551,9 +570,8 @@ def coat_rgb(p: np.ndarray, z: dict, m: dict, pal: dict) -> np.ndarray:
     cream, char = lin(col['cream_paint']), lin(col['char_paint'])
     # round 3: the tan carries on under the first stripes and fades to cream through the band
     base = K.mix(np.tile(tan, (len(p), 1)), np.tile(cream, (len(p), 1)), smooth(0.4, 0.95, b))
-    base = K.mix(base, np.tile(lin(col['fetlock']), (len(p), 1)), m['lighter'] * (1 - smooth(0.3, 0.7, b)))
-    base = K.mix(base, np.tile(cream, (len(p), 1)), m['lighter'] * smooth(0.3, 0.7, b))
-    base = K.mix(base, np.tile(cream, (len(p), 1)), m['cream'])
+    base = K.mix(base, np.tile(lin(col['bib']), (len(p), 1)), m['cream'])
+    base = K.mix(base, np.tile(lin(col['cuff']), (len(p), 1)), m['lighter'] * (p[:, 1] < 0.0))   # review Nov 13
     # the patches: a little darker or lighter each, never grey
     pc = K.mix(np.tile(lin(col['patch_dark']), (len(p), 1)), np.tile(lin(col['patch_light']), (len(p), 1)), m['rnd'])
     pc = K.mix(np.tile(patch, (len(p), 1)), pc, np.full(len(p), 0.6))
@@ -568,10 +586,12 @@ def coat_rgb(p: np.ndarray, z: dict, m: dict, pal: dict) -> np.ndarray:
     # round 3: eight uneven bands, charcoal first behind the forelock; the forelock cream down its middle, charcoal at its
     # sides (2-turnaround front, 3-faces neutral); the mane's cream a little warmer so its tips don't read as white shards
     band_char = (z['mane_band'] % 2 == 0).astype(float)
-    mane_cream = np.tile(cream * 0.93, (len(p), 1))
+    # upgrade: warmer and lower (the hair strands' tips catch the light: build u1's cream strands read white)
+    mane_cream = np.tile(K.mix(cream[None, :], tan[None, :], np.array([0.12]))[0] * 0.9, (len(p), 1))
     mane_c = K.mix(mane_cream, np.tile(char, (len(p), 1)), band_char)
     rgb = np.where(z['mane'][:, None], mane_c, rgb)
-    fore_cream = smooth(0.02, 0.009, np.abs(p[:, 0])) * smooth(-0.438, -0.458, p[:, 1])
+    # review Nov 13: a soft cream tuft with one charcoal band (its back)
+    fore_cream = smooth(0.04, 0.026, np.abs(p[:, 0])) * smooth(-0.44, -0.452, p[:, 1])
     fore_c = K.mix(np.tile(char, (len(p), 1)), mane_cream, fore_cream)
     rgb = np.where(z['fore'][:, None], fore_c, rgb)
     # the ossicones' tufts and the tail's tuft: charcoal; the ossicones' shafts: tan
@@ -584,7 +604,10 @@ def coat_rgb(p: np.ndarray, z: dict, m: dict, pal: dict) -> np.ndarray:
     # round 2: the pink skin in the middle, a soft cream fur band along the inner edge (its fringe cards take this cream)
     lining = z['ear_lining'] * smooth(0.74, 0.52, np.abs(z['ear_v'])) * smooth(0.06, 0.2, z['ear_u']) * smooth(0.96, 0.8, z['ear_u'])
     ear_in = z['ear_lining']
-    rgb = np.where(ear_in[:, None], K.mix(np.tile(lin(col['cream']), (len(p), 1)), np.tile(lin(col['lining']), (len(p), 1)), lining), rgb)
+    # upgrade (review: flat ears): the pink deepens toward the cup's hollow (low and in the middle), lighter at its rim
+    deep = smooth(0.6, 0.12, np.abs(z['ear_v'])) * smooth(0.78, 0.3, z['ear_u']) * smooth(0.04, 0.16, z['ear_u'])
+    pink = K.mix(np.tile(lin(col['lining']), (len(p), 1)), np.tile(lin(C.shade_hex(col['lining'], 0.8)), (len(p), 1)), deep * 0.75)
+    rgb = np.where(ear_in[:, None], K.mix(np.tile(lin(col['cream']), (len(p), 1)), pink, lining), rgb)
     # the hooves
     hoof = z['hoof'] * smooth(SP.HOOF_H + 0.004, SP.HOOF_H - 0.008, zz)
     rgb = K.mix(rgb, np.tile(lin(col['hoof']), (len(p), 1)), hoof)
@@ -697,7 +720,7 @@ def carve(ob: bpy.types.Object) -> None:
     tg = np.sin(np.arctan2(y - SP.TUFT_TOP[1], x) * 30.0 + z * 25.0) * tuft
     pom = zn['pom'] * (np.sin(x * 400.0) * np.sin(y * 380.0) * np.sin(z * 410.0))
     disp = (-0.0024 * groove - 0.006 * nos + 0.003 * brow + 0.0008 * bulge - 0.0011 * lash + 0.0004 * hz
-            + 0.0026 * bris - 0.006 * part + 0.0022 * tg + 0.0018 * pom)
+            + 0.0 * bris - 0.006 * part + 0.0022 * tg + 0.0018 * pom)       # review Nov 12: no bristles (foil)
     S.set_positions(ob, co + vn * disp[:, None])
     S.base_attrs(ob, co, {'mouth': groove})
     S.add_attr(ob, 'lash', lash)
@@ -775,23 +798,79 @@ def build_props(high: bool, quick: bool) -> list[bpy.types.Object]:
     ob.data.shade_smooth()
     S.add_attr(ob, 'lash_side', side)
     ob['prop'] = 'lashes'
-    return [ob]
+    # the ears (review Nov 12): thin cups with a bowl, a rounded back and a rim that thins to the tip
+    ears = [SP.ear_prop(sd, high, f'{tag}_ear{"L" if sd > 0 else "R"}') for sd in (1, -1)]
+    eside = np.concatenate([np.full(len(o.data.vertices), float(sd)) for o, sd in zip(ears, (1, -1))])
+    eface = np.concatenate([S.attr_array(o, 'ear_face') if o.data.attributes.get('ear_face') is not None
+                            else np.zeros(len(o.data.vertices)) for o in ears])
+    eo = M.join_meshes(ears, f'{tag}_ears')
+    for o in ears:
+        bpy.data.objects.remove(o, do_unlink=True)
+    eo.data.shade_smooth()
+    S.add_attr(eo, 'ear_side', eside)
+    S.add_attr(eo, 'ear_face', eface)
+    # review Nov 13: the low ears keep their own flat unwrap (SP.ear_slab) when the join kept it
+    if not high and 'UVMap' in eo.data.uv_layers:
+        eo['own_uv'] = True
+    eo['prop'] = 'ears'
+    return [ob, eo]
+
+
+def _prop_attr(attr, name: str, n: int) -> np.ndarray:
+    try:
+        return np.asarray(attr(name), np.float64)
+    except Exception:
+        return np.zeros(n)
 
 
 def prop_weight_regions(co: np.ndarray, attr, names: list[str]):
-    side = attr('lash_side')
+    side = _prop_attr(attr, 'lash_side', len(co))
+    eside = _prop_attr(attr, 'ear_side', len(co))
     regs = []
     for s, tag in ((1, 'L'), (-1, 'R')):
         m = np.abs(side - s) < 0.5
         if m.any() and f'eye.{tag}' in names:
             regs.append(U.rigid(m, f'eye.{tag}'))
+        e = np.abs(eside - s) < 0.5
+        if e.any() and f'ear.{tag}.1' in names:
+            u, _v, _h = SP.ear_coords(co[e], s)
+            w = ear_weights(co[e], np.clip(u, 0, 1))
+            regs.append((e, {'head': w['head'], f'ear.{tag}.1': w['1'], f'ear.{tag}.2': w['2']}))
     return regs
 
 
 def prop_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray]:
     n = len(ob.data.vertices)
-    rgb = np.tile(lin(LASH_HEX), (n, 1))
-    rc = np.stack([np.ones(n), np.full(n, 0.5), np.zeros(n)], axis=1)
+    if ob.data.attributes.get('ear_side') is None:
+        rgb = np.tile(lin(LASH_HEX), (n, 1))
+        rc = np.stack([np.ones(n), np.full(n, 0.5), np.zeros(n)], axis=1)
+        return rgb, rc
+    co, _vn = S.mesh_arrays(ob)
+    es = S.attr_array(ob, 'ear_side').astype(np.float64)
+    u = np.zeros(n)
+    v = np.zeros(n)
+    h = np.zeros(n)
+    for sd in (1, -1):
+        m = np.abs(es - sd) < 0.5
+        if m.any():
+            u[m], v[m], h[m] = SP.ear_coords(co[m], sd)
+    col = colours(pal)
+    tan, cream = lin(col['tan']), lin(col['cream'])
+    av = np.abs(v)
+    # the back: tan, a soft cream edge; the lining: a smooth pink gradient, deeper in the hollow, a cream fur rim
+    back = K.mix(np.tile(tan, (n, 1)), np.tile(cream, (n, 1)), 0.35 * smooth(0.72, 1.0, av) + 0.3 * smooth(0.9, 1.0, u))
+    lining = smooth(0.8, 0.55, av) * smooth(0.04, 0.18, u) * smooth(0.97, 0.82, u)
+    deep = smooth(0.6, 0.1, av) * smooth(0.78, 0.3, u) * smooth(0.04, 0.16, u)
+    pink = K.mix(np.tile(lin(col['lining']), (n, 1)), np.tile(lin(C.shade_hex(col['lining'], 0.8)), (n, 1)), deep * 0.75)
+    front = K.mix(np.tile(cream, (n, 1)), pink, lining)
+    # the root sinks into the head: tan there on both faces
+    front = K.mix(front, np.tile(tan, (n, 1)), smooth(0.08, -0.04, u))
+    fr_ = (S.attr_array(ob, 'ear_face').astype(np.float64) > 0.5) if ob.data.attributes.get('ear_face') is not None else (h > 0.0)
+    # review Nov 13: the pink wrapped onto the back of the tips; the tips' last few cm are cream-tan on both faces
+    front = K.mix(front, np.tile(K.mix(cream[None, :], tan[None, :], np.array([0.4]))[0], (n, 1)), smooth(0.9, 1.0, u))
+    rgb = np.where(fr_[:, None], front, back)
+    rough = np.where(fr_, 0.62, 0.8)
+    rc = np.stack([np.ones(n), rough, np.zeros(n)], axis=1)
     return rgb, rc
 
 
@@ -829,6 +908,7 @@ def rig_p() -> dict:
         'stride': 0.3,
         'hooves': True,
         'strike_style': 'kick',                # the card's attack: a spin and a double back-hoof buck (5-poses attack)
+        'ko_head_lift': 30.0,                  # review Nov 12: ko folded the long neck's face into the chest
     }
 
 
@@ -1023,14 +1103,22 @@ def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
     g = np.where(z['torso'][:, None], g_torso, g_head)
     g = np.where(z['neck'][:, None], g_neck, g)
     g = np.where(z['belly'][:, None], np.tile(v3((0.0, 0.4, -0.8)), (k, 1)), g)
+    g = np.where(z['bib'][:, None], np.tile(v3((0.0, -0.2, -1.0)), (k, 1)), g)      # review Nov 13: no whorl on the bib
     g = np.where(z['leg'][:, None], np.tile(v3((0.0, 0.05, -1.0)), (k, 1)), g)
-    g = np.where(z['fore'][:, None], np.tile(v3((0.0, 0.1, 1.0)), (k, 1)), g)
     # the mane's bristles stand out from the neck
-    _P, _T, O = SP.mane_frame(np.clip(z['mane_t'], 0, 1))
-    g = np.where(z['mane'][:, None], O, g)
-    # the tail: down along it; the tuft: down its clumps
+    _P, T, O = SP.mane_frame(np.clip(z['mane_t'], 0, 1))
+    # upgrade: each band's strands fan out from its middle (a brush tuft per band)
+    # build u3: less fan (u2's strands crossed into the next band over the crest: speckle from behind)
+    # review Nov 13: tapered tips fanning back (4-details panel 5)
+    g = np.where(z['mane'][:, None], norm(O + T * (0.4 + 0.3 * z['mane_frac'])[:, None]), g)
+    # the forelock's strands stand up, lean a little forward and fan out to the sides
+    g = np.where(z['fore'][:, None], norm(np.stack([x * 1.2, np.full(k, -0.15), np.ones(k)], 1)), g)
+    # the tail: down along it; the tuft: down its S-curve
     g = np.where(z['tail'][:, None], down, g)
-    g = np.where((z['head'] & ~z['mane'])[:, None], g_head, g)
+    uu = np.clip((SP.TUFT_TOP[2] - zz) / (SP.TUFT_TOP[2] - SP.TUFT_TIP_Z), 0.0, 1.0)
+    tdir = norm(SP.tuft_centre(np.clip(uu + 0.02, 0, 1)) - SP.tuft_centre(np.clip(uu - 0.02, 0, 1)) + v3((0, 0, -1e-4)))
+    g = np.where(z['tuft'][:, None], tdir, g)
+    g = np.where((z['head'] & ~z['mane'] & ~z['fore'])[:, None], g_head, g)
     return tangent(g, n)
 
 
@@ -1072,6 +1160,9 @@ def head_lock_params(p, n):
         nose_pad |= in_ellipsoid(p, NOSTRIL[s], (0.026, 0.02, 0.02)) < 1.0
     ear_edge = z['ear'] & ((np.abs(z['ear_v']) > 0.6) | (z['ear_u'] > 0.74))
     skip = ~z['head'] | z['mane'] | nose_pad | (mouth_mask(p) > 0.05) | (z['eye_d'] < EYE_R * 1.08) | z['ear_lining'] | ear_edge
+    skip |= pom_under(p, z) | z['fore']
+    # upgrade (review: the pom-poms' fur "drips"): the shafts' locks combed up into the charcoal and drew dark streaks
+    skip |= z['ossi'] & (p[:, 2] > POMPOM[1][0][2] - 0.095)
     return np.where(skip, np.nan, W * 0.58), L, W, lift, z
 
 
@@ -1095,21 +1186,40 @@ def body_lock_params(p, n):
     W = np.where(z['stalk'], 0.011, W)
     L = np.where(z['tuft'], 0.09, L)
     W = np.where(z['tuft'], 0.013, W)
-    skip = (z['head'] & ~z['mane']) | z['hoof'] | z['sole']
+    # upgrade (review: the pom-poms' fur "drips"): the pom-poms and the ossicones' tops lie outside the head's zone, so
+    # these body locks covered them: 4.6 cm locks hung off the poms' undersides and combed up the shafts into the
+    # charcoal. Short fuzz on the pom-poms' upper part only; the shafts' tops bare
+    L = np.where(z['pom'], 0.028, L)
+    W = np.where(z['pom'], 0.011, W)
+    lift = np.where(z['pom'], _rad(14.0), lift)
+    L = np.where(z['ossi'], 0.02, L)
+    W = np.where(z['ossi'], 0.0075, W)
+    skip = (z['head'] & ~z['mane']) | z['hoof'] | z['sole'] | z['mane'] | z['fore']
+    skip |= pom_under(p, z) | (z['ossi'] & (p[:, 2] > POMPOM[1][0][2] - 0.095))
     return np.where(skip, np.nan, W * 0.62), L, W, lift, z
 
 
+def pom_under(p: np.ndarray, z: dict) -> np.ndarray:
+    """The pom-poms' lower part (upgrade, review: their fur hung over the ossicones' shafts as charcoal drips)."""
+    return z['pom'] & (p[:, 2] < POMPOM[1][0][2] - 0.008)
+
+
 CARD_LAYERS = 2
-CARD_SHADE = 0.95
+# upgrade (owner review v1.23.0: the mane a banded slab, the forelock a cone, the tail tuft a mitten, the ears flat): layer 1
+# uses the thin-strand hair tiles (RECIPE.md CARD_LAYER_STYLES), layer 0 keeps the fur tiles
+CARD_LAYER_STYLES = ('fur', 'hair')
+# upgrade build u3: lower (build u2's cream hair tips caught the light as white scratches on the mane from behind; the
+# cuffs read a softer cream too)
+CARD_SHADE = 0.86
 # the cards take their colour from a bake of the bare skin (the patches' outlines and the stripes are many colour edges;
 # sampling the atlas there picked up the lying locks' other colour: RECIPE.md)
 CARD_COLOUR_FROM = 'skin'
 
 
 def card_params(p, n, layer: int):
-    """Soft cards only where the outline wants fuzz. Layer 0: a sparse, short velvet fringe along the top line, the
-    belly, the backs of the legs and the throat; layer 1: the brush mane's bristle tips, the pom-poms, the fetlock
-    skirts, the ears' cream rims and the tail's tuft."""
+    """Layer 0 (fur): a sparse fringe down the backs of the front legs, soft cream fetlock cuffs, the pom-poms' fuzz (not
+    their undersides). Layer 1 (hair): the mane's strands, standing out from both sides of the crest and fanning within
+    each band, their tips above it; the forelock's tuft; the tail tuft's long strands down its S-curve."""
     z = zones(p, n)
     k = len(p)
     y, zz = p[:, 1], p[:, 2]
@@ -1119,57 +1229,62 @@ def card_params(p, n, layer: int):
         W = np.full(k, 0.032)
         lift = np.full(k, _rad(6))
         sp = np.full(k, 0.034)
-        topline = z['torso'] & (n[:, 2] > 0.55)
-        belly = z['belly'] & (n[:, 2] < -0.4)
-        throat = z['neck'] & (n[:, 1] < -0.5)
         leg_back = np.zeros(k, bool)
         for lg, (lx, ly) in LEGS.items():
             if lg[0] == 'F':
                 leg_back |= z['legs'][lg] & (y > ly + 0.03) & (zz > 0.25)
-        bib = z['bib'] & (n[:, 1] < -0.4)
-        L = np.where(belly | bib, 0.055, L)
-        # round 3b (review): no cards on the throat (grey teeth under the chin, comb marks on the patches, a glossy
-        # streak) or the top line (white speckle on the rump's stripes); only the front legs' backs keep a fringe
-        fringe = leg_back & ~(topline | throat)
-        skip = ~fringe | covered | z['mane'] | z['tail']
-    else:
-        L = np.full(k, 0.06)
-        W = np.full(k, 0.036)
-        lift = np.full(k, _rad(20))
-        sp = np.full(k, 0.024)
-        # round 2: fanned matte tips along the crest, none on the forelock (round 1's read as a grey shard clump)
-        mane_tip = z['mane'] & (z['mane_h'] > z['mane_hmax'] * 0.55) & (z['mane_t'] > 0.1) & (z['mane_band'] % 2 == 0)
-        mane_tip &= (z['mane_t'] < 0.7) & (np.abs(z['mane_frac']) < 0.3)
-        pom = z['pom']
+        topline = z['torso'] & (n[:, 2] > 0.55)
+        throat = z['neck'] & (n[:, 1] < -0.5)
+        leg_back &= ~(topline | throat)
+        # upgrade (review: bright white spiky cuffs): short, dense, flatter cream fuzz
         fet = z['fetlock'] & (zz > SP.HOOF_H + 0.01)
-        # round 2: a soft cream fringe along each ear's inner edge (round 1's cards on the outer rim read as torn paper)
-        ear_rim = z['ear_lining'] & (np.abs(z['ear_v']) > 0.58) & (z['ear_u'] > 0.12) & (z['ear_u'] < 0.9)
-        tuft = z['tuft']
-        L = np.where(mane_tip, 0.042, L)
-        W = np.where(mane_tip, 0.028, W)
-        lift = np.where(mane_tip, _rad(20), lift)
-        sp = np.where(mane_tip, 0.016, sp)
-        # build 1: longer cards standing 35° off the ball read as grey shards; a short, flatter fuzz instead
-        L = np.where(pom, 0.028, L)
-        W = np.where(pom, 0.026, W)
-        lift = np.where(pom, _rad(16), lift)
-        sp = np.where(pom, 0.012, sp)
-        L = np.where(fet, 0.05, L)
-        W = np.where(fet, 0.04, W)
-        lift = np.where(fet, _rad(18), lift)
-        sp = np.where(fet, 0.016, sp)
-        L = np.where(ear_rim, 0.04, L)
-        W = np.where(ear_rim, 0.03, W)
-        lift = np.where(ear_rim, _rad(12), lift)
-        sp = np.where(ear_rim, 0.013, sp)
-        L = np.where(tuft, 0.1, L)
-        W = np.where(tuft, 0.034, W)
-        lift = np.where(tuft, _rad(5), lift)
-        sp = np.where(tuft, 0.022, sp)
-        skip = ~(mane_tip | pom | fet) | (covered & ~pom) | z['fore']
-    # no card across a colour edge (a patch's cream outline, a stripe, a mane band): a card takes the skin's colour at
-    # its root, so its tip must land on the same tone (a chestnut card over cream glitters at the edge)
-    live = ~skip
+        # review Nov 12 (white cuffs like bandages): a short soft fluff in the leg's own colour
+        L = np.where(fet, 0.024, L)
+        W = np.where(fet, 0.026, W)
+        lift = np.where(fet, _rad(6), lift)
+        sp = np.where(fet, 0.015, sp)
+        # review Nov 13 (flakes above the ossicone): no cards on the pom-poms; their lying locks are the fuzz
+        hair = np.zeros(k, bool)
+        skip = ~(leg_back | fet) | covered | z['mane'] | z['tail'] | z['pom']
+    else:
+        L = np.full(k, 0.07)
+        W = np.full(k, 0.022)
+        lift = np.full(k, _rad(16))
+        sp = np.full(k, 0.0105)
+        hmax = np.maximum(z['mane_hmax'], 1e-3)
+        hr = np.clip(z['mane_h'] / hmax, 0, 1.2)
+        # the mane: both sides of the crest, from a fifth of the way up; longer toward the top so the tips stand above it
+        # review Nov 12 (rolled towels): a thin core; long upright strands from both its sides make the stiff brush,
+        # tips uneven band by band and standing well above the core
+        # review Nov 13 (pillows under a straw fringe): a lower core; the strands ~1.5× taller, standing above it as
+        # the brush, uneven band by band; none at the poll (straw wisps on the crown)
+        mane = z['mane'] & (np.abs(n[:, 0]) > 0.3) & (hr > 0.05) & (np.abs(z['mane_frac']) < 0.42) & (z['mane_t'] > 0.1)
+        uneven = 1.0 + 0.2 * np.sin(z['mane_band'] * 2.3 + 0.7)
+        L = np.where(mane, (0.12 + 0.03 * hr) * uneven * (0.55 + 0.45 * smooth(0.1, 0.24, z['mane_t'])), L)
+        W = np.where(mane, 0.022, W)
+        lift = np.where(mane, _rad(5), lift)
+        sp = np.where(mane, 0.008, sp)
+        # the forelock's tuft
+        fore = z['fore'] & (zz > SP.FORELOCK[0][2] + 0.008)
+        # build u1: 10 cm strands fanned out across the ossicones; a shorter, fuller tuft
+        L = np.where(fore, 0.07, L)
+        W = np.where(fore, 0.03, W)
+        lift = np.where(fore, _rad(6), lift)
+        sp = np.where(fore, 0.0072, sp)
+        # the tail's tuft: long strands hanging down the S-curve past its point
+        tuft = z['tuft'] & (z['tuft_u'] > 0.03) & (z['tuft_u'] < 0.9)
+        L = np.where(tuft, 0.14, L)
+        W = np.where(tuft, 0.028, W)
+        lift = np.where(tuft, _rad(7), lift)
+        sp = np.where(tuft, 0.0115, sp)
+        # (build u1 had a fringe inside each ear's rim: in game it rendered as a grey speckled line; the lining's
+        # painted cream rim and its deeper pink hollow carry the cup)
+        hair = mane | fore | tuft
+        skip = ~hair
+    # no fur card across a colour edge (a patch's cream outline, a stripe): a card takes the skin's colour at its root, so
+    # its tip must land on the same tone (a chestnut card over cream glitters at the edge). The hair parts are exempt:
+    # their strands stand off the skin (their tips' "skin" is air) and cross the mane's bands as hair does
+    live = ~skip & ~hair
     if live.any() and 'body' in _SEEDS:
         tip = p[live] + flow(p[live], n[live]) * L[live, None] * 0.85
         lum = v3((0.2126, 0.7152, 0.0722))

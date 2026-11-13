@@ -41,7 +41,7 @@ PALETTE = {'body': '#EFE6D2', 'belly': '#FFF8EA', 'accent': '#A0522D', 'eye': '#
 VARIANTS: dict = {}
 
 # colours CONTENT has none for (the card's pictures suggest them; never sampled)
-ROPE_HEX = '#C79A52'
+ROPE_HEX = '#B39466'
 HOOF_HEX = '#3D302A'
 NOSE_HEX = '#4A2F29'
 MOUTH_HEX = '#4E3029'
@@ -53,9 +53,10 @@ def colours(pal: dict) -> dict:
     coat, light, nut = pal['body'], pal['belly'], pal['accent']
     scarf = pal.get('scarf', '#D1495B')
     return {
-        'coat': coat, 'light': light, 'nut': nut, 'scarf': scarf,
+        'coat': coat, 'light': light, 'nut': C.shade_hex(C.mix_hex(nut, '#6E4B3A', 0.22), 0.9), 'scarf': scarf,
         'nut_dark': C.shade_hex(nut, 0.72),
         'beard': C.mix_hex(nut, '#B0622F', 0.25),
+        'beard_light': C.mix_hex(nut, '#C9874E', 0.4),        # v1.24: the lit crowns of the beard's locks
         'brow': C.shade_hex(nut, 0.92),
         'horn': C.shade_hex(nut, 0.8),
         'horn_dark': C.mix_hex(C.shade_hex(nut, 0.52), '#2E1A10', 0.2),
@@ -85,7 +86,7 @@ def _on_head(x: float, z: float, out: float) -> float:
     return HEAD_C.y - HEAD_R[1] * math.sqrt(max(q, 0.0)) - out
 
 
-EYE_C = {s: Vector((0.116 * s, _on_head(0.116, 1.0, 0.007), 1.0)) for s in (1, -1)}
+EYE_C = {s: Vector((0.116 * s, _on_head(0.116, 1.0, 0.0015), 1.0)) for s in (1, -1)}
 EYE_R = 0.058
 EYE_DEPTH = (0.42, 0.30)
 EYE_SPREAD = 1.0
@@ -157,7 +158,7 @@ def head_parts() -> list[Part]:
         Part('jaw', 'capsule', loc=(0.0, -0.58, 0.885), to=(0.0, -0.47, 0.875), radius=0.072),
         Part('neck', 'capsule', loc=(0.0, -0.43, 0.95), to=(0.0, -0.41, 0.79), radius=0.158),
         Part('nape', 'sphere', loc=(0.0, -0.33, 0.9), radius=1.0, scale=(0.19, 0.13, 0.11)),
-    ] + brow_parts()
+    ]
 
 
 def brow_parts() -> list[Part]:
@@ -183,7 +184,7 @@ def leg_parts(leg: str) -> list[Part]:
     front = leg[0] == 'F'
     top = 0.45 if front else 0.47
     return [
-        Part(f'thigh{leg}', 'capsule', loc=(x, y + (0.0 if front else 0.02), top), to=(x, y, 0.21), radius=0.084 if front else 0.09),
+        Part(f'thigh{leg}', 'capsule', loc=(x, y + (0.0 if front else 0.02), top), to=(x, y, 0.21), radius=0.098 if front else 0.104),
         Part(f'shin{leg}', 'capsule', loc=(x, y, 0.22), to=(x, y - 0.004, 0.085), radius=0.063),
         Part(f'sock{leg}', 'sphere', loc=(x, y - 0.006, 0.122), radius=1.0, scale=(0.074, 0.078, 0.05)),
     ]
@@ -218,6 +219,158 @@ def body_extras() -> list[bpy.types.Object]:
     for leg, (x, y) in LEGS.items():
         out.extend(RP.hoof_toes(x, y - 0.012))
     out.extend(BD.clump_meshes(scarf_push))
+    out.extend(brow_arches())
+    # polish: no raised forelock cap (it read as a flat hat brim); the head dome continues between the horns
+    out.extend(coat_lumps())
+    return out
+
+
+def _head_surface_z(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """The top of the head (its ellipsoid and the crown's) above (x, y)."""
+    out = np.full(np.shape(x), -1.0)
+    for c, r in ((HEAD_C, HEAD_R), ((0.0, -0.42, 1.135), (0.15, 0.135, 0.094))):
+        q = 1.0 - ((x - c[0]) / r[0]) ** 2 - ((y - c[1]) / r[1]) ** 2
+        out = np.maximum(out, np.where(q > 0, c[2] + r[2] * np.sqrt(np.clip(q, 0, None)), -1.0))
+    return out
+
+
+def _onto_head(p: np.ndarray, out_by) -> tuple[np.ndarray, np.ndarray]:
+    """Points pushed onto the head ellipsoid along its radial line, then `out_by` along its normal; and the normals."""
+    hc, hr = v3(HEAD_C), v3(HEAD_R)
+    q = np.sqrt((((p - hc) / hr) ** 2).sum(1, keepdims=True))
+    cs = hc + (p - hc) / q
+    nrm = (cs - hc) / hr ** 2
+    nrm /= np.linalg.norm(nrm, axis=1, keepdims=True)
+    return cs + nrm * np.reshape(out_by, (-1, 1)), nrm
+
+
+def _sweep(name: str, C: np.ndarray, nrm: np.ndarray, half_w: np.ndarray, half_t: np.ndarray, sides: int = 10):
+    """A closed tube along C: an ellipse half_t deep along `nrm` and half_w wide across."""
+    T = np.gradient(C, axis=0)
+    T /= np.maximum(np.linalg.norm(T, axis=1, keepdims=True), 1e-9)
+    nn = nrm - T * (nrm * T).sum(1, keepdims=True)
+    nn /= np.maximum(np.linalg.norm(nn, axis=1, keepdims=True), 1e-9)
+    ac = np.cross(T, nn)
+    ph = np.linspace(0, 2 * np.pi, sides, endpoint=False)
+    ring = (np.cos(ph)[None, :, None] * ac[:, None, :] * half_w[:, None, None]
+            + np.sin(ph)[None, :, None] * nn[:, None, :] * half_t[:, None, None])
+    return RP.grid_object(name, C[:, None, :] + ring, True, caps=(True, True))
+
+
+BROW_ARCH = [(0.064, -0.594, 1.08), (0.09, -0.586, 1.1), (0.12, -0.568, 1.11), (0.15, -0.546, 1.101), (0.172, -0.524, 1.084)]
+
+
+def brow_arches() -> list[bpy.types.Object]:
+    """v1.25 (review: brows of rice-grain cards): one thick, solid arch over each eye, about as wide as the eye,
+    raised off the head, thickest in its middle (it carries short chestnut locks and fine cards on its top)."""
+    out = []
+    u = np.linspace(0.0, 1.0, 24)
+    for s in (1, -1):
+        ctrl = np.array([(x * s, y, z) for x, y, z in BROW_ARCH], np.float64)
+        idx = np.linspace(0, len(ctrl) - 1, len(u))
+        C = np.stack([np.interp(idx, np.arange(len(ctrl)), ctrl[:, k]) for k in range(3)], 1)
+        mid = np.sin(np.pi * u) ** 0.7
+        C, nrm = _onto_head(C, 0.008 + 0.006 * mid)
+        half_w = 0.012 + 0.016 * mid              # up and down the face: ~2.8 cm at its middle
+        half_t = 0.008 + 0.011 * mid              # off the head: ~1.9 cm at its middle
+        out.append(_sweep(f'browarch{s}', C, nrm, half_w, half_t))
+    return out
+
+
+def forelock() -> list[bpy.types.Object]:
+    """v1.25 (review: a spiky white crown star with black blots under it): a soft cream forelock between the horns,
+    sculpted (no tuft cards): a front row of seven locks falling forward over the forehead, the middle ones longest,
+    their tips curling up off it a little, and five shorter ones behind them for volume."""
+    out = []
+    rng = np.random.default_rng(19)
+    u = np.linspace(0.0, 1.0, 20)
+    rows = [(np.linspace(-0.05, 0.05, 7), -0.43, 0.12, 0.02), (np.linspace(-0.04, 0.04, 5), -0.385, 0.1, 0.018)]
+    for ri, (xs, y0, ln, r0) in enumerate(rows):
+        for i, x0 in enumerate(xs):
+            a = abs(x0) / 0.052
+            L = ln * (1.0 - 0.3 * a) * rng.uniform(0.92, 1.05)
+            x = x0 * (1.0 + 0.7 * u) + 0.006 * np.sin(np.pi * u * 1.4 + rng.uniform(0, 6.3)) * u
+            y = y0 - L * u
+            lift = 0.008 + 0.03 * smooth(0.15, 1.0, u) ** 1.3       # rising off the crown, then tipping forward
+            z = _head_surface_z(x, y) + lift
+            C = np.stack([x, y, z], 1)
+            nrm = np.stack([x * 0.0, y - HEAD_C[1], z - HEAD_C[2]], 1)
+            nrm /= np.linalg.norm(nrm, axis=1, keepdims=True)
+            taper = 1.0 - 0.7 * u ** 1.6          # soft, rounded tips
+            out.append(_sweep(f'forelock{ri}_{i}', C, nrm, r0 * 1.35 * taper + 0.002, r0 * 0.7 * taper + 0.0015, 8))
+    return out
+
+
+def coat_lumps() -> list[bpy.types.Object]:
+    """v1.25 (review: a smooth barrel with a needle fringe): chunky wavy lock clumps shingled over the flanks, the
+    chest, the back and the rump, combed with the coat, each a teardrop raised off the body with a rounded, lifted tip,
+    so the outline is scalloped like the reference. None under the belly, the scarf or the beard, nor on the tail."""
+    from mathutils.kdtree import KDTree
+    ells = []
+    for q in torso_parts():
+        if q.kind != 'sphere':
+            continue
+        r = np.array(q.scale, np.float64) * q.radius
+        for sx in ((1, -1) if q.mirror else (1,)):
+            ells.append((np.array(q.loc, np.float64) * np.array((sx, 1.0, 1.0)), r))
+    rng = np.random.default_rng(23)
+    P, N = [], []
+    for k, (c, r) in enumerate(ells):
+        d = rng.normal(0, 1, (int(60000 * float(np.prod(r)) ** (2 / 3)), 3))
+        d /= np.linalg.norm(d, axis=1, keepdims=True)
+        p = c + d * r
+        nn = d / r
+        nn /= np.linalg.norm(nn, axis=1, keepdims=True)
+        outside = np.ones(len(p), bool)
+        for k2, (c2, r2) in enumerate(ells):
+            if k2 != k:
+                outside &= in_ellipsoid(p, c2, r2) > 1.02
+        P.append(p[outside])
+        N.append(nn[outside])
+    P, N = np.concatenate(P), np.concatenate(N)
+    z = zones(P, N)
+    zz, y = P[:, 2], P[:, 1]
+    ok = (N[:, 2] > -0.4) & (zz > 0.33) & z['torso'] & ~z['scarf'] & ~z['scarf_end'] & ~scarf_mask(P, 0.06, 0.03)
+    ok &= ~((y < -0.42) & (np.abs(P[:, 0]) < 0.2) & (zz < 0.82))          # behind the beard
+    ok &= ~((y > 0.34) & (zz > 0.6) & (np.abs(P[:, 0]) < 0.1))           # the tail's root
+    P, N = P[ok], N[ok]
+    # Poisson thinning: lumps about 5.5 cm apart
+    kept: list[int] = []
+    kd = None
+    for i in rng.permutation(len(P)):
+        if kept:
+            if kd is None or len(kept) % 16 == 0:
+                kd = KDTree(len(kept))
+                for j, kk in enumerate(kept):
+                    kd.insert(P[kk], j)
+                kd.balance()
+            near = kd.find(P[i])
+            if near[0] is not None and near[2] < 0.06:
+                continue
+            if any(np.linalg.norm(P[kk] - P[i]) < 0.06 for kk in kept[-(len(kept) % 16 or 16):]):
+                continue
+        kept.append(int(i))
+    P, N = P[kept], N[kept]
+    F = flow(P, N)
+    out = []
+    s = np.linspace(0.0, 1.0, 10)
+    for i in range(len(P)):
+        p, n_, f = P[i], N[i], F[i]
+        # v1.25 final: they hang (combed, then gravity), long and wavy, the tips lifting off the coat
+        f = f + np.array((0.0, 0.0, -0.6))
+        f = f - n_ * float(f @ n_)
+        f = f / max(float(np.linalg.norm(f)), 1e-9)
+        side = np.cross(n_, f)
+        Lc = 0.16 * rng.uniform(0.85, 1.15) * (0.75 if p[2] < 0.45 else 1.0)
+        ph0 = rng.uniform(0, 6.3)
+        hug = -(s * Lc) ** 2 / (2 * 0.32)                      # follows the body's curve
+        Cl = (p[None, :] + f[None, :] * (s * Lc)[:, None] + n_[None, :] * (hug - 0.007 + 0.018 * s ** 2)[:, None]
+              + side[None, :] * (0.012 * np.sin(np.pi * 1.6 * s + ph0) * s)[:, None])
+        rnd = np.sqrt(np.clip(1.0 - s ** 4, 0.0, 1.0))           # polish: a rounded tip, not a point
+        half_w = 0.032 * (0.8 + 0.2 * np.sin(np.pi * s)) * rnd * (1.0 - 0.35 * s) + 0.002
+        half_t = 0.013 * (1.0 - 0.55 * s) * rnd + 0.0015
+        out.append(_sweep(f'coatlump{i}', Cl, np.tile(n_, (len(s), 1)), half_w, half_t, 8))
+    print(f'rammerjack coat lumps: {len(out)}')
     return out
 
 
@@ -405,7 +558,16 @@ def zones(p: np.ndarray, n: np.ndarray | None = None) -> dict[str, np.ndarray]:
             'beard': beard_z, 'horn_root': horn_root, 'leg': leg, 'legs': legs, 'hoof': hoof, 'sock': sock, 'sole': sole,
             'toes': hoof, 'paw': leg & (z < SOCK_Z[1]), 'tail': tail, 'torso': torso, 'belly': belly, 'back': back,
             'chest': chest, 'neck': neck, 'scarf': scarf, 'scarf_end': send, 'beard_u': bl['u'], 'beard_th': bl['th'],
-            'beard_dir': bl['dir'], 'beard_root': bl['on'] & (bl['u'] <= 0.08), 'mouth_d': mouth_dist(p)}
+            'beard_dir': bl['dir'], 'beard_root': bl['on'] & (bl['u'] <= 0.08), 'beard_crown': bl['crown'], 'beard_cid': bl['cid'], 'beard_lat': bl['lat'], 'beard_rem': bl['rem'],
+            'mouth_d': mouth_dist(p)}
+
+
+def mouth_side(p: np.ndarray) -> np.ndarray:
+    """Above (+1) or below (−1) the smile line in the front view, 0 off its span or off the front of the muzzle."""
+    c = np.array(mouth_curve())
+    zc = np.interp(p[:, 0], c[:, 0], c[:, 1])
+    on = (np.abs(p[:, 0]) <= c[-1, 0]) & (p[:, 1] < -0.62)
+    return np.where(on, np.sign(p[:, 2] - zc), 0.0)
 
 
 def mouth_dist(p: np.ndarray) -> np.ndarray:
@@ -419,7 +581,7 @@ def decimate_keep(co: np.ndarray) -> np.ndarray:
     return np.clip(z['face'] * 1.0 + z['muzzle'] * 1.0 + (z['eye_d'] < 0.1) * 1.0 + z['hoof'] * 0.85 + z['ear'] * 0.5, 0, 1)
 
 
-BODY_TRIS = 46000
+BODY_TRIS = 54000           # v1.25 final: the coat lumps need the triangles (46k flattened the neck under the scarf into one facet)
 LITE_PROPS_TRIS = 4000          # the Lite copy keeps more of the horns, rope and scarf (default 2400)
 
 
@@ -435,7 +597,10 @@ def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
     wd = smooth(1.02, 0.9, zz)[:, None] * smooth(0.04, 0.1, np.abs(x))[:, None]
     g_head = norm(g * (1 - wd) + down * wd * 1.2)
     # the crown's tuft stands up and back
-    g_head = np.where(z['crown'][:, None], norm(v3((0, 0.5, 1.0)) + np.stack([x * 3, np.zeros(k), np.zeros(k)], 1)), g_head)
+    # v1.25: the forelock falls forward over the forehead (front of the crown); behind it the hair lies back
+    fore = norm(np.stack([x * 2.0, np.full(k, -1.0), np.full(k, -0.35)], 1))
+    g_head = np.where((z['crown'] & (y < -0.4))[:, None], fore, g_head)
+    g_head = np.where((z['crown'] & (y >= -0.4))[:, None], norm(v3((0, 1.0, -0.2)) + np.stack([x * 2, np.zeros(k), np.zeros(k)], 1)), g_head)
     # brows: combed out from the middle of the face
     g_head = np.where(z['brow'][:, None], norm(np.stack([np.sign(x), np.full(k, 0.15), np.full(k, 0.25)], 1)), g_head)
     # cheeks and the beard: down, gathering toward the beard's point
@@ -461,7 +626,7 @@ def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
         leg_axis = np.where(m, np.stack([x - lx, y - ly, np.zeros(k)], 1), leg_axis)
     g = np.where(z['sock'][:, None], norm(norm(leg_axis) * 0.9 + down * 0.55), g)
     radial = norm(np.stack([x, y - TAIL_POINTS[-1][1] + 0.05, zz - TAIL_POINTS[-1][2] + 0.05], 1))
-    g_tail = norm(np.tile(v3(TAIL_DIR), (k, 1)) * 0.7 + radial * 0.5)
+    g_tail = norm(np.tile(v3(TAIL_DIR), (k, 1)) * 0.95 + radial * 0.15)
     g = np.where(z['tail'][:, None], g_tail, g)
     return tangent(g, n)
 
@@ -483,12 +648,13 @@ def head_lock_params(p, n):
     lift = np.full(k, _rad(3.0))
     L = np.where(z['face'], 0.036, L)
     W = np.where(z['face'], 0.0085, W)
-    L = np.where(z['muzzle'], 0.017, L)
-    W = np.where(z['muzzle'], 0.0075, W)
-    lift = np.where(z['muzzle'], _rad(0.5), lift)
-    L = np.where(z['crown'], 0.07, L)
-    W = np.where(z['crown'], 0.014, W)
-    lift = np.where(z['crown'], _rad(5.0), lift)
+    # v1.24: a denser, deeper short fur over the muzzle, right down to the smile (v1.23: 'a bit smooth')
+    L = np.where(z['muzzle'], 0.023, L)
+    W = np.where(z['muzzle'], 0.0078, W)
+    lift = np.where(z['muzzle'], _rad(2.5), lift)
+    L = np.where(z['crown'], 0.034, L)        # polish: short and flat on the sculpted forelock (a glassy comb)
+    W = np.where(z['crown'], 0.012, W)
+    lift = np.where(z['crown'], _rad(1.0), lift)
     L = np.where(z['brow'], 0.032, L)
     W = np.where(z['brow'], 0.0105, W)
     lift = np.where(z['brow'], _rad(6.0), lift)
@@ -501,10 +667,15 @@ def head_lock_params(p, n):
     L = L * (0.45 + 0.55 * near_eye)
     W = W * (0.6 + 0.4 * near_eye)
     nose_pad = in_ellipsoid(p, tuple(NOSE_C), (0.058, 0.04, 0.042)) < 1.0
-    smile = (p[:, 1] < -0.655) & (p[:, 2] < NOSE_C.z - 0.012) & (p[:, 2] > NOSE_C.z - 0.09) & (np.abs(p[:, 0]) < 0.06)
+    # only the smile's own line stays bare (v1.23: a whole box round the mouth had no fur, the smooth patch)
+    L = np.where(z['muzzle'] & (z['mouth_d'] < 0.03), np.minimum(L, 0.011 + 0.4 * z['mouth_d']), L)
+    tip = p + flow(p, n, z) * L[:, None]
+    philtrum = (p[:, 1] < -0.62) & (np.abs(p[:, 0]) < 0.007) & (p[:, 2] > NOSE_C.z - 0.058) & (p[:, 2] < NOSE_C.z - 0.01)
+    smile = ((z['mouth_d'] < 0.0075) | (mouth_dist(tip) < 0.006) | philtrum
+             | (mouth_side(p) * mouth_side(tip) < 0))                 # a lock may not cross the smile line
     skip = ~z['head'] | z['beard'] | nose_pad | smile | (z['eye_d'] < EYE_R * 1.08) | z['ear_lining']
     L = _short_across(p, n, z, L, keep=z['brow'])
-    spacing = np.where(z['muzzle'], W * 0.45, W * 0.55)
+    spacing = np.where(z['muzzle'], W * 0.4, W * 0.55)
     return np.where(skip, np.nan, spacing), L, W, lift, z
 
 
@@ -517,12 +688,12 @@ def body_lock_params(p, n):
     lift = np.full(k, _rad(4.0))
     L = np.where(z['back'], 0.1, L)
     L = np.where(z['belly'], 0.12, L)
-    L = np.where(z['beard'], 0.12, L)
-    W = np.where(z['beard'], 0.016, W)
-    lift = np.where(z['beard'], _rad(3.0), lift)
+    L = np.where(z['beard'], 0.08, L)
+    W = np.where(z['beard'], 0.0125, W)          # v1.24: finer strands
+    lift = np.where(z['beard'], _rad(0.5), lift)   # v1.25: they hug the locks (standing tips baked dark specks)
     upper = z['leg'] & (p[:, 2] > SOCK_Z[1])
-    L = np.where(z['leg'], np.where(upper, 0.075, 0.05), L)
-    W = np.where(z['leg'], np.where(upper, 0.016, 0.013), W)
+    L = np.where(z['leg'], np.where(upper, 0.095, 0.05), L)
+    W = np.where(z['leg'], np.where(upper, 0.019, 0.013), W)
     lift = np.where(z['sock'], _rad(12.0), lift)
     L = np.where(z['tail'], 0.08, L)
     W = np.where(z['tail'], 0.016, W)
@@ -544,17 +715,18 @@ def _short_across(p, n, z, L, keep):
     zt['beard'] = zt['beard'] & face
     zt['beard_root'] = zt['beard_root'] & face
     cream_over_nut = (nut_mask(p, z) < 0.5) & (nut_mask(tip, zt) > 0.55)
-    return np.where(cream_over_nut & ~keep, L * 0.45, L)
+    return np.where(cream_over_nut & ~keep, L * 0.28, L)
 
 
 CARD_LAYERS = 3
 TUFT_SHAPE = {'template': (9, 16, 3, 0.2), 'thickness': 0.38, 'bury': 0.14}   # a fuller forelock
-CARD_SHADE = 0.9
+CARD_SHADE = 0.84               # v1.25: a touch darker (review: the cream card tips glinted frosty white)
+NORMAL_SCALE = 1.0             # v1.25: the baked relief shows (horn ridges, fur strands, the muzzle's fur; default 0.6)
 CARD_COLOUR_FROM = 'skin'
 # 3b: the shared AO treatment: a light blur, then a floor (round 3: narrow slots between the beard's clumps and the
 # forelock's crowded roots baked near black, dark specks in the beard and marks under the forelock)
-AO_FLOOR = 0.35
-AO_SOFTEN = 1.5
+AO_FLOOR = 0.45
+AO_SOFTEN = 2.0
 
 
 def card_params(p, n, layer: int):
@@ -574,8 +746,8 @@ def card_params(p, n, layer: int):
     # 3b: a beard card ends inside the beard (round 3: long cards at its point hung past it as dark spikes)
     beard_len = np.clip((zz - 0.475) * 0.85, 0.0, 1.0)
     if layer == 0:
-        L = np.where(head, 0.04, 0.1)
-        W = np.where(head, 0.032, 0.056)
+        L = np.where(head, 0.04, 0.085)
+        W = np.where(head, 0.032, 0.05)
         lift = np.where(head, _rad(3), _rad(7))
         L = np.where(z['crown'], 0.05, L)
         lift = np.where(z['crown'], _rad(4), lift)
@@ -583,28 +755,37 @@ def card_params(p, n, layer: int):
         L = np.where(under, 0.065, L)
         lift = np.where(under, _rad(3), lift)
         # 3b: no cards under the belly line at all (white icicle points along it)
-        skip_under = (~head) & (n[:, 2] < -0.3) & ~z['leg']
+        skip_under = (~head) & (n[:, 2] < -0.08) & ~z['leg']      # v1.24: the whole underside (v1.23: still a fringe)
+        skip_under |= z['leg'] & (n[:, 2] < -0.35)
         L = np.where(z['cheek'], 0.06, L)
         L = np.where(z['ear'], 0.032, L)
         W = np.where(z['ear'], 0.024, W)
         L = np.where(z['leg'], 0.07, L)
         W = np.where(z['leg'], 0.04, W)
         L = np.where(z['tail'], 0.08, L)
-        L = np.where(z['beard'], np.minimum(0.11, beard_len), L)
-        W = np.where(z['beard'], 0.04, W)
-        sp = np.where(head, 0.025, 0.021)
+        sp = np.where(head, 0.025, 0.024)          # v1.25: a little sparser over the coat (the frosty rump)
         sp = np.where(z['leg'] | z['tail'], 0.02, sp)
-        sp = np.where(z['beard'], 0.024, sp)
-        skip = (z['face'] | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.085) | z['brow'] | (z['chin'] & (y < -0.6))
-                | (z['leg'] & (zz < SOCK_Z[1] + 0.01)) | covered | (n[:, 2] < -0.5) | skip_under | (z['beard'] & (L < 0.035)))
+        # v1.25: no layer-0 cards on the beard (its strands are layer 2), round the brows (grey grain flecks in them),
+        # along the belly line (a row of grey almonds in turn_side) or near the fetlock cuffs (grey shards)
+        belly_line = (~head) & ~z['leg'] & (zz < 0.47) & (n[:, 2] < 0.2)
+        # v1.25 final: soft fur breakup round the muzzle's sides and chin (review: a clean bulb)
+        nose_pad = in_ellipsoid(p, tuple(NOSE_C), (0.058, 0.04, 0.042)) < 1.0
+        muz_side = z['muzzle'] & (n[:, 1] > -0.6) & (z['mouth_d'] > 0.015) & ~nose_pad & (z['eye_d'] > 0.085)
+        L = np.where(muz_side, 0.022, L)
+        W = np.where(muz_side, 0.018, W)
+        lift = np.where(muz_side, _rad(8), lift)
+        sp = np.where(muz_side, 0.012, sp)
+        skip = (((z['face'] | z['muzzle'] | (z['chin'] & (y < -0.6))) & ~muz_side) | z['nose'] | (z['eye_d'] < 0.085) | z['brow'] | z['crown']
+                | (z['leg'] & (zz < SOCK_Z[1] + 0.045)) | covered | (n[:, 2] < -0.5) | skip_under | z['beard'] | belly_line
+                | (brow_soft(p, 0.02, 1.45) > 0.3))
     elif layer == 1:
         L = np.full(k, 0.13)
         W = np.full(k, 0.06)
         lift = np.full(k, _rad(10))
         sp = np.full(k, 0.03)
-        fr_chest = z['chest'] & (zz < 0.62)
-        fr_belly = z['belly'] & (zz < 0.42) & (n[:, 2] > -0.2)
-        fr_side = z['torso'] & (np.abs(n[:, 0]) > 0.55) & (zz < 0.56) & (zz > 0.3)
+        fr_chest = z['chest'] & (zz < 0.62) & (n[:, 1] < -0.35) & (n[:, 2] > -0.15)
+        fr_belly = z['belly'] & (zz < 0.42) & (n[:, 2] > 0.02)
+        fr_side = z['torso'] & (np.abs(n[:, 0]) > 0.55) & (zz < 0.56) & (zz > 0.44) & (n[:, 2] > 0.05)
         fr_neck = z['neck'] & ~z['scarf'] & (zz > 0.7) & (n[:, 1] > 0.15)         # the nape only (round 1: whiskers by the ears)
         leg_back = np.zeros(k, bool)
         for lg, (lx, ly) in LEGS.items():
@@ -613,7 +794,7 @@ def card_params(p, n, layer: int):
         cheek = z['cheek'] & (y > -0.6)
         L = np.where(fr_belly, 0.1, L)
         lift = np.where(fr_belly, _rad(5), lift)
-        L = np.where(leg_back, 0.09, L)
+        L = np.where(leg_back, 0.11, L)
         W = np.where(leg_back, 0.045, W)
         L = np.where(socks, 0.026, L)
         W = np.where(socks, 0.07, W)
@@ -623,7 +804,8 @@ def card_params(p, n, layer: int):
         W = np.where(cheek, 0.05, W)
         lift = np.where(cheek, _rad(14), lift)
         sp = np.where(cheek, 0.015, sp)
-        fringe = fr_chest | fr_belly | fr_side | fr_neck | leg_back | socks | cheek
+        # v1.25: no belly fringe, no sock cards (grey shards on the cuffs), no cheek tufts (orange glass shards)
+        fringe = fr_chest | fr_side | fr_neck | leg_back
         skip = ~fringe | z['face'] | z['muzzle'] | (z['eye_d'] < 0.1) | z['beard'] | z['tail'] | covered
     else:
         L = np.full(k, 0.15)
@@ -632,24 +814,26 @@ def card_params(p, n, layer: int):
         sp = np.full(k, 0.03)
         beard = z['beard']
         tail = z['tail']
-        L = np.where(beard, np.minimum(0.095, beard_len), L)
-        W = np.where(beard, 0.055, W)
-        sp = np.where(beard, 0.022, sp)
-        beard = beard & (beard_len >= 0.035)
-        L = np.where(tail, 0.08, L)
-        W = np.where(tail, 0.064, W)
-        lift = np.where(tail, _rad(18), lift)
-        sp = np.where(tail, 0.02, sp)
-        brows = z['brow'] & z['head']
-        L = np.where(brows, 0.032, L)
-        W = np.where(brows, 0.036, W)
-        lift = np.where(brows, _rad(20), lift)
-        sp = np.where(brows, 0.009, sp)
+        # v1.25: strands down each lock's middle, never past its tip or into the gaps between the locks
+        L = np.where(beard, np.minimum(0.085, 0.6 * z['beard_rem']), L)
+        W = np.where(beard, 0.022, W)
+        sp = np.where(beard, 0.02, sp)
+        beard = beard & (np.abs(z['beard_lat']) < 0.55) & (z['beard_crown'] > 0.2) & (L >= 0.03)   # its front, not its back
+        L = np.where(tail, 0.06, L)
+        W = np.where(tail, 0.05, W)
+        lift = np.where(tail, _rad(6), lift)     # v1.25: laid along the tail (a crown of cards from behind)
+        sp = np.where(tail, 0.026, sp)
+        # v1.25: fine chestnut cards on the brow arch's top only (grey/white grain cards came from its rim)
+        brows = np.zeros(k, bool)            # v1.25 final: the sculpted arches and their locks only
+        L = np.where(brows, 0.026, L)
+        W = np.where(brows, 0.024, W)
+        lift = np.where(brows, _rad(14), lift)
+        sp = np.where(brows, 0.011, sp)
         skip = ~(beard | tail | brows) | covered
     # no cards across the cream / chestnut border (a cream card over chestnut fur glitters at the edge)
     nut = nut_mask(p, z)
     skip = skip | ((nut > 0.08) & (nut < 0.92) & ~z['beard'])
-    lower_face = head & (zz < 0.95) & (y < -0.5) & (nut < 0.5)
+    lower_face = head & (zz < 0.95) & (y < -0.5) & (nut < 0.5) & ~((layer == 0) & z['muzzle'] & (n[:, 1] > -0.6))
     skip = skip | lower_face | ((z['cheek'] | z['chin']) & (nut < 0.5) & (layer > 0))
     # 3b: the card's whole length (and a little more) must stay on its own colour (cream belly cards hung over the
     # chestnut legs as white flecks)
@@ -659,7 +843,7 @@ def card_params(p, n, layer: int):
 
 
 # ----------------------------------------------------------------------------- the crown tuft
-def tuft_frames(surface: bpy.types.Object):
+def _tuft_frames_v124(surface: bpy.types.Object):
     """A spiky cream forelock between the horn roots (1-hero.png, 2-turnaround.png front)."""
     bvh = BVHTree.FromObject(surface, bpy.context.evaluated_depsgraph_get())
     P, N, F, L, W, lift = [], [], [], [], [], []
@@ -717,7 +901,7 @@ def nut_mask(p: np.ndarray, z: dict) -> np.ndarray:
     nz = _noise3(p, 34.0, 3) * 0.16 + _noise3(p, 90.0, 4) * 0.07
     nut = np.zeros(len(p))
     # the brows
-    nut = np.maximum(nut, brow_soft(p, 0.06))
+    nut = np.maximum(nut, smooth(0.3, 0.6, brow_soft(p, 0.03, 1.15)))     # v1.25: solid brows, a crisp edge
     # the beard and the cheeks (mutton chops) beside the cream muzzle, down to the chin
     cheek_line = 0.945 + 0.015 * smooth(0.09, 0.15, ax) + 0.25 * np.clip(y + 0.55, 0.0, 0.15)
     chops = (y < -0.38) & (ax > 0.052 + 0.045 * smooth(0.95, 0.88, zz)) & (zz < cheek_line + nz * 0.08) & (zz > 0.78)
@@ -733,8 +917,9 @@ def nut_mask(p: np.ndarray, z: dict) -> np.ndarray:
         nut = np.maximum(nut, on * smooth(SOCK_Z[1] - 0.004, SOCK_Z[1] + 0.012, zz + nz * 0.08) * smooth(top + 0.02, top - 0.02, zz))
     # the haunches' backs down to the hocks (back view)
     for s in (1, -1):
-        hb = ell_soft(p, (0.16 * s, 0.37, 0.4), (0.1, 0.08, 0.12), 0.1) * (y > 0.3)
-        nut = np.maximum(nut, smooth(0.35, 0.55, hb + nz))
+        # v1.25: one solid hip patch each side (review: salmon diagonal streaks; the reference's back view has two)
+        hb = ell_soft(p, (0.155 * s, 0.33, 0.43), (0.135, 0.14, 0.2), 0.1) * (y > 0.22)     # down to the leg's chestnut
+        nut = np.maximum(nut, smooth(0.4, 0.6, hb + 0.3 * nz))
     # the saddle patches, the withers
     for s, blobs in SADDLE.items():
         for c, r in blobs:
@@ -757,8 +942,8 @@ def nut_mask(p: np.ndarray, z: dict) -> np.ndarray:
 def light_mask(p: np.ndarray, z: dict) -> np.ndarray:
     """0 coat cream … 1 the lighter cream: the face, the muzzle, the crown's tuft, the socks, the ears."""
     zz = p[:, 2]
-    lt = np.maximum(ell_soft(p, (0.0, -0.58, 1.0), (0.15, 0.12, 0.12), 0.3), ell_soft(p, MUZZLE[0], tuple(r * 1.1 for r in MUZZLE[1]), 0.15))
-    lt = np.maximum(lt, z['crown'] * 0.7)
+    lt = np.maximum(0.25 * ell_soft(p, (0.0, -0.58, 1.0), (0.15, 0.12, 0.12), 0.3), 0.45 * ell_soft(p, MUZZLE[0], tuple(r * 1.1 for r in MUZZLE[1]), 0.15))
+    lt = np.maximum(lt, z['crown'] * 0.2)
     lt = np.maximum(lt, z['sock'] * smooth(SOCK_Z[1] + 0.01, SOCK_Z[1] - 0.02, zz))
     lt = np.maximum(lt, z['ear'] * 0.6)
     return np.clip(lt, 0, 1)
@@ -804,27 +989,56 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     # the ear's lining: pink skin, a cream rim
     lining = zr['ear_lining'] * smooth(0.95, 0.7, np.abs(zr['ear_v'])) * smooth(0.04, 0.16, zr['ear_u']) * smooth(0.98, 0.85, zr['ear_u'])
     rgb = rgb * (1 - lining[:, None]) + lin(col['lining'])[None, :] * lining[:, None]
+    # v1.25: a dark ring round each eye (review: at 64 px the eyes were faint smudges)
+    ring = smooth(EYE_R * 0.96, EYE_R * 1.03, zr['eye_d']) * smooth(EYE_R * 1.24, EYE_R * 1.08, zr['eye_d'])
+    ring = ring * zr['head']
+    rgb = rgb * (1 - 0.65 * ring[:, None]) + lin(LASH_HEX)[None, :] * (0.65 * ring[:, None])
     # the hooves
     hoof = zr['hoof'] * smooth(RP.HOOF_H + 0.004, RP.HOOF_H - 0.006, pos[:, 2])
     rgb = rgb * (1 - hoof[:, None]) + lin(col['hoof'])[None, :] * hoof[:, None]
     # each lock: a darker root, lighter tip, a little variation
-    shade = 0.84 + 0.2 * tpos + 0.1 * (lrand - 0.5)
-    # the beard: lighter chestnut toward each lock's tip (round 3: matte, with highlights, not a streaky orange slab)
-    shade = np.where(zr['beard'], 0.82 + 0.34 * tpos + 0.08 * (lrand - 0.5), shade)
+    shade = 0.86 + 0.08 * tpos + 0.08 * (lrand - 0.5)
+    # the beard: lighter chestnut toward each lock's tip (round 3: matte, with highlights, not a streaky orange slab);
+    # v1.24: each clump a lock of its own: its crown lit, the grooves to its neighbours dark, every clump a slightly
+    # different chestnut, and more strand-to-strand variation (v1.23: the beard read as one mass from the front)
+    bz = zr['beard'] | zr['beard_root']
+    lat = np.abs(zr['beard_lat'])
+    crown = (1.0 - smooth(0.45, 0.98, lat)) * smooth(-0.3, 0.4, zr['beard_crown'])   # 1 down a lock's middle
+    cid = zr['beard_cid'].astype(np.float64)
+    hsh = np.mod(np.sin(cid * 12.9898 + 4.1) * 43758.5453, 1.0)
+    lock_lum = (0.56 + 0.52 * crown) * (0.88 + 0.24 * hsh)
+    shade = np.where(zr['beard'], (0.82 + 0.3 * tpos + 0.16 * (lrand - 0.5)) * lock_lum, shade)
+    shade = np.where(zr['beard_root'] & ~zr['beard'], shade * (0.8 + 0.2 * crown), shade)
+    gold = (0.3 * crown * smooth(0.3, 1.0, hsh))[:, None] * bz[:, None]
+    rgb = rgb * (1 - gold) + lin(col['beard_light'])[None, :] * gold
+    # v1.24: a fur grain on the muzzle, lock to lock (v1.23: a bit smooth)
+    shade = np.where(zr['muzzle'], 0.86 + 0.14 * tpos + 0.2 * (lrand - 0.5), shade)
     shade = np.where(kind < 0.5, 1.0, shade)
+    rgb = np.where((zr['beard'] & (kind < 0.5))[:, None], rgb * lock_lum[:, None], rgb)   # the skin under the locks too
     is_lock = kind > 0.5
     warm = np.where(is_lock, 1.0 - tpos, 0.35)[:, None] * (1 - nut[:, None]) * (1 - hoof[:, None]) * (1 - lining[:, None])
     rgb = rgb * (1 - 0.1 * warm * v3((0.0, 0.25, 0.9))[None, :])
-    rough = np.where(is_lock, 0.56 + 0.24 * np.abs(tpos - 0.45), 0.66)
-    coat = np.where(is_lock, 0.12, 0.05)
+    # polish: the cream tips warm (a soft buttery cream, not a white glare); the skin between the clumps a little
+    # darker (the creases); everything matte (review: icy white shards)
+    cream = (1 - nut) * (1 - hoof) * (1 - lining)
+    tipw = np.where(is_lock, smooth(0.4, 1.0, tpos), 0.0) * cream
+    rgb = rgb * (1 - 0.14 * tipw[:, None]) + lin('#E6D3B0')[None, :] * (0.14 * tipw[:, None])
+    crease = (~is_lock) & ~zr['head'] & ~zr['leg'] & (cream > 0.5)
+    rgb = np.where(crease[:, None], rgb * 0.86, rgb)
+    rough = np.where(is_lock, 0.8 + 0.12 * np.abs(tpos - 0.45), 0.88)
+    coat = np.zeros(len(pos))
     glossy = ell_soft(pos, tuple(NOSE_C), (0.046, 0.028, 0.032), 0.1)
-    rough = rough * (1 - glossy) + 0.25 * glossy
-    coat = coat * (1 - glossy) + 0.7 * glossy
-    rough = rough * (1 - hoof) + 0.26 * hoof
-    coat = coat * (1 - hoof) + 0.55 * hoof
+    rough = rough * (1 - glossy) + 0.5 * glossy
+    coat = coat * (1 - glossy) + 0.25 * glossy
+    rough = rough * (1 - hoof) + 0.42 * hoof
+    coat = coat * (1 - hoof) + 0.3 * hoof
     rough = rough * (1 - lining) + 0.55 * lining
     rough = np.where(zr['beard'] | zr['beard_root'], 0.8, rough)
     coat = np.where(zr['beard'] | zr['beard_root'], 0.0, coat)
+    # v1.24: the muzzle's fur is matte too (v1.23: a smooth, faintly glossy mask)
+    mz = zr['muzzle'] & ~(glossy > 0.3)
+    rough = np.where(mz, np.maximum(rough, 0.78), rough)
+    coat = np.where(mz, 0.0, coat)
     return {'paint': rgb, 'nut': nut, 'shade': shade, 'hoof': hoof, 'rough': np.stack([np.ones(len(pos)), rough, coat], axis=1)}
 
 
@@ -858,7 +1072,7 @@ def prop_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray
         groove = smooth(0.08, 0.0, r) * 0.45
         c = c * (1 - groove[:, None]) + lin(col['horn_dark'])[None, :] * groove[:, None]
         # lengthwise grain: the same striations the high mesh carries, plus a slow mottle
-        c = c * (1.0 + 0.16 * g + 0.05 * _noise3(pos[horn], 30.0, 10))[:, None]
+        c = c * (1.0 + 0.07 * g + 0.04 * _noise3(pos[horn], 30.0, 10))[:, None]
         rgb[horn] = c
         rough[horn] = 0.9 - 0.08 * smooth(0.75, 1.0, r)
         coat[horn] = 0.0
@@ -1004,7 +1218,7 @@ def eye_material(name: str, rough_pass: bool = False) -> bpy.types.Material:
     amber = C.mix_hex(warm, '#A86A3C', 0.22)
     iris = nb.ramp(ri, [(0.0, C.lin('#0D0907')), (0.44, C.lin('#0D0907')), (0.5, C.lin(C.shade_hex(eye_hex, 0.9))),
                         (0.62, C.lin(warm)), (0.8, C.lin(amber)), (0.93, C.lin(warm)), (0.985, C.lin(eye_hex)),
-                        (1.0, C.lin(C.shade_hex(eye_hex, 0.6))), (1.04, C.lin('#F3EEE6')), (1.6, C.lin('#F3EEE6'))])
+                        (1.0, C.lin(C.shade_hex(eye_hex, 0.6))), (1.04, C.lin('#EDE3D0')), (1.6, C.lin('#EDE3D0'))])
     # the sclera shades toward the lids
     shade = nb.math('MULTIPLY', nb.smooth(nb.vmath('LENGTH', nb.comb(rx, ry, 0.0)), 0.7, 1.0), 0.25)
     c = nb.mix(nb.math('MULTIPLY', shade, nb.smooth(ri, 1.0, 1.05)), iris, nb.rgb(C.lin('#C9BFB4')))
@@ -1088,8 +1302,9 @@ def rig_p() -> dict:
         'stride': 0.2,
         'hooves': True,
         'strike_style': 'charge',             # head down below the withers, the horns lead (5-poses attack)
+        'charge_windup': 1.0,                 # v1.25: weight back, head up then tucked, a forehoof pawing
         # the beard and the scarf end keep hanging when the head jerks (counter) and never fan out (cap, degrees)
-        'manes': [{'name': nm, 'parent': 'head', 'points': pts, 'counter': 1.0, 'cap': 12.0} for nm, pts in BEARD_CHAINS.items()]
+        'manes': [{'name': nm, 'parent': 'head', 'points': pts, 'counter': 1.0, 'cap': 22.0} for nm, pts in BEARD_CHAINS.items()]
                  + [{'name': 'scarf', 'parent': 'chest', 'points': _scarf_chain(), 'counter': 0.4, 'cap': 80.0}],
         'props': [{'name': 'horns', 'parent': 'head', 'head': (0.0, -0.42, 1.12), 'tail': (0.0, -0.36, 1.3)}],
     }
@@ -1172,7 +1387,7 @@ CLIP_CALM = {   # round 1: the beard flew out sideways in hit and hit_heavy; it 
     'hit': {'ear': 0.4, 'beard': 0.3, 'beardL': 0.3, 'beardR': 0.3, 'scarf': 0.6},
     'hit_heavy': {'ear': 0.3, 'beard': 0.25, 'beardL': 0.25, 'beardR': 0.25, 'scarf': 0.45},
     'win': {'ear': 0.4, 'beard': 0.4, 'beardL': 0.4, 'beardR': 0.4},
-    'strike': {'ear': 0.3, 'beard': 0.4, 'beardL': 0.4, 'beardR': 0.4, 'scarf': 1.8},
+    'strike': {'ear': 0.3, 'beard': 2.5, 'beardL': 1.8, 'beardR': 1.8, 'scarf': 6.0},   # v1.25: streaming back, behind the shoulders
     'sidestep_l': {'beard': 0.35, 'beardL': 0.35, 'beardR': 0.35, 'scarf': 0.6},
     'sidestep_r': {'beard': 0.35, 'beardL': 0.35, 'beardR': 0.35, 'scarf': 0.6},
 }

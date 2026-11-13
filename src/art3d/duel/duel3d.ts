@@ -29,18 +29,19 @@ import type { BattleEvent, BattleState, FighterState, Side } from '../../core/ba
 import { TECHNIQUE_BY_ID } from '../../data/techniques.ts'
 import { ART, BATTLE } from '../../data/tuning.ts'
 import type { UltraId } from '../../art/ultraLooks.ts'
-import { buildStudio, setFilmClock } from '../perf/content.ts'
+import { aimStudioRims, buildStudio, setFilmClock } from '../perf/content.ts'
 import { createDynRes } from '../perf/dynres.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
 import { resolveClipName } from '../ultra/clips.ts'
-import { blinkClipOf, NO_AO_LAYER, loadUltraAsset, makeUltraModel, type UltraAsset, type UltraKind, type UltraSize } from '../ultra/ultraAsset.ts'
+import { blinkClipOf, flyTimesOf, NO_AO_LAYER, loadUltraAsset, makeUltraModel, wingspanOf, type UltraAsset, type UltraKind, type UltraSize } from '../ultra/ultraAsset.ts'
+import { flightPlan, flyKindOf, framedLift, hopPlan, landNow, liftAt, mouthShare, shadowAt, withPeak, type FlightPlan, type FlyTimes } from '../ultra/flight.ts'
 import { duelFighters, duelLoads } from './fighters.ts'
 import { lungeFor, lungeReach, type Lunge } from './attacks.ts'
 import { AttackFx } from './attackFx.ts'
 import { Telegraphs } from './telegraph.ts'
-import { cineShot } from './cineShot.ts'
+import { cineShot, flyShotInside } from './cineShot.ts'
 import { isRangedTech } from './fxRecipe.ts'
-import { duelWindup } from '../../core/battle/pace.ts'
+import { duelPaced, duelWindup } from '../../core/battle/pace.ts'
 import { pathOf } from '../../data/paths.ts'
 import { bandNeed, sideFraming } from './framing.ts'
 import { memoryMb, noteTextures } from './memory.ts'
@@ -59,6 +60,7 @@ const BASE = import.meta.env.BASE_URL
 const TO_M = 1 / 10_000
 const D = ART.duel
 const AT = ART.duel.attack
+const FL = ART.duel.flight
 
 export type DuelCamera = 'side' | 'behind'
 
@@ -106,6 +108,8 @@ export interface DuelStats {
   crowd: CrowdStats | null
   /** §7 the attack effects last frame: quads drawn, their draws (at most two) and CPU ms. */
   fx: { quads: number; draws: number; ms: number; zoom: number }
+  /** Flight: whether each side's look flies, how high each is now (m) and each one's open wingspan (m, 0 if it can't fly). */
+  flight: { flies: [boolean, boolean]; liftM: [number, number]; spanM: [number, number] }
 }
 
 export interface Duel3D {
@@ -127,6 +131,8 @@ export interface Duel3D {
   setCrowdFame(fame: number): Promise<void>
   /** Review only (picture, not rules): show a technique fired by `side` that hits or misses as the duel would time it; returns the stage seconds until it lands. */
   preview(tech: string, side: Side, outcome: 'hit' | 'miss'): number
+  /** Skip: every animation that would still play out ends now (a monster in the air lands at once). */
+  settle(): void
   /** Review only: run the picture slower (1 = normal), and the stage clock (s). */
   setTimeScale(k: number): void
   clock(): number
@@ -280,6 +286,15 @@ interface Actor {
   lunge: Lunge | null
   squashUntil: number
   loopSince: number
+  /** Flight (ultra/flight.ts): its flying clips' times and its open wings' span (m) when the look flies, else null. */
+  fly: { times: FlyTimes; spanM: number } | null
+  /** The flight (or hop) in progress, its next clip, and how high its feet are now (m). */
+  flight: FlightPlan | null
+  flyStep: number
+  lift: number
+  /** Where its fire leaves from in the air (its mouth socket, following the jaw), and its contact shadow. */
+  mouth: Object3D | null
+  shadow: Mesh
 }
 
 function makeActor(asset: UltraAsset, side: Side, variant: string | null, heightM: number): Actor {
@@ -289,15 +304,23 @@ function makeActor(asset: UltraAsset, side: Side, variant: string | null, height
   const lenK = (u.size.front + u.size.back) / R.lengthM
   const frontK = u.size.front / R.frontM
   const widthK = u.size.width / R.widthM
+  // a look that flies (its sidecar lists the flying clips and its file holds them): measured with its wings open,
+  // before it is placed
+  const clips = asset.clips
+  const times = flyTimesOf(asset, clips)
+  const flyClip = clips.find((c) => c.name === 'fly')
+  const fly = times && flyClip ? { times, spanM: (wingspanOf(u, asset.meta, flyClip) * (100 + FL.spanMarginPct)) / 100 } : null
   const root = new Group()
-  root.add(u.model, contactShadow(widthK, lenK))
+  const shadow = contactShadow(widthK, lenK)
+  root.add(u.model, shadow)
   const mixer = new AnimationMixer(u.model)
   const actions = new Map<string, AnimationAction>()
-  for (const clip of asset.clips) actions.set(clip.name, mixer.clipAction(clip))
+  for (const clip of clips) actions.set(clip.name, mixer.clipAction(clip))
   const a: Actor = {
     side, root, model: u.model, mixer, actions, current: '', holdUntil: 0, oneShot: null, pos: new Vector3(), yaw: 0, height: heightM,
     size: u.size, lenK, frontK, widthK, rootSpeed: u.rootSpeed, impactAt: u.impactAt, blink: blinkClipOf(asset),
     nextBlink: 1.2 + side * 0.9, blinks: side * 2, lunge: null, squashUntil: 0, loopSince: 0,
+    fly, flight: null, flyStep: 0, lift: 0, mouth: fly ? (u.model.getObjectByName('socket_mouth') ?? u.model.getObjectByName('jaw') ?? null) : null, shadow,
   }
   play(a, 'battle_idle', { loop: true })
   return a
@@ -307,7 +330,7 @@ function resolveClip(a: Actor, name: string): string | null {
   return resolveClipName((n) => a.actions.has(n), name)
 }
 
-function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: number; hold?: boolean }): void {
+function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: number; hold?: boolean; offset?: number }): void {
   const clip = resolveClip(a, name)
   if (!clip) return
   const next = a.actions.get(clip)!
@@ -320,13 +343,21 @@ function play(a: Actor, name: string, o: { loop: boolean; rate?: number; fade?: 
   next.setLoop(o.loop ? LoopRepeat : LoopOnce, o.loop ? Infinity : 1)
   next.clampWhenFinished = !o.loop
   next.timeScale = o.rate ?? 1
+  // a flying clip may start part way in (the cast just before its release)
+  const offset = Math.min(Math.max(0, o.offset ?? 0), next.getClip().duration)
+  next.time = offset
   next.enabled = true
   next.setEffectiveWeight(1)
   next.play()
   if (prev && prev !== next) prev.crossFadeTo(next, o.fade ?? 0.15, false)
   a.current = clip
   a.oneShot = o.loop ? null : clip
-  a.holdUntil = o.loop ? 0 : a.mixer.time + next.getClip().duration / Math.max(0.05, Math.abs(next.timeScale)) - (o.hold ? 0 : 0.05)
+  a.holdUntil = o.loop ? 0 : a.mixer.time + (next.getClip().duration - offset) / Math.max(0.05, Math.abs(next.timeScale)) - (o.hold ? 0 : 0.05)
+}
+
+/** Whether it is in a flight with its own clips (not a hop): hits then don't cut in (it stays in its flying pose). */
+function flying(a: Actor): boolean {
+  return !!a.flight && a.flight.steps.length > 0
 }
 
 /* ---------------------------------------------------------------------------------------------- effects */
@@ -482,11 +513,17 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     u.divideScalar(dist)
     if (camMode === 'behind') {
       // over the player's monster's back, at its size (a taller breed: further back and higher)
-      const k = actors[o.me].height / D.monsterHeightM
+      const me = actors[o.me]
+      const foe = actors[1 - o.me]!
+      const k = me.height / D.monsterHeightM
       const lat = new Vector3(-u.z, 0, u.x).multiplyScalar(D.behind.side * k)
+      // in a flight: up with it and back off its open wings; looking up at a flying opponent
+      const upMe = framedLift(me.flight, me.lift)
+      const upFoe = framedLift(foe.flight, foe.lift)
+      const back = D.behind.back * k + (upMe > 0 && me.fly ? (me.fly.spanM * FL.camera.behindBackPct) / 100 : 0)
       return {
-        pos: insideFence(a.clone().addScaledVector(u, -D.behind.back * k).add(lat).add(new Vector3(0, D.behind.height * k, 0))),
-        look: b.clone().add(new Vector3(0, D.behind.lookY * (actors[1 - o.me]!.height / D.monsterHeightM), 0)),
+        pos: insideFence(a.clone().addScaledVector(u, -back).add(lat).add(new Vector3(0, D.behind.height * k + (upMe * FL.camera.behindRaisePct) / 100, 0))),
+        look: b.clone().add(new Vector3(0, D.behind.lookY * (foe.height / D.monsterHeightM) + (upFoe * FL.camera.behindLookPct) / 100, 0)),
         fov: D.fov,
       }
     }
@@ -506,12 +543,18 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const right = new Vector3()
     const tMax = Math.tan(((D.confine.maxFov / 2) * Math.PI) / 180)
     // both monsters whole: feet and heads, front and back, each at its own size (bodyHalfM is Puddlepup's)
-    const pts = ([[a, actors[o.me]], [b, actors[1 - o.me]!]] as const).flatMap(([p, act]) =>
-      [-1, 1].flatMap((k) => {
+    // in a flight: its hover height and its open wings either side (held for the whole flight, so it settles once)
+    const pts = ([[a, actors[o.me]], [b, actors[1 - o.me]!]] as const).flatMap(([p, act]) => {
+      const up = framedLift(act.flight, act.lift)
+      const body = [-1, 1].flatMap((k) => {
         const q = p.clone().addScaledVector(u, k * F.bodyHalfM * act.lenK)
-        return [q, q.clone().add(new Vector3(0, act.height, 0))]
-      }),
-    )
+        return [q, q.clone().add(new Vector3(0, act.height + up, 0))]
+      })
+      if (up <= 0 || !act.fly) return body
+      const wing = new Vector3(-u.z, 0, u.x).multiplyScalar(act.fly.spanM / 2)
+      const y = up + act.height * 0.6
+      return [...body, p.clone().add(wing).setY(y), p.clone().sub(wing).setY(y)]
+    })
     const dir = new Vector3()
     let t = 0
     let d = 0
@@ -602,7 +645,17 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const opp = actors[1 - attacker.side]!
     const until = now + (o.reduceMotion ? D.cine.seconds * 0.7 : D.cine.seconds)
     if (technique) {
-      cine = { until, ...cineShot(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence, [attacker.height, opp.height]) }
+      // a flying attacker: the whole flier in the sky above the target (cineShot.ts flyShot); if that would stand
+      // beyond the fence, it hovers lower (same timing) until a shot inside holds it
+      const fl = attacker.flight
+      if (fl?.kind === 'flight' && attacker.fly) {
+        const f = flyShotInside(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence, [attacker.height, opp.height], { liftM: fl.peakM, spanM: attacker.fly.spanM })
+        if (f.liftM < fl.peakM) attacker.flight = withPeak(fl, f.liftM)
+        cine = { until, from: f.shot.from, look: f.shot.look, fov: f.shot.fov }
+        return
+      }
+      const shot = cineShot(attacker.pos, opp.pos, camera.aspect, sideSign, insideFence, [attacker.height, opp.height])
+      cine = { until, from: shot.from, look: shot.look, fov: shot.fov }
       return
     }
     // the KO: a low three-quarter on the winner, at its size
@@ -610,7 +663,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     const u = opp.pos.clone().sub(attacker.pos).normalize()
     const n = new Vector3(-u.z, 0, u.x)
     const from = insideFence(attacker.pos.clone().addScaledVector(u, D.cine.ahead * k).addScaledVector(n, D.cine.side * k * sideSign).add(new Vector3(0, D.cine.height * k, 0)))
-    cine = { until, from, look: attacker.pos.clone().add(new Vector3(0, D.cine.lookPct / 100 * attacker.height, 0)), fov: D.fov }
+    cine = { until, from, look: attacker.pos.clone().add(new Vector3(0, (D.cine.lookPct / 100) * attacker.height + (attacker.lift * FL.camera.lookPct) / 100, 0)), fov: D.fov }
   }
 
   function updateActors(s: BattleState, dt: number): void {
@@ -635,6 +688,16 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       // §7: a hit squashes the target for a moment
       const sq = a.squashUntil > now ? ((a.squashUntil - now) / AT.squashSec) * (AT.squashPct / 100) : 0
       a.root.scale.set(1 + sq * 0.66, 1 - sq, 1 + sq * 0.66)
+      // flight (ultra/flight.ts): KO'd in the air it falls; the plan ends on the floor. Its shadow stays on the floor,
+      // smaller and fainter the higher it is
+      if (a.flight && f.hp <= 0 && a.flight.ease !== 'fall') a.flight = landNow(a.flight, now, FL.fallSec / Math.max(1, o.speed()), 'fall')
+      if (a.flight && now >= a.flight.end) a.flight = null
+      a.lift = a.flight ? liftAt(a.flight, now) : 0
+      a.root.position.y += a.lift
+      const sh = shadowAt(a.lift, a.height)
+      a.shadow.position.y = (0.006 - a.lift) / Math.max(0.5, a.root.scale.y)
+      a.shadow.scale.set(sh.scale, sh.scale, 1)
+      ;(a.shadow.material as MeshBasicMaterial).opacity = D.contactShadow.opacity * sh.opacity
       // the clip
       const vel = a.pos.clone().sub(prev).divideScalar(Math.max(1e-3, dt))
       const left = new Vector3(fwd.z, 0, -fwd.x)
@@ -644,6 +707,13 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       const busyOneShot = a.oneShot !== null && a.mixer.time < a.holdUntil
       if (f.hp <= 0) {
         if (a.current !== resolveClip(a, 'ko')) play(a, 'ko', { loop: false, hold: true })
+      } else if (flying(a)) {
+        // the flight's clips, each when its time comes (one whose time has partly passed starts that far in)
+        const fl = a.flight!
+        while (a.flyStep < fl.steps.length && now >= fl.steps[a.flyStep]!.at) {
+          const st = fl.steps[a.flyStep++]!
+          play(a, st.clip, { loop: st.loop, rate: st.rate, fade: FL.fadeSec, offset: st.offset + (now - st.at) * st.rate })
+        }
       } else if (s.outcome && s.outcome.winner === a.side) {
         if (a.current !== resolveClip(a, 'win')) play(a, 'win', { loop: true })
       } else if (f.sidestepTicks > 0) {
@@ -696,12 +766,25 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         const windupSec = (((e.lands ?? e.t) - e.t) / BATTLE.ticksPerSecond) / Math.max(1, o.speed())
         const imp = a.impactAt[resolveClip(a, clip) ?? ''] ?? 0.4
         const rate = windupSec > 0.01 ? Math.min(2.6, Math.max(0.7, imp / windupSec)) : o.speed()
-        play(a, clip, { loop: false, rate })
+        // flight (ultra/flight.ts): a look that flies takes its Special and Signature into the air and hops its jab
+        // (never with Reduce motion); every other look, and any move that can't fit a flight, as before
+        const kind = a.fly && tech && !o.reduceMotion ? flyKindOf(tech.family, ranged) : null
+        const speed = Math.max(1, o.speed())
+        const hits = tech?.effect?.kind === 'multi' ? tech.effect.hits : 1
+        const plan = kind === 'flight' && tech ? flightPlan({ now, windupSec, busySec: duelPaced(tech.anim) / BATTLE.ticksPerSecond / speed, hits, speed, heightM: a.height, times: a.fly!.times }) : null
+        a.flight = plan
+        a.flyStep = 0
+        if (!plan) play(a, clip, { loop: false, rate })
         // §7: melee lunges across the gap; the technique's own effects (wind-up glow, projectile, wave) land with it
-        if (!ranged) a.lunge = lungeFor(now, windupSec)
-        if (tech) fx.fire(e.side, tech, now, windupSec)
+        if (!ranged) {
+          a.lunge = lungeFor(now, windupSec)
+          if (kind === 'hop') a.flight = hopPlan(a.lunge, a.height)
+        }
+        // in a flight the fire leaves its mouth on the cast's release, in the air
+        const release = plan?.release ?? undefined
+        if (tech) fx.fire(e.side, tech, now, windupSec, release)
         if (e.lands !== undefined && e.path) {
-          const travel = ranged ? AT.boltTravelSec : AT.lungeSec
+          const travel = release !== undefined ? Math.max(0.02, now + windupSec - release) : ranged ? AT.boltTravelSec : AT.lungeSec
           telegraphs.show(e.side, e.path, tech?.type === 'INT', fighterAt(s, e.side), fighterAt(s, (1 - e.side) as Side), now, windupSec, travel)
         }
         if (tech && (tech.family === 'Special' || tech.family === 'Signature')) {
@@ -711,7 +794,8 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       } else if (e.kind === 'hit') {
         const t = actors[e.target]
         const heavy = e.crit || e.damage * 8 >= s.fighters[e.target].maxHp
-        if (s.fighters[e.target].hp > 0) play(t, heavy ? 'hit_heavy' : 'hit', { loop: false, rate: o.speed() })
+        // in the air it keeps its flying pose (the squash and the impact still show)
+        if (s.fighters[e.target].hp > 0 && !flying(t)) play(t, heavy ? 'hit_heavy' : 'hit', { loop: false, rate: o.speed() })
         const tech = TECHNIQUE_BY_ID[e.tech]
         if (tech) fx.hit(e.side, tech, e.hitNo, e.of, e.crit, now)
         t.squashUntil = now + AT.squashSec
@@ -732,7 +816,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         // §4.5 knocked into the fence: a burst at its feet and a jolt
         const t = actors[e.side]
         fx.fenced(e.side, now)
-        play(t, 'hit_heavy', { loop: false, rate: o.speed() })
+        if (!flying(t)) play(t, 'hit_heavy', { loop: false, rate: o.speed() })
         crowd?.cheer('big')
       }
     }
@@ -835,6 +919,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     return true
   }
 
+  const mouthAt = [new Vector3(), new Vector3()]
   let lastW = w()
   let lastH = h()
   function loop(): void {
@@ -895,9 +980,16 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
       onEvents([previews[i]!.e])
       previews.splice(i, 1)
     }
+    // in a flight the effects leave from its mouth (the socket follows the jaw), blended in as it climbs
+    for (const a of actors) {
+      const k = a.mouth ? mouthShare(a.flight, a.lift) : 0
+      fx.setMouth(a.side, k > 0 ? a.mouth!.getWorldPosition(mouthAt[a.side]!) : null, k)
+    }
     fx.update(now, camera, actors[0].root.position, actors[1].root.position, actors[0].height, actors[1].height)
     // the glow's twinkle (still with Reduce motion)
     setFilmClock(now, o.reduceMotion)
+    // the rims stay behind the monsters as this camera sees them (a back view isn't lit face-on by them)
+    aimStudioRims(studio, camera.position, camLook)
     v.render()
     cpuMs = performance.now() - c0
     // dynamic resolution (ART_2_DETAIL §3.6): resolution first, then effects; the monsters never change
@@ -933,7 +1025,7 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
     onEvents,
     project(side) {
       const a = actors[side]
-      const p = a.pos.clone().add(new Vector3(0, a.height * 0.9, 0)).project(camera)
+      const p = a.pos.clone().add(new Vector3(0, a.height * 0.9 + a.lift, 0)).project(camera)
       if (p.z > 1) return null
       return { x: ((p.x + 1) / 2) * w(), y: ((1 - p.y) / 2) * h() }
     },
@@ -959,7 +1051,11 @@ export async function createDuel3D(o: DuelOptions, getState: () => BattleState |
         backend: v.backend, fps: 1000 / avg, dpr: dyn.dpr(), level: dyn.level(), gpuMs: v.gpuMs(), cpuMs, arena: arena.kind,
         monster: assets[o.me].kind, monsters: [assets[0].kind, assets[1].kind], looks: [fighters[0].look, fighters[1].look],
         gpuMb: mem.gpu, heapMb: mem.heap, crowd: crowd?.stats() ?? null, fx: fx.stats(),
+        flight: { flies: [!!actors[0].fly, !!actors[1].fly], liftM: [+actors[0].lift.toFixed(3), +actors[1].lift.toFixed(3)], spanM: [+(actors[0].fly?.spanM ?? 0).toFixed(2), +(actors[1].fly?.spanM ?? 0).toFixed(2)] },
       }
+    },
+    settle() {
+      for (const a of actors) if (a.flight) a.flight = landNow(a.flight, now, FL.settleSec, 'soft')
     },
     setTimeScale(k) {
       timeScale = Math.max(0.02, Math.min(1, k))

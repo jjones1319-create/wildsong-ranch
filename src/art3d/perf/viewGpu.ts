@@ -1,30 +1,51 @@
-import { MeshPhysicalNodeMaterial, NeutralToneMapping, PCFSoftShadowMap, PMREMGenerator, RenderPipeline, SRGBColorSpace, WebGPURenderer } from 'three/webgpu'
+import { MeshPhysicalNodeMaterial, NoToneMapping, PCFSoftShadowMap, PMREMGenerator, RenderPipeline, SRGBColorSpace, WebGPURenderer } from 'three/webgpu'
 import type { Mesh, MeshPhysicalMaterial, Node, Object3D, PerspectiveCamera, Scene, Texture } from 'three/webgpu'
-import { abs, color, diffuseColor, float, floor, fract, materialSheen, max, min, mix, mrt, normalView, output, pass, positionViewDirection, renderOutput, sin, smoothstep, texture, time, uniform, uv, vec2, vec3, vec4, vertexColor, dot, length, clamp } from 'three/tsl'
+import { abs, color, diffuseColor, float, floor, fract, Fn, materialSheen, max, min, mix, mrt, normalView, output, pass, positionViewDirection, renderOutput, select, sin, smoothstep, texture, time, uniform, uv, vec2, vec3, vec4, vertexColor, dot, length, clamp } from 'three/tsl'
 import { ao } from 'three/addons/tsl/display/GTAONode.js'
 import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js'
 import { ART } from '../../data/tuning.ts'
-import { FILM_TWINKLE, roomEnvironmentScene, type FilmGlow } from './content.ts'
+import { FILM_TWINKLE, studioEnvironmentScene, type FilmGlow } from './content.ts'
 import { levelFlags, setCoverage, type Level, type PerfView, type ViewOptions } from './view.ts'
 
 /**
  * Art 2.1 Performance check: the WebGPU renderer (three/webgpu, TSL post effects) with the same scene, lights,
  * materials and effects as the WebGL view, so the A/B on the phone compares like with like.
  */
+/**
+ * The film tone map (content.ts filmToneGlsl) in TSL: Neutral, with a toe that keeps dark colours' hue. The pipeline
+ * applies it itself (the renderer's own tone mapping is off) before the sRGB encode.
+ */
+const filmTone = Fn(([c0]: [Node<'vec3'>]) => {
+  const [lo, hi] = ART.ultra.post.toeKeep
+  const c = c0.mul(ART.ultra.studio.exposure)
+  const x = min(c.r, min(c.g, c.b))
+  const offset = select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), float(0.04))
+  const pk = max(c.r, max(c.g, c.b))
+  const kept = c.mul(max(pk.sub(offset), 0).div(max(pk, 1e-5)))
+  const col = mix(kept, c.sub(offset), smoothstep(lo, hi, pk))
+  const start = 0.8 - 0.04
+  const d = 1 - start
+  const peak = max(col.r, max(col.g, col.b))
+  const newPeak = float(1).sub(float(d * d).div(peak.add(d - start)))
+  const squeezed = col.mul(newPeak.div(max(peak, 1e-5)))
+  const g = float(1).sub(float(1).div(peak.sub(newPeak).mul(0.15).add(1)))
+  return select(peak.lessThan(start), col, mix(squeezed, vec3(newPeak), g))
+})
+
 export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
   // MSAA lives in the scene pass; the canvas itself only receives the finished picture (no multisampled canvas)
   const renderer = new WebGPURenderer({ canvas: opts.canvas, antialias: false, powerPreference: 'high-performance', trackTimestamp: true })
   await renderer.init()
   renderer.outputColorSpace = SRGBColorSpace
-  renderer.toneMapping = NeutralToneMapping
-  renderer.toneMappingExposure = ART.ultra.studio.exposure
+  // the film tone map runs in the pipeline (filmTone), with the exposure
+  renderer.toneMapping = NoToneMapping
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = PCFSoftShadowMap
   renderer.setPixelRatio(opts.dpr)
   renderer.setSize(opts.width, opts.height, false)
   const pmrem = new PMREMGenerator(renderer)
-  const environment = pmrem.fromScene(roomEnvironmentScene(), 0.04).texture as Texture
+  const environment = pmrem.fromScene(studioEnvironmentScene(), 0.04).texture as Texture
   pmrem.dispose()
   let pipeline: RenderPipeline | null = null
   // the glow's twinkle amplitude (content.ts FILM_TWINKLE: 0 with Reduce motion), read each frame
@@ -85,11 +106,11 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
     }
     // tone map and encode first, then grade in display space (as the WebGL view's OutputPass + grade pass do)
     const g = p.grade
-    const shown = renderOutput(out)
+    const shown = renderOutput(vec4(filmTone(out.rgb as unknown as Node<'vec3'>), out.a), NoToneMapping, SRGBColorSpace)
     const l = dot(shown.rgb, vec3(0.2126, 0.7152, 0.0722))
     let graded = mix(vec3(l), shown.rgb, float(g.saturation))
     graded = graded.sub(0.5).mul(g.contrast).add(0.5)
-    graded = graded.add(vec3(g.warmth, g.warmth * 0.4, -g.warmth).mul(smoothstep(0.4, 1.0, l)))
+    graded = graded.add(vec3(g.warmth, g.warmth * 0.4, -g.warmth).mul(smoothstep(0.4, 1.0, l)).mul(smoothstep(g.warmOnly[0], g.warmOnly[1], shown.r.sub(shown.b))))
     const d = length(uv().sub(0.5)).mul(1.4)
     graded = graded.mul(float(1).sub(float(g.vignette).mul(smoothstep(0.35, 0.85, d))))
     pipeline = new RenderPipeline(renderer)
@@ -129,9 +150,16 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
         specularIntensity: mat.specularIntensity, emissive: mat.emissive, emissiveMap: mat.emissiveMap, emissiveIntensity: mat.emissiveIntensity,
         side: mat.side, vertexColors: mat.vertexColors, alphaTest: mat.alphaTest, alphaToCoverage: mat.alphaToCoverage,
       })
-      if (mat.userData?.sheenByVertex && mat.sheen > 0) {
-        // cards and the tuft: the sheen in the strand's own colour, the vertex colour over the strip tile (content.ts)
-        n.sheenNode = materialSheen.mul(vertexColor().rgb) as unknown as Node<'vec3'>
+      const sheenSat = mat.userData?.sheenByVertex as number | undefined
+      if (typeof sheenSat === 'number' && mat.sheen > 0) {
+        // cards and the tuft: the sheen in the strand's own colour, half desaturated (content.ts, film.cardSheenSat)
+        const vc = vertexColor().rgb
+        n.sheenNode = materialSheen.mul(mix(vec3(dot(vc, vec3(0.2126, 0.7152, 0.0722))), vc, sheenSat)) as unknown as Node<'vec3'>
+      }
+      const minRough = mat.userData?.minRoughness as number | undefined
+      if (minRough && mat.roughnessMap) {
+        // no mirrors on a body or a prop (content.ts, film.minRoughness)
+        n.roughnessNode = max(texture(mat.roughnessMap).g.mul(mat.roughness), float(minRough))
       }
       if (coat && mat.roughnessMap) {
         // the clearcoat per texel: the ORM map's B channel (content.ts)

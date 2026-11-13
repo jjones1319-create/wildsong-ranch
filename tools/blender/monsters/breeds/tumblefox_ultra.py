@@ -64,7 +64,9 @@ def marking_hex(h: str) -> str:
     hh, ss, vv = colorsys.rgb_to_hsv(r, g, b)
     if vv > 0.45:
         return h
-    r, g, b = colorsys.hsv_to_rgb(hh, min(1.0, ss * 1.9), min(1.0, vv * 1.32))
+    # upgrade round 2: ×1.9 / ×1.32 rendered a saturated violet (#3A1C42); held nearer the CONTENT plum, a natural
+    # marking (an originality guard: a hard saturated domino mask nudges toward a famous cartoon trickster fox)
+    r, g, b = colorsys.hsv_to_rgb(hh, min(1.0, ss * 1.35), min(1.0, vv * 1.22))
     return '#%02x%02x%02x' % tuple(int(round(c * 255)) for c in (r, g, b))
 
 
@@ -73,16 +75,18 @@ def colours(pal: dict) -> dict:
     fur, cream, eye = pal['body'], pal['belly'], pal['eye']
     acc = marking_hex(pal['accent'])
     return {
-        'fur': fur, 'cream': cream, 'plum': acc,
+        # final round: the cream warmed a little (it read cool grey-white in shade on the film renderer); Glitch's
+        # white stays neutral
+        'fur': fur, 'cream': cream if pal.get('glitch') else C.mix_hex(cream, '#FFE2BE', 0.2), 'plum': acc,
         'ear_cream': C.mix_hex(cream, '#FFE2BC', 0.32),
         'lid': C.mix_hex(acc, '#A48AAE', 0.28),
         'brow': C.mix_hex(eye, acc, 0.4),
         'lash': C.mix_hex(eye, '#000000', 0.5),
         'pad': C.mix_hex(acc, '#D8A2B2', 0.42),
-        'claw': C.mix_hex('#E8D8C6', acc, 0.18),     # review 2: small pale claws (4-details panel 3)
+        'claw': C.mix_hex(eye, '#6E5560', 0.3),       # upgrade round 2: dark claws (4-details panel 3; pale read as dots)
         'blush': C.mix_hex(fur, '#F0705E', 0.45),
         'tuft': C.shade_hex(fur, 0.94),
-        'crown': C.mix_hex(fur, '#FFB27A', 0.22),
+        'crown': C.mix_hex(fur, '#FFB27A', 0.16),       # final round: the body orange (the lighter mix read tan)
         'whisker': C.mix_hex(fur, '#4A2A22', 0.6),
         'mouth': C.mix_hex(eye, '#3A2028', 0.4),
         'glitch2': C.mix_hex(acc, cream, 0.38),
@@ -103,7 +107,7 @@ HEAD_R = (0.172, 0.128, 0.145)
 EYE_C = {s: Vector((0.081 * s, -0.329, 0.614)) for s in (1, -1)}
 EYE_R = 0.036
 EYE_AX = (1.08, 1.0)                # the lens: half width, half height (× EYE_R): wide round eyes
-EYE_DEPTH = (0.58, 0.26)
+EYE_DEPTH = (0.74, 0.3)             # upgrade round 2: a rounder lens (0.58): the iris shows from the side
 NOSE_C = Vector((0.0, -0.452, 0.552))     # round 2: the muzzle ~30% longer (review 1)
 MUZZLE = ((0.0, -0.392, 0.533), (0.032, 0.055, 0.02))
 CHEEK = (0.0, -0.262, 0.556, (0.185, 0.1, 0.068))
@@ -142,6 +146,16 @@ ATLAS_DENSITY = {'lo_eyes': 1.6, 'lo_props': 1.2}
 BODY_TRIS = 52000
 CARD_LAYERS = 3
 CARD_SHADE = 1.0                    # review 2: cream cards read grey; they take the skin's colour as it is
+# v1.23.0 (the cards' sheen now takes their vertex colour): each card the bare skin's bake at its root (no lying lock of
+# another colour under it), as on Puddlepup
+CARD_COLOUR_FROM = 'skin'
+# upgrade round 2: the fringes and the tail's long fluff are tapered strands with soft tips (the fur lobes read as stiff,
+# glassy straw on the neck and the tail's edge)
+CARD_LAYER_STYLES = ('fur', 'hair', 'hair')
+# v1.23.0: the crown spikes' slots and the tail's seams never bake near black, and the softer AO is ~13% smaller in the
+# ORM map (RECIPE.md: AO_FLOOR, AO_SOFTEN)
+AO_FLOOR = 0.5                      # upgrade round 2: 0.35 still crushed the cheek ruffs' cream to grey (#ADA294)
+AO_SOFTEN = 1.5
 
 
 # ----------------------------------------------------------------------------- body parts
@@ -174,9 +188,15 @@ def head_parts() -> list[Part]:
 # review 2: the cards stuck straight out as a grey moustache, and a lobe pointing down read as a chin tuft. The ruff is
 # now its own cream geometry (the bake lights it like the head), each lobe flat across the face like a feather and
 # sweeping out and slightly up and back; only short cards at the lobes' ends
-CHEEK_TUFTS = [((0.125, -0.27, 0.556), (1.0, 0.3, 0.22), 0.1, 0.044),
-               ((0.128, -0.266, 0.546), (1.0, 0.36, -0.05), 0.108, 0.046),
-               ((0.122, -0.258, 0.534), (0.92, 0.42, -0.32), 0.094, 0.042)]
+# upgrade round 2 (flat grey flaps): puffed lobes, rounder in section (CHEEK_PUFF), sweeping back and down into the bib
+# final round (the lower lobes drooped under the jaw like jowls, and the lowest reached the shoulder: its split weights
+# stretched it into a flat orange paddle when the head turned): four fluffy clumps a side that flare out and back, none
+# below the jaw line, all riding the head (body_weight_regions)
+CHEEK_TUFTS = [((0.124, -0.272, 0.562), (1.0, 0.5, 0.26), 0.088, 0.04),
+               ((0.128, -0.268, 0.55), (1.0, 0.58, 0.06), 0.098, 0.044),
+               ((0.126, -0.262, 0.538), (0.95, 0.66, -0.12), 0.09, 0.042),
+               ((0.118, -0.256, 0.528), (0.85, 0.72, -0.26), 0.072, 0.036)]
+CHEEK_PUFF = 0.75                   # each clump's thickness across the face, a share of its width
 
 
 def cheek_tufts() -> list[Part]:
@@ -188,14 +208,14 @@ def cheek_tufts() -> list[Part]:
             up = Vector((0.0, 0.0, 1.0))
             wide = (up - dv * up.dot(dv)).normalized()          # the lobe's width stands upright: flat across the face
             out.append(Part(f'cheektuft{i}{"L" if s > 0 else "R"}', 'fin', loc=tuple(r + dv * (ln * 0.5)), radius=ln * 0.5,
-                            scale=(th / (ln * 0.5), 1.0, 0.5 * th / (ln * 0.5)), taper=0.86, rot=_orient(dv, wide)))
+                            scale=(th / (ln * 0.5), 1.0, CHEEK_PUFF * th / (ln * 0.5)), taper=0.86, rot=_orient(dv, wide)))
     return out
 
 
 LEGS = {'FL': (0.105, -0.205), 'FR': (-0.105, -0.205), 'BL': (0.108, 0.185), 'BR': (-0.108, 0.185)}
-TOE_DX = (-0.043, -0.0145, 0.0145, 0.043)
+TOE_DX = (-0.047, -0.016, 0.016, 0.047)          # upgrade round 2: bigger paws, four round toes
 SOCK_TOP = {'F': 0.16, 'B': 0.168}
-TOE_R = (0.0118, 0.0172, 0.0152)
+TOE_R = (0.0136, 0.0192, 0.0168)
 
 
 def toe_centres(leg: str) -> list[Vector]:
@@ -218,7 +238,7 @@ def pad_spots(leg: str) -> list[tuple[Vector, tuple[float, float, float]]]:
 
 def paw_parts(leg: str) -> list[Part]:
     x, y = LEGS[leg]
-    ps = [Part(f'foot{leg}', 'sphere', loc=(x, y - 0.03, 0.03), radius=0.05, scale=(1.12, 1.05, 0.62))]
+    ps = [Part(f'foot{leg}', 'sphere', loc=(x, y - 0.032, 0.03), radius=0.05, scale=(1.22, 1.12, 0.64))]
     if leg[0] == 'F':
         ps += [Part(f'leg{leg}', 'tube', loc=(x * 0.92, y + 0.006, 0.235), to=(x, y - 0.01, 0.06), radius=0.046, r2=0.049),
                Part(f'elbow{leg}', 'sphere', loc=(x * 0.88, y + 0.012, 0.21), radius=0.055, scale=(0.95, 1.0, 1.3))]
@@ -228,7 +248,7 @@ def paw_parts(leg: str) -> list[Part]:
     for i, c in enumerate(toe_centres(leg)):
         ps.append(Part(f'toe{leg}{i}', 'sphere', loc=tuple(c), radius=1.0, scale=TOE_R))
     for i, c in enumerate(claw_centres(leg)):
-        ps.append(Part(f'claw{leg}{i}', 'sphere', loc=tuple(c), radius=1.0, scale=(0.0042, 0.0075, 0.0045)))
+        ps.append(Part(f'claw{leg}{i}', 'sphere', loc=tuple(c), radius=1.0, scale=(0.0048, 0.009, 0.0052)))
     return ps
 
 
@@ -259,23 +279,71 @@ def body_extras() -> list[bpy.types.Object]:
     extras, the build skins a proxy without them (heat weights fail over thin slabs) and the ears and the tail take
     their own weights (body_weight_regions)."""
     coll = C.collection('SurfaceParts')
-    objs = [E.slab(s) for s in (1, -1)]
+    objs = [E.slab(s) for s in (1, -1)] + [T.bridge()]
     for p in T.parts() + E.fluff_parts():
         objs.extend(M.build_part(p, coll, segments=32))
     return objs
 
 
 # ----------------------------------------------------------------------------- carving (the high source only)
-def mouth_curve() -> list[tuple[float, float]]:
-    """A short philtrum under the nose, then a wide closed smile whose ends curl up into the cheeks (1-hero.png)."""
+# upgrade round 2 (the smile was a flat line in profile, its curled corner on the cheek's front, edge-on from the side):
+# the smile is a path over the muzzle (x ≥ 0 half, mirrored), measured on the surface: under the nose, round the
+# muzzle's side rising toward the back (the upturn reads in profile), then out across the cheek's front to the corner,
+# which curls up. From the front it is the reference's broad "w". Each point is snapped onto the high body when there
+# is one (smile_path), so the groove, the soft line and the crisp strokes all sit on the skin.
+SMILE_CTRL = [(0.0, -0.4245, 0.517), (0.0095, -0.4208, 0.5173), (0.0165, -0.4135, 0.518), (0.0208, -0.4025, 0.5196),
+              (0.0222, -0.3905, 0.5232), (0.0238, -0.3795, 0.528), (0.0262, -0.3695, 0.5326), (0.033, -0.359, 0.5352),
+              (0.0425, -0.351, 0.5372), (0.0525, -0.3482, 0.5402), (0.0605, -0.3508, 0.5448), (0.0668, -0.3524, 0.5502),
+              (0.0718, -0.353, 0.5558), (0.0745, -0.3527, 0.5596)]
+SMILE_STEP = 0.0012                        # the path's resampling (the crisp strokes' spacing)
+MOUTH_W = 0.0042                           # the painted line's soft width (the 'mouth' attribute)
+SMILE_R = 0.0027                           # the crisp strokes' radius
+SMILE_HALF = 0.075                         # the smile's half width (for the masks)
+
+
+def _resample(pts: np.ndarray, step: float) -> np.ndarray:
+    seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+    L = np.concatenate([[0.0], np.cumsum(seg)])
+    t = np.linspace(0.0, L[-1], max(2, int(L[-1] / step) + 1))
+    return np.stack([np.interp(t, L, pts[:, i]) for i in range(3)], axis=1)
+
+
+def smile_path(ob=None) -> np.ndarray:
+    """Both halves of the smile, (n, 3), from one corner to the other, snapped onto `ob` (or the scene's hi_body)."""
+    half = _resample(np.array(SMILE_CTRL), SMILE_STEP)
+    if ob is None:
+        ob = bpy.data.objects.get('hi_body')
+    if ob is not None:
+        bvh = BVHTree.FromObject(ob, bpy.context.evaluated_depsgraph_get())
+        snapped = []
+        for q in half:
+            hit = bvh.find_nearest(Vector(q))
+            snapped.append(tuple(hit[0]) if hit[0] is not None and hit[3] < 0.012 else tuple(q))
+        half = np.array(snapped)
+    other = half[::-1].copy()
+    other[:, 0] *= -1
+    return np.concatenate([other[:-1], half])
+
+
+def _smile_xz() -> np.ndarray:
+    return _resample(np.array(SMILE_CTRL), 0.004)[:, [0, 2]]
+
+
+def _smile_z(x):
+    """The smile's height at |x| in the front view (its front-most crossing)."""
+    xz = _smile_xz()
+    order = np.argsort(xz[:, 0], kind='stable')
+    return np.interp(np.abs(np.asarray(x, float)), xz[order, 0], xz[order, 1])
+
+
+def mouth_curve():
+    """The philtrum under the nose, and the smile seen from the front (x, z)."""
     nz = NOSE_C.z
-    mid = nz - 0.035
-    pts = [(0.0, nz - 0.014), (0.0, mid)]
-    smile = []
-    for k in range(-16, 17):
-        t = k / 16
-        smile.append((0.074 * t, mid + 0.02 * t * t + 0.013 * max(0.0, abs(t) - 0.72) / 0.28))
-    return pts, smile
+    pts = [(0.0, nz - 0.014), (0.0, nz - 0.035)]
+    half = _smile_xz()
+    other = half[::-1].copy()
+    other[:, 0] *= -1
+    return pts, [tuple(q) for q in np.concatenate([other[:-1], half])]
 
 
 def mouth_dist(p: np.ndarray) -> np.ndarray:
@@ -283,6 +351,29 @@ def mouth_dist(p: np.ndarray) -> np.ndarray:
     phil, smile = mouth_curve()
     d = np.minimum(S.polyline_dist(p[:, 0], p[:, 2], phil), S.polyline_dist(p[:, 0], p[:, 2], smile))
     return np.where(p[:, 1] < -0.32, d, 9.0)
+
+
+def above_smile(p: np.ndarray) -> np.ndarray:
+    """Points over the smile line (where a lock combed down would lie across it)."""
+    return (np.abs(p[:, 0]) < SMILE_HALF + 0.012) & (p[:, 2] > _smile_z(np.minimum(np.abs(p[:, 0]), SMILE_HALF)) - 0.002)
+
+
+def path_dist(p: np.ndarray, path: np.ndarray) -> np.ndarray:
+    """3D distance from each point to a polyline (only points near the muzzle are measured; 9 elsewhere)."""
+    out = np.full(len(p), 9.0)
+    near = (p[:, 1] < -0.3) & (p[:, 2] > 0.47) & (p[:, 2] < 0.6) & (np.abs(p[:, 0]) < 0.1)
+    idx = np.nonzero(near)[0]
+    if not len(idx):
+        return out
+    q = p[idx]
+    A, B = path[:-1], path[1:]
+    AB = B - A
+    best = np.full(len(q), 9.0)
+    for k in range(len(A)):
+        t = np.clip(((q - A[k]) @ AB[k]) / max(AB[k] @ AB[k], 1e-12), 0.0, 1.0)
+        best = np.minimum(best, np.linalg.norm(q - (A[k] + t[:, None] * AB[k]), axis=1))
+    out[idx] = best
+    return out
 
 
 def closed_lid(co: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -309,9 +400,16 @@ def carve(ob: bpy.types.Object) -> None:
     co, vn = S.mesh_arrays(ob)
     x, y, z = co[:, 0], co[:, 1], co[:, 2]
     front = smooth(-0.31, -0.34, y)
-    phil, smile = mouth_curve()
-    md = np.minimum(S.polyline_dist(x, z, phil), S.polyline_dist(x, z, smile))
-    groove = np.exp(-(md / 0.0026) ** 2) * front * (z < NOSE_C.z - 0.01) * (z > 0.49)
+    phil, _smile = mouth_curve()
+    path = smile_path(ob)
+    up = path + np.array([0.0, 0.0, 0.006])
+    md = np.minimum(S.polyline_dist(x, z, phil) + 9.0 * (np.abs(y + 0.44) > 0.03), path_dist(co, path))
+    # the curled corners reach z 0.552: the gate only keeps the line off the chin's underside and the nose's top
+    gate = front * (z < NOSE_C.z + 0.012) * (z > 0.49)
+    groove = np.exp(-(md / 0.003) ** 2) * gate
+    paint = np.exp(-(md / MOUTH_W) ** 2) * gate
+    # the upper lip rolls over the line (a soft bulge 6 mm above it): the groove's shadow reads at small sizes
+    roll = np.exp(-(path_dist(co, up) / 0.0045) ** 2) * gate * (np.abs(x) > 0.006)
     nos = np.zeros_like(x)
     for s in (1, -1):
         dd = np.sqrt(((x - 0.0085 * s) / 1.4) ** 2 + (z - (NOSE_C.z - 0.005)) ** 2)
@@ -325,9 +423,9 @@ def carve(ob: bpy.types.Object) -> None:
             d = np.linalg.norm((co - v3(c)) / tr, axis=1)
             lip = np.maximum(lip, np.exp(-((d - 1.0) / 0.08) ** 2) * (co[:, 2] < 0.05))
     bulge, lash = closed_lid(co)
-    disp = -0.0022 * groove - 0.004 * nos - 0.0045 * lip + 0.003 * bulge - 0.0012 * lash
+    disp = -0.0042 * groove + 0.0012 * roll - 0.004 * nos - 0.0065 * lip + 0.003 * bulge - 0.0012 * lash
     S.set_positions(ob, co + vn * disp[:, None])
-    S.base_attrs(ob, co, {'mouth': groove})
+    S.base_attrs(ob, co, {'mouth': paint})
     S.add_attr(ob, 'lash', lash)
     S.add_attr(ob, 'lid', bulge)
 
@@ -410,7 +508,7 @@ def zones(p: np.ndarray, n: np.ndarray | None = None) -> dict[str, np.ndarray]:
     ruff = torso & (zz > 0.4) & (y < -0.12) & ~bib
     ear_tip = ear & (ear_u > E.U_TIP - 0.04)
     # the crown tuft: an upward-flicking rosette between the ears (3-faces neutral, 4-details panel 1)
-    tuft = head & ~ear & (np.hypot(x / 1.3, y - TUFT_C[1]) < 0.05) & (zz > 0.72)
+    tuft = head & ~ear & (np.hypot(x / 1.3, y - TUFT_C[1]) < 0.066) & (zz > 0.72)
     return {'ear': ear, 'ear_u': ear_u, 'ear_v': eL['v'], 'ear_inner': ear_inner, 'ear_up': eL['up'], 'ear_tip': ear_tip,
             'head': head, 'muzzle': muzzle, 'nose': nose, 'eye_d': eye_d, 'face': face, 'crown': crown, 'cheek': cheek,
             'chin': chin, 'leg': leg, 'paw': paw, 'toes': toes, 'sole': sole, 'tail': tail, 'tail_s': tL['s'],
@@ -437,7 +535,11 @@ def mask_band(p: np.ndarray, z: dict) -> np.ndarray:
     phi = head_phi(p)
     zc = np.interp(phi, MASK_PHI, MASK_ZC)
     h = np.interp(phi, MASK_PHI, MASK_H)
-    band = smooth(h + 0.003, h - 0.003, np.abs(p[:, 2] - zc)) * (h > 0.002)
+    # upgrade round 2: the edges feather into the fur (not a cut-out band)
+    # final round: the lower edge stays crisp over the muzzle (the feather bled grey-lilac onto the cream below it)
+    dz = p[:, 2] - zc
+    soft = np.where(dz > 0, 0.008, np.where(p[:, 1] < -0.36, 0.0025, 0.006))
+    band = smooth(h + soft, h - 0.004, np.abs(dz)) * (h > 0.002)
     # it crosses the bridge between the eyes and stops there (round 2: on the longer muzzle it ran down the snout)
     band = band * smooth(-0.42, -0.405, p[:, 1])
     return band * (z['head'] & ~z['ear'] & (p[:, 1] < HEAD_C.y + 0.05))
@@ -494,8 +596,10 @@ def glitch_density(p: np.ndarray, z: dict) -> np.ndarray:
     """Where Glitch Tumblefox's pixel patches go (variant-glitch-tumblefox.png): the tail along its orange / cream
     border and its outer coil, the upper ears, a patch on each flank above the hind leg."""
     tl = z['tail_L']
-    border = np.exp(-((T.cream(tl) - 0.5) / 0.36) ** 2)
-    d = z['tail'] * (0.08 + 0.36 * border) * smooth(0.12, 0.25, tl['s']) * smooth(-0.6, 0.1, tl['out'])
+    # upgrade round 2: the patches keep to the mint / cream border (they were scattered over the cream coil): a band
+    # either side of each coil's centre line from where the cream starts, and only a few elsewhere on the tail
+    border = np.exp(-(T.border(tl) / 0.034) ** 2) * smooth(T.CREAM_THETA[0] - 20.0, T.CREAM_THETA[0], tl['theta'])
+    d = z['tail'] * (0.03 + 0.44 * border) * smooth(0.12, 0.25, tl['s'])
     d = np.maximum(d, z['ear'] * 0.46 * smooth(0.42, 0.7, z['ear_u']))
     for s in (1, -1):
         d = np.maximum(d, ell_soft(p, (0.1 * s, 0.1, 0.24), (0.055, 0.085, 0.07), 0.3) * 0.42 * z['torso'])
@@ -559,7 +663,8 @@ def head_lock_params(p, n):
     L = np.where(z['cheek'], 0.068, L)
     W = np.where(z['cheek'], 0.0135, W)
     lift = np.where(z['cheek'], _rad(6.0), lift)
-    L = np.where(z['chin'], 0.05, L)
+    L = np.where(z['chin'], 0.03, L)
+    chin_tuft = z['chin'] | (z['head'] & (p[:, 1] < -0.33) & (p[:, 2] < 0.505) & (np.abs(p[:, 0]) < 0.06))
     ear_back = z['ear'] & ~z['ear_inner']
     L = np.where(ear_back, 0.032, L)
     W = np.where(ear_back, 0.0072, W)
@@ -569,7 +674,11 @@ def head_lock_params(p, n):
     near_eye = smooth(EYE_R * 1.15, EYE_R * 1.9, z['eye_d'])
     L = L * (0.5 + 0.5 * near_eye)
     W = W * (0.62 + 0.38 * near_eye)
-    skip = ~z['head'] | z['bib'] | z['muzzle'] | z['nose'] | (z['eye_d'] < EYE_R * 1.12) | (mouth_dist(p) < 0.009)
+    # v1.23.0: no lock lies across the smile (those combed down from above it hid its arms: only the middle read)
+    md = mouth_dist(p)
+    # upgrade round 2: none under the smile either (their dark roots in the lip's crease read as a goatee)
+    skip = (~z['head'] | z['bib'] | z['muzzle'] | z['nose'] | (z['eye_d'] < EYE_R * 1.12) | (md < 0.03) | chin_tuft
+            | ((md < 0.034) & above_smile(p)))
     return np.where(skip, np.nan, W * 0.55), L, W, lift, z
 
 
@@ -601,7 +710,10 @@ def body_lock_params(p, n):
     L = np.where(z['tail'], 0.11 - 0.025 * smooth(0.8, 1.0, tl['s']), L)
     W = np.where(z['tail'], 0.025, W)
     lift = np.where(z['tail'], _rad(7.0), lift)
-    skip = (z['head'] & ~z['bib']) | z['sole'] | (z['paw'] & (zz < 0.012))
+    L = np.where(z['bib'] & (zz > 0.44), 0.045, L)              # final round: no hanging tuft under the chin
+    tl = z['tail_L']
+    eye = z['tail'] & (tl['theta'] > 760.0)                    # final round: the spiral's eye smooth cream (no stipple)
+    skip = (z['head'] & ~z['bib']) | z['sole'] | (z['paw'] & (zz < 0.012)) | eye
     return np.where(skip, np.nan, W * 0.6), L, W, lift, z
 
 
@@ -629,7 +741,13 @@ def card_params(p, n, layer: int):
         sp = np.where(head, np.where(z['ear'], 0.022, 0.018), 0.019)
         sp = np.where(z['leg'], 0.017, sp)
         sp = np.where(z['tail'], 0.021, sp)
+        # upgrade round 2: the neck's cards half as long (long straight ones read as straw behind the cheeks)
+        L = np.where(z['ruff'] | (z['torso'] & (zz > 0.4) & (y < -0.1)), 0.034, L)
+        # final round: none on the socks (glassy specks on Town Crier's gold) or the throat (white straws)
+        L = np.where(z['bib'], np.minimum(L, 0.04), L)
         skip = (z['face'] | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.07) | (z['chin'] & (y < -0.37)) | z['ear_inner']
+                | (z['leg'] & (zz < 0.17)) | (z['bib'] & (zz > 0.42))
+                | (z['ear'] & (z['ear_u'] > 0.6))
                 | (z['leg'] & (zz < 0.04)) | z['sole'] | (z['tail'] & (z['tail_s'] < 0.06)))
     elif layer == 1:
         L = np.full(k, 0.08)
@@ -645,22 +763,24 @@ def card_params(p, n, layer: int):
         for lg, (lx, ly) in LEGS.items():
             leg_back |= z['legs'][lg] & (y > ly) & (zz > 0.17)
         tuft = z['tuft']
-        ear_fluff = z['ear_inner'] & (z['ear_u'] > 0.15) & (z['ear_u'] < 0.8) & (z['ear_v'] > 0.15) & (z['ear_v'] < 0.85)
+        # upgrade round 2: the ear fluff stays inside the ear's outline (it stuck out past the tips as white splinters, an
+        # "antenna" at 64 px): only the lower half of the cup, short and lying close
+        ear_fluff = z['ear_inner'] & (z['ear_u'] > 0.12) & (z['ear_u'] < 0.48) & (z['ear_v'] > 0.24) & (z['ear_v'] < 0.76)
         L = np.where(cheek, 0.058, L)
         W = np.where(cheek, 0.04, W)
         lift = np.where(cheek, _rad(4), lift)
         sp = np.where(cheek, 0.022, sp)
-        L = np.where(bib, 0.06, L)
-        W = np.where(bib, 0.05, W)
+        L = np.where(bib, 0.034, L)
+        W = np.where(bib, 0.045, W)
         lift = np.where(bib, _rad(9), lift)
-        L = np.where(ruff, 0.095, L)
-        L = np.where(belly, 0.075, L)
+        L = np.where(ruff, 0.048, L)
+        L = np.where(belly, 0.06, L)
         L = np.where(leg_back, 0.05, L)
         W = np.where(leg_back, 0.03, W)
-        L = np.where(ear_fluff, 0.08, L)
-        W = np.where(ear_fluff, 0.03, W)
-        lift = np.where(ear_fluff, _rad(28), lift)
-        sp = np.where(ear_fluff, 0.014, sp)
+        L = np.where(ear_fluff, 0.042, L)
+        W = np.where(ear_fluff, 0.026, W)
+        lift = np.where(ear_fluff, _rad(12), lift)
+        sp = np.where(ear_fluff, 0.016, sp)
         L = np.where(tuft, 0.07, L)
         W = np.where(tuft, 0.034, W)
         lift = np.where(tuft, _rad(34), lift)
@@ -670,9 +790,10 @@ def card_params(p, n, layer: int):
     else:
         # the tail's long fluff: longer on the outer coil, standing out from the brush
         tl = z['tail_L']
-        L = 0.118 + 0.022 * smooth(-0.2, 0.8, tl['out']) - 0.03 * smooth(0.85, 1.0, tl['s'])
+        # final round: shorter and lying closer (a stiff straw fringe along the top edge)
+        L = 0.084 + 0.016 * smooth(-0.2, 0.8, tl['out']) - 0.02 * smooth(0.85, 1.0, tl['s'])
         W = np.full(k, 0.05)
-        lift = np.full(k, _rad(13))
+        lift = np.full(k, _rad(8))
         sp = np.full(k, 0.022)
         skip = ~z['tail'] | (tl['s'] < 0.08)
     # no cards where cream meets orange or plum meets orange (a card of one colour over the other glitters)
@@ -700,21 +821,31 @@ def card_params(p, n, layer: int):
     chin_beard = ((z['chin'] | z['bib']) & (zz > 0.44)) | (head & (zz < 0.53) & (np.abs(x) < 0.07))
     # review 2: the tail's centre showed grey cards in its pocket: none on the inner faces of the disc
     tlc = z['tail_L']
-    disc_face = z['tail'] & (((np.abs(n @ T.NX) > 0.5) & (tlc['theta'] > 450.0)) | (tlc['theta'] > 560.0))
-    in_mask = in_mask | z['cheek'] | chin_beard | disc_face | (mouth_dist(p) < 0.02) | z['tuft']
+    # upgrade round 2: the spiral's eye was a shred of grey cards: none on the faces from the cream coil inward, none at
+    # all past the top of the spiral; none along the tail's orange / cream border (Glitch's squares stay crisp there)
+    disc_face = z['tail'] & (((np.abs(n @ T.NX) > 0.5) & (tlc['theta'] > 380.0)) | (tlc['theta'] > 540.0))
+    border = z['tail'] & (np.abs(T.border(tlc)) < 0.03) & (tlc['theta'] > T.CREAM_THETA[0] - 12.0)
+    # none round the crown's whorl (one poked up through its middle)
+    whorl = head & (np.hypot(x / 1.3, y - TUFT_C[1]) < 0.078) & (zz > 0.69)
+    in_mask = in_mask | z['cheek'] | chin_beard | disc_face | border | whorl | (mouth_dist(p) < 0.02) | z['tuft']
     skip = skip | brows | under_mask | in_mask | (z['cheek'] & (cream < 0.94))
     return np.where(skip, np.nan, sp), L, W, lift, z
 
 
 # ----------------------------------------------------------------------------- the crown tuft
 # Round 2 (review 1: flat petals with dark blots, a daisy decal; then pale spikes): the tuft is fur like the rest of the
-# coat: small spike lobes in the body (the locks bake onto them) and a rosette of lifted orange cards (card layer 1,
-# zone 'tuft'). There is no separate lo_tuft.
+# coat: lobes in the body that the locks bake onto (no cards, no separate lo_tuft).
 TUFT_C = (0.0, -0.288)                  # its centre (x, y) on the crown, between the ears
-# (x, y, fan°, elevation°, length, base radius): spikes flicking up and out from the crown
-CROWN_SPIKES = [(0.0, -0.312, 0, 55, 0.062, 0.017), (-0.022, -0.304, -28, 60, 0.058, 0.016), (0.022, -0.304, 28, 60, 0.058, 0.016),
-                (-0.038, -0.288, -60, 52, 0.05, 0.015), (0.038, -0.288, 60, 52, 0.05, 0.015), (0.0, -0.29, 0, 80, 0.068, 0.018),
-                (-0.016, -0.272, -150, 66, 0.052, 0.015), (0.016, -0.272, 150, 66, 0.052, 0.015)]
+# upgrade round 2 (a ring of hard cones read as a brown pine cone or tiara): a cowlick, thin flat fur flicks swept back
+# and out from a centre whorl (1-hero, 3-faces neutral), each lying with its broad face up to the light, on a low cushion
+# so their roots merge. (azimuth° from straight back, round toward the left; elevation°; length; width)
+# final round (the flat flicks merged into a crumpled tan plate): five spiky clumps of the body orange, round in section
+# and spread apart (no slots between them), flicking up and back from the whorl (3-faces)
+CROWN_FLICKS = [(0, 64, 0.074, 0.026), (44, 52, 0.064, 0.024), (-44, 52, 0.064, 0.024), (150, 60, 0.056, 0.022),
+                (-150, 60, 0.056, 0.022)]
+CROWN_TWIST = 12.0                  # every flick turned this much round the whorl (the swirl)
+CROWN_THICK = None                  # None: round in section (the clump's width)
+CROWN_MOUND = ((0.0, -0.288), (0.034, 0.028, 0.01))      # the cushion: its centre (x, y) on the skull and its radii
 
 
 def _skull_z(x: float, y: float) -> float:
@@ -722,17 +853,28 @@ def _skull_z(x: float, y: float) -> float:
     return HEAD_C.z + HEAD_R[2] * math.sqrt(max(q, 0.0))
 
 
+def _skull_normal(x: float, y: float) -> Vector:
+    z = _skull_z(x, y)
+    return Vector((x / HEAD_R[0] ** 2, (y - HEAD_C.y) / HEAD_R[1] ** 2, (z - HEAD_C.z) / HEAD_R[2] ** 2)).normalized()
+
+
 def crown_spikes() -> list[Part]:
-    out = []
-    for i, (x, y, fan, el, ln, r) in enumerate(CROWN_SPIKES):
-        root = Vector((x, y, _skull_z(x, y) - 0.008))
-        a, e = math.radians(fan), math.radians(el)
-        d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e))).normalized()
+    (mx, my), mr = CROWN_MOUND
+    n = _skull_normal(mx, my)
+    tilt = math.degrees(math.atan2(-n.y, n.z))              # about X: local Z onto the skull's normal
+    out = [Part('crownmound', 'sphere', loc=(mx, my, _skull_z(mx, my) + 0.002), radius=1.0, scale=mr, rot=(tilt, 0.0, 0.0))]
+    cx, cy = TUFT_C
+    for i, (az, el, ln, w) in enumerate(CROWN_FLICKS):
+        a, e = math.radians(az + CROWN_TWIST), math.radians(el)
+        flat = Vector((math.sin(a), math.cos(a), 0.0))
+        x, y = cx + 0.014 * flat.x, cy + 0.014 * flat.y
+        root = Vector((x, y, _skull_z(x, y) - 0.006))
+        d = Vector((math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e))).normalized()
         side = Vector((0.0, 0.0, 1.0)).cross(d)
         if side.length < 1e-3:
             side = Vector((1.0, 0.0, 0.0))
-        out.append(Part(f'crownspike{i}', 'fin', loc=tuple(root + d * (ln * 0.5)), radius=ln * 0.5,
-                        scale=(r / (ln * 0.5), 1.0, r / (ln * 0.5)), taper=0.9, rot=_orient(d, side)))
+        out.append(Part(f'crownflick{i}', 'fin', loc=tuple(root + d * (ln * 0.5)), radius=ln * 0.5,
+                        scale=(w / (ln * 0.5), 1.0, (CROWN_THICK or w) / (ln * 0.5)), taper=0.94, rot=_orient(d, side)))
     return out
 
 
@@ -740,6 +882,7 @@ def crown_spikes() -> list[Part]:
 _MASKS: dict[str, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 _INNER: dict[str, np.ndarray] = {}
 _TUFT: dict[str, np.ndarray] = {}
+_CHEEK: dict[str, np.ndarray] = {}
 
 
 def _masks_of(ob, root: np.ndarray, pos: np.ndarray, kind: np.ndarray, tpos: np.ndarray):
@@ -754,9 +897,13 @@ def _masks_of(ob, root: np.ndarray, pos: np.ndarray, kind: np.ndarray, tpos: np.
         if lock.any():
             zp = zones(pos[lock])
             k = 0.6 * tpos[lock]
-            cream[lock] = cream[lock] * (1 - k) + cream_mask(pos[lock], zp) * k
-            # the mask keeps a clean edge (review 1): a plum lock blends less toward its tip
-            plum[lock] = plum[lock] * (1 - 0.5 * k) + plum_mask(pos[lock], zp) * 0.5 * k
+            # upgrade round 2: the tail's locks keep their root's colour (blending toward the tips smeared the coil's
+            # border into a salmon fade)
+            kc = k * np.where(zr['tail'][lock], 0.3, 1.0)
+            cream[lock] = cream[lock] * (1 - kc) + cream_mask(pos[lock], zp) * kc
+            # upgrade round 2: the mask's locks blend fully toward their tips (a feathered edge, not a cut-out band)
+            kp = k * np.where(root[lock][:, 1] < -0.36, 0.25, 1.0)     # final round: not down onto the muzzle
+            plum[lock] = plum[lock] * (1 - kp) + plum_mask(pos[lock], zp) * kp
         _MASKS[ob.name] = (cream, plum, glitch)
     return _MASKS[ob.name]
 
@@ -783,6 +930,11 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
         _TUFT[ob.name] = zones(root)['tuft'].astype(float)
     crown = (_TUFT[ob.name] * (1 - cream))[:, None]
     rgb = rgb * (1 - crown) + lin(col['crown'])[None, :] * crown
+    # v1.23.0: lighter still low between the spikes (the cushion and the spikes' bases), where the AO falls
+    hx, hy = root[:, 0] / HEAD_R[0], (root[:, 1] - HEAD_C.y) / HEAD_R[1]
+    skull = HEAD_C.z + HEAD_R[2] * np.sqrt(np.clip(1.0 - hx * hx - hy * hy, 0.0, None))
+    low = (crown[:, 0] * smooth(0.032, 0.012, root[:, 2] - skull))[:, None] * 0.25
+    rgb = rgb * (1 - low) + lin(C.mix_hex(col['crown'], '#FFF6EE', 0.3))[None, :] * low
     rgb = rgb * (1 - warm) + lin(col['ear_cream'])[None, :] * warm
     rgb = rgb * (1 - plum[:, None]) + lin(col['plum'])[None, :] * plum[:, None]
     shade = 0.72 + 0.3 * tpos + 0.07 * (lrand - 0.5)
@@ -793,11 +945,17 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     shade = shade * (1 - inner) + (0.92 + 0.08 * tpos) * inner
     # review 2: the cream fur keeps lighter roots (the cards take the skin's colour: dark roots made grey cards)
     shade = shade * (1 - cream) + (0.84 + 0.16 * tpos) * cream
+    # upgrade round 2: the cheek ruffs lighter still (they sit in the head's shadow and measured grey)
+    if ob.name not in _CHEEK:
+        zc = zones(root)
+        _CHEEK[ob.name] = (zc['cheek'] | (zc['head'] & (np.abs(root[:, 0]) > 0.1) & (root[:, 2] < 0.6))).astype(float)
+    ck = _CHEEK[ob.name] * cream
+    shade = shade * (1 - ck) + (0.95 + 0.05 * tpos) * ck
     # the crown spikes: light roots (review 3: they rendered rust brown, #9D582F)
     if ob.name not in _TUFT:
         _TUFT[ob.name] = zones(root)['tuft'].astype(float)
     tuftm = _TUFT[ob.name]
-    shade = shade * (1 - tuftm) + (0.95 + 0.05 * tpos) * tuftm
+    shade = shade * (1 - tuftm) + (0.98 + 0.02 * tpos) * tuftm
     shade = np.where(kind < 0.5, 1.0, shade)
     is_lock = kind > 0.5
     rough = np.where(is_lock, 0.5 + 0.15 * np.abs(tpos - 0.45), 0.64)
@@ -812,7 +970,7 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
         for c, r in pad_spots(leg):
             pads = np.maximum(pads, ell_soft(pos, tuple(c), r, 0.1))
         for c in claw_centres(leg):
-            claws = np.maximum(claws, ell_soft(pos, tuple(c), (0.0055, 0.008, 0.0065), 0.1))
+            claws = np.maximum(claws, ell_soft(pos, tuple(c), (0.0062, 0.0098, 0.0072), 0.1))
     plum_fur = plum * (1 - glossy)
     rough = rough * (1 - plum_fur) + 0.7 * plum_fur
     coat = coat * (1 - plum_fur) + 0.04 * plum_fur
@@ -835,6 +993,7 @@ def prop_arrays(ob: bpy.types.Object) -> tuple[np.ndarray, np.ndarray]:
     brass = lin(BRASS_HEX)
     rgb = np.where((part < 0.5)[:, None], lin(RIBBON_HEX)[None], brass[None])
     rgb = np.where((part > 1.5)[:, None], (brass * 0.55)[None], rgb)
+    rgb = np.where((part > 2.5)[:, None], (brass * 0.12)[None], rgb)        # the slot
     rough = np.where(part < 0.5, 0.55, 0.22)
     coat = np.where(part < 0.5, 0.12, 0.85)
     return rgb, np.stack([np.ones(len(part)), rough, coat], axis=1)
@@ -899,16 +1058,18 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
     is_body = nb.math('LESS_THAN', nb.attribute('kind').outputs['Fac'], 0.5)
     c = nb.attribute(attr).outputs['Color']
     if pal.get('glitch'):
+        # final round: the cells by each lock's root (a lock lies in one square: crisp pixel blocks, not torn shards)
+        gpos = nb.attribute('root').outputs['Vector']
         dens = nb.attribute('glitch').outputs['Fac']
         # round 2 (review 1: scattered flecks): blocky squares in clusters, a coarse grid switching patches on
         dcode = dens
         dens = nb.math('MINIMUM', dens, 0.48)
-        cluster, _rc = _glitch(nb, nb.vmath('ADD', pos, (0.031, 0.017, 0.043)), 0.7, 0.1)
+        cluster, _rc = _glitch(nb, nb.vmath('ADD', gpos, (0.031, 0.017, 0.043)), 0.7, 0.1)
         dens = nb.math('MULTIPLY', nb.math('MULTIPLY', dens, cluster), 2.0)
-        big, r1 = _glitch(nb, pos, dens, 0.04)
-        small, _r2 = _glitch(nb, nb.vmath('ADD', pos, (0.0041, 0.0067, 0.0023)), nb.math('MULTIPLY', dens, 0.35), 0.02)
+        big, r1 = _glitch(nb, gpos, dens, 0.04)
+        small, _r2 = _glitch(nb, nb.vmath('ADD', gpos, (0.0041, 0.0067, 0.0023)), nb.math('MULTIPLY', dens, 0.35), 0.02)
         on = nb.math('MAXIMUM', big, small)
-        qx, qy, qz = nb.sep(nb.vmath('FLOOR', nb.vmath('SCALE', pos, scale=1.0 / 0.013)))
+        qx, qy, qz = nb.sep(nb.vmath('FLOOR', nb.vmath('SCALE', gpos, scale=1.0 / 0.013)))
         chk = nb.math('FLOORED_MODULO', nb.math('ADD', nb.math('ADD', qx, qy), qz), 2.0)
         on = nb.math('MAXIMUM', on, nb.math('MULTIPLY', nb.math('GREATER_THAN', dcode, 0.9), chk))
         light = nb.math('LESS_THAN', r1, nb.math('MULTIPLY', dens, 0.28))
@@ -934,26 +1095,26 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
     c = nb.mix(_ell(nb, pos, tuple(NOSE_C), (0.0265, 0.021, 0.0185), 0.08), c, nb.rgb(C.lin(NOSE_HEX)))
     mouth = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.attribute('mouth').outputs['Fac'], 1.3, clamp=True), is_body)
     mid = NOSE_C.z - 0.035
-    smile = _arc(nb, pos, 0.0, mid + 0.026, 0.066, -0.026, 0.0032, -0.32)
-    phil = _ell(nb, pos, (0.0, -0.45, NOSE_C.z - 0.026), (0.0016, 0.03, 0.0095), 0.3)
-    hooks = None
-    for s in (1, -1):        # the corners curl up (1-hero)
-        for hx, hz, hr in ((0.062, 0.026, 0.0036), (0.0655, 0.0285, 0.0036), (0.068, 0.0315, 0.0034), (0.0700, 0.035, 0.0032), (0.0712, 0.0385, 0.003)):
-            e = _ell(nb, pos, (hx * s, -0.36, mid + hz), (hr, 0.05, hr * 0.95), 0.25)
-            hooks = e if hooks is None else nb.math('MAXIMUM', hooks, e)
-    hooks = nb.math('MULTIPLY', hooks, nb.smooth(nb.sep(pos)[1], -0.31, -0.325))
-    mouth = nb.math('MAXIMUM', mouth, nb.math('MULTIPLY', nb.math('MAXIMUM', nb.math('MAXIMUM', smile, phil), hooks), is_body))
+    # upgrade round 2: the crisp core is a string of small strokes along the smile's path on the skin (round the
+    # muzzle's side and out to the curled corners), so it shows in profile too; nothing paints off the path
+    path = smile_path()
+    strokes = None
+    for q in path:
+        e = _ell(nb, pos, tuple(q), (SMILE_R, SMILE_R * 2.2, SMILE_R), 0.3)
+        strokes = e if strokes is None else nb.math('MAXIMUM', strokes, e)
+    phil = _ell(nb, pos, (0.0, -0.45, NOSE_C.z - 0.026), (0.0019, 0.03, 0.0095), 0.3)
+    mouth = nb.math('MAXIMUM', mouth, nb.math('MULTIPLY', nb.math('MAXIMUM', strokes, phil), is_body))
     c = nb.mix(mouth, c, nb.rgb(C.lin(col['mouth'])))
     # two tiny fangs peeking under the smile, either side of the philtrum: white points with a thin dark edge (white on
     # the cream muzzle needs the edge to read)
     fang, rim = None, None
-    _phil, smile = mouth_curve()
     ygate = nb.smooth(nb.sep(pos)[1], -0.38, -0.395)
     for s in (1, -1):
-        fx = 0.017 * s
-        fz = min(smile, key=lambda q: abs(q[0] - fx))[1] - 0.0046
-        e = _ell(nb, pos, (fx, -0.445, fz), (0.0031, 0.03, 0.0046), 0.15)
-        o = _ell(nb, pos, (fx, -0.445, fz + 0.0004), (0.0046, 0.03, 0.0062), 0.15)
+        q = min(path, key=lambda r: abs(r[0] - 0.0135 * s))
+        # final round: the fangs hang from the upper lip over the line (head-weighted: the strike's grin shows them)
+        fx, fy, fz = float(q[0]), float(q[1]), float(q[2]) - 0.0012
+        e = _ell(nb, pos, (fx, fy, fz), (0.0032, 0.012, 0.0042), 0.15)
+        o = _ell(nb, pos, (fx, fy, fz + 0.0006), (0.0046, 0.012, 0.0056), 0.15)
         fang = e if fang is None else nb.math('MAXIMUM', fang, e)
         rim = o if rim is None else nb.math('MAXIMUM', rim, o)
     c = nb.mix(nb.math('MULTIPLY', nb.math('MULTIPLY', rim, ygate), is_body), c, nb.rgb(C.lin(col['mouth'])))
@@ -981,7 +1142,7 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
     claw = None
     for leg in LEGS:
         for cc in claw_centres(leg):
-            e = _ell(nb, pos, tuple(cc), (0.0055, 0.008, 0.0065), 0.12)
+            e = _ell(nb, pos, tuple(cc), (0.0062, 0.0098, 0.0072), 0.12)
             claw = e if claw is None else nb.math('MAXIMUM', claw, e)
     c = nb.mix(claw, c, nb.rgb(C.lin(col['claw'])))
     em = nb.new('ShaderNodeEmission')
@@ -1066,19 +1227,26 @@ def _ring(name: str, seg: int) -> bpy.types.Object:
     return ob
 
 
-BELL_PROFILE = [(0.0, 0.0), (0.006, -0.0008), (0.0105, -0.004), (0.0132, -0.011), (0.0142, -0.019), (0.0158, -0.027),
-                (0.0195, -0.034), (0.024, -0.039), (0.0262, -0.0415), (0.0258, -0.0432), (0.0232, -0.0428), (0.019, -0.0385),
+# final round: a slot cut round the waist (painted dark) and a rolled rim at the lip
+BELL_PROFILE = [(0.0, 0.0), (0.006, -0.0008), (0.0105, -0.004), (0.0132, -0.011), (0.0142, -0.019), (0.0146, -0.0212),
+                (0.0136, -0.0218), (0.0136, -0.0232), (0.0150, -0.0238), (0.0158, -0.027),
+                (0.0195, -0.034), (0.024, -0.039), (0.0266, -0.0410), (0.0278, -0.0421), (0.0268, -0.0436), (0.0232, -0.0428), (0.019, -0.0385),
                 (0.0135, -0.031), (0.0105, -0.02), (0.0075, -0.011), (0.0, -0.009)]
 
 
+BELL_SCALE = 2.0                    # upgrade round 2: about 5% of the height read too small (the reference: about 12%)
+
+
 def _bell(name: str, seg: int) -> bpy.types.Object:
-    """A small hand-bell hanging from the ribbon: a flared brass cup, a loop on top and the clapper under the lip."""
+    """A hand-bell hanging from the ribbon: a flared brass cup, a loop on top and the clapper under the lip."""
     bm = bmesh.new()
-    axis = Vector((0.0, -0.18, 1.0)).normalized()      # hangs a little away from the chest
+    k = BELL_SCALE
+    axis = Vector((0.0, 0.25, 1.0)).normalized()       # its mouth swings forward, clear of the chest
     side = Vector((1.0, 0.0, 0.0))
     fwd = axis.cross(side).normalized()
     rows = []
     for r, z in BELL_PROFILE:
+        r, z = r * k, z * k
         row = []
         for i in range(seg):
             a = 2 * math.pi * i / seg
@@ -1091,10 +1259,10 @@ def _bell(name: str, seg: int) -> bpy.types.Object:
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
     n_brass = len(bm.verts)
     # the clapper and the loop
-    clap = bmesh.ops.create_uvsphere(bm, u_segments=max(8, seg // 2), v_segments=max(6, seg // 4), radius=0.0062)
+    clap = bmesh.ops.create_uvsphere(bm, u_segments=max(8, seg // 2), v_segments=max(6, seg // 4), radius=0.0062 * k)
     for v in clap['verts']:
-        v.co = v.co + BELL_TOP + axis * -0.04
-    n_major, n_minor, R, r = max(10, seg // 3), 6, 0.0058, 0.0019
+        v.co = v.co + BELL_TOP + axis * (-0.04 * k)
+    n_major, n_minor, R, r = max(10, seg // 3), 6, 0.0058 * k, 0.0019 * k
     ring = []
     for i in range(n_major):
         a = 2 * math.pi * i / n_major
@@ -1115,6 +1283,10 @@ def _bell(name: str, seg: int) -> bpy.types.Object:
     C.link_obj(ob)
     part = np.ones(len(me.vertices))
     part[n_brass:n_brass + len(clap['verts'])] = 2.0
+    co = np.array([v.co[:] for v in me.vertices])
+    axial = (co - np.array(BELL_TOP[:])) @ np.array(axis[:])
+    slot = (np.arange(len(co)) < n_brass) & (axial < -0.0211 * k) & (axial > -0.0239 * k)
+    part[slot] = 3.0
     S.add_attr(ob, 'part', part)
     return ob
 
@@ -1134,6 +1306,21 @@ build_props = _build_props
 
 # ----------------------------------------------------------------------------- the rig's proportions (plans/quadruped.py)
 TAIL_BONES = 6
+JAW_HINGE = (0.0, -0.345, 0.53)
+
+
+def jaw_weights(co: np.ndarray, z: dict) -> tuple[np.ndarray, np.ndarray]:
+    """The lower jaw: the skin under the smile's line from the mouth's corners forward (its side run rises toward the
+    back) and the chin under it; (mask, weight)."""
+    side = np.array(SMILE_CTRL[:7])
+    order = np.argsort(side[:, 1])
+    y, zz = co[:, 1], co[:, 2]
+    lip = np.interp(y, side[order, 1], side[order, 2])
+    # final round: the hinge line runs just under the fangs (lip − 4 mm … − 7 mm), through the line's dark lower half
+    w = (smooth(lip - 0.0038, lip - 0.0068, zz) * smooth(-0.35, -0.372, y) * (np.abs(co[:, 0]) < 0.05) * (zz > 0.465)
+         * z['head'])
+    m = w > 0.01
+    return m, w[m]
 
 
 def rig_p() -> dict:
@@ -1159,6 +1346,11 @@ def rig_p() -> dict:
         'foot_len': 0.085,
         'leg_radius': 0.08,
         'stride': 0.13,
+        # upgrade round 2: the strike's open grin (the pounce opens the jaw about 28° at impact; idle_happy and win smile
+        # open a little): the jaw hinges behind the mouth's corners and runs to the chin; the jaw's heat weights stay
+        # merged into the head and body_weight_regions gives it only the lower jaw, under the smile's line
+        'jaw': {'head': JAW_HINGE, 'tail': (0.0, -0.43, 0.508)},
+        'jaw_open': True,
     }
 
 
@@ -1187,6 +1379,23 @@ def tail_weights(s: np.ndarray, names: list[str]) -> dict[str, np.ndarray]:
 
 def body_weight_regions(co: np.ndarray, names: list[str]):
     regions = []
+    # final round: the cheek ruff rides the head (its heat weights split with the chest stretched a clump into a flat
+    # orange paddle when the head turned in the strafes and sidesteps)
+    mirrored = co.copy()
+    mirrored[:, 0] = np.abs(co[:, 0])
+    ruff = np.zeros(len(co), bool)
+    for root, d, ln, th in CHEEK_TUFTS:
+        dv = v3(d) / np.linalg.norm(d)
+        q = mirrored - v3(root)
+        t = np.clip(q @ dv, 0.0, ln)
+        ruff |= np.linalg.norm(q - t[:, None] * dv[None], axis=1) < th + 0.014
+    ruff &= (co[:, 2] > 0.45) & (co[:, 1] < -0.16)
+    if ruff.any() and 'head' in names:
+        regions.append((ruff, {'head': np.ones(int(ruff.sum()))}))
+    if 'jaw' in names:
+        jm, jw = jaw_weights(co, zones(co))
+        if jm.any():
+            regions.append((jm, {'jaw': jw, 'head': 1.0 - jw}))
     on, u, _inner, L = E.zone(co)
     for s, tag in ((1, 'L'), (-1, 'R')):
         m = on & (L['s'] == s)
@@ -1194,9 +1403,24 @@ def body_weight_regions(co: np.ndarray, names: list[str]):
             w = ear_weights(u[m])
             regions.append((m, {'head': w['head'], f'ear.{tag}.1': w['1'], f'ear.{tag}.2': w['2']}))
     tl = T.lookup(co)
-    m = (tl['d'] < T.reach(tl) + 0.008) & (tl['s'] > 0.01)
+    # final round (an ear-sized orange paddle trailed off the back of the head in the strafes and sidesteps): the round
+    # reach took the back of the head, next to the spiral's front coil, for tail, so a tail sway stretched that skin
+    # out flat. Only the tail's own zone (and its root) rides the tail bones, never the head.
+    zw = zones(co)
+    on_tail, _ = T.zone(co, tl)
+    m = (tl['d'] < T.reach(tl) + 0.008) & (tl['s'] > 0.01) & (on_tail | (tl['s'] < 0.08)) & ~zw['head']
     if m.any():
-        regions.append((m, tail_weights(tl['s'][m], names)))
+        w = tail_weights(tl['s'][m], names)
+        # v1.23.0: across the bridged seam between two coils the skin blends the inner turn's bones into the outer
+        # coil's, so a bend stretches the bridge instead of tearing it at the middle
+        on, si, so, t, ramp = T.bridge_blend(co[m])
+        if on.any():
+            wi, wo = tail_weights(si[on], names), tail_weights(so[on], names)
+            k = smooth(0.2, 0.8, t[on])
+            g = ramp[on]
+            for b in w:
+                w[b][on] = w[b][on] * (1 - g) + (wi[b] * (1 - k) + wo[b] * k) * g
+        regions.append((m, w))
     return regions
 
 

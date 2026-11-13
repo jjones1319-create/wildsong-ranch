@@ -76,8 +76,9 @@ def tongue(bm: bmesh.types.BMesh, base, d0, side_ref, curl_dir, length: float, w
 def build(name: str, high: bool, ear_frames: dict, tail_frame: tuple, head_k: float) -> bpy.types.Object:
     """The three flames as one object. `ear_frames[s]` = (tip point, long axis, outward across, normal out of the cup)
     in world space; `tail_frame` = (the tail tip's centre, its tangent, its 'up' (the back's side), its radius)."""
-    sides, n = (14, 22) if high else (6, 8)
-    ear_sides = 10 if high else 5          # the ear strands are thin: fewer sides on the low mesh
+    sides, n = (14, 22) if high else (6, 6)
+    ear_sides = 8 if high else 4           # the strands are thin: fewer sides on the low mesh
+    tail_sides = ear_sides
     ridges, rd = (7, 0.07) if high else (0, 0.0)
     bm = bmesh.new()
     attrs = {'u': [], 'part': []}
@@ -86,38 +87,40 @@ def build(name: str, high: bool, ear_frames: dict, tail_frame: tuple, head_k: fl
         a, xo, nf = _norm(v3(a)), _norm(v3(xo)), _norm(v3(nf))
         # 1-hero / 3-faces: a flame plume about 40% of the ear's height, rising and leaning a little outward, its tongues
         # curling outward at their tips
-        sweep = _norm(a * 0.88 + xo * 0.46)       # round 3b: swept further out
+        # Nov 13 (the review: stiff blade fans): soft wisps rising off the tip, swept a little back and out, thin and
+        # many, each curling back at its end
+        sweep = _norm(a * 0.94 - nf * 0.2 + xo * 0.16)
         side = _norm(xo - sweep * float(xo @ sweep))
-        base = v3(tp) - a * 0.016 * head_k
-        # five long narrow tongues, the middle one tallest, fanned only a little, their tips curling outward (preview 19:
-        # four short fat ones fanned wide read as a flower)
-        # round 3b: a plume of thin strands bunched at the root, in two staggered rows (front and back of the cup's
-        # plane) so it has depth; round 3's seven wide flat tongues in one plane read as tulip petals in the film
-        # round 3b: bunched (the fan halved) and all curling the same way, one swept plume instead of a fan of strands
-        for ang, ln, wd, curl, off, dep in ((0.0, 0.12, 0.0115, 0.2, 0.0, 0.0), (-2.0, 0.112, 0.0105, 0.21, -0.003, 0.005),
-                                            (3.0, 0.114, 0.0105, 0.24, 0.003, -0.005), (-5.0, 0.1, 0.01, 0.22, -0.005, -0.004),
-                                            (6.0, 0.104, 0.01, 0.27, 0.005, 0.004), (-7.0, 0.086, 0.0095, 0.24, -0.007, 0.004),
-                                            (8.0, 0.09, 0.0095, 0.3, 0.007, -0.004), (-10.0, 0.07, 0.009, 0.26, -0.009, -0.002),
-                                            (11.0, 0.076, 0.009, 0.33, 0.009, 0.003), (-12.0, 0.054, 0.008, 0.28, -0.011, 0.0),
-                                            (13.0, 0.058, 0.008, 0.36, 0.012, 0.0)):
+        base = v3(tp) - a * 0.014 * head_k
+        back = _norm(-nf - sweep * float(-nf @ sweep))
+        for k in range(14):
+            fr = (k + 0.5) / 14
+            ang = (fr - 0.5) * 22.0 + rng.normal(0, 2.0)
             r = math.radians(ang)
-            d = sweep * math.cos(r) + side * math.sin(r)
-            tongue(bm, base + (side * off + nf * dep) * head_k, d, side, side, ln * head_k, wd * head_k,
-                   wd * 0.7 * head_k, curl, 0.06 * rng.normal(), ear_sides, n, ridges, rd, float(s), attrs)
-    # 4-details 4: the tail's tip ends in one swept flame lick, its tongues streaming on and curling forward over the
-    # back (preview 19: five fat overlapping tongues read as a bulb)
-    c, T, up, rad = (v3(x) if i < 3 else x for i, x in enumerate(tail_frame))
-    T, up = _norm(T), _norm(up)
-    side = _norm(np.cross(T, up))
-    base = c - T * rad * 0.6
-    for ang, roll, ln, wd, th, curl in ((0.0, 0.0, 0.19, 0.034, 0.014, 0.34), (-16.0, 0.0, 0.15, 0.028, 0.012, 0.4),
-                                        (15.0, 0.0, 0.14, 0.028, 0.012, 0.26), (-30.0, 0.0, 0.1, 0.022, 0.01, 0.42),
-                                        (6.0, 55.0, 0.125, 0.024, 0.011, 0.34), (6.0, -55.0, 0.12, 0.024, 0.011, 0.34)):
-        r = math.radians(ang)
-        fan = _norm(up * math.cos(math.radians(roll)) + side * math.sin(math.radians(roll)))
-        d = T * math.cos(r) + fan * math.sin(r)
-        tongue(bm, base + fan * rad * 0.3 * math.sin(r), d, _norm(np.cross(d, fan)) if roll else side, up, ln, wd, th, curl,
-               0.04 * rng.normal(), sides, n, ridges, rd, 2.0, attrs)
+            d = _norm(sweep * math.cos(r) + side * math.sin(r))
+            ln = (0.07 + 0.05 * (1 - abs(fr - 0.45) * 1.8)) * (0.85 + 0.3 * rng.random())
+            wd = 0.0065 + 0.002 * rng.random()
+            off = side * (fr - 0.5) * 0.026 + back * rng.normal(0, 0.003)
+            tongue(bm, base + off * head_k, d, side, back, ln * head_k, wd * head_k, wd * 0.6 * head_k,
+                   0.25 + 0.15 * rng.random(), 0.06 * rng.normal(), ear_sides, n, ridges, rd, float(s), attrs)
+    # Nov 13 (the review: an egg with blades, a crown or bud): a plume of many fine curved flame strands, all swept back
+    # along the tail and curling up at their ends, rooted in the fur over the tail's last third (`tail_frame` = its
+    # stations from the plume's start to the tip: centre, tangent, up, radius), longer toward the tip
+    m = len(tail_frame)
+    for k in range(40):
+        fr = (k + 0.5) / 40
+        si = min(m - 1, int(fr * m))
+        c, T, up, rad = (v3(x) if i < 3 else x for i, x in enumerate(tail_frame[si]))
+        T, up = _norm(T), _norm(up)
+        side = _norm(np.cross(T, up))
+        roll = rng.uniform(-2.0, 2.0) * (0.55 + 0.45 * fr)          # all round near the tip, mostly on top further in
+        fan = _norm(up * math.cos(roll) + side * math.sin(roll))
+        base = c + fan * rad * 0.6
+        d = _norm(T + fan * 0.2 - up * 0.12)          # swept back along the tail, curling up only at the ends
+        ln = (0.09 + 0.15 * fr) * (0.8 + 0.4 * rng.random())
+        wd = 0.0085 + 0.004 * rng.random()
+        tongue(bm, base, d, _norm(np.cross(d, fan)), up, ln, wd, wd * 0.55, 0.16 + 0.14 * rng.random(), 0.05 * rng.normal(),
+               tail_sides, n, ridges, rd, 2.0, attrs)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)     # closed tubes: outward everywhere
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)

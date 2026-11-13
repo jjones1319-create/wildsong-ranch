@@ -16,6 +16,7 @@ import numpy as np
 
 # ----------------------------------------------------------------------------- small helpers
 PART_EAR, PART_PETAL, PART_CORE, PART_SEPAL, PART_LEAF, PART_TAIL_LEAF, PART_HEART = 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0
+PART_STAMEN, PART_PISTIL = 8.0, 9.0
 
 
 def v3(a) -> np.ndarray:
@@ -223,7 +224,11 @@ def shell(P: np.ndarray, T: np.ndarray, rim: int = 4, relief_in: np.ndarray | No
 # and side views both show it; the back view shows the green-rooted outer face).
 EAR_ROOT = (v3((0.19, -0.405, 1.232)), v3((0.226, -0.372, 1.108)), v3((0.228, -0.332, 0.982)))   # top, mid (control), bottom
 EAR_MID = v3((0.215, -0.37, 1.108))          # the fan's centre: the outline is polar round it
-EAR_YAW = math.radians(-18.0)                 # round 3: the whole fan turned 18° toward the front about the vertical
+EAR_YAW = math.radians(-15.0)                 # round 4: 15° toward the front (round 3's 18° showed the near ear edge-on from the side)
+# round 4: the petal bends back round the vertical as it leaves the head (BEND degrees at the rim), so its root faces the
+# front and its outer half the side: broad in the front, three-quarter and side views alike (2-turnaround side view)
+EAR_BEND = 22.0
+EAR_SCALE = 1.1                              # round 4: a touch bigger, so the bent petal still spans the front view's width
 _c, _s = math.cos(EAR_YAW), math.sin(EAR_YAW)
 _EAR_OUT0 = unit((0.906, 0.423, -0.05))
 EAR_OUT = unit((_EAR_OUT0[0] * _c - _EAR_OUT0[1] * _s, _EAR_OUT0[0] * _s + _EAR_OUT0[1] * _c, _EAR_OUT0[2]))   # out (and a touch back)
@@ -241,13 +246,14 @@ TIP_V = (72.0 + 52.0) / 149.0                 # v of the point (θ = −52°)
 # how far the rim leaves the fan's plane along EAR_N (+ forward and out): the petal curves like a C seen from above (its
 # inner face toward the front by the root, the top and the broad far lobe curling back), and the gentle point curls
 # forward, so it reads big in the front, side and three-quarter views
-EAR_RIM_DEPTH = [(0.0, -0.06), (0.16, -0.13), (0.36, -0.18), (0.53, -0.2), (0.66, -0.11), (0.76, -0.0), (0.832, 0.06),
-                 (0.92, 0.03), (1.0, -0.02)]
+# round 5: the point no longer curls forward (the review wants its tip twisted back into one soft point)
+EAR_RIM_DEPTH = [(0.0, -0.06), (0.16, -0.13), (0.36, -0.18), (0.53, -0.2), (0.66, -0.11), (0.76, -0.03), (0.832, -0.02),
+                 (0.92, -0.02), (1.0, -0.02)]
 
 
 def ear_reach(th: np.ndarray) -> np.ndarray:
     deg, r = zip(*EAR_OUTLINE[::-1])
-    return np.interp(np.degrees(th), deg, r)
+    return np.interp(np.degrees(th), deg, r) * EAR_SCALE
 
 
 def _bez(a, b, c, t):
@@ -259,7 +265,8 @@ def ear_rim(V: np.ndarray) -> np.ndarray:
     th = TH_TOP + (TH_BOT - TH_TOP) * V
     # a soft wave along the outline (a petal's edge is never a clean curve), quiet by the root and at the point
     quiet = smooth(0.04, 0.2, V) * smooth(0.97, 0.8, V) * (1.0 - np.exp(-((V - TIP_V) / 0.045) ** 2))
-    R = ear_reach(th) * (1.0 + 0.028 * np.sin(2 * np.pi * 6.5 * V + 0.4) * quiet)
+    # round 5: two or three big, uneven lobes (round 4's six even scallops read as a cut-out)
+    R = ear_reach(th) * (1.0 + (0.06 * np.sin(2 * np.pi * 2.4 * V + 0.4) + 0.012 * np.sin(2 * np.pi * 4.7 * V + 2.1)) * quiet)
     return EAR_MID + R[..., None] * (np.cos(th)[..., None] * EAR_OUT + np.sin(th)[..., None] * EAR_W)
 
 
@@ -273,16 +280,31 @@ def ear_mid(U: np.ndarray, V: np.ndarray, s: int = 1) -> np.ndarray:
     # very rim rolling back a little, and three soft folds toward the edge
     # round 2 (review): a deeper cup, the top edge rolling back, a rippled edge, and the point curling outward (away from
     # the inner face) at its very end, as a magnolia petal's does (1-hero.png, 4-details.png panel 5)
-    cup = -0.07 * np.sin(np.pi * Uc ** 0.85)
+    cup = -0.11 * np.sin(np.pi * Uc ** 0.85)        # round 5: deeper (the front face reads concave)
     a, b = zip(*EAR_RIM_DEPTH)
-    tip = np.interp(V, a, b) * Uc ** 1.5
-    roll = -0.014 * smooth(0.84, 1.0, Uc) - 0.06 * smooth(0.74, 1.0, Uc) ** 1.5 * smooth(0.45, 0.08, V)
+    # round 4: the far lobe's own curl back is now the bend's (below); the rim-depth table keeps the point's forward curl
+    tipv = np.interp(V, a, b)
+    tip = np.where(tipv < 0, 0.45 * tipv, tipv) * Uc ** 1.5
+    # round 5: the upper outer edge rolls forward, toward the face (it rolled back)
+    # round 6: wide, gentle gradients only (narrow ones folded the low mesh into straight creases)
+    roll = 0.06 * smooth(0.4, 1.0, Uc) ** 2 * smooth(0.6, 0.0, V)
     win = smooth(0.0, 0.15, V) * smooth(1.0, 0.85, V)
-    fold = (0.028 * Uc ** 1.6 * np.sin(2 * np.pi * 3.2 * V + 0.9) + 0.011 * Uc ** 2 * np.sin(2 * np.pi * 6.6 * V + 2.1)) * win
-    ripple = 0.017 * smooth(0.72, 1.0, Uc) * np.sin(2 * np.pi * 8.5 * V + 0.3) * win * (1.0 - np.exp(-((V - TIP_V) / 0.05) ** 2))
-    curl = -0.055 * smooth(0.82, 1.0, Uc) * np.exp(-((V - TIP_V) / 0.04) ** 2)
-    depth = cup + tip + roll + fold + ripple + curl
+    # round 4: a cup across the petal too (its top and bottom edges come forward of its middle: a bowl, not a fan), and
+    # only two broad, soft undulations (round 3's six radial pleats shaded as sun-ray streaks)
+    vcup = 0.075 * Uc ** 1.2 * (2.0 * np.clip(V, 0, 1) - 1.0) ** 2
+    fold = 0.012 * Uc ** 1.6 * np.sin(2 * np.pi * 2.1 * V + 0.9) * win
+    # round 6: two or three soft waves along the outer edge (out of the petal's plane), quiet at the point
+    ripple = 0.022 * smooth(0.55, 1.0, Uc) ** 1.5 * np.sin(2 * np.pi * 2.6 * V + 0.6) * win * (1.0 - np.exp(-((V - TIP_V) / 0.07) ** 2))
+    curl = -0.07 * smooth(0.55, 1.0, Uc) ** 1.5 * np.exp(-((V - TIP_V) / 0.08) ** 2)      # rounds 5-6: the point twists back, softly
+    depth = cup + tip + roll + vcup + fold + ripple + curl
     P = root + Uc[..., None] * (rim - root) + depth[..., None] * EAR_N
+    # round 4: the bend back round the vertical through each root point, growing toward the rim
+    # round 5: the lower lobe under the cheek bends back further, so in profile it shows its face, not a flat tab
+    # round 6: the lower lobe's extra bend spread wide (round 5's narrow one folded it into a flat panel with a crease)
+    beta = math.radians(EAR_BEND) * smooth(0.08, 1.0, Uc) ** 1.25 + math.radians(9.0) * smooth(0.5, 1.0, V) * smooth(0.0, 0.7, Uc)
+    rel = P - root
+    cb, sb = np.cos(beta), np.sin(beta)
+    P = root + np.stack([rel[..., 0] * cb - rel[..., 1] * sb, rel[..., 0] * sb + rel[..., 1] * cb, rel[..., 2]], axis=-1)
     if s < 0:
         P = P * v3((-1.0, 1.0, 1.0))
     return P
@@ -292,36 +314,112 @@ def ear_thickness(U: np.ndarray, V: np.ndarray) -> np.ndarray:
     return 0.0065 + 0.032 * (1.0 - np.clip(U, 0, 1)) ** 1.7
 
 
+_N0 = 12
+_VEINS = []
+_rng = np.random.default_rng(20261112)
+for _k in range(_N0):
+    _r = _rng.uniform(size=12)
+    _VEINS.append({'v0': (_k + 0.5 + 0.35 * (_r[0] - 0.5)) / _N0, 'ph': _r[1] * 2 * math.pi, 'cv': 0.6 + 0.8 * _r[2],
+                   'uf1': 0.2 + 0.2 * _r[3], 'a1': 0.28 + 0.44 * _r[4],
+                   'uf2': (0.18 + 0.14 * _r[5], 0.18 + 0.14 * _r[6]), 'a2': (0.3 + 0.4 * _r[7], 0.3 + 0.4 * _r[8]),
+                   'uf3': 0.72 + 0.14 * _r[9]})
+
+
+def _hash2(i, j, seed):
+    h = np.sin(i * 127.1 + j * 311.7 + seed * 74.7) * 43758.5453
+    return h - np.floor(h)
+
+
+def ear_net(U: np.ndarray, V: np.ndarray, cell: float = 0.012) -> np.ndarray:
+    """0..1: the fine net of veinlets between the veins (a cellular pattern's cell walls, about 1.2 cm cells), laid out
+    in the fan's own plane (radius × angle), so the cells keep their size from the root to the rim."""
+    th = TH_TOP + (TH_BOT - TH_TOP) * np.clip(V, 0, 1)
+    r = np.clip(U, 0, 1) * 0.62 * EAR_SCALE
+    x, y = r * np.cos(th) / cell, r * np.sin(th) / cell
+    ix, iy = np.floor(x), np.floor(y)
+    f1 = np.full(x.shape, 9.0)
+    f2 = np.full(x.shape, 9.0)
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            ci, cj = ix + di, iy + dj
+            px = ci + 0.15 + 0.7 * _hash2(ci, cj, 1.0)
+            py = cj + 0.15 + 0.7 * _hash2(ci, cj, 2.0)
+            d = np.hypot(x - px, y - py)
+            f2 = np.where(d < f1, f1, np.minimum(f2, d))
+            f1 = np.minimum(f1, d)
+    return np.exp(-((f2 - f1) / 0.09) ** 2)
+
+
 def ear_veins(U: np.ndarray, V: np.ndarray) -> np.ndarray:
-    """0..1: the petal's veins (round 3): 14 main veins fanning from the root, each splitting in a Y at about 40% of the
-    reach and each branch splitting again at about 70%, so they branch toward the rim like a magnolia petal's (round 2's
-    parallel in-between lines read as even sun-ray streaks); gently meandering, fading at the root and short of the
-    cream rim. Widths in the high grid's columns (480 across): main about 3, branches about 2."""
+    """0..1: the petal's veins (round 4): 12 main veins from the root, each curving gently toward its side of the petal and
+    forking unevenly at its own point (one branch carries on, the other leaves at an angle), each branch forking again,
+    and fine veinlets at the end, over a faint net of veinlets between them (ear_net), like a real petal's (rounds 2-3's
+    evenly spaced straight forks read as a sun-ray fan). Widths in metres; fading at the root and short of the rim."""
     U = np.clip(U, 0, 1)
-    n0 = 14.0
-    vv = V + 0.008 * np.sin(np.pi * U) * np.sin(2 * np.pi * 2.0 * V + 0.7)
-    q = vv * n0
-    kk = np.floor(q)
-    w = q - kk - 0.5 + 0.05 * np.sin(kk * 1.7 + U * 3.0)            # position inside this vein's period, its centre 0
-    s1 = smooth(0.36, 1.0, U) ** 0.8
-    s2 = smooth(0.66, 1.0, U) ** 0.8
-    d1 = 0.25 * s1
-    d2 = 0.125 * s2
-    main = np.exp(-(w / 0.05) ** 2) * (1.0 - 0.55 * s1)
-    br = np.maximum(np.exp(-((w - d1) / 0.04) ** 2), np.exp(-((w + d1) / 0.04) ** 2)) * smooth(0.34, 0.44, U) * 0.9
-    sub = np.zeros_like(w)
-    for sa in (-1.0, 1.0):
-        for sb in (-1.0, 1.0):
-            sub = np.maximum(sub, np.exp(-((w - sa * d1 - sb * d2) / 0.032) ** 2))
-    sub = sub * smooth(0.64, 0.74, U) * 0.7
-    return np.clip(np.maximum.reduce([main, br, sub]) * smooth(0.05, 0.18, U) * smooth(0.985, 0.93, U), 0, 1)
+    V = np.clip(V, 0, 1)
+    arc = (TH_TOP - TH_BOT) * np.maximum(U, 0.03) * 0.62 * EAR_SCALE        # metres per unit of v at this u (about)
+    out = np.zeros(np.broadcast(U, V).shape)
+    per = 1.0 / _N0
+
+    def line(c, w, strength, gate):
+        nonlocal out
+        out = np.maximum(out, strength * gate * np.exp(-((V - c) * arc / w) ** 2))
+
+    for vd in _VEINS:
+        c0 = vd['v0'] + 0.05 * vd['cv'] * (vd['v0'] - 0.5) * U ** 2 + 0.004 * np.sin(2 * np.pi * 1.1 * U + vd['ph'])
+        uf1 = vd['uf1']
+        line(c0, 0.0026 * (1.0 - 0.3 * U), 1.0, smooth(uf1 + 0.02, uf1, U))
+        d1 = 0.5 * per * smooth(uf1, uf1 + 0.32, U)
+        for j, cb in enumerate((c0 - vd['a1'] * d1, c0 + (1.0 - vd['a1']) * d1)):
+            uf2 = uf1 + vd['uf2'][j]
+            line(cb, 0.0021, 0.88, smooth(uf1 - 0.02, uf1, U) * smooth(uf2 + 0.02, uf2, U))
+            d2 = 0.25 * per * smooth(uf2, uf2 + 0.26, U)
+            a2 = vd['a2'][j]
+            for cs in (cb - a2 * d2, cb + (1.0 - a2) * d2):
+                uf3 = max(vd['uf3'], uf2 + 0.1)
+                line(cs, 0.0016, 0.74, smooth(uf2 - 0.02, uf2, U) * smooth(uf3 + 0.02, uf3, U))
+                d3 = 0.11 * per * smooth(uf3, 1.0, U)
+                for cl in (cs - d3, cs + d3):
+                    line(cl, 0.0011, 0.5, smooth(uf3 - 0.02, uf3, U))
+    net = ear_net(U, V) * smooth(0.18, 0.4, U) * 0.3
+    return np.clip(np.maximum(out, net) * smooth(0.0, 0.06, U) * smooth(0.985, 0.93, U), 0, 1)     # round 5: to the root
+
+
+def ear_fade_t(U: np.ndarray, V: np.ndarray, ve: np.ndarray, inner) -> np.ndarray:
+    """The green root's fade (round 4): t < 0 green, 0..1 the fade through a pale petal base, > 1 pink. A short collar
+    on the inner face (the fur ruff covers the root), about a quarter of the way up the outer face; a smooth, wide fade
+    with no corner (a soft maximum of the distance from the root and the share of the reach), feathered a little along
+    the veins. `inner` is a bool or a bool array (the inner face)."""
+    U = np.clip(U, 0, 1)
+    um = U * ear_reach(TH_TOP + (TH_BOT - TH_TOP) * np.clip(V, 0, 1))
+    # round 5: a short fuzzy tuft of green (round 4's wedge reached far into the petal), a little longer on the back
+    # round 6: on the back, a broad feathered gradient over the inner quarter to third (round 5's read as a capsule edge)
+    G = np.where(inner, 0.0, 0.06)
+    capu = np.where(inner, 0.02, 0.14)
+    sg = np.where(inner, 0.04, 0.11)
+    su = np.where(inner, 0.06, 0.13)
+    t = np.logaddexp((um - G) / sg * 3.0, (U - capu) / su * 3.0) / 3.0
+    return t - np.where(inner, 0.16, 0.4) * ve * smooth(-0.2, 0.8, t)
+
+
+def ear_map(nu: int = 768, nv: int = 2304) -> np.ndarray:
+    """The ears' per-pixel map for the recipe's prop_material (round 4): nu rows of u (root → rim) by nv columns of v
+    (top edge → bottom edge), float32 RGBA: R the veins, G the inner face's fade t, B the outer face's, A 1. Sampled at
+    each pixel's (pv, pu), so the veins stay crisp lines at the atlas's texel size and the fade has no vertex steps."""
+    U, V = np.meshgrid((np.arange(nu) + 0.5) / nu, (np.arange(nv) + 0.5) / nv, indexing='ij')
+    ve = ear_veins(U, V)
+    out = np.ones((nu, nv, 4), np.float32)
+    out[..., 0] = ve
+    out[..., 1] = ear_fade_t(U, V, ve, True)
+    out[..., 2] = ear_fade_t(U, V, ve, False)
+    return out
 
 
 def ear_arrays(s: int, high: bool, quick: bool):
     """(verts, quads, attrs) of one ear."""
     # the game mesh 26 x 52: at 20 x 30 the big petal's outline showed straight segments in the game (build 1), and the
     # narrower point needs columns; the high source 140 x 480, so each vein is a crisp line one or two columns wide
-    nu, nv = ((140, 480) if not quick else (60, 160)) if high else (26, 52)
+    nu, nv = ((140, 480) if not quick else (60, 160)) if high else (30, 58)        # round 6: smoother curvature in the game
     U, V = grid(nu, nv)
     # more rows near the root (the fur and the colour change) and the rim (the roll): an eased u
     Ue = 0.5 - 0.5 * np.cos(np.pi * U) * 0.35 + (U - 0.5) * 0.65
@@ -329,11 +427,12 @@ def ear_arrays(s: int, high: bool, quick: bool):
     T = ear_thickness(Ue, V)
     rin = rout = None
     if high:
+        # round 4: raised veins and veinlets only (round 3's diagonal ripple added to the streaks)
         vein = ear_veins(Ue, V)
-        rin = 0.0008 * vein + 0.0002 * np.sin(Ue * 160.0 + V * 40.0) * smooth(0.2, 0.5, Ue)
+        rin = 0.0008 * vein
         rout = 0.0006 * vein
     th = TH_TOP + (TH_BOT - TH_TOP) * V[0]
-    verts, quads, attrs = shell(P, T, rim=5 if high else 4, relief_in=rin, relief_out=rout, flip=s < 0, uv_mode='fan', fan_angles=th)
+    verts, quads, attrs = shell(P, T, rim=5 if high else 3, relief_in=rin, relief_out=rout, flip=s < 0, uv_mode='fan', fan_angles=th)
     attrs['pu'] = np.interp(attrs['pu'], U[:, 0], Ue[:, 0])
     attrs['vein'] = ear_veins(attrs['pu'], attrs['pv'])
     return verts, quads, attrs
@@ -350,11 +449,12 @@ def ear_bone(s: int = 1) -> tuple[np.ndarray, np.ndarray, float]:
 
 
 # ----------------------------------------------------------------------------- the bud (on the trunk's tip)
-BUD_PETALS = 5
-BUD_ROLL = 36.0            # degrees: one petal faces forward and down, toward the front camera (plans.quadruped.bud_petals)
+BUD_PETALS = 6            # round 6: six layered petals (three read too simple; 4-details.png panel 4)
+BUD_ROLL = 30.0            # degrees: one petal faces forward and down, toward the front camera (plans.quadruped.bud_petals)
+BUD_SEPALS = 5
 BUD_H = 0.175              # the bud's length along its axis, base to point (2-turnaround: about 0.2 m with the sepals)
 BUD_R0, BUD_RMAX = 0.034, 0.047     # profile: radius at the base and the swell's amplitude (0.158 m wide)
-BUD_SPAN = math.radians(140.0)      # each petal's width round the axis (overlapping shingles; round 2: broader petals)
+BUD_SPAN = math.radians(104.0)      # each petal's width round the axis (round 6: six petals, each overlapping the next)
 
 
 def bud_frame(tip, prev, n: int = BUD_PETALS, roll: float = BUD_ROLL):
@@ -389,17 +489,17 @@ def petal_arrays(tip, prev, i: int, high: bool, quick: bool):
     """Outer petal i (on bone bud.(i+1)): a curved shell of the egg-shaped bud, pointed at the tip, overlapping its
     neighbours (each one's leading edge a little outside, its trailing edge tucked under the next)."""
     d, e1, e2, phis = bud_frame(tip, prev)
-    nu, nv = ((44, 30) if not quick else (24, 16)) if high else (16, 12)      # round 3: the game mesh denser (stair-stepped edges)
+    nu, nv = ((44, 26) if not quick else (24, 14)) if high else (12, 9)       # round 6: six petals
     U, V = grid(nu, nv)
     # round 2: a soft point, not a spike (the open flower read as a thistle): the width holds longer, then rounds off
-    span = BUD_SPAN * (1.0 - 0.3 * smooth(0.5, 1.0, U) ** 1.4)      # round 3b: more overlap at the point (dark slits)
+    span = BUD_SPAN * (1.0 - 0.42 * smooth(0.5, 1.0, U) ** 1.4)     # round 5: a pointed tip on each petal
     # each petal swells across on its own (a cupped petal, not a slice of a smooth egg), its tip flares out a touch, and
     # alternate petals end a little lower so the points stagger
     cupx = 0.008 * np.sin(np.pi * V) * np.sin(np.pi * np.clip(U, 0, 1) ** 0.8)
     flare = 0.004 * smooth(0.75, 1.0, U)
     H = BUD_H * (1.0 - 0.035 * (i % 2))
     # round 3b: the shingle's step fades toward the point, so the tips lie on one another (dark slits between them)
-    shingle = 0.13 * (1.0 - 0.75 * smooth(0.55, 1.0, U))
+    shingle = 0.17 * (1.0 - 0.7 * smooth(0.55, 1.0, U))          # round 5: the overlaps read clearly
     P = _round_piece(v3(tip), d, e1, e2, phis[i], U, V, H, bud_profile(U) + cupx + flare, span, 0.0)
     radial_k = 1.0 + shingle * (V - 0.5)
     P = v3(tip) + d * (H * U)[..., None] + (P - v3(tip) - d * (H * U)[..., None]) * radial_k[..., None]
@@ -438,7 +538,9 @@ def core_arrays(tip, prev, k: int, high: bool, quick: bool):
     prof = 0.013 * (1 - U) + 0.023 * np.sin(np.pi * U ** 0.7) + 0.002
     span = math.radians(165) * (1 - 0.6 * smooth(0.55, 1.0, U) ** 1.4)
     # round 3b: up into the point, so any gap between the closed petals' tips shows this pale pink, not the dark inside
-    P = _round_piece(v3(tip), d, e1, e2, phi, U, V, 0.155, prof, span, 0.1, h0=0.004)
+    # round 4: lower again (0.155 in round 3b, to fill the hit's slits, which the calmer flick no longer opens): a small
+    # light centre in the open flower, not a grey-mauve cone
+    P = _round_piece(v3(tip), d, e1, e2, phi, U, V, 0.12, prof, span, 0.1, h0=0.004)
     T = np.full(U.shape, 0.0035)
     return shell(P, T, rim=2, flip=_faces_axis(P, d, tip))
 
@@ -461,19 +563,77 @@ def heart_arrays(tip, prev, high: bool, quick: bool):
     return shell(P, T, rim=2, flip=flip, uv_mode='plane')
 
 
+def pistil_arrays(tip, prev, high: bool, quick: bool):
+    """Round 5: the open flower's pistil: a short pale-green column with a round top at the centre (rigid on the trunk's
+    last bone; the stamens ring it). Replaces round 4's cone of inner petals, which read as a grey dome."""
+    d, e1, e2, _phis = bud_frame(tip, prev)
+    nu, nv = ((16, 24) if not quick else (8, 14)) if high else (5, 8)
+    U, V = grid(nu, nv)
+    a = 2 * np.pi * V * nv / (nv + 1)
+    radial = np.cos(a)[..., None] * e1 + np.sin(a)[..., None] * e2
+    r = 0.0075 * np.sqrt(np.clip(1.0 - U ** 6, 0, 1)) + 0.0045 * np.sin(np.pi * np.clip(U, 0, 1) ** 1.5) + 0.0005
+    P = v3(tip) + d * (0.006 + 0.03 * U)[..., None] + r[..., None] * radial
+    T = np.full(U.shape, 0.003)
+    Pu = np.gradient(P, axis=0)
+    Pv = np.gradient(P, axis=1)
+    q = P[nu // 2, nv // 4] - v3(tip)
+    flip = float(np.cross(Pu[nu // 2, nv // 4], Pv[nu // 2, nv // 4]) @ (q - d * (q @ d))) < 0
+    return shell(P, T, rim=2, flip=flip, uv_mode='plane')
+
+
+STAMENS = 14
+
+
+def stamen_arrays(tip, prev, k: int, high: bool, quick: bool):
+    """Round 5: stamen k of the ring round the pistil: a thin cream filament rising and leaning out, ending in a
+    yellow anther (the strip widens and thickens at its end)."""
+    d, e1, e2, _phis = bud_frame(tip, prev)
+    nu, nv = ((10, 3) if not quick else (6, 2)) if high else (4, 1)
+    U, V = grid(nu, nv)
+    ang = 2 * math.pi * (k + 0.37 * (k % 2)) / STAMENS
+    radial = math.cos(ang) * e1 + math.sin(ang) * e2
+    side = np.cross(d, radial)
+    L = 0.026 + 0.006 * ((k * 7) % 3) / 2.0
+    lean = math.radians(24.0 + 8.0 * (k % 3))
+    along = math.cos(lean) * d + math.sin(lean) * radial
+    w = 0.0024 + 0.0034 * smooth(0.55, 0.9, U)
+    base = v3(tip) + d * 0.007 + radial * 0.012
+    P = base + along * (L * U)[..., None] + side * (w * (V - 0.5))[..., None]
+    T = 0.0022 + 0.0026 * smooth(0.55, 0.9, U)
+    Pu = np.gradient(P, axis=0)
+    Pv = np.gradient(P, axis=1)
+    flip = float(np.cross(Pu[nu // 2, 0], Pv[nu // 2, 0]) @ radial) < 0
+    return shell(P, np.broadcast_to(T, U.shape).copy(), rim=2, flip=flip)
+
+
+def sepal_angle(k: int) -> float:
+    """Round 5: sepal k's angle round the bud's axis: five, evenly spaced, independent of the three petals."""
+    return math.radians(BUD_ROLL) + 2 * math.pi * (k + 0.5) / BUD_SEPALS
+
+
+def sepal_bones(k: int) -> list[tuple[int, float]]:
+    """(petal index, weight) for sepal k: shared between the two petals either side of it by angle, so it opens with them
+    and stays under the open flower."""
+    step = 2 * math.pi / BUD_PETALS
+    a = (sepal_angle(k) - math.radians(BUD_ROLL)) % (2 * math.pi)
+    i = int(a // step)
+    t = (a - i * step) / step
+    return [(i % BUD_PETALS, 1.0 - t), ((i + 1) % BUD_PETALS, t)]
+
+
 def sepal_arrays(tip, prev, k: int, high: bool, quick: bool):
     """Sepal k: a pointed green leaf cupping the bud's base and the trunk's end, between petals k and k+1 (skinned half
     and half to their bones, so it opens about 44° with them and stays under the open flower, a calyx)."""
     d, e1, e2, phis = bud_frame(tip, prev)
-    nu, nv = ((26, 16) if not quick else (14, 10)) if high else (8, 6)
+    nu, nv = ((26, 16) if not quick else (14, 10)) if high else (7, 5)
     U, V = grid(nu, nv)
-    phi = phis[k] + math.pi / BUD_PETALS
-    H = 0.104
-    h0 = -0.03
+    phi = sepal_angle(k)
+    H = 0.14                  # round 6: long pointed sepals clasping the bud about 40% up, from below its base
+    h0 = -0.045
     # radius over the bud's own profile at that height, a little outside it, leaning out at the tip
     hb = np.clip((h0 + H * U) / BUD_H, 0, 1)
-    prof = np.maximum(bud_profile(hb), 0.045) + 0.0075 + 0.012 * smooth(0.55, 1.0, U)
-    span = math.radians(68) * (1.0 - smooth(0.12, 1.0, U) ** 0.9 * 0.94)
+    prof = np.maximum(bud_profile(hb), 0.042) + 0.012 + 0.006 * smooth(0.6, 1.0, U)     # just outside the shingled petals
+    span = math.radians(66) * (1.0 - smooth(0.15, 1.0, U) ** 1.0 * 0.97)
     P = _round_piece(v3(tip), d, e1, e2, phi, U, V, H, prof, span, 0.0, h0=h0)
     T = 0.0042 * (1 - 0.5 * U) + 0.0013
     rin = None
@@ -504,7 +664,7 @@ def leaf_mid(U: np.ndarray, V: np.ndarray, base, along, face, length: float, wid
 
 def leaf_arrays(base, along, face, length: float, width: float, high: bool, quick: bool, fold=0.3, curl=0.18, twist=0.0,
                 thick: float = 0.0028):
-    nu, nv = ((40, 16) if not quick else (20, 10)) if high else (10, 6)
+    nu, nv = ((40, 16) if not quick else (20, 10)) if high else (9, 5)
     U, V = grid(nu, nv)
     P = leaf_mid(U, V, base, along, face, length, width, fold, curl, twist)
     T = thick * (1 - 0.6 * U) + 0.0012

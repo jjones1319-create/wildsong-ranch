@@ -132,8 +132,10 @@ def _body_radius(p: np.ndarray, n: np.ndarray, rng) -> np.ndarray:
     up = smooth(0.0, 0.7, n[:, 2])
     down = smooth(-0.15, -0.75, n[:, 2])
     chest = smooth(-0.3, -0.5, p[:, 1]) * smooth(0.75, 0.55, p[:, 2])
-    R = 0.1 + 0.014 * up - 0.03 * down - 0.014 * chest
-    return R * rng.uniform(0.88, 1.12, len(p))
+    R = 0.1 + 0.02 * up - 0.03 * down - 0.014 * chest
+    # Nov 12 (review: same-size lumps): patches of big domes and smaller clumps between them (about 25 cm patches)
+    big = 1.0 + 0.34 * np.sin(p @ v3((9.1, 4.3, 7.7)) + 1.3) * np.sin(p @ v3((-5.2, 10.4, 3.9)) + 0.4)
+    return R * big * rng.uniform(0.9, 1.1, len(p))
 
 
 def _forehead_y(x: float, z: float) -> float:
@@ -176,14 +178,16 @@ def layout() -> dict:
         if s is not None:
             kept.append((s[0], nn, s[1], REGIONS['fringe']))
     # the collar: a ring of puffs under the chin and up the sides of the face, behind the ears
-    for t in np.linspace(-1.0, 1.0, 7):
+    # Nov 13 (review: the ruff stacked in neat rows like dinner rolls): six puffs of mixed sizes, jittered, a loose bib
+    for t in np.linspace(-1.0, 1.0, 6):
+        t = float(np.clip(t + rng.normal(0, 0.06), -1.0, 1.0))
         a = t * math.radians(66)
         x = 0.24 * math.sin(a)
-        y = -0.455 + 0.12 * (1 - math.cos(a))
-        z = 0.5 + 0.04 * (1 - math.cos(a))
-        c = v3((x, y, z))
+        y = -0.485 + 0.13 * (1 - math.cos(a))
+        z = 0.525 + 0.035 * (1 - math.cos(a))         # Nov 12: 3 cm forward, 2.5 cm up: the ruff hugs the jaw (2-turnaround front)
+        c = v3((x, y + rng.normal(0, 0.008), z + rng.normal(0, 0.014)))
         nn = norm(v3((math.sin(a), -math.cos(a) * 0.9, 0.25))[None])[0]
-        s = _settle(c, nn, 0.072, (0.0, 0.006, -0.01))
+        s = _settle(c, nn, float(rng.uniform(0.062, 0.086)), (0.0, 0.006, -0.01))
         if s is not None:
             kept.append((s[0], nn, s[1], REGIONS['collar']))
     for env in (FRONT, REAR):
@@ -214,7 +218,9 @@ def _basis(n: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _puffs(Cc: np.ndarray, Nc: np.ndarray, Rc: np.ndarray, rng) -> dict:
-    """Every clump: a core, a crown of 7–9 sub-puffs reaching about R, and 3–5 small bumps on each sub-puff."""
+    """Every clump: a core, a dome of sub-puffs reaching about R, and 2–4 small bumps on each sub-puff. Nov 12 (review:
+    medium lumps all the same size): the sub-puffs keep about one size everywhere (3.4–4.9 cm) and their number follows
+    the clump's area, so a big clump reads as a large dome built of small puffs and a small one as a few."""
     pc, pr, lv, cl = [], [], [], []
 
     def add(c, r, level, k):
@@ -226,21 +232,40 @@ def _puffs(Cc: np.ndarray, Nc: np.ndarray, Rc: np.ndarray, rng) -> dict:
     for k, (c, n, R) in enumerate(zip(Cc, Nc, Rc)):
         add(c - n * 0.1 * R, 0.8 * R, 0, k)
         t1, t2 = _basis(n)
-        ks = 12 if R > 0.085 else 9
+        q = R / 0.1
+        ks = int(np.clip(round(11 * q * q), 7, 24))
         az0 = rng.uniform(0, 2 * math.pi)
         dirs = [norm((n + rng.normal(0, 0.12, 3))[None])[0]]
-        for i in range(ks - 1):
-            az = az0 + 2 * math.pi * i / (ks - 1) + rng.normal(0, 0.18)
-            pol = math.radians(rng.uniform(30, 66) if i % 2 else rng.uniform(42, 72))
+        for i in range(1, ks):
+            # a Fibonacci cap out to about 75 degrees: evenly spread however many there are
+            az = az0 + i * math.pi * (3.0 - math.sqrt(5.0)) + rng.normal(0, 0.15)
+            pol = math.radians(75.0) * math.sqrt(i / (ks - 1)) + rng.normal(0, 0.05)
             d = n * math.cos(pol) + (t1 * math.cos(az) + t2 * math.sin(az)) * math.sin(pol)
             dirs.append(d)
+        if R > 0.105:
+            # Nov 13 (review: a few big billows with small billows on their upper edges): a ring of small puffs on the
+            # upper rim of each big clump
+            up_t = v3((0.0, 0.0, 1.0)) - n * float(n[2])
+            if np.linalg.norm(up_t) > 0.2:
+                up_t = norm(up_t[None])[0]
+                side_t = np.cross(n, up_t)
+                for j in range(5):
+                    a = math.radians(-70 + 35 * j) + rng.normal(0, 0.12)
+                    tdir = up_t * math.cos(a) + side_t * math.sin(a)
+                    pol = math.radians(rng.uniform(58, 72))
+                    d = n * math.cos(pol) + tdir * math.sin(pol)
+                    r3 = float(rng.uniform(0.024, 0.032))
+                    add(c + d * (R * 1.0 - 0.5 * r3), r3, 1, k)
         for d in dirs:
             # lobes: each sub-puff stands proud of the clump's ball, so a clump reads as a cauliflower, not a cotton ball
-            rs = R * rng.uniform(0.36, 0.46)
-            dist = R * rng.uniform(0.97, 1.06) - 0.82 * rs
+            rs = 0.1 * rng.uniform(0.34, 0.44) * q ** 0.3
+            # Nov 13 (review: a flatter underside): on a clump facing down the sub-puffs sink in
+            dist = R * rng.uniform(0.97, 1.06) - (0.82 + 0.16 * smooth(-0.2, -0.7, float(n[2]))) * rs
             sc = c + d * dist
             add(sc, rs, 1, k)
-            m = int(rng.integers(4, 6)) if rs > 0.03 else 3
+            # Nov 12 (owner: the wool read slightly crumpled): fewer, rounder bumps, sunk deeper into their sub-puff, so a
+            # sub-puff reads as a soft ball with a few swells rather than a crumpled lump
+            m = int(rng.integers(3, 5)) if rs > 0.03 else 2
             out = norm((d * 0.7 + n * 0.3)[None])[0]
             u1, u2 = _basis(out)
             a0 = rng.uniform(0, 2 * math.pi)
@@ -248,9 +273,27 @@ def _puffs(Cc: np.ndarray, Nc: np.ndarray, Rc: np.ndarray, rng) -> dict:
                 a = a0 + 2 * math.pi * j / m + rng.normal(0, 0.3)
                 pol = math.radians(rng.uniform(25, 62))
                 d2 = out * math.cos(pol) + (u1 * math.cos(a) + u2 * math.sin(a)) * math.sin(pol)
-                r2 = rs * rng.uniform(0.4, 0.5)
-                add(sc + d2 * (rs - 0.55 * r2), r2, 2, k)
+                r2 = rs * rng.uniform(0.42, 0.52)
+                add(sc + d2 * (rs - 0.66 * r2), r2, 2, k)
     return {'pc': np.array(pc), 'pr': np.array(pr), 'plevel': np.array(lv, np.int32), 'pclump': np.array(cl, np.int32)}
+
+
+def rim_gold(p: np.ndarray, nr: np.ndarray, cc: np.ndarray, cn: np.ndarray, sep: np.ndarray) -> np.ndarray:
+    """Stormcrown's gold, 0..1 per point: sunlight breaking through at the outer rim and the up-facing top of each clump
+    (the variant picture). Nov 12 the glowing seams read as electric crackle; Nov 13 a mask from the bumpy surface's own
+    facing (plus each small puff's rim) read as scattered blotches, like lava or ring markings. Now it is purely
+    geometric: the direction from the clump's centre (`cc`) to the point against the clump's outward direction (`cn`),
+    a soft band where that turns side-on (the clump's outline seen from outside), on its upper side (all round for a
+    clump that faces up), where the surface faces out of the clump. Zero on the clump's face and in every seam (`sep`,
+    the distance to the next clump)."""
+    dv = p - cc
+    dv = dv / np.maximum(np.linalg.norm(dv, axis=1), 1e-6)[:, None]
+    fs = (dv * cn).sum(1)
+    band = smooth(0.0, 0.2, fs) * smooth(0.58, 0.32, fs)
+    up = smooth(-0.15, 0.55, dv[:, 2])
+    up = up + (1.0 - up) * smooth(0.55, 0.85, cn[:, 2])          # a clump that faces up glows all round its rim
+    out = smooth(0.05, 0.4, (nr * dv).sum(1))
+    return np.clip(band * up * out * smooth(0.012, 0.03, sep), 0.0, 1.0)
 
 
 # ----------------------------------------------------------------------------- the mesh joined into the body
@@ -378,11 +421,14 @@ def sample(p: np.ndarray, chunk: int = 400000) -> dict:
 # "three taller cloud puffs on its head like a crown" (PROMPTS.md, variant-stormcrown-nimbusheep.png): three towers of
 # stacked puffs rising from the cap, the middle one tallest; their feet sink into the cap's wool
 CROWN_TOWERS = [
-    # round 3 (review): three puffs rising out of the tuft on one wide base (no neck): the base is mostly sunk in the cap
-    [((0.0, -0.36 + HEAD_DY, 1.03), 0.125)],
-    [((0.0, -0.372 + HEAD_DY, 1.13), 0.088)],
-    [((0.118, -0.355 + HEAD_DY, 1.1), 0.075)],
-    [((-0.118, -0.355 + HEAD_DY, 1.1), 0.075)],
+    # round 3 (review): no neck; Nov 12 (review: one stacked topknot): a wide low base sunk in the cap, then three distinct
+    # taller towers of two puffs each, the middle one tallest and the two side ones leaning outward
+    # Nov 13 (review: three knobs on stalks read as antennae or bear ears): one rising cloud peak, its three puffs merged,
+    # the middle tallest and the sides leaning in, their bases buried in the head's wool
+    [((0.0, -0.36 + HEAD_DY, 0.99), 0.13)],
+    [((0.0, -0.37 + HEAD_DY, 1.09), 0.092), ((0.0, -0.372 + HEAD_DY, 1.17), 0.072)],
+    [((0.09, -0.355 + HEAD_DY, 1.06), 0.078), ((0.068, -0.36 + HEAD_DY, 1.12), 0.06)],
+    [((-0.09, -0.355 + HEAD_DY, 1.06), 0.078), ((-0.068, -0.36 + HEAD_DY, 1.12), 0.06)],
 ]
 _CROWN: dict = {}
 
@@ -394,7 +440,7 @@ def crown_layout() -> dict:
         for tower in CROWN_TOWERS:
             for c, r in tower:
                 c = v3(c)
-                n = norm(v3((c[0] * 3.0, -0.25, 0.9))[None])[0]
+                n = norm(v3((c[0] * 1.2, -0.25, 0.9))[None])[0]
                 cs.append(c)
                 ns.append(n)
                 rs.append(r)
@@ -424,8 +470,9 @@ def build_crown(name: str, high: bool, quick: bool = False) -> bpy.types.Object:
     return ob
 
 
-def crown_paint(ob: bpy.types.Object, wool_hex: str, crease_hex: str, rim_hex: str | None) -> np.ndarray:
-    """Linear RGB per vertex: the wool, its creases, and (Stormcrown) the gold glowing at the puffs' edges."""
+def crown_paint(ob: bpy.types.Object, wool_hex: str, crease_hex: str, rim_hex: str | None) -> tuple[np.ndarray, np.ndarray]:
+    """(linear RGB per vertex, the gold 0..1): the wool, its creases, and (Stormcrown) the gold glowing at the puffs'
+    rims, as on the body (Nov 12: `rim_gold`, and it glows)."""
     L = crown_layout()
     co, vn = S.mesh_arrays(ob)
     d = np.linalg.norm(co[:, None, :] - L['pc'][None], axis=2) - L['pr'][None]
@@ -436,15 +483,19 @@ def crown_paint(ob: bpy.types.Object, wool_hex: str, crease_hex: str, rim_hex: s
     crease = smooth(0.012, 0.002, d2 - d1)
     lin = lambda h: v3(C.lin_rgb(h))  # noqa: E731
     rgb = lin(wool_hex)[None] * (1 - 0.75 * crease[:, None]) + lin(crease_hex)[None] * (0.75 * crease[:, None])
+    gold = np.zeros(len(co))
     if rim_hex:
-        # gold along the edges of the small puffs (a fine glowing lace, as where sunlight breaks through), not rings
-        # round each tower's puffs (round 1 read as stacked beads)
-        # a thin rim tracing the edge of each sub-puff (round 3, as on the body)
+        # round 1 read as stacked beads (rings round each tower's puffs); round 3 a thin rim tracing each sub-puff; Nov 12
+        # the glowing rims on the towers' tops and outer edges, as on the body
         lv1 = np.nonzero(L['plevel'] == 1)[0]
         d1 = np.linalg.norm(co[:, None, :] - L['pc'][lv1][None], axis=2) - L['pr'][lv1][None]
         j = lv1[np.argmin(d1, axis=1)]
         own1 = (vn * norm(co - L['pc'][j])).sum(1)
-        rim = smooth(0.72, 0.38, own1) * smooth(-0.2, 0.05, own1) * (1 - 0.5 * crease)
-        g = np.clip(0.9 * rim, 0, 1)[:, None]
-        rgb = rgb * (1 - g) + lin(rim_hex)[None] * g
-    return rgb
+        # each tower's distance (its nearest puff): the seams between towers stay dark
+        nt = len(L['c'])
+        dt = np.stack([np.min(d[:, L['pclump'] == t], axis=1) for t in range(nt)], axis=1)
+        own = np.argmin(dt, axis=1)
+        dt.sort(axis=1)
+        gold = rim_gold(co, vn, L['c'][own], L['n'][own], dt[:, 1] - dt[:, 0])
+        rgb = rgb * (1 - gold[:, None]) + lin(rim_hex)[None] * gold[:, None]
+    return rgb, gold

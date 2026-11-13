@@ -14,6 +14,7 @@
  *                                         and clips (≤ 1.5 MB; committed). --lite-only rebuilds just this from the last ship
  *   <breed>_{base,normal,orm}.{ktx2,webp} the 2048² body atlas (KTX2 = ETC1S everywhere, toktx; WebP for comparison)
  *   <breed>_<short>_base.{ktx2,webp}      each variant's colour map on the same UVs (normal and ORM are shared)
+ *   <breed>_<short>_orm.{ktx2,webp}       a variant's own ORM map, when its recipe bakes one (VARIANT_ORM)
  *   <breed>.webp.glb                      the WebP comparison copy (local only)
  *   <breed>.json                          the sidecar, with `build` (the .glb's sha1, 10 hex: a cache-buster),
  *                                         `textures`, `budget` and `lite` added
@@ -123,7 +124,19 @@ function encodeLite(png: string, map: 'base' | 'normal' | 'orm', dir: string, st
   return { ktx2: '', webp, bytes: statSync(join(dir, webp)).size }
 }
 
-interface VariantEntry extends Record<string, unknown> { atlas?: string }
+interface VariantEntry extends Record<string, unknown> {
+  atlas?: string
+  /** Its own ORM map (VARIANT_ORM): the export's file name, or true once shipped. */
+  orm?: string | boolean
+  /** With its own ORM: its glow ({strength, tint}), or null when it doesn't glow. */
+  glow?: unknown
+}
+
+/** A variant's own ORM map (VARIANT_ORM): its padded file's short name and whether it keeps an alpha (the glow mask). */
+function variantOrmOf(entry: VariantEntry | undefined, short: string): { name: string; alpha: boolean } | null {
+  if (!entry?.orm) return null
+  return { name: `${short}_orm`, alpha: !!entry.glow }
+}
 interface Side extends Record<string, unknown> {
   look: string
   meshes?: Record<string, string>
@@ -250,7 +263,13 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   mkdirSync(padded, { recursive: true })
   const glow = !!side.glow
   // the coverage mask (build_ultra's coverage pass), when the bake made one: texels no ray reached are filled too
-  const pad = padAtlas(FFMPEG, src, padded, vids.map(shortOf), side.atlas ?? DEFAULT_LAYOUT, { ormAlpha: glow, coverage: join(src, 'atlas_coverage.png') })
+  const vorms = vids.flatMap((vid) => {
+    const o = variantOrmOf(side.variants[vid], shortOf(vid))
+    return o ? [{ short: shortOf(vid), alpha: o.alpha }] : []
+  })
+  for (const o of vorms) if (!existsSync(join(src, `atlas_${o.short}_orm.png`))) throw new Error(`no atlas_${o.short}_orm.png in ${src} (VARIANT_ORM): bake again`)
+  const pad = padAtlas(FFMPEG, src, padded, vids.map(shortOf), side.atlas ?? DEFAULT_LAYOUT,
+    { ormAlpha: glow, coverage: join(src, 'atlas_coverage.png'), ...(vorms.length ? { variantOrms: vorms } : {}) })
   console.log(`padded the atlas: ${JSON.stringify(pad)} texels${glow ? ' (the ORM keeps its alpha: the glow mask)' : ''}`)
   // two faces sharing texels bake into the same pixels (build_ultra stops above UV_OVERLAP_MAX; builds before the
   // check didn't): a warning here, fixed by building again from the build stage (the packer repairs overlaps)
@@ -269,8 +288,10 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   for (const vid of vids) {
     const short = shortOf(vid)
     textures[vid] = { base: encode(join(padded, `atlas_${short}.png`), 'base', `${breed}_${short}_base`) }
+    const vo = variantOrmOf(side.variants[vid], short)
+    if (vo) textures[vid]!.orm = encode(join(padded, `atlas_${vo.name}.png`), 'orm', `${breed}_${vo.name}`, vo.alpha)
     const { atlas: _atlas, ...entry } = side.variants[vid]!
-    side.variants[vid] = { ...entry, textures: vid, holder: `__variant_${vid}` }
+    side.variants[vid] = { ...entry, textures: vid, holder: `__variant_${vid}`, ...(vo ? { orm: true } : {}) }
   }
   const meshes = side.meshes ?? {}
   const hasColours = 'lo_cards' in meshes || 'lo_tuft' in meshes || !side.meshes
@@ -281,7 +302,7 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   for (const format of ['webp', 'ktx2'] as const) {
     doc = await io.read(srcGlb)
     assertFinite(doc, srcGlb)
-    const variantFiles = Object.fromEntries(Object.entries(textures).filter(([k]) => k !== 'body').map(([k, s]) => [k, s.base!]))
+    const variantFiles = Object.fromEntries(Object.entries(textures).filter(([k]) => k !== 'body').map(([k, s]) => [k, { ...s.base!, ...(s.orm ? { orm: s.orm } : {}) }]))
     if (!promoteColours(doc) && hasColours) throw new Error('no _COLOR_BASE on the cards: re-export with build_ultra.py --stages export')
     embedTextures(doc, OUT_DIR, body, variantFiles, format)
     // no prune: it would drop the unused-looking UVs, tangents and colour sets
@@ -325,7 +346,7 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   if (body.base.px > ULTRA_BUDGET.atlasPx) problems.push(`atlas ${body.base.px}², over ${ULTRA_BUDGET.atlasPx}²`)
   if (totalKtx2 > ULTRA_BUDGET.downloadBytes) problems.push(`KTX2 download ${(totalKtx2 / 1048576).toFixed(2)} MB, over 8 MB`)
   if (totalWebp > ULTRA_BUDGET.downloadBytes) problems.push(`WebP download ${(totalWebp / 1048576).toFixed(2)} MB, over 8 MB`)
-  const lite = await shipLite(io, breed, srcGlb, padded, vids, shortOf, hasColours, glow, side.liteKeep ?? [], litePropCap(side))
+  const lite = await shipLite(io, breed, srcGlb, padded, vids, shortOf, hasColours, glow, side.liteKeep ?? [], litePropCap(side), liteVariantOrms(side, shortOf))
   problems.push(...lite.problems.map((p) => `Lite: ${p}`))
   const files = (s: Record<string, TexFile>) => Object.fromEntries(Object.entries(s).map(([k, t]) => [k, { ktx2: t.ktx2, webp: t.webp, px: t.px, ...(t.ktx2Px ? { ktx2Px: t.ktx2Px } : {}) }]))
   const budget = {
@@ -365,13 +386,23 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
 
 /** The Lite copy: <breed>.lite.glb from the same Blender export, its textures from the same padded atlas. */
 /** The Lite props' triangle share: the recipe's LITE_PROPS_TRIS (sidecar litePropsTris) for prop-heavy breeds, else 2.4k. */
+/** The variants with their own ORM (VARIANT_ORM), for the Lite copy: {variant id: its padded file and alpha}. */
+function liteVariantOrms(side: Side, shortOf: (vid: string) => string): Record<string, { name: string; alpha: boolean }> {
+  const out: Record<string, { name: string; alpha: boolean }> = {}
+  for (const vid of Object.keys(side.variants)) {
+    const vo = variantOrmOf(side.variants[vid], shortOf(vid))
+    if (vo) out[vid] = vo
+  }
+  return out
+}
+
 function litePropCap(side: Side): number {
   const v = side.litePropsTris
   return typeof v === 'number' && Number.isFinite(v) && v > 0 ? Math.min(v, 0.6 * LITE_BUDGET.triangles) : LITE_PROP_CAP
 }
 
 async function shipLite(io: NodeIO, breed: string, srcGlb: string, padded: string, vids: string[], shortOf: (v: string) => string, hasColours: boolean,
-  glow = false, keep: string[] = [], propCap: number = LITE_PROP_CAP):
+  glow = false, keep: string[] = [], propCap: number = LITE_PROP_CAP, variantOrms: Record<string, { name: string; alpha: boolean }> = {}):
   Promise<{ problems: string[]; entry: Record<string, unknown> }> {
   const px = LITE_BUDGET.atlasPx
   const dir = join(padded, 'lite')
@@ -381,7 +412,12 @@ async function shipLite(io: NodeIO, breed: string, srcGlb: string, padded: strin
     normal: encodeLite(join(padded, 'atlas_normal.png'), 'normal', dir, `${breed}_lite_normal`, px),
     orm: encodeLite(join(padded, 'atlas_orm.png'), 'orm', dir, `${breed}_lite_orm`, px, glow),
   }
-  const variantFiles = Object.fromEntries(vids.map((vid) => [vid, encodeLite(join(padded, `atlas_${shortOf(vid)}.png`), 'base', dir, `${breed}_lite_${shortOf(vid)}_base`, px)]))
+  // a variant's own ORM rides along in the Lite copy too (at the Lite's size), so its roughness and glow match
+  const variantFiles = Object.fromEntries(vids.map((vid) => {
+    const base = encodeLite(join(padded, `atlas_${shortOf(vid)}.png`), 'base', dir, `${breed}_lite_${shortOf(vid)}_base`, px)
+    const vo = variantOrms[vid]
+    return [vid, vo ? { ...base, orm: encodeLite(join(padded, `atlas_${vo.name}.png`), 'orm', dir, `${breed}_lite_${vo.name}`, px, vo.alpha) } : base]
+  }))
   const doc = await io.read(srcGlb)
   if (!promoteColours(doc) && hasColours) throw new Error('no _COLOR_BASE on the cards: re-export with build_ultra.py --stages export')
   // a recipe's LITE_KEEP (sidecar liteKeep: 'tuft', 'cards') keeps that part; it counts in the 12k budget like the rest
@@ -423,7 +459,8 @@ async function shipLite(io: NodeIO, breed: string, srcGlb: string, padded: strin
     joints,
     animations: doc.getRoot().listAnimations().length,
     atlasPx: px,
-    textureBytes: Object.values(body).reduce((n, t) => n + t.bytes, 0) + Object.values(variantFiles).reduce((n, t) => n + t.bytes, 0),
+    textureBytes: Object.values(body).reduce((n, t) => n + t.bytes, 0)
+      + Object.values(variantFiles).reduce((n, t) => n + t.bytes + ((t as { orm?: { bytes: number } }).orm?.bytes ?? 0), 0),
     note: 'The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; '
       + 'the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.',
     problems,
@@ -451,7 +488,7 @@ export async function shipLiteOnly(breed: string, look: string): Promise<{ probl
   await MeshoptDecoder.ready
   await MeshoptSimplifier.ready
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder })
-  const lite = await shipLite(io, breed, srcGlb, padded, Object.keys(side.variants), shortOf, hasColours, !!side.glow, side.liteKeep ?? [], litePropCap(side))
+  const lite = await shipLite(io, breed, srcGlb, padded, Object.keys(side.variants), shortOf, hasColours, !!side.glow, side.liteKeep ?? [], litePropCap(side), liteVariantOrms(side, shortOf))
   const out = JSON.parse(readFileSync(outPath, 'utf8')) as { files?: Record<string, string>; budget: { problems: string[] }; lite?: unknown }
   out.files = { ...out.files, lite: `${breed}.lite.glb` }
   out.budget.problems = [...out.budget.problems.filter((p) => !p.startsWith('Lite: ')), ...lite.problems.map((p) => `Lite: ${p}`)]

@@ -51,13 +51,24 @@ EAR_PINK = '#E3A1AA'                 # the ears' lining (1-hero.png)
 BLUSH_HEX = '#F2A2AA'
 MOUTH_HEX = '#3A3D47'
 
-BODY_TRIS = 58000                    # round 2: 50k showed facets on the puffs (round 3: 58k, room for the halo)
+BODY_TRIS = 74000                    # round 2: 50k showed facets on the puffs (round 3: 58k; Nov 12: 68k; Nov 13: 74k, the outline's steps)
+# Nov 12 (owner, v1.23.0: the wool read slightly crumpled, like plaster, up close): a softer normal map (the game's
+# default is 0.6), and the narrow slots between puffs never bake near black
+NORMAL_SCALE = 0.5
+# the Lite copy: the horns and the crown at 1.3k between them, so the bumpy wool body keeps ~1k more of the 12k (Nov 12:
+# the Lite's wool read as crumpled paper, its shading 29° off its own triangles)
+LITE_PROPS_TRIS = 1300
+AO_FLOOR = 0.5
+AO_SOFTEN = 1.5
+# Stormcrown's gold glows (the variant picture: sunlight breaking through the storm cloud's edges): its own ORM with a
+# glow mask (`glow_stormcrown`, painted in paint_sources)
+VARIANT_ORM = {'stormcrown': {'glow': {'strength': 0.75, 'tint': '#ffd36a'}}}     # Nov 13: 1.4 washed the slate gold
 ATLAS_DENSITY = {'lo_eyes': 1.35, 'lo_props': 0.9, 'lo_props_stormcrown': 0.55}   # the variant-only crown: less atlas
 # round 2: unwrap lo_body at smoothed positions (the lumpy wool smart-projected into ~1,750 islands covering 20% of the
 # atlas; a smoothed twin gives ~400 islands and ~56%); 160 half-steps ≈ my 80-step test. The face and ears keep their shape
 UV_SMOOTH = 160
 CARD_STYLE = 'wool'                  # curly ringlet tiles (the damp-fur locks read as flakes on the wool, round 1)
-CARD_LAYERS = 2
+CARD_LAYERS = 1                      # Nov 13: the ears' short fur only (no wool wisps, no fetlock fringe)
 CARD_SHADE = 1.0                     # white wool stays white on the outline (0.88 greyed it)
 LOCK_TEMPLATES = {'head': (7, 11, 3, 0.22), 'body': (5, 7, 3, 0.3)}
 
@@ -79,17 +90,17 @@ def colours(pal: dict) -> dict:
         'wool': wool,
         # the creases between the puffs: a cool lavender-blue shadow (1-hero.png), not grey dirt
         # round 2: crevices a cool lavender-blue of the wool, never grey (the baked AO greys them a little more)
-        'crease': C.shade_hex(wool, 0.66, cool=0.02) if storm else C.mix_hex(wool, '#AAB4E6', 0.55),   # round 3: lavender, never grey
+        'crease': C.shade_hex(wool, 0.8, cool=0.02) if storm else '#C8D2E8',   # Nov 12 review: a cool lavender-blue, never grey or pink
         'puff_top': C.mix_hex(wool, '#FFFFFF', 0.06 if storm else 0.6),
         # the baked AO darkens the wool's colour (BASE_AO): the cloud's lit side is painted a touch above its hex
-        'wool_lit': wool if storm else C.mix_hex(wool, '#FFFFFF', 0.4),
+        'wool_lit': C.mix_hex(wool, '#8C97B8', 0.14) if storm else C.mix_hex(wool, '#FFFFFF', 0.4),   # Nov 13: slate, not near-black
         'rim': pal.get('rim'),
         'skin': skin,
         'muzzle': C.mix_hex(skin, '#FFFFFF', pal.get('muzzle_k', 0.76)),
         'brow': C.shade_hex(skin, 0.5 if not storm else 0.72, cool=0.02),
         'nose': C.mix_hex('#3A3D46', skin, 0.12) if not storm else '#1E2026',
         'mouth': MOUTH_HEX if not storm else '#15161A',
-        'hoof': '#3A3838' if not storm else '#252424',          # charcoal (rounds 1-2 read bottle-green in game, 3 brown)
+        'hoof': '#35373B' if not storm else '#2A2F3A',          # charcoal (rounds 1-2 read bottle-green in game, 3 brown, Nov 12 chrome)
         'pink': C.mix_hex(EAR_PINK, skin, 0.28) if not storm else C.mix_hex(EAR_PINK, '#7A5560', 0.4),   # muted, dusty
         'blush': BLUSH_HEX,
         'horn': HORN_HEX,
@@ -124,6 +135,8 @@ HEAD_ELLS = [
     ('nose', tuple(NOSE_C), NOSE_R),
     ('nose2', NOSE2[0], NOSE2[1]),
     ('chin', (0.0, -0.5 + HY, 0.616), (0.055, 0.05, 0.035)),
+    # Nov 12 (owner: a small dark spot under the chin): the throat fills the slot between the jaw and the collar's puffs
+    ('throat', (0.0, -0.42 + HY, 0.585), (0.12, 0.07, 0.05)),
 ]
 
 # ----------------------------------------------------------------------------- the legs and hooves
@@ -189,9 +202,9 @@ EAR_ROOT0 = v3((0.162, -0.318 + HY, 0.742))  # left ear; the first fifth sits in
 EAR_TIP0 = v3((0.36, -0.305 + HY, 0.565))        # round 2: down and out about 40 degrees
 EAR_LEN = float(np.linalg.norm(EAR_TIP0 - EAR_ROOT0))
 EAR_WMAX = 0.066                            # half width at the widest
-EAR_T = (0.028, 0.018)                      # half thickness at the root and the tip (round 3: thicker still, never a blade)
-EAR_CUP = 0.017                             # the lining's hollow
-EAR_BEND = -0.03                            # the tip curls back (away from the lining) this much
+EAR_T = (0.034, 0.024)                      # half thickness at the root and the tip (round 3: thicker still, never a blade)
+EAR_CUP = 0.026                             # the lining's hollow
+EAR_BEND = -0.045                           # the tip curls back (away from the lining) this much
 
 
 def ear_frame(s: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -200,7 +213,7 @@ def ear_frame(s: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     r0 = EAR_ROOT0 * m
     a = (EAR_TIP0 - EAR_ROOT0) * m
     a = a / np.linalg.norm(a)
-    n0 = v3((0.28 * s, -1.0, 0.05))       # round 3: turned out a little, so the side view shows the cup, not a blade
+    n0 = v3((0.65 * s, -0.75, 0.0))       # Nov 12 review: turned about 40° out, so the profile shows a cupped leaf, not a blade
     n = n0 - a * (n0 @ a)
     n = n / np.linalg.norm(n)
     b = np.cross(n, a)
@@ -274,10 +287,12 @@ def _ell_part(name: str, c, r) -> Part:
 
 
 def wool_cores() -> list[tuple]:
-    """Smooth masses under the puffs (hidden by them): the weight proxy's body, and a floor for the cloud."""
-    return [('coreF', W.FRONT[0], tuple(r - W.DEPTH - 0.035 for r in W.FRONT[1])),
-            ('coreR', W.REAR[0], tuple(r - W.DEPTH - 0.035 for r in W.REAR[1])),
-            ('coreCap', W.CAP[0], tuple(r - W.CAP_DEPTH - 0.02 for r in W.CAP[1]))]
+    """Smooth masses under the puffs (hidden by them): the weight proxy's body, and a floor for the cloud. Nov 12: the
+    floor sits at the clumps' centres (it was 3.5 cm deeper; the review still found black slits), so the gaps between
+    clumps are shallow lavender-white dimples, not pits."""
+    return [('coreF', W.FRONT[0], tuple(r - W.DEPTH + 0.004 for r in W.FRONT[1])),
+            ('coreR', W.REAR[0], tuple(r - W.DEPTH + 0.004 for r in W.REAR[1])),
+            ('coreCap', W.CAP[0], tuple(r - W.CAP_DEPTH + 0.004 for r in W.CAP[1]))]
 
 
 def eye_pads() -> list[Part]:
@@ -472,11 +487,12 @@ def _value_noise(p: np.ndarray, freq: float, seed: int) -> np.ndarray:
 
 
 def cotton(p: np.ndarray) -> np.ndarray:
-    """The wool's cotton texture, −1..1: soft bumps of three sizes (2.5, 1.2 and 0.6 cm), billowy rather than combed
+    """The wool's cotton texture, −1..1: soft bumps of two sizes (2.5 and 1.2 cm), billowy rather than combed
     (4-details.png panels 4 and 6). Sculpted into the high body and baked, instead of lying locks (round 1: the bake
-    saw the skin between the locks and the AO came out as dark specks)."""
-    n = (0.45 * _value_noise(p, 1 / 0.025, 3) + 0.35 * _value_noise(p, 1 / 0.012, 5) + 0.2 * _value_noise(p, 1 / 0.006, 7))
-    return np.clip((n - 0.5) * 2.4, -1.0, 1.0)
+    saw the skin between the locks and the AO came out as dark specks). Nov 12: without the 6 mm octave (the shipped
+    1024² normal map aliased it into a crumpled grain)."""
+    n = 0.58 * _value_noise(p, 1 / 0.025, 3) + 0.42 * _value_noise(p, 1 / 0.012, 5)
+    return np.clip((n - 0.5) * 2.2, -1.0, 1.0)
 
 
 def carve(ob: bpy.types.Object) -> None:
@@ -487,7 +503,7 @@ def carve(ob: bpy.types.Object) -> None:
     right, left = mouth_curve()
     md = np.minimum(S.polyline_dist(x, z, right), S.polyline_dist(x, z, left))
     front = smooth(-0.5 + HY, -0.545 + HY, y)
-    groove = np.exp(-(md / 0.002) ** 2) * front * (z < NOSE2[0][2] - 0.008) * (z > 0.62)
+    groove = np.exp(-(md / 0.0026) ** 2) * front * (z < NOSE2[0][2] - 0.008) * (z > 0.62)      # Nov 13: a clearer smile
     nos = np.zeros(len(co))
     for s in (1, -1):
         dd = np.sqrt(((x - 0.017 * s) / 1.5) ** 2 + (z - (NOSE_C.z - 0.01)) ** 2)
@@ -501,13 +517,61 @@ def carve(ob: bpy.types.Object) -> None:
     bulge, lash = closed_lid(co)
     # round 3: fill the V between lobes and between clumps a little (a soft cumulus, not lumps with hard creases)
     wf = zw['field']
-    fillet = (0.0045 * smooth(0.012, 0.0, wf['p2'] - wf['p1']) + 0.007 * smooth(0.024, 0.0, wf['d2'] - wf['d1'])) * wool_k
-    disp = (-0.0018 * groove - 0.0062 * nos - 0.003 * cleft + 0.0035 * bulge - 0.0012 * lash + 0.0032 * cotton(co) * wool_k
+    # Nov 12: rounder fillets (a soft cumulus: the creases between lobes are U-shaped, not folds) and a gentler cotton
+    fillet = (0.0065 * smooth(0.017, 0.0, wf['p2'] - wf['p1']) + 0.009 * smooth(0.03, 0.0, wf['d2'] - wf['d1'])) * wool_k
+    disp = (-0.0018 * groove - 0.0062 * nos - 0.003 * cleft + 0.0035 * bulge - 0.0012 * lash + 0.0024 * cotton(co) * wool_k
             + fillet)
+    disp = disp + 0.006 * _skin_seam(zw)
     S.set_positions(ob, co + vn * disp[:, None])
+    # Nov 12: round off what's left of the V-notch where two puffs or two clumps meet (it baked as thin dark lines, like
+    # cracks in plaster): a few smoothing steps only along the seams, which pushes each V out into a soft U
+    notch = wool_k * np.maximum(smooth(0.016, 0.0, wf['d2'] - wf['d1']), 0.8 * smooth(0.01, 0.0, wf['p2'] - wf['p1']))
+    S.set_positions(ob, _smoothed(ob, 12, 0.6, np.maximum(notch, _skin_seam(zw))))
     S.base_attrs(ob, co, {'mouth': groove})
     S.add_attr(ob, 'lash', lash)
     S.add_attr(ob, 'lid', bulge)
+
+
+def carve_low(ob: bpy.types.Object) -> None:
+    """The low body before decimation: the high body's fillets and seam smoothing (no cotton, no face carving), so it
+    follows the filled creases (Nov 12 review: black slits with chrome edges between the puffs, in the game only: the low
+    body kept deep slits where the high one was filled, and the bake's rays there found the wrong surface)."""
+    co, vn = S.mesh_arrays(ob)
+    zw = zones(co, vn)
+    wf = zw['field']
+    wool_k = zw['wool'] * smooth(0.002, 0.012, zw['skin_d'] - wf['d1'])
+    fillet = (0.0065 * smooth(0.017, 0.0, wf['p2'] - wf['p1']) + 0.009 * smooth(0.03, 0.0, wf['d2'] - wf['d1'])) * wool_k
+    S.set_positions(ob, co + vn * (fillet + 0.006 * _skin_seam(zw))[:, None])
+    notch = wool_k * np.maximum(smooth(0.016, 0.0, wf['d2'] - wf['d1']), 0.8 * smooth(0.01, 0.0, wf['p2'] - wf['p1']))
+    S.set_positions(ob, _smoothed(ob, 12, 0.6, np.maximum(notch, _skin_seam(zw))))
+
+
+def _skin_seam(zw: dict) -> np.ndarray:
+    """0..1 along the join of the skin and the wool (the jaw to the ruff, the neck behind the ears, the tops of the legs),
+    where the two surfaces meet in a V (Nov 13 review: a jagged black tear with bright lips under the jaw, a torn neck
+    patch): filled out a little and smoothed, so the face skin runs into the ruff. Not on the ears or the eyes."""
+    m = smooth(0.014, 0.0, np.abs(zw['field']['d1'] - zw['skin_d']))
+    return m * (zw['ear'] < 0.5) * (zw['eye_d'] > EYE_R * 1.6)
+
+
+def _smoothed(ob: bpy.types.Object, iterations: int, factor: float, mask: np.ndarray) -> np.ndarray:
+    """Laplacian smoothing of the positions, each vertex moving `factor` × mask toward its neighbours' mean per step (as
+    lib.surface.laplacian_positions, with bincount: fast enough for the multi-million-vertex high body)."""
+    co, _ = S.mesh_arrays(ob)
+    me = ob.data
+    ev = np.empty(len(me.edges) * 2, np.int32)
+    me.edges.foreach_get('vertices', ev)
+    ev = ev.reshape(-1, 2)
+    n = len(co)
+    a = np.concatenate([ev[:, 0], ev[:, 1]])
+    b = np.concatenate([ev[:, 1], ev[:, 0]])
+    deg = np.maximum(np.bincount(a, minlength=n), 1).astype(np.float64)
+    k = factor * np.clip(np.asarray(mask, np.float64), 0.0, 1.0)[:, None]
+    p = co.astype(np.float64)
+    for _ in range(int(iterations)):
+        mean = np.stack([np.bincount(a, weights=p[b, i], minlength=n) for i in range(3)], axis=1) / deg[:, None]
+        p += k * (mean - p)
+    return p
 
 
 # ----------------------------------------------------------------------------- eyes
@@ -538,14 +602,17 @@ def eye_material(name: str, rough_pass: bool = False, pal: dict | None = None) -
     palette eye (Stormcrown #E6ECF5) turns the iris to pale silver round the same dark pupil."""
     m, nb = new_mat(name)
     pale = pal is not None and _luma(pal['eye']) > 0.5
-    if rough_pass:
-        em = nb.new('ShaderNodeEmission')
-        nb.put(em.inputs['Color'], (1.0, 0.05, 1.0))
-        nb.output(em.outputs[0])
-        return m
     e = nb.attribute('eyeuv').outputs['Vector']
     side = nb.attribute('eye_side').outputs['Fac']
     rx, ry, _z = nb.sep(e)
+    # Nov 13 review (3-faces neutral, the hero: sleepy): the upper lid covers the top quarter of the iris, a soft curve a
+    # little lower at the outer corner; matte fur, not lens
+    lid = nb.smooth(nb.math('ADD', ry, nb.math('MULTIPLY', nb.smooth(nb.math('MULTIPLY', rx, side), 0.1, 0.9), 0.08)), 0.4, 0.46)
+    if rough_pass:
+        em = nb.new('ShaderNodeEmission')
+        nb.link(nb.mix(lid, nb.rgb((1.0, 0.05, 1.0)), nb.rgb((1.0, 0.75, 0.0))), em.inputs['Color'])
+        nb.output(em.outputs[0])
+        return m
     # round 2 (review): round 1's lower iris glow washed over the pupil, so the eye read as a flat mid-blue oval. Now a
     # big pupil in the palette's eye colour (#2E3440) fills ~70% of the iris, inside a thin slate-blue ring, and the
     # white shows as a crescent low on the outer side
@@ -563,15 +630,18 @@ def eye_material(name: str, rough_pass: bool = False, pal: dict | None = None) -
     ring_lo = nb.math('MULTIPLY', nb.smooth(ry, 0.0, -0.6), nb.math('MULTIPLY', nb.smooth(ri, 0.62, 0.7), nb.smooth(ri, 0.9, 0.84)))
     c = nb.mix(nb.math('MULTIPLY', ring_lo, 0.45), iris_c, nb.rgb(C.lin(C.mix_hex(iris[2], '#FFFFFF', 0.25))))
     # the white crescent low and to the outside, inside the seated rim so the head never hides it
-    crescent = nb.math('MULTIPLY', nb.smooth(ri, 0.84, 0.9), nb.math('MULTIPLY', nb.smooth(nb.math('MULTIPLY', rx, side), -0.1, 0.35), nb.smooth(ry, 0.3, -0.05)))
+    crescent = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.smooth(ri, 0.84, 0.88), nb.smooth(ri, 0.95, 0.91)),
+                       nb.math('MULTIPLY', nb.smooth(nb.math('MULTIPLY', rx, side), 0.0, 0.4), nb.smooth(ry, -0.1, -0.4)))
     c = nb.mix(crescent, c, nb.rgb(C.lin('#F1F2F4')))
-    big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', rx, 0.24), nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.22), 1.15), 0.0)), 0.21, 0.18)
+    big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', rx, 0.24), nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.1), 1.15), 0.0)), 0.19, 0.16)
     small = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('SUBTRACT', rx, 0.26), nb.math('ADD', ry, 0.3), 0.0)), 0.075, 0.058)
     c = nb.mix(nb.math('MAXIMUM', big, small), c, nb.rgb((1.0, 1.0, 1.0)))
     outer = nb.math('MULTIPLY', nb.smooth(nb.math('MULTIPLY', rx, side), 0.2, 0.9), 0.1)
     # a thick dark upper lash line under a slightly heavy lid
-    lash = nb.smooth(nb.math('ADD', ry, outer), 0.56, 0.64)
+    lash = nb.smooth(nb.math('ADD', ry, outer), 0.33, 0.39)
     c = nb.mix(lash, c, nb.rgb(C.lin('#15121A')))
+    lp = colours(pal if pal is not None else PALETTE)
+    c = nb.mix(lid, c, nb.rgb(C.lin(C.shade_hex(lp['skin'], 0.92))))
     em = nb.new('ShaderNodeEmission')
     nb.link(c, em.inputs['Color'])
     nb.output(em.outputs[0])
@@ -649,6 +719,7 @@ def head_lock_params(p, n):
     Wd = np.where(z['muzzle'], 0.0055, Wd)
     mouth = (md < 0.0042) & (p[:, 1] < -0.5 + HY) & (p[:, 2] < NOSE2[0][2] - 0.006) & (p[:, 2] > 0.62)
     skip = ~z['head'] | z['nose'] | z['ear_inner'] | (z['eye_d'] < EYE_R * 1.1) | mouth
+    skip = skip | (np.abs(z['field']['d1'] - z['skin_d']) < 0.014)        # Nov 13: no locks on the skin/wool seam
     return np.where(skip, np.nan, Wd * 0.38), L, Wd, lift, z
 
 
@@ -680,23 +751,19 @@ def card_params(p, n, layer: int):
     L_ = W.layout()
     border = np.abs(wf['d1'] - z['skin_d']) < 0.012
     if layer == 0:
-        L = np.where(wool, 0.038, 0.03)
-        Wd = np.where(wool, 0.034, 0.026)
-        lift = np.where(wool, _rad(22), _rad(5))
-        sp = np.where(wool, 0.025, 0.024)
-        L = np.where(z['leg'], 0.034, L)
-        Wd = np.where(z['leg'], 0.03, Wd)
-        sp = np.where(z['leg'], 0.022, sp)
-        L = np.where(z['ear'], 0.024, L)
-        sp = np.where(z['ear'], 0.022, sp)
-        # round 3 (review): no cards on the face (a spiky whorl on the forehead) nor on the wool (glassy white shards on
-        # the outline); the wool's softness comes from its sculpted puffs, fillets and cotton
-        skip = (wool | (z['head'] & ~z['ear']) | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.09) | z['ear_inner'] | z['hoof'] | z['sole']
-                | (z['leg'] & (zz < 0.075)) | (wool & W._in_face(p, 0.035)) | (z['ear'] & (z['ear_m'] > -0.008)))
+        # No cards on the wool: short wisps faded in toward the silhouette (Nov 12) still read as glassy white flakes in the
+        # game, as round 2's did. No cards on the legs (Nov 12 review: pale, icy, glassy legs): their velvet matches the face's
+        L = np.where(wool, 0.024, 0.024)
+        Wd = np.where(wool, 0.03, 0.026)
+        lift = np.where(wool, _rad(30), _rad(5))
+        sp = np.where(wool, 0.03, 0.022)
+        skip = (wool | (z['head'] & ~z['ear']) | z['muzzle'] | z['nose'] | (z['eye_d'] < 0.09)
+                | z['ear_inner'] | z['hoof'] | z['sole'] | z['leg'] | (wool & W._in_face(p, 0.035))
+                | (z['ear'] & (z['ear_m'] > -0.008)))
     else:
         cn = L_['n'][np.clip(wf['cid'], 0, None)]
         crown = np.zeros(k, bool)
-        fringe = z['leg'] & (zz > HOOF_TOP) & (zz < HOOF_TOP + 0.035)
+        fringe = np.zeros(k, bool)          # Nov 13 review: the fetlock fringe read as a pale frayed sock
         L = np.where(crown, 0.056, 0.03)
         Wd = np.where(crown, 0.046, 0.026)
         lift = np.where(crown, _rad(42), _rad(-4))
@@ -751,7 +818,7 @@ def _paint_inputs(ob: bpy.types.Object) -> dict:
     # the gold in the crevices (rust), round 2 on the small puffs' tops (speckle)
     # round 3 (review): a thin gold rim tracing the outer edge of each sub-puff (where its surface turns side-on to the
     # puff's own outward direction) round a dark slate centre; never in the crevices
-    top = np.zeros(len(r))
+    own1 = np.ones(len(r))
     woolr = z['wool']
     lv1 = L['plevel'] == 1
     for k in np.unique(cid[woolr]):
@@ -761,17 +828,20 @@ def _paint_inputs(ob: bpy.types.Object) -> dict:
             continue
         d = np.linalg.norm(r[on][:, None, :] - L['pc'][idx][None], axis=2) - L['pr'][idx][None]
         j = idx[np.argmin(d, axis=1)]
-        own1 = (nr[on] * norm(r[on] - L['pc'][j])).sum(1)
-        top[on] = smooth(0.72, 0.38, own1) * smooth(-0.2, 0.05, own1)
-    top *= (1 - 0.6 * crease_c) * (1 - 0.3 * crease_p)
+        own1[on] = (nr[on] * norm(r[on] - L['pc'][j])).sum(1)
     facing = (nr * L['n'][cid]).sum(1)
+    # round 1 put the gold in the crevices (rust), round 2 on the puffs' tops (lichen), round 3 thin rims on every
+    # sub-puff (thin lines); Nov 12 a glowing ring along the seams read as electric crackle (the card rules out
+    # lightning); Nov 13 a mask from the bumpy surface read as blotches. Now sunlight breaking through at the top and
+    # outer rim of each clump, from the clump's geometry alone (W.rim_gold); the seams and the clumps' faces stay dark
+    top = W.rim_gold(r, nr, L['c'][cid], L['n'][cid], wf['d2'] - wf['d1']) * woolr
     crown = smooth(0.55, 0.95, (nr * norm(r - L['pc'][pid])).sum(1)) * (1 - cav)
     rim = smooth(0.34, 0.04, facing) * (1 - 0.75 * crease_c) * smooth(-0.35, 0.0, facing)
     band = smooth(0.032, 0.012, wf['d2'] - wf['d1']) * (1 - smooth(0.008, 0.0, wf['d2'] - wf['d1']))
     vary = (np.sin(cid * 12.9898) * 43758.5453) % 1.0 - 0.5
     rep = lambda a: np.repeat(a, lens, axis=0)  # noqa: E731
     out = {'z': {k: rep(v) for k, v in z.items() if isinstance(v, np.ndarray) and v.ndim == 1},
-           'cav': rep(cav), 'crown': rep(crown), 'rim': rep(rim), 'band': rep(band), 'vary': rep(vary), 'top': rep(top),
+           'cav': rep(cav), 'nz': rep(nr[:, 2]), 'crown': rep(crown), 'rim': rep(rim), 'band': rep(band), 'vary': rep(vary), 'top': rep(top),
            'kind': kind, 'tpos': tpos, 'lrand': lrand, 'root': root}
     _PAINT[ob.name] = out
     return out
@@ -790,13 +860,20 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     rgb_w = lin(col['wool_lit'])[None] * (1 - 0.5 * I['cav'][:, None]) + lin(col['crease'])[None] * (0.5 * I['cav'][:, None])
     rgb_w = rgb_w * (1 - 0.45 * I['crown'][:, None]) + lin(col['puff_top'])[None] * (0.45 * I['crown'][:, None])
     rgb_w *= (1.0 + 0.05 * I['vary'])[:, None]
+    # Nov 13 review: a flatter, slightly darker underside to the cloud
+    rgb_w *= (1.0 - 0.07 * smooth(-0.2, -0.75, I['nz']))[:, None]
+    glow = np.zeros(k)
     if col['rim']:
-        gold = np.clip(0.9 * I['top'], 0, 1)[:, None]
-        rgb_w = rgb_w * (1 - gold) + lin(col['rim'])[None] * gold
+        gold = np.clip(0.95 * I['top'], 0, 1)
+        rgb_w = rgb_w * (1 - gold[:, None]) + lin(col['rim'])[None] * gold[:, None]
+        # the glow mask (VARIANT_ORM): the gold's core, a little tighter than the paint so the glow has a soft edge
+        glow = smooth(0.18, 0.75, gold) * wool * smooth(0.025, 0.08, z['skin_d'])   # Nov 12: the bloom warmed the legs and face
     # skin: grey-blue fur, the pale muzzle, pink ear linings, dark hooves
     rgb_s = np.tile(lin(col['skin']), (k, 1))
     # round 2: the pale muzzle blends softly into the cheeks; the fur round the eyes a little lighter (4-details 1)
-    muz = ell_soft(root, MUZZLE[0], tuple(r * 1.06 for r in MUZZLE[1]), 0.3) * (z['head'] > 0.5)
+    # Nov 13 review: a near-white muzzle and chin (it measured barely lighter than the forehead)
+    muz = np.maximum(ell_soft(root, MUZZLE[0], tuple(r * 1.16 for r in MUZZLE[1]), 0.25),
+                     ell_soft(root, HEAD_ELLS[9][1], tuple(r * 1.25 for r in HEAD_ELLS[9][2]), 0.3)) * (z['head'] > 0.5)
     rgb_s = rgb_s * (1 - muz[:, None]) + lin(col['muzzle'])[None] * muz[:, None]
     ring = (smooth(EYE_R * 1.02, EYE_R * 1.3, z['eye_d']) * smooth(EYE_R * 2.2, EYE_R * 1.45, z['eye_d']) * (z['head'] > 0.5) * 0.16)
     rgb_s = rgb_s * (1 - ring[:, None]) + lin(C.mix_hex(col['skin'], '#FFFFFF', 0.5))[None] * ring[:, None]
@@ -819,9 +896,13 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     nose = ell_soft(root, tuple(NOSE_C), tuple(r * 1.1 for r in NOSE_R), 0.08)
     glossy = np.maximum(nose, (z['hoof'] > 0.5) * 1.0)
     # round 2: a matte nose (it read as a shiny blob); the hooves keep a soft gloss
-    rough = rough * (1 - glossy) + np.where(z['hoof'] > 0.5, 0.3, 0.52) * glossy
-    coat = coat * (1 - glossy) + np.where(z['hoof'] > 0.5, 0.6, 0.12) * glossy
-    return {'paint': rgb, 'shade': shade, 'rough': np.stack([np.ones(k), rough, coat], axis=1)}
+    rough = rough * (1 - glossy) + np.where(z['hoof'] > 0.5, 0.64, 0.52) * glossy
+    coat = coat * (1 - glossy) + np.where(z['hoof'] > 0.5, 0.05, 0.12) * glossy
+    # Nov 12 (review: the legs read pale, icy and glassy): the leg fur as matte as the face's velvet
+    legs = (z['leg'] > 0.5) & (z['hoof'] < 0.5)
+    rough = np.where(legs, np.maximum(rough, 0.8), rough)
+    coat = np.where(legs, 0.0, coat)
+    return {'paint': rgb, 'shade': shade, 'rough': np.stack([np.ones(k), rough, coat], axis=1), 'glow': glow}
 
 
 def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object], props=()) -> None:
@@ -832,7 +913,12 @@ def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object
         S.set_colour_attr(ob, 'rough', a['rough'])
         S.add_attr(ob, 'shade', a['shade'])
         for vid, pal in VARIANTS.items():
-            S.set_colour_attr(ob, U.variant_attr(vid, ID), paint_arrays(ob, pal)['paint'])
+            va = paint_arrays(ob, pal)
+            S.set_colour_attr(ob, U.variant_attr(vid, ID), va['paint'])
+            short = U.variant_short(vid, ID)
+            if short in VARIANT_ORM and VARIANT_ORM[short].get('glow'):
+                # Nov 12: the variant's own glow mask (its gold), for its own ORM's alpha
+                S.add_attr(ob, f'glow_{short}', va['glow'])
     for ob in props:
         if 'horn' in ob.data.attributes:
             rgb, rc = H.horn_paint(ob, HORN_HEX, '#C2AB80', '#D9C8A4', '#FAF4E6')
@@ -844,12 +930,15 @@ def paint_sources(body_srcs: list[bpy.types.Object], fins: list[bpy.types.Object
         # the crown: only Stormcrown wears it; every pass paints it in that variant's wool
         storm = VARIANTS['stormcrown-nimbusheep']
         col = colours(storm)
-        rgb = W.crown_paint(ob, col['wool'], col['crease'], col['rim'])
+        rgb, gold = W.crown_paint(ob, col['wool'], col['crease'], col['rim'])
         n = len(ob.data.vertices)
         S.set_colour_attr(ob, 'paint', rgb)
         S.set_colour_attr(ob, 'rough', np.tile(v3((1.0, 0.88, 0.0)), (n, 1)))
         for vid in VARIANTS:
             S.set_colour_attr(ob, U.variant_attr(vid, ID), rgb)
+            short = U.variant_short(vid, ID)
+            if short in VARIANT_ORM and VARIANT_ORM[short].get('glow'):
+                S.add_attr(ob, f'glow_{short}', smooth(0.18, 0.75, gold))
 
 
 # ----------------------------------------------------------------------------- paint (nodes: the crisp details, per pixel)
@@ -885,7 +974,7 @@ def body_material(name: str, attr: str, pal: dict, marks=None) -> bpy.types.Mate
     # a soft highlight on the top of the nose (1-hero.png)
     hl = nb.math('MULTIPLY', _ell(nb, pos, (0.0, -0.596 + HY, 0.708), (0.02, 0.02, 0.008), 0.6), 0.35)
     c = nb.mix(hl, c, nb.rgb(C.lin('#8C909C')))
-    mouth = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.attribute('mouth').outputs['Fac'], 1.25, clamp=True), is_body)
+    mouth = nb.math('MULTIPLY', nb.math('MULTIPLY', nb.attribute('mouth').outputs['Fac'], 1.8, clamp=True), is_body)
     c = nb.mix(mouth, c, nb.rgb(C.lin(col['mouth'])))
     lid = nb.math('MULTIPLY', nb.math('POWER', nb.attribute('lid').outputs['Fac'], 0.5), is_body)
     c = nb.mix(nb.math('MULTIPLY', lid, 0.2), c, nb.rgb((0.0, 0.0, 0.0)))
@@ -1024,8 +1113,22 @@ CLIP_CALM = {
     'ko': {'ear': 0.25, 'tail': 0.4},
     'hit_heavy': {'ear': 0.35, 'tail': 0.5},
     'win': {'ear': 0.45},
-    'strike': {'ear': 0.4},
+    # Nov 12 (owner: a stretched strip behind the head in strike): the charge's head and neck turn at 40%, so the
+    # cap's back stays near the shoulders' wool (a test pose at 100% pulled a long blade of wool off the cap's back; at
+    # 55% it was gone, but the review still saw a sheet; blending the clumps round the cap between head and trunk smoothed
+    # the back into a tent, and riding them on the neck bone made the sheet longer);
+    # the lean, the hips' drive and the legs keep their full motion
+    'strike': {'ear': 0.4, 'headneck': 0.4},
 }
+
+
+def calm_group(bone: str) -> str | None:
+    """CLIP_CALM's groups: the default ear and tail chains, plus 'headneck' (the head and the neck bones), so strike
+    can calm the charge's head drop alone."""
+    if bone == 'head' or bone == 'neck' or bone.startswith('neck.'):
+        return 'headneck'
+    g = bone.split('.')[0]
+    return g if '.' in bone and g in ('ear', 'tail') else None
 
 FACE_NOTE = ('The eyes are glossy lenses (lo_eyes) with the pupil, the blue-grey iris, the catchlights and a heavy upper '
              'lash line (the sleepy look) baked into the body atlas; the brows, blush, nose and the small "w" smile are '

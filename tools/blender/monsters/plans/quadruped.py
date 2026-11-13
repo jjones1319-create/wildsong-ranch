@@ -19,7 +19,9 @@ Batch 2 (each off by default; RECIPE.md has the details):
   trunk       {'points', 'parent', 'curl', 'bud'} → a chain trunk.1..N (springs kind 'trunk'), keyed curls; 'bud' adds
               petal bones bud.1..n at the tip that open in the happy, winning and surprised clips
   wings       {'parent', 'shoulder', 'elbow', 'wrist', 'fingers', 'attach', 'spread', ...} → per side wing.<S>.1, .2 and
-              .f1..fK, folded at rest (the modelled pose), opened toward `spread` in win, cast, strike and the big moves
+              .f1..fK, folded at rest (the modelled pose), opened toward `spread` in win, cast, strike and the big moves;
+              a rig with wings also gets the flight clips FLY_CLIPS (Nov 12, Hearthwing): fly_takeoff, fly (a loop),
+              fly_cast and fly_land, all in place (the root stays at the origin; the game raises and lowers the monster)
   body_width  half the body's width at the belly: the spine's height when the monster lies on its side in ko
               (default 1.35 x the widest leg's x)
 The shared clips were reworked after the Nov 7 review (strike a stretched pounce, hit_heavy a braced recoil with the head
@@ -1116,8 +1118,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             # squashes, held a beat, then recovers
             rear = lambda t: A.step_ease(t, 0.04, 0.36) * (1 - A.step_ease(t, 0.4, 0.5))
             slam = lambda t: A.step_ease(t, 0.4, 0.5) * (1 - A.step_ease(t, 0.62, 0.92))
-            dip = 8.0                                                  # degrees the chest pitches down onto the paws
-            ang = lambda t: 40.0 * rear(t) - dip * slam(t)            # + rears up on the hind feet, − drops the chest
+            # opt-in (Cobblemaw round 5; the defaults are the shared values): rig_p 'slam_rear' (degrees reared),
+            # 'slam_paws' (the front leg's thigh, shin, foot x rotations while reared), 'slam_ahead' (how far ahead the
+            # paws land, × the front leg's height), 'slam_wide' (degrees each front leg rolls out), 'slam_squash', 'slam_dip'
+            rear_deg = float(P.get('slam_rear', 40.0))
+            paws = tuple(float(v) for v in P.get('slam_paws', (-45.0, 75.0, -25.0)))
+            sq = float(P.get('slam_squash', 0.14))
+            dip = float(P.get('slam_dip', 8.0))                         # degrees the chest pitches down onto the paws
+            ang = lambda t: rear_deg * rear(t) - dip * slam(t)        # + rears up on the hind feet, − drops the chest
             yh = float(P['legs']['BL'][1])
             _fx, yf, hzf = (float(v) for v in P['legs']['FL'])
 
@@ -1126,7 +1134,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 return (0.0, yh * (1.0 - math.cos(a)), yh * math.sin(a))
             cb.sample('root', n, lambda t: (-ang(t), 0, 0), step=1)
             cb.sample('root', n, pivot, kind='loc', step=1)
-            squash(n, lambda t: 1.0 - 0.14 * slam(t))
+            squash(n, lambda t: 1.0 - sq * slam(t))
             cb.sample('chest', n, lambda t: (-6 * rear(t) + 4 * slam(t), 0, 0), step=1)
             nsample(n, lambda t: (14 * rear(t) - 6 * slam(t), 0, 6 * rear(t)), step=1)
             cb.sample('head', n, lambda t: (14 * rear(t) - 6 * slam(t), 0, 10 * rear(t) + 6 * slam(t)), step=1)   # the face kept toward us
@@ -1139,11 +1147,11 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             # every planted foot is solved in the body's frame (the root's pitch about the hind hips, its offset and the
             # squash), so the hind feet stay down while it rears (they used to lift with the pitch) and the front paws
             # land ON impact `ahead` of their rest spot; the feet are kept flat against the pitch
-            ahead = 0.16 * hzf
+            ahead = float(P.get('slam_ahead', 0.16)) * hzf
 
             def to_body(t, wy, wz):
                 a = math.radians(ang(t))
-                v = 1.0 - 0.14 * slam(t)
+                v = 1.0 - sq * slam(t)
                 w = 1.0 / math.sqrt(max(0.2, v))
                 ty, tz = wy - yh * (1.0 - math.cos(a)), wz - yh * math.sin(a)
                 return ((ty * math.cos(a) - tz * math.sin(a)) / w, (ty * math.sin(a) + tz * math.cos(a)) / v)
@@ -1161,34 +1169,36 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 return f
             ik = {leg: planted(leg, leg[0] == 'F') for leg in LEGS}
             # the front paws raised while reared (no IK then), flat on the ground at the slam; the hind feet flat throughout
-            fr = {0: lambda t: -45 * rear(t), 1: lambda t: 75 * rear(t), 2: lambda t: -25 * rear(t) - dip * slam(t)}
+            fr = {0: lambda t: paws[0] * rear(t), 1: lambda t: paws[1] * rear(t), 2: lambda t: paws[2] * rear(t) - dip * slam(t)}
             hd = {0: lambda t: 0.0, 1: lambda t: 0.0, 2: lambda t: ang(t)}
             extra = {leg: (fr if leg[0] == 'F' else hd) for leg in LEGS}
-            roll = {leg: (lambda t, sg=(-1.0 if leg.endswith('L') else 1.0): sg * 14.0 * slam(t)) for leg in LEGS if leg[0] == 'F'}
+            wide = float(P.get('slam_wide', 14.0))
+            roll = {leg: (lambda t, sg=(-1.0 if leg.endswith('L') else 1.0): sg * wide * slam(t)) for leg in LEGS if leg[0] == 'F'}
         elif strike_style(P) == 'swipe':
-            # Cinderlynx's card: a raking swipe. Low and coiled, the head forward and the mouth open; ONE forepaw (the left,
-            # the review camera's side) draws out to the side on the wind-up and rakes forward and across at head height
-            # on `impact`, claws out; the other three paws stay planted
+            # Cinderlynx's card: a raking swipe (only Cinderlynx uses it). Nov 13 (its final review: the wind-up read as
+            # idle and the strike as the cat wiping its face): the wind-up crouches back, the weight on the hind legs, the
+            # striking forepaw (the left, the camera's side) lifted and cocked; the strike leads with the shoulder and
+            # rakes the paw forward and down in an outward arc, ahead of the nose at full reach, the head turned to the
+            # target, the mouth open; the other three paws stay planted
             body_up = lambda t: -mm(0.05) * go(t)
-            cb.sample('hips', n, lambda t: (0, crouch_y(t) - mm(0.05) * go(t), crouch_z(t) + body_up(t)), kind='loc', step=1)
-            cb.sample('chest', n, lambda t: (-4 * ant(t) - 4 * go(t), 0, 6 * go(t)), step=1)
-            # the head leans into it (down a little and forward) and turns toward the paw's side; not as far forward as
-            # the paw, which passes in front of the face
-            nsample(n, lambda t: (-4 * ant(t) + 10 * go(t), 0, 4 * go(t)), step=1)
-            cb.sample('head', n, lambda t: (-6 * ant(t) - 4 * go(t), 0, 10 * go(t)), step=1)
+            cb.sample('hips', n, lambda t: (0, crouch_y(t) + mm(0.07) * ant(t) - mm(0.07) * go(t),
+                                            crouch_z(t) - mm(0.03) * ant(t) + body_up(t)), kind='loc', step=1)
+            cb.sample('chest', n, lambda t: (8 * ant(t) - 6 * go(t), 0, 10 * go(t)), step=1)
+            nsample(n, lambda t: (-2 * ant(t) + 4 * go(t), 0, -4 * go(t)), step=1)
+            cb.sample('head', n, lambda t: (-4 * ant(t) - 2 * go(t), 0, -8 * go(t)), step=1)
             cb.sample('jaw', n, lambda t: (26 * go(t), 0, 0), step=1)
             for s, sx in (('L', 1), ('R', -1)):
                 cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (8 * ant(t) - 22 * go(t), sx * 3, 0), step=1)
             tsample(0, n, lambda t: (14 * ant(t) - 6 * go(t), 0, 12 * go(t)), step=1)
             tsample(1, n, lambda t: (6 * ant(t), 0, 14 * go(t)), step=1)
             mane(n, lambda t: -4 * ant(t) + 8 * go(t), 0, step=1)
-            # review (Cinderlynx round 4): the paw folded back over the wrist and hid in the ruff under the chin (the arm's
-            # x rotations add up down the chain, so a paw keyed like the arm turned right round and pointed back). Now the
-            # arm straightens forward and up, aimed from this rig's own leg so the paw reaches about cheek height (35–60°
-            # up; short legs reach the chin) and clears the face, and the paw carries on along it, claws leading
+            # the arm straightens forward and up, aimed from this rig's own leg (swipe_reach), then rakes down; on the
+            # wind-up it is lifted with the forearm folded and the paw curled (cocked), which straightens out as it strikes
             reach = {'F': (0, 0, 0), 'B': (0, 0, 0), 'FL': swipe_reach(P, 'FL')}
-            rake = lambda t: A.step_ease(t, 0.44, 0.74)        # at impact the paw is at the near cheek, raking across
-            sweep = {'FL': lambda t: 25 * ant(t) - 34 * rake(t)}      # +z = out to the left side; raked across through impact
+            rake = lambda t: A.step_ease(t, 0.5, 0.8)
+            cock = lambda t: ant(t) * (1 - go(t))
+            extra = {'FL': {0: lambda t: -55 * cock(t) + 38 * rake(t), 1: lambda t: 75 * cock(t), 2: lambda t: 35 * cock(t)}}
+            sweep = {'FL': lambda t: 12 * ant(t) + 22 * go(t) - 10 * rake(t)}      # +z = out to the left side: an outward arc
         elif strike_style(P) == 'kick':
             # Stripeneck's card: a spinning double back-hoof kick. The body swings round on the spot (the root turns; its
             # position never moves) and turns back to face the opponent by the end; the head looks back over the
@@ -1199,7 +1209,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             # then both kick back AND up at `impact` from the raised rump; the tail flicks up. The kick comes from the
             # body's pitch and the legs' rotation; nothing translates the hips away from the chest, so the body keeps
             # its volume
+            # review (Stripeneck, Nov 12: a one-legged arabesque, the front legs one stilt, the head facing away): a true
+            # double buck. The body turns a little less (140°) so the camera sees both hind legs; the front legs stand
+            # planted wide; both hind legs fold with bent hocks, then snap straight back and up together at `impact`; the
+            # neck and head yaw (local y on these upright bones) back over the shoulder toward the target
             turn = lambda t: A.step_ease(t, 0.04, 0.36) * (1 - A.step_ease(t, 0.66, 0.96))
+            kick_look = lambda t: A.step_ease(t, 0.2, 0.46) * (1 - A.step_ease(t, 0.74, 0.96))
+            kick_stance = lambda t: A.step_ease(t, 0.02, 0.16) * (1 - A.step_ease(t, 0.84, 1.0))
+            kick_spin = 140.0
             tilt = lambda t: 24.0 * A.pulse(t, 0.14, 0.86)            # degrees, nose down: the rump up
             tuck = lambda t: A.pulse(t, 0.12, 0.5)                    # the hind legs fold under on the way up
             crouch_y = crouch_z = body_up = lambda t: 0.0             # no hips translation at all
@@ -1207,15 +1224,17 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
 
             def over_withers(t):
                 # the root's offset that pitches the body about the front hips (the withers), turned with the spin
-                a, th = math.radians(tilt(t)), math.radians(160 * turn(t))
+                a, th = math.radians(tilt(t)), math.radians(kick_spin * turn(t))
                 dy = fy - (fy * math.cos(a) - fz * math.sin(a))
                 dz = fz - (fy * math.sin(a) + fz * math.cos(a))
                 return (-dy * math.sin(th), dy * math.cos(th), dz)
-            cb.sample('root', n, lambda t: (tilt(t), 0, 160 * turn(t)), step=1)
+            cb.sample('root', n, lambda t: (tilt(t), 0, kick_spin * turn(t)), step=1)
             cb.sample('root', n, over_withers, kind='loc', step=1)          # (no chest pitch: it would sink the front hooves)
             # the neck lifts against the pitch, so the head stays up and looks back over the shoulder
-            nsample(n, lambda t: (-0.8 * tilt(t) - 6 * go(t), 0, 18 * turn(t)), step=1)
-            cb.sample('head', n, lambda t: (-0.3 * tilt(t) - 4 * go(t), 0, 22 * turn(t)), step=1)
+            # (Nov 13: y on these bones is a roll and rolled the head 90°; the yaw is z, + toward the monster's left, so
+            # back toward the target after the 140° left spin is −z; the head stays level)
+            nsample(n, lambda t: (-0.8 * tilt(t) - 6 * go(t), 0, -52 * kick_look(t)), step=1)
+            cb.sample('head', n, lambda t: (-0.3 * tilt(t) - 4 * go(t), 0, -38 * kick_look(t)), step=1)
             for s, sx in (('L', 1), ('R', -1)):
                 cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (8 * ant(t) - 20 * go(t), sx * 3, 0), step=1)
             tsample(0, n, lambda t: (34 * go(t), 0, -10 * turn(t)), step=1)          # the tail flicks up
@@ -1225,32 +1244,56 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             reach = {'F': (0, 0, 0), 'B': (0, 0, 0)}
             # the front legs undo the pitch (upright, hooves flat and planted); the hind legs fold (thigh forward, hock
             # bent), then kick: the thigh back, the hock opening, the hoof flicking back and up
-            fr = {0: lambda t: -tilt(t), 1: lambda t: 0.0, 2: lambda t: 0.0}     # (the thigh undoes it for the whole leg)
-            hd = {0: lambda t: -22 * tuck(t) + 30 * go(t), 1: lambda t: 48 * tuck(t) + 4 * go(t), 2: lambda t: -24 * tuck(t) + 40 * go(t)}
-            extra = {leg: (fr if leg[0] == 'F' else hd) for leg in LEGS}
+            # (the thigh undoes the pitch for the whole leg; the front pair also stagger a little fore and aft)
+            frl = {0: lambda t: -tilt(t) - 7 * kick_stance(t), 1: lambda t: 0.0, 2: lambda t: 0.0}
+            frr = {0: lambda t: -tilt(t) + 7 * kick_stance(t), 1: lambda t: 0.0, 2: lambda t: 0.0}
+            # the hocks bend on the wind-up and open to a straight leg at impact (the thigh drives back and up)
+            hdl = {0: lambda t: -22 * tuck(t) + 42 * go(t), 1: lambda t: 48 * tuck(t) - 6 * go(t), 2: lambda t: -24 * tuck(t) + 6 * go(t)}
+            hdr = {0: lambda t: -22 * tuck(t) + 36 * go(t), 1: lambda t: 48 * tuck(t) - 6 * go(t), 2: lambda t: -24 * tuck(t) + 6 * go(t)}
+            extra = {leg: {'FL': frl, 'FR': frr, 'BL': hdl, 'BR': hdr}.get(leg, hdl if leg[0] == 'B' else frl) for leg in LEGS}
+            # the front legs splay out to a wide planted stance, the hind pair a little apart so both read
+            sweep = {'FL': lambda t: 9 * kick_stance(t), 'FR': lambda t: -9 * kick_stance(t),
+                     'BL': lambda t: 6 * go(t), 'BR': lambda t: -6 * go(t)}     # (apart only in the kick: the wind-up gathers both)
         elif strike_style(P) == 'charge':
             # review (Rammerjack round 1): a horned breed charges. It rocks back on the wind-up (feet planted), then drives
             # forward low with the head dropped below the withers so the horns lead, the front legs driving and the hind
             # legs pushing; the chains (a scarf, a beard, a mane) stream back; the face turns a little to the monster's
             # left so it still reads from the three-quarter camera. No bite: the jaw stays shut.
-            stretch = lambda t: 1.0 + 0.05 * go(t) - 0.03 * ant(t)
-            cb.sample('hips', n, lambda t: (0, crouch_y(t) - mm(0.15) * go(t), crouch_z(t) - mm(0.02) * go(t)), kind='loc', step=1)
+            # rig_p()['charge_lunge'] (0..1, default 1) scales the drive: the hips' travel, the body's stretch and the legs'
+            # reach (Petalphant 0.25: a compact charge, all four feet planted); rig_p()['charge_dip'] (0..1, default 1)
+            # scales the neck's, head's and chest's dip (Petalphant: a dipping head swung its bent-back petal ears up into a sail)
+            lg = float(P.get('charge_lunge', 1.0))
+            dp = float(P.get('charge_dip', 1.0))
+            stretch = lambda t: 1.0 + lg * (0.05 * go(t) - 0.03 * ant(t))
+            # rig_p()['charge_windup'] (0..1, default 0 = as before; Rammerjack v1.25, 5-poses attack: the wind-up read
+            # like battle_idle): the weight rocks further back onto the hind legs, the head comes up and then tucks so
+            # the horns point ahead, and the near forehoof (FL) paws the ground
+            wu = float(P.get('charge_windup', 0.0))
+            w_up = lambda t: A.pulse(t, 0.05, 0.42)            # the head up, the weight back (at its fullest ~0.24)
+            w_tuck = lambda t: A.pulse(t, 0.26, 0.52)          # the chin tucks before the drive
+            w_paw = lambda t: A.pulse(t, 0.08, 0.44)           # the forehoof lifts and scrapes
+            cb.sample('hips', n, lambda t: (0, crouch_y(t) - mm(0.15) * lg * go(t) + mm(0.07) * wu * w_up(t),
+                                            crouch_z(t) - mm(0.02) * go(t) - mm(0.03) * wu * w_up(t)), kind='loc', step=1)
             cb.sample('root', n, lambda t: (1.0 / math.sqrt(stretch(t)), stretch(t), 1.0 / math.sqrt(stretch(t))), kind='scale', step=1)
             cb.sample('spine', n, lambda t: (2 * go(t), 0, 0), step=1)
-            cb.sample('chest', n, lambda t: (-6 * ant(t) + 8 * go(t), 0, 0), step=1)
-            nsample(n, lambda t: (-8 * ant(t) + 22 * go(t), 0, 0), step=1)        # the neck drops forward
+            cb.sample('chest', n, lambda t: (-6 * ant(t) + 8 * dp * go(t) - 8 * wu * w_up(t), 0, 0), step=1)
+            nsample(n, lambda t: (-8 * ant(t) + 22 * dp * go(t) - 12 * wu * w_up(t), 0, 0), step=1)        # the neck drops forward
             # head down, horns first; turned and rolled toward the monster's left (the three-quarter camera's side) so
             # the near horn doesn't hide the eyes and brow (review: Nimbusheep round 3, Rammerjack)
             # rig_p()['charge_head_turn'] (0..1, default 1) scales that turn and roll: big ears that ride the head
             # (Petalphant's petal ears) would otherwise stand up like a sail
             ht = float(P.get('charge_head_turn', 1.0))
-            cb.sample('head', n, lambda t: (-6 * ant(t) + 20 * go(t), -14 * ht * go(t), 22 * ht * go(t)), step=1)
+            cb.sample('head', n, lambda t: (-6 * ant(t) + 20 * dp * go(t) - 10 * wu * w_up(t) + 24 * wu * w_tuck(t),
+                                            -14 * ht * go(t), 22 * ht * go(t)), step=1)
             for s, sx in (('L', 1), ('R', -1)):
                 cb.sample(f'ear.{s}.1', n, lambda t, sx=sx: (8 * ant(t) - 18 * go(t), sx * 3, 0), step=1)
             tsample(0, n, lambda t: (14 * ant(t) - 8 * go(t), 0, 0), step=1)
             tsample(1, n, lambda t: (6 * ant(t) - 6 * go(t), 0, 0), step=1)
             mane(n, lambda t: -4 * ant(t) + 22 * go(t), 0, step=1)                 # the chains stream back
-            reach = {'F': (-30, 22, 8), 'B': (36, 6, 30)}      # front legs driving, hind legs pushing out behind
+            reach = {'F': (-30 * lg, 22 * lg, 8 * lg), 'B': (36 * lg, 6 * lg, 30 * lg)}      # front legs driving, hind legs pushing out behind
+            if wu > 0:
+                # the paw: the thigh lifts the hoof forward, the shin folds it under, then it scrapes back
+                extra['FL'] = {0: lambda t: -34 * wu * w_paw(t), 1: lambda t: 46 * wu * w_paw(t), 2: lambda t: -18 * wu * w_paw(t)}
         elif strike_style(P) == 'lunge':
             # winged quadrupeds (Hearthwing round 1: the pounce's long flat leap read as a belly-flop sprawl under open
             # wings): it draws back low, then drives forward with the head leading, the face level on the target and the
@@ -1296,7 +1339,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             for j, part in enumerate(('thigh', 'shin', 'foot')):
                 cb.sample(f'{part}.{leg}', n, lambda t, f=leg_fn, j=j: f(t, j=j), step=1)
         # the trunk winds back in, then lashes out; the wings mantle on the wind-up and beat down into the lunge
-        trunk(n, lambda t: 50 * ant(t) - 70 * go(t), step=1)
+        # rig_p()['strike_trunk_raise'] (0..1, default 0 = the lash): the trunk swings up and forward like the cast's and the
+        # bud opens at the impact instead (Petalphant, 5-poses attack: it sneezes seeds and petals at the target)
+        tru = float(P.get('strike_trunk_raise', 0.0))
+        if tru > 0 and TR:
+            trunk(n, lambda t: 20 * ant(t) - CAST_TRUNK_RAISE * tru * go(t), step=1, raise_=True, tip=lambda t: CAST_TRUNK_TIP * tru * go(t))
+            bud(n, lambda t: tru * go(t), step=1)
+        else:
+            trunk(n, lambda t: 50 * ant(t) - 70 * go(t), step=1)
         # wide open and raised at the impact (k reaches the recipe's spread pose), a downbeat after it (Hearthwing round 1:
         # barely open, beating down onto the lunge)
         wings(n, lambda t: min(1.0, 0.7 * ant(t) + 1.1 * go(t)), lambda t: -15 * ant(t) - 14 * go(t) + 30 * A.pulse(t, 0.62, 0.98))
@@ -1312,16 +1362,22 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         # a trunk rig (Petalphant round 2, 5-poses attack): ONE foreleg up and a smaller rear, the trunk high and
         # forward with its tip pointing out at the target and the bud fully open; the others rear on both forelegs
         trunked = bool(TR)
-        rear = CAST_TRUNK_REAR if trunked else 38
+        # rig_p()['cast_rear'] (default 38): Hearthwing keeps the cast on four feet (a rear-up leaned toward a famous dragon)
+        rear = CAST_TRUNK_REAR if trunked else float(P.get('cast_rear', 38))
         cb.sample('chest', n, lambda t: (-rear * up(t), 0, 0), step=1)
         cb.sample('spine', n, lambda t: (-(0 if trunked else 10) * up(t), 0, 0), step=1)
         nsample(n, lambda t: (12 * up(t), 0, 0), step=1)
         cb.sample('head', n, lambda t: (8 * up(t) + 2 * A.wave(t, 6.0) * A.pulse(t, 0.3, 0.7), 0, 0), step=1)
         cb.sample('hips', n, lambda t: (0, mm(0.03) * up(t), mm(0.01) * up(t)), kind='loc', step=1)
+        # rig_p()['cast_paw'] (default 1) scales how high the forepaws come up: a short-necked breed's paws covered its face
+        cpk = float(P.get('cast_paw', 1.0))
         for leg in (('FL',) if trunked else ('FL', 'FR')):
-            cb.sample(f'thigh.{leg}', n, lambda t: (-60 * up(t), 0, 0), step=1)
-            cb.sample(f'shin.{leg}', n, lambda t: (-25 * up(t), 0, 0), step=1)
-            cb.sample(f'foot.{leg}', n, lambda t: (40 * up(t), 0, 0), step=1)
+            cb.sample(f'thigh.{leg}', n, lambda t: (-60 * cpk * up(t), 0, 0), step=1)
+            cb.sample(f'shin.{leg}', n, lambda t: (-25 * cpk * up(t), 0, 0), step=1)
+            cb.sample(f'foot.{leg}', n, lambda t: (40 * cpk * up(t), 0, 0), step=1)
+        if P.get('jaw_open'):
+            # a weighted jaw (RECIPE: it opens in the cast): open wide at the release (Hearthwing's fire from open jaws)
+            cb.sample('jaw', n, lambda t: (42 * A.step_ease(t, 0.25, 0.4) * (1 - A.step_ease(t, 0.8, 0.95)), 0, 0), step=1)
         hk = 0.35 if trunked else 1.0
         for leg in ('BL', 'BR'):
             cb.sample(f'thigh.{leg}', n, lambda t: (20 * hk * up(t), 0, 0), step=1)
@@ -1369,8 +1425,11 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         # shove back and the chest lift add about 20 degrees of lift to the head). Now the head is knocked AWAY from the
         # three-quarter camera (toward the monster's right) and rolled with it, the muzzle level or a touch down
         cb.sample('chest', n, lambda t: (-4 * k(t), 0, 0), step=1)
-        neck_fn = lambda t: (-2 * k(t), 0, -10 * k(t))
-        head_fn = lambda t: (8 * k(t), -10 * k(t), -22 * k(t))
+        # rig_p()['hit_head'] (0..1, default 1) scales the head's and neck's knock (Petalphant 0.45: its roll lifted the far
+        # petal ear above the crown)
+        hh = float(P.get('hit_head', 1.0))
+        neck_fn = lambda t: (-2 * hh * k(t), 0, -10 * hh * k(t))
+        head_fn = lambda t: (8 * hh * k(t), -10 * hh * k(t), -22 * hh * k(t))
         nsample(n, neck_fn, step=1)
         cb.sample('head', n, head_fn, step=1)
         squash(n, lambda t: 1.0 - 0.06 * k(t))
@@ -1380,7 +1439,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         mane(n, lambda t: -18 * k(t), 0, step=1, against={'head': head_fn, 'neck': neck_fn})
         trunk(n, lambda t: 30 * k(t), step=1, against={'head': head_fn, 'neck': neck_fn})
         bud(n, lambda t: 0.15 * A.pulse(t, 0.0, 0.6), step=1)        # a small flick; the bud stays closed (5-poses hit)
-        wings(n, lambda t: 0.5 * k(t), lambda t: -10 * k(t))           # a startled flare
+        # a startled flare (Nov 12: the big working wings stay folded and lift a little; half open, a rod swept the head)
+        wings(n, lambda t: 0.5 * k(t) * float(P.get('hit_wing_open', 1.0)), lambda t: -10 * k(t))
         eyes_shut(n, lambda t: 1.6 * A.pulse(t, 0.02, 0.75))          # a squeezed-shut wince at the peak, open again
         cb.face(1, 'surprised')
         cb.face(12, 'neutral')
@@ -1460,8 +1520,11 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         cb.sample('spine', n, lambda t: (12 * curl(t), 0, 0), step=1)
         cb.sample('chest', n, lambda t: (14 * curl(t), 0, 0), step=1)
         # the neck and head roll back against the fall (shared, so the neck never twists hard), keeping the face upright
-        neck_fn = lambda t: (12 * curl(t), 24 * fall(t), 0)
-        head_fn = lambda t: (16 * curl(t), 30 * fall(t), 0)
+        # rig_p()['ko_head_lift'] (degrees, default 0): takes that much of the curl back off the neck (and 0.6× off the head)
+        # so a long neck doesn't fold the face into the chest (Stripeneck review Nov 12)
+        hl = float(P.get('ko_head_lift', 0.0))
+        neck_fn = lambda t: ((12 - hl) * curl(t), 24 * fall(t), 0)
+        head_fn = lambda t: ((16 - 0.6 * hl) * curl(t), 30 * fall(t), 0)
         nsample(n, neck_fn, step=1)
         cb.sample('head', n, head_fn, step=1)
         # review (Nimbusheep, Cinderlynx): no stiff pegs. The legs fold loosely along the body as in sleep: knees and hocks
@@ -1482,7 +1545,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         # review (Starhowl round 2): the mane chains lie down toward the ground (the body's right side, slightly toward the
         # belly) instead of standing up as a ridge
         mane_droop(n, fall, (-math.sin(math.radians(KO_ROLL)), 0.0, -math.cos(math.radians(KO_ROLL))), against={'head': head_fn, 'neck': neck_fn})
-        wings(n, lambda t: 0.25 * fall(t), lambda t: 8 * fall(t))
+        # folded tight and lifted along the back (Nov 12: the big working wings, opened a little and beaten down, dug the
+        # under wing into the ground)
+        wings(n, 0.0, lambda t: -16 * fall(t))
         eyes_shut(n, lambda t: max(0.8 * A.pulse(t, 0.0, 0.3), A.step_ease(t, 0.35, 0.6)))   # wince, then shut and staying shut
         cb.face(1, 'strain')
         cb.face(20, 'dizzy')
@@ -1516,6 +1581,160 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             cb.sample('jaw', n, lambda t: (16 + 6 * air(t), 0, 0), step=1)      # a happy open smile, wider in the air
         cb.face(1, 'happy')
         cb.marker('land', 22)
+        made.append(cb.end())
+
+    # ---- flight (a rig with wings only; Nov 12, Hearthwing): every clip in place, the root at the origin with at most a
+    # small bob (the game raises and lowers the monster). One wing beat is 24 ticks (0.8 s): a powerful downstroke (45%,
+    # the wing fully open, sweeping from high over the back to below the body) and a recovery upstroke (55%, the wing
+    # half folding at the wrist on the way up). Phase 0 = the top of the upstroke, wings high: fly_takeoff ends there,
+    # fly loops from it, fly_cast starts and ends there, fly_land starts from it.
+    # degrees about the body's long axis from the recipe's spread pose: the top of the stroke high over the back, the
+    # bottom below level, the glide and mid-downstroke with the wings raised about 15-25 degrees (a dihedral; review
+    # Nov 12: dead flat at mid-stroke read as weak)
+    FLY_UP, FLY_DOWN, FLY_FOLD = 30.0, 55.0, 0.38
+    # front paws folded back under the chest; hind legs straight back along the tail (review Nov 12: one dangled)
+    fly_tuck = {'F': (-55, 100, -35), 'B': (75, 5, 35)}
+
+    def stroke(p: float) -> tuple[float, float]:
+        """(flap degrees, + = down; opening k) at beat phase p (0..1)."""
+        p = p % 1.0
+        if p < 0.45:
+            return -FLY_UP + (FLY_UP + FLY_DOWN) * C.ease_in_out(p / 0.45), 1.0
+        u = (p - 0.45) / 0.55
+        return FLY_DOWN - (FLY_UP + FLY_DOWN) * C.ease_in_out(u), 1.0 - FLY_FOLD * math.sin(math.pi * u)
+
+    def lift_of(p: float) -> float:
+        """The body's rise over a beat: up through the downstroke, settling on the upstroke (0..1)."""
+        return 0.5 - 0.5 * math.cos(2 * math.pi * ((p % 1.0) - 0.12))
+
+    def fly_body(frames: int, beats: float, k_air=1.0, step: int = 1) -> None:
+        """The airborne pose over `frames`: wings beating `beats` times, legs tucked by k_air(t), the body bobbing with
+        the strokes (a small root bob), the head steady, the tail trailing as a rudder, the frills streaming back."""
+        ka = k_air if callable(k_air) else (lambda t, v=k_air: v)
+        wings(frames, lambda t: stroke(t * beats)[1], lambda t: stroke(t * beats)[0], step=step)
+        cb.sample('root', frames, lambda t: (0, 0, mm(0.035) * (lift_of(t * beats) - 0.5) * ka(t)), kind='loc', step=step)
+        cb.sample('chest', frames, lambda t: (-3 * A.wave(t * beats, 1.0, 0.1) * ka(t), 0, 0), step=step)
+        nsample(frames, lambda t: (2 * A.wave(t * beats, 1.0, 0.2) * ka(t), 0, 0), step=step)
+        cb.sample('head', frames, lambda t: ((-6 + 2 * A.wave(t * beats, 1.0, 0.3)) * ka(t), 0, 0), step=step)
+        for leg in LEGS:
+            r = fly_tuck[leg[0]]
+            for j, part in enumerate(('thigh', 'shin', 'foot')):
+                cb.sample(f'{part}.{leg}', frames, lambda t, v=r[j]: (v * ka(t), 0, 0), step=step)
+        tsample(0, frames, lambda t: ((-6 + 5 * A.wave(t * beats, 1.0, -0.15)) * ka(t), 0, 3 * A.wave(t * beats * 0.5, 1.0) * ka(t)), step=step)
+        tsample(1, frames, lambda t: ((-4 + 6 * A.wave(t * beats, 1.0, -0.3)) * ka(t), 0, 4 * A.wave(t * beats * 0.5, 1.0, -0.1) * ka(t)), step=step)
+        tsample(2, frames, lambda t: ((-2 + 7 * A.wave(t * beats, 1.0, -0.45)) * ka(t), 0, 5 * A.wave(t * beats * 0.5, 1.0, -0.2) * ka(t)), step=step)
+        for s_, sx in (('L', 1), ('R', -1)):
+            cb.sample(f'ear.{s_}.1', frames, lambda t, sx=sx: (16 * ka(t), sx * (2 + 4 * A.wave(t * beats, 1.0, 0.25)) * ka(t), 0), step=step)
+            cb.sample(f'ear.{s_}.2', frames, lambda t, sx=sx: (8 * ka(t), sx * 3 * A.wave(t * beats, 1.0, 0.1) * ka(t), 0), step=step)
+
+    if WQ and want('fly_takeoff'):
+        # crouch with the wings swept up, then leap on the first big downstroke, legs pushing off then tucking; it ends
+        # airborne at the top of the next upstroke (fly's first frame)
+        n = 24
+        cb.begin('fly_takeoff', n, loop=False)
+        crouch = lambda t: A.step_ease(t, 0.0, 0.3) * (1 - A.step_ease(t, 0.32, 0.42))
+        push = lambda t: A.pulse(t, 0.32, 0.6)
+        air = lambda t: A.step_ease(t, 0.4, 0.7)
+
+        def tk_wing(t):
+            if t < 0.32:                                   # rising to the top: opening and sweeping up
+                u = A.step_ease(t, 0.0, 0.32)
+                return -FLY_UP * u, u
+            return stroke((t - 0.32) / 0.68)               # one full beat to the end: the downstroke launches it
+        wings(n, lambda t: tk_wing(t)[1], lambda t: tk_wing(t)[0])
+        cb.sample('root', n, lambda t: (0, 0, mm(0.06) * push(t) + mm(0.035) * (lift_of((t - 0.32) / 0.68) - 0.5) * air(t)), kind='loc', step=1)
+        cb.sample('hips', n, lambda t: (0, mm(0.03) * crouch(t), -mm(0.07) * crouch(t)), kind='loc', step=1)
+        cb.sample('chest', n, lambda t: (6 * crouch(t) - 8 * push(t), 0, 0), step=1)
+        nsample(n, lambda t: (-6 * crouch(t) + 4 * push(t), 0, 0), step=1)
+        cb.sample('head', n, lambda t: (-4 * crouch(t) - 6 * air(t), 0, 0), step=1)
+        for leg in LEGS:
+            r = fly_tuck[leg[0]]
+            for j, part in enumerate(('thigh', 'shin', 'foot')):
+                def lf(t, leg=leg, j=j, v=r[j]):
+                    c = legs.angles(leg, -mm(0.03) * crouch(t), 0.0, -mm(0.07) * crouch(t))[j]
+                    # the push straightens the legs (a jump), then they fold into the flight tuck
+                    straight = (-12 if leg[0] == 'F' else 18) * push(t) if j == 0 else (10 * push(t) if j == 2 else 0.0)
+                    return (c * (1 - air(t)) + straight + v * air(t), 0, 0)
+                cb.sample(f'{part}.{leg}', n, lf, step=1)
+        tsample(0, n, lambda t: (10 * crouch(t) - 6 * air(t), 0, 0), step=1)
+        tsample(1, n, lambda t: (6 * crouch(t) - 4 * air(t), 0, 0), step=1)
+        tsample(2, n, lambda t: (-2 * air(t), 0, 0), step=1)
+        for s_, sx in (('L', 1), ('R', -1)):
+            cb.sample(f'ear.{s_}.1', n, lambda t, sx=sx: (-8 * crouch(t) + 16 * air(t), sx * 2, 0), step=1)
+        cb.marker('leap', 1 + int(round(0.36 * n)))
+        cb.face(1, 'neutral')
+        made.append(cb.end())
+
+    if WQ and want('fly'):
+        n = 24
+        cb.begin('fly', n, loop=True)
+        fly_body(n, 1.0)
+        cb.marker('beat', 1 + int(round(0.2 * n)))
+        cb.face(1, 'neutral')
+        made.append(cb.end())
+
+    if WQ and want('fly_cast'):
+        # hovering (two beats, the body reared about 22 degrees, the hind legs hanging) while the head thrusts forward and
+        # the jaw opens wide on `release` (breathing fire from the air); level flight again at the end
+        n = 48
+        cb.begin('fly_cast', n, loop=False)
+        hover = lambda t: A.step_ease(t, 0.0, 0.22) * (1 - A.step_ease(t, 0.8, 1.0))
+        thrust = lambda t: A.step_ease(t, 0.3, 0.45) * (1 - A.step_ease(t, 0.72, 0.86))
+        fly_body(n, 2.0, k_air=lambda t: 1.0 - 0.45 * hover(t))
+        cb.sample('root', n, lambda t: (-22 * hover(t), 0, 0), step=1)
+        nsample(n, lambda t: (14 * hover(t) + 16 * thrust(t), 0, 0), step=1)       # the neck reaches forward and down
+        cb.sample('head', n, lambda t: (8 * hover(t) - 4 * thrust(t), 0, 0), step=1)
+        cb.sample('jaw', n, lambda t: (44 * thrust(t), 0, 0), step=1)
+        for leg in ('BL', 'BR'):
+            # the hind legs hang down under the reared body while it hovers
+            cb.sample(f'thigh.{leg}', n, lambda t: (fly_tuck['B'][0] * (1 - hover(t)) + 6 * hover(t), 0, 0), step=1)
+            cb.sample(f'shin.{leg}', n, lambda t: (fly_tuck['B'][1] * (1 - hover(t)) - 20 * hover(t), 0, 0), step=1)
+            cb.sample(f'foot.{leg}', n, lambda t: (fly_tuck['B'][2] * (1 - hover(t)) + 30 * hover(t), 0, 0), step=1)
+        cb.marker('release', 1 + int(round(0.48 * n)))
+        cb.face(1, 'angry')
+        cb.face(int(0.86 * n), 'neutral')
+        made.append(cb.end())
+
+    if WQ and want('fly_land'):
+        # flare (the wings swept forward and up, braking; the body reared), legs reaching down, touch down on `land` with a
+        # squash, then settle into the idle stance with the wings folding away
+        n = 24
+        cb.begin('fly_land', n, loop=False)
+        flare = lambda t: A.step_ease(t, 0.0, 0.3) * (1 - A.step_ease(t, 0.55, 0.75))
+        reach = lambda t: A.step_ease(t, 0.15, 0.5)
+        tuck_k = lambda t: 1 - A.step_ease(t, 0.1, 0.5)
+        touch = lambda t: A.pulse(t, 0.55, 0.85)
+        fold = lambda t: A.step_ease(t, 0.6, 1.0)
+
+        def ld_wing(t):
+            f0, k0 = stroke(0.0)
+            if t < 0.3:                                     # from the top of the stroke: down and forward into the flare
+                u = A.step_ease(t, 0.0, 0.3)
+                return f0 + (-20 - f0) * u, 1.0
+            return -20 * (1 - fold(t)) + 6 * touch(t), 1.0 - fold(t)
+        wings(n, lambda t: ld_wing(t)[1], lambda t: ld_wing(t)[0])
+        cb.sample('root', n, lambda t: (-14 * flare(t), 0, 0), step=1)
+        cb.sample('root', n, lambda t: (0, 0, mm(0.035) * (lift_of(0.0) - 0.5) * tuck_k(t)), kind='loc', step=1)
+        squash(n, lambda t: 1.0 - 0.1 * touch(t))
+        cb.sample('chest', n, lambda t: (-4 * flare(t) + 5 * touch(t), 0, 0), step=1)
+        nsample(n, lambda t: (-6 * flare(t) + 6 * touch(t), 0, 0), step=1)
+        cb.sample('head', n, lambda t: (-6 * tuck_k(t) + 4 * flare(t) - 3 * touch(t), 0, 0), step=1)
+        for leg in LEGS:
+            r = fly_tuck[leg[0]]
+            for j, part in enumerate(('thigh', 'shin', 'foot')):
+                def lf(t, leg=leg, j=j, v=r[j]):
+                    c = legs.angles(leg, 0.0, 0.0, -mm(0.05) * touch(t))[j] * reach(t) if reach(t) > 0 else 0.0
+                    reach_fwd = (-14 if leg[0] == 'F' else 8) * flare(t) if j == 0 else 0.0
+                    return (v * tuck_k(t) + c + reach_fwd, 0, 0)
+                cb.sample(f'{part}.{leg}', n, lf, step=1)
+        cb.sample('hips', n, lambda t: (0, 0, -mm(0.05) * touch(t)), kind='loc', step=1)
+        tsample(0, n, lambda t: (-6 * tuck_k(t) + 12 * flare(t) - 6 * touch(t), 0, 0), step=1)
+        tsample(1, n, lambda t: (-4 * tuck_k(t) + 8 * flare(t), 0, 0), step=1)
+        tsample(2, n, lambda t: (-2 * tuck_k(t) + 6 * flare(t), 0, 0), step=1)
+        for s_, sx in (('L', 1), ('R', -1)):
+            cb.sample(f'ear.{s_}.1', n, lambda t, sx=sx: (16 * tuck_k(t) + 10 * touch(t), sx * 2, 0), step=1)
+        cb.marker('land', 1 + int(round(0.62 * n)))
+        cb.face(1, 'neutral')
         made.append(cb.end())
 
     # ---- Battle 3D: moving sideways while facing the opponent (root motion runs along the monster's own ±X)
@@ -1603,7 +1822,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             cb.sample(f'shin.{leg}', n, lambda t, tuck=tuck: (-tuck * 1.3 * air(t), 0, 0), step=1)
             cb.sample(f'foot.{leg}', n, lambda t, tuck=tuck, out=out: (tuck * 0.3 * air(t), out * air(t), 0), step=1)
         trunk(n, lambda t: -15 * air(t), lambda t: -side * 20 * air(t), step=1)
-        wings(n, lambda t: 0.3 * air(t), step=1)
+        wings(n, lambda t: 0.3 * float(P.get('hit_wing_open', 1.0)) * air(t), step=1)
         cb.marker('land', n)
         made.append(cb.end())
 
@@ -1630,3 +1849,6 @@ STAR_CLIPS = ['idle', 'idle_happy', 'idle_tired', 'idle_sad', 'idle_sick', 'slee
               'strike', 'cast', 'shove', 'hit', 'hit_heavy', 'ko', 'win']
 # Battle 3D (the arena's free movement): side-stepping while facing the opponent, and the dodge hop.
 MOVE_CLIPS = ['strafe_l', 'strafe_r', 'sidestep_l', 'sidestep_r']
+# A rig with wings (Nov 12): take off, fly (a loop, one beat 0.8 s), breathe fire hovering (`release`), land (`land`); all
+# in place. The names are a contract with the game (Battle 3D's flying Special and Signature, the ranch's flights).
+FLY_CLIPS = ['fly_takeoff', 'fly', 'fly_cast', 'fly_land']

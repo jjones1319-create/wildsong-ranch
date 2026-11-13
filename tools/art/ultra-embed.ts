@@ -12,7 +12,8 @@
  *   props (horns, a rope, a scarf): the body's material with no sheen and the membranes' clearcoat.
  * The card edge fade (cards show only at the outline) is a shader rule the runtime adds (src/art3d/perf/content.ts).
  * Variants: a hidden one-triangle mesh `__variant_<id>` whose material's base colour is the variant's colour map (the
- * Art 2.0 convention, src/art3d/loader.ts).
+ * Art 2.0 convention, src/art3d/loader.ts); a variant with its own ORM map (VARIANT_ORM) carries it as that holder's
+ * occlusion and metallicRoughness texture (src/art3d/ultra/ultraAsset.ts swaps it in with the variant).
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -54,7 +55,7 @@ function checkFilm(): void {
 
 /** Film-ready materials with embedded textures on every lo_* mesh, plus the variant holders. Returns the material count. */
 export function embedTextures(doc: Document, dir: string, body: Record<string, { ktx2: string; webp: string }>,
-  variants: Record<string, { ktx2: string; webp: string }>, format: Format): number {
+  variants: Record<string, { ktx2: string; webp: string; orm?: { ktx2: string; webp: string } }>, format: Format): number {
   checkFilm()
   ;(format === 'ktx2' ? doc.createExtension(KHRTextureBasisu) : doc.createExtension(EXTTextureWebP)).setRequired(true)
   const clearcoat = doc.createExtension(KHRMaterialsClearcoat)
@@ -67,11 +68,11 @@ export function embedTextures(doc: Document, dir: string, body: Record<string, {
   const orm = tex(body.orm!)
   const made = new Map<string, Material>()
 
-  function film(kind: Kind, map: Texture, name: string): Material {
+  function film(kind: Kind, map: Texture, name: string, ormMap: Texture = orm): Material {
     const m = doc.createMaterial(name).setBaseColorTexture(map).setBaseColorFactor([1, 1, 1, 1])
       .setNormalTexture(normal).setNormalScale(F.normalScale)
-      .setOcclusionTexture(orm).setOcclusionStrength(1)
-      .setMetallicRoughnessTexture(orm).setMetallicFactor(0).setRoughnessFactor(F.furRoughness)
+      .setOcclusionTexture(ormMap).setOcclusionStrength(1)
+      .setMetallicRoughnessTexture(ormMap).setMetallicFactor(0).setRoughnessFactor(F.furRoughness)
     const coat = kind === 'fin' || kind === 'prop' ? F.finCoat : kind === 'eye' ? F.eyeCoat : kind === 'card' ? 0 : F.furCoat
     if (coat > 0) m.setExtension('KHR_materials_clearcoat', clearcoat.createClearcoat().setClearcoatFactor(coat).setClearcoatRoughnessFactor(kind === 'eye' ? 0.05 : F.furCoatRoughness))
     const sh = kind === 'fin' || kind === 'eye' || kind === 'prop' ? 0 : kind === 'card' ? F.cardSheen : F.furSheen
@@ -103,7 +104,7 @@ export function embedTextures(doc: Document, dir: string, body: Record<string, {
   const buffer = doc.getRoot().listBuffers()[0] ?? doc.createBuffer()
   const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0]!
   for (const [vid, files] of Object.entries(variants)) {
-    const mat = film('body', tex(files), `__variant_${vid}`)
+    const mat = film('body', tex(files), `__variant_${vid}`, files.orm ? tex(files.orm) : orm)
     const pos = doc.createAccessor().setType('VEC3').setBuffer(buffer).setArray(new Float32Array([0, -0.5, 0, 0.001, -0.5, 0, 0, -0.5, -0.001]))
     const uv = doc.createAccessor().setType('VEC2').setBuffer(buffer).setArray(new Float32Array([0, 0, 1, 0, 0, 1]))
     const prim = doc.createPrimitive().setAttribute('POSITION', pos).setAttribute('TEXCOORD_0', uv).setMaterial(mat)

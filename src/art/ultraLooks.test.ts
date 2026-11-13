@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DUEL_FALLBACK_OK, DUEL_REQUIRED_CLIPS, resolveClipName } from '../art3d/ultra/clips.ts'
-import { cardEdgeFadeOf, glowOf, normalScaleOf, partKind, partVisible, softFinsOf, variantOfPart } from '../art3d/ultra/parts.ts'
+import { DUEL_FALLBACK_OK, DUEL_REQUIRED_CLIPS, FLY_CLIPS, resolveClipName } from '../art3d/ultra/clips.ts'
+import { bodySheenOf, cardEdgeFadeOf, glowFor, glowOf, normalScaleOf, partKind, partVisible, softFinsOf, variantCardsOff, variantEyesDiffer, variantHasOwnOrm, variantOfPart } from '../art3d/ultra/parts.ts'
 import { ART } from '../data/tuning.ts'
 import { BREED_IDS } from '../data/types.ts'
 import { SECRETS } from '../data/secrets.ts'
@@ -26,13 +26,14 @@ interface Sidecar {
   heightUnits?: number
   build?: unknown
   clips?: Record<string, unknown>
-  variants?: Record<string, { holder?: string; meshes?: string[] }>
+  variants?: Record<string, { holder?: string; meshes?: string[]; orm?: unknown; glow?: unknown; cards?: boolean }>
   lite?: { file?: string; build?: string }
 }
 
 interface GlbJson {
   nodes?: { name?: string; mesh?: number }[]
-  meshes?: { name?: string; primitives: { indices?: number; mode?: number; attributes: Record<string, number> }[] }[]
+  meshes?: { name?: string; primitives: { indices?: number; mode?: number; attributes: Record<string, number>; material?: number }[] }[]
+  materials?: { name?: string; pbrMetallicRoughness?: { metallicRoughnessTexture?: { index: number } }; occlusionTexture?: { index: number } }[]
   accessors?: { count: number }[]
   animations?: { name?: string }[]
 }
@@ -57,6 +58,13 @@ function triangles(j: GlbJson): number {
     }
   }
   return Math.round(n)
+}
+
+/** The ORM texture (metallicRoughness) index of a mesh's first primitive's material, by mesh name. */
+function ormTextureOf(j: GlbJson, mesh: string): number | undefined {
+  const m = (j.meshes ?? []).find((x) => x.name === mesh)
+  const mat = m?.primitives[0]?.material
+  return mat === undefined ? undefined : j.materials?.[mat]?.pbrMetallicRoughness?.metallicRoughnessTexture?.index
 }
 
 const names = (j: GlbJson) => new Set([...(j.nodes ?? []).map((n) => n.name ?? ''), ...(j.meshes ?? []).map((m) => m.name ?? '')])
@@ -109,10 +117,29 @@ describe('the Ultra registry (Art 2.1)', () => {
         if (typeof side.build === 'string') expect(side.build).toBe(sha10(glbPath))
       })
 
+      it('flies with all four flying clips or none (a part set would ground it), in its Ultra and Lite files alike', () => {
+        const side = JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar
+        const listed = FLY_CLIPS.filter((c) => Object.prototype.hasOwnProperty.call(side.clips ?? {}, c))
+        expect(listed.length === 0 || listed.length === FLY_CLIPS.length, `${breed}.json lists only ${listed.join(', ')}`).toBe(true)
+        if (!listed.length) return
+        const files = new Set([glbPath, join(PUBLIC, look.lite.glb)])
+        if (side.lite?.file) files.add(join(PUBLIC, look.glb.slice(0, look.glb.lastIndexOf('/') + 1), side.lite.file))
+        for (const f of files) {
+          const anims = new Set((glbJson(f).animations ?? []).map((a) => a.name))
+          for (const c of FLY_CLIPS) expect(anims.has(c), `${f} lacks ${c}`).toBe(true)
+        }
+      })
+
       it('a normal entry (when it has one) has a usable scale', () => {
         const side = JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar
         if (side.normal === undefined || (side.normal as { scale?: unknown }).scale === undefined) return
         expect(normalScaleOf(side), `${breed}.json normal ${JSON.stringify(side.normal)}`).not.toBeNull()
+      })
+
+      it('a body entry (when it has one) has a usable sheen', () => {
+        const side = JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar & { body?: { sheen?: unknown } }
+        if (side.body === undefined || side.body.sheen === undefined) return
+        expect(bodySheenOf(side), `${breed}.json body ${JSON.stringify(side.body)}`).not.toBeNull()
       })
 
       it('a cards entry (when it has one) has a usable edge fade', () => {
@@ -130,6 +157,22 @@ describe('the Ultra registry (Art 2.1)', () => {
         if (side.fins !== undefined) expect(typeof (side.fins as { soft?: unknown }).soft === 'boolean' || (side.fins as { soft?: unknown }).soft === undefined).toBe(true)
       })
 
+      it("a variant's own ORM (when it has one) rides on its holder, apart from the shared one, with a usable glow", () => {
+        const side = JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar
+        const j = glbJson(glbPath)
+        const body = ormTextureOf(j, 'lo_body')
+        for (const [vid, v] of Object.entries(side.variants ?? {})) {
+          if (!variantHasOwnOrm(side, vid)) {
+            expect(v.orm === undefined || v.orm === false, `${breed}.json ${vid} orm ${JSON.stringify(v.orm)}`).toBe(true)
+            continue
+          }
+          const held = ormTextureOf(j, v.holder ?? `__variant_${vid}`)
+          expect(held, `${breed}.glb: the ${vid} holder has no ORM`).toBeDefined()
+          expect(held, `${breed}.glb: the ${vid} holder shares the body's ORM`).not.toBe(body)
+          if (v.glow !== undefined && v.glow !== null) expect(glowFor(side, vid, ART.ultra.film.glow.maxStrength), `${breed}.json ${vid} glow`).not.toBeNull()
+        }
+      })
+
       it('holds each variant the registry lists, and each variant own props show only with it', () => {
         const side = JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar
         const j = glbJson(glbPath)
@@ -143,6 +186,14 @@ describe('the Ultra registry (Art 2.1)', () => {
             expect(nodes.has(m), `${breed}.glb lacks ${m} (${vid})`).toBe(true)
             expect(partVisible(m, null, side.variants), `${m} shows on the usual look`).toBe(false)
             expect(partVisible(m, vid, side.variants), `${m} hides on ${vid}`).toBe(true)
+          }
+        }
+        // a variant without fur cards (VARIANT_CARDS_OFF) hides them, and only on itself
+        for (const [vid, v] of Object.entries(side.variants ?? {})) {
+          expect(v.cards === undefined || v.cards === false, `${breed}.json ${vid} cards ${JSON.stringify(v.cards)}`).toBe(true)
+          if (v.cards === false && nodes.has('lo_cards')) {
+            expect(partVisible('lo_cards', vid, side.variants), `lo_cards shows on ${vid}`).toBe(false)
+            expect(partVisible('lo_cards', null, side.variants), 'lo_cards hides on the usual look').toBe(true)
           }
         }
         // every variant-only prop (lo_props_<short>) is hidden on the usual look; the always-worn parts show
@@ -261,6 +312,45 @@ describe('Ultra parts (tools/art/ultra.ts names)', () => {
     expect(cardEdgeFadeOf({ cards: { edgeFade: [0.1, 1.2] } })).toBeNull()
     expect(cardEdgeFadeOf({ cards: { edgeFade: ['0.1', 0.4] } })).toBeNull()
     expect(softFinsOf({})).toBe(false)
+  })
+
+  it('a variant without fur cards hides lo_cards (and its GLTFLoader copies) only on itself', () => {
+    const variants = { 'granite-x': { cards: false }, 'moss-x': {} }
+    expect(variantCardsOff('granite-x', variants)).toBe(true)
+    expect(variantCardsOff('moss-x', variants)).toBe(false)
+    expect(variantCardsOff(null, variants)).toBe(false)
+    for (const n of ['lo_cards', 'lo_cards_1']) {
+      expect(partVisible(n, 'granite-x', variants)).toBe(false)
+      expect(partVisible(n, 'moss-x', variants)).toBe(true)
+      expect(partVisible(n, null, variants)).toBe(true)
+    }
+    expect(partVisible('lo_body', 'granite-x', variants)).toBe(true)
+    expect(partVisible('lo_tuft', 'granite-x', variants)).toBe(true)
+  })
+
+  it("a variant with its own ORM glows by its own entry (null: not at all); every other look by the breed's", () => {
+    const max = ART.ultra.film.glow.maxStrength
+    const side = { glow: { strength: 1, tint: null }, variants: { a: { orm: true, glow: { strength: 2, tint: null } }, b: { orm: true, glow: null }, c: { orm: true }, d: {} } }
+    expect(variantHasOwnOrm(side, 'a')).toBe(true)
+    expect(variantHasOwnOrm(side, 'd')).toBe(false)
+    expect(variantHasOwnOrm(side, null)).toBe(false)
+    expect(variantHasOwnOrm({ variants: { a: { orm: 'atlas_a_orm.png' } } }, 'a')).toBe(false)
+    expect(glowFor(side, 'a', max)!.strength).toBe(2)
+    expect(glowFor(side, 'b', max)).toBeNull()
+    expect(glowFor(side, 'c', max)!.strength).toBe(1)
+    expect(glowFor(side, 'd', max)!.strength).toBe(1)
+    expect(glowFor(side, null, max)!.strength).toBe(1)
+    expect(glowFor({ variants: { a: { orm: true, glow: { strength: 1.5, tint: null } } } }, 'a', max)!.strength).toBe(1.5)
+    expect(glowFor({ variants: { a: { orm: true, glow: { strength: 1.5, tint: null } } } }, null, max)).toBeNull()
+  })
+
+  it("a variant's eyes take its own atlas only when its eye colour differs from the usual look's", () => {
+    const side = { palette: { eye: '#FFD15C' }, variants: { bonfire: { eyeColor: '#FFF0A8' }, same: { eyeColor: '#ffd15c' }, none: {} } }
+    expect(variantEyesDiffer(side, 'bonfire')).toBe(true)
+    expect(variantEyesDiffer(side, 'same')).toBe(false)
+    expect(variantEyesDiffer(side, 'none')).toBe(false)
+    expect(variantEyesDiffer(side, null)).toBe(false)
+    expect(variantEyesDiffer({ variants: { bonfire: { eyeColor: '#FFF0A8' } } }, 'bonfire')).toBe(false)
   })
 
   it("a variant's own props show only with it; the always-worn props and the body always", () => {

@@ -67,6 +67,11 @@ export class AttackFx {
   ]
   /** CPU time of the last frame's update (ms), for the stats line. */
   cpuMs = 0
+  /** In a flight, each side's mouth (world) and how far the front socket has moved there (0–1). */
+  private readonly mouths = [
+    { at: new Vector3(), k: 0 },
+    { at: new Vector3(), k: 0 },
+  ]
 
   constructor(scene: Scene, o: AttackFxOptions) {
     this.o = o
@@ -115,14 +120,27 @@ export class AttackFx {
     return this.dir.set(b.x - a.x, 0, b.z - a.z).normalize()
   }
 
-  /** A technique fired now that lands after windupSec (stage seconds). */
-  fire(side: number, tech: Technique, now: number, windupSec: number): void {
+  /**
+   * In a flight (ultra/flight.ts) moves leave from the monster's mouth instead of in front of its chest, `k` of the way
+   * there (0–1; null or 0: the chest's front as usual). Set each frame before update.
+   */
+  setMouth(side: number, at: Vector3 | null, k: number): void {
+    const m = this.mouths[side]!
+    m.k = at ? Math.min(1, Math.max(0, k)) : 0
+    if (at) m.at.copy(at)
+  }
+
+  /**
+   * A technique fired now that lands after windupSec (stage seconds). `release`: when its shot leaves (a flight's
+   * breath, on the cast's release: `releaseAt`); else the last boltTravelSec (or lungeSec) of the wind-up.
+   */
+  fire(side: number, tech: Technique, now: number, windupSec: number, releaseAt?: number): void {
     const r = attackFxFor(tech)
     const c = this.begin()
     const S = r.sizePct / 100
     const w = Math.max(0.05, windupSec)
     const land = now + w
-    const travel = Math.min(w, r.ranged ? AT.boltTravelSec : AT.lungeSec)
+    const travel = releaseAt !== undefined ? Math.min(w, Math.max(0.02, land - releaseAt)) : Math.min(w, r.ranged ? AT.boltTravelSec : AT.lungeSec)
     const release = land - travel
     const foe = 1 - side
     const dir = this.aim(side)
@@ -267,6 +285,8 @@ export class AttackFx {
     for (let s = 0; s < 2; s++) {
       const d = this.aim(s)
       this.anchors[FRONT[s]!]!.copy(this.anchors[CHEST[s]!]!).addScaledVector(d, F.frontM * this.sizeK[s]!.len)
+      const m = this.mouths[s]!
+      if (m.k > 0) this.anchors[FRONT[s]!]!.lerp(m.at, m.k)
     }
     for (let s = 0; s < 2; s++) this.emitTrail(s, now)
     this.glow.begin()

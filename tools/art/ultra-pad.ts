@@ -156,7 +156,7 @@ export interface PadReport { colour: number; orm: number; normal: number; varian
  * mask) as baked; without it the ORM is written RGB, as before.
  */
 export function padAtlas(ffmpeg: string, src: string, dst: string, variants: string[], layout: Layout = DEFAULT_LAYOUT,
-  opts: { ormAlpha?: boolean; coverage?: string } = {}): PadReport {
+  opts: { ormAlpha?: boolean; coverage?: string; variantOrms?: { short: string; alpha: boolean }[] } = {}): PadReport {
   const p = (dir: string, name: string) => `${dir}/atlas_${name}.png`
   const base = readPng(ffmpeg, p(src, 'base'))
   const orm = readPng(ffmpeg, p(src, 'orm'))
@@ -188,6 +188,12 @@ export function padAtlas(ffmpeg: string, src: string, dst: string, variants: str
     const img = readPng(ffmpeg, p(src, v))
     rep.variants += dilate(img, solid, region)
     writePng(ffmpeg, p(dst, v), img, true)
+  }
+  // a variant's own ORM (VARIANT_ORM): padded like the breed's, its alpha kept when that variant glows
+  for (const { short, alpha } of opts.variantOrms ?? []) {
+    const img = readPng(ffmpeg, p(src, `${short}_orm`))
+    rep.variants += dilate(img, solid, region)
+    writePng(ffmpeg, p(dst, `${short}_orm`), img, alpha)
   }
   return rep
 }

@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useRef } from 'preact/hooks'
 import type { Expression } from '../../art/monster/expressions.ts'
 import { renderMonsterSvg, specForBreed, specFromMonster, type RenderSpec } from '../../art/monster/render.ts'
-import { lookFor } from '../../art/models.ts'
+import { lookFor, ultraLookFor } from '../../art/models.ts'
+import { ranchIdleFor } from '../../art3d/battleClips.ts'
 import type { ClipName, FaceName } from '../../art3d/types.ts'
 import type { LightPreset } from '../../art3d/materials.ts'
 import type { Monster } from '../../core/monster.ts'
 import { UI } from '../../data/tuning.ts'
 import type { BreedId } from '../../data/types.ts'
 import { settings } from '../store/appStore.ts'
-import { art3dUnavailable, portraitMode } from '../store/artStore.ts'
+import { art3dUnavailable, portraitMode, ultraPortraitMode } from '../store/artStore.ts'
 import { reduceMotionNow } from '../store/fxStore.ts'
 import { lite } from '../store/perf.ts'
 import { Monster3D } from './Monster3D.tsx'
+import { MonsterUltra } from './MonsterUltra.tsx'
 import { PortraitImage } from './PortraitImage.tsx'
 
 export interface PortraitProps {
@@ -44,7 +46,7 @@ function faceOf(spec: RenderSpec): FaceName {
 /**
  * The monster's portrait. Classic is the procedural SVG (pure and memoised on its inputs); a breed with a
  * Blender model shows it live where it is the subject of the screen, or as a cached picture in lists
- * (ART_2_PLAN §3.3). Animated Classic portraits also glance toward where the player taps (§22 polish).
+ * (ART_2_PLAN §3.3). Art 2.1: where it is live, a breed with an Ultra look shows that instead (MonsterUltra). Animated Classic portraits also glance toward where the player taps (§22 polish).
  */
 export function MonsterPortrait(p: PortraitProps) {
   const animate = (p.animate ?? true) && !settings.value.reduceMotion
@@ -59,6 +61,9 @@ export function MonsterPortrait(p: PortraitProps) {
   const ref = useRef<HTMLDivElement>(null)
   const look = spec ? lookFor(spec.mainBreed, p.monster?.variantId ?? null, spec.stage) : null
   const mode = portraitMode(!!look, settings.value.monsters, art3dUnavailable.value, reduceMotionNow(), !!p.live)
+  // Art 2.1 (the owner's option A, Nov 12): a live portrait of a breed with an Ultra look shows the Ultra model
+  const ultra = p.live && spec ? ultraLookFor(spec.mainBreed, p.monster?.variantId ?? null, spec.stage) : null
+  const ultraMode = ultraPortraitMode(!!ultra, settings.value.monsters, art3dUnavailable.value, reduceMotionNow(), !!p.live)
 
   useEffect(() => {
     if (!animate || mode !== 'classic') return
@@ -91,6 +96,13 @@ export function MonsterPortrait(p: PortraitProps) {
   if (!svg || !spec) return null
   const size = p.size ?? 128
   const classic = <div ref={ref} class={`portrait ${p.class ?? ''}`} style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} />
+  if (ultraMode && ultra) {
+    // its mood shows in the loop it rests in (the Ultra faces are painted, not swapped)
+    const clip = p.clip ?? ranchIdleFor(faceOf(spec), !!spec.sparkle, false)
+    return (
+      <MonsterUltra look={ultra.id} variant={ultra.variant} clip={clip} size={size} mirror={p.mirror} label={p.label ?? p.monster?.name} light={p.light} idleActs={p.idleActs} still={ultraMode === 'still'} fallback={classic} class={p.class} />
+    )
+  }
   if (mode === 'live' && look) {
     return (
       <Monster3D look={look.look} variant={look.variant} stage={spec.stage} face={faceOf(spec)} sick={spec.expression === 'sick' ? 1 : 0} size={size} mirror={p.mirror} label={p.label ?? p.monster?.name} clip={p.clip} light={p.light} idleActs={p.idleActs} fallback={classic} class={p.class} />

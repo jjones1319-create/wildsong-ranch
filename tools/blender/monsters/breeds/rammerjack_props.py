@@ -177,8 +177,8 @@ HORN_CTRL = [
     (0.272, -0.4, 0.905),
 ]
 HORN_R = (0.104, 0.052)         # tube radius at the root and before the tip's taper (round 2: massive, a steady taper)
-RING_GAPS = (0.022, 0.046)      # growth rings: irregular gaps along the horn (round 1's even ribs read as a hose)
-RIDGE_DEPTH = (0.0038, 0.0085)  # game mesh (a hint in the outline), high source (the bake carries the rest)
+RING_GAPS = (0.009, 0.019)      # v1.25 final: many fine ridges (review: 6-8 deep telescoping segments)      # growth rings: irregular gaps along the horn (round 1's even ribs read as a hose)
+RIDGE_DEPTH = (0.0022, 0.0045)  # game mesh (a hint in the outline), high source: shallow ridges
 ROPE_R = 0.0142
 # (start along the horn, loops): 4–5 bands of 2–3 tight coils that follow the taper (round 2)
 ROPE_BANDS = [(0.11, 2.0), (0.28, 3.0), (0.47, 2.0), (0.63, 2.5), (0.8, 2.0)]
@@ -254,9 +254,9 @@ def horn_mesh(name: str, s: int, high: bool, quick: bool) -> bpy.types.Object:
     else:
         # game rows: at every ring's groove and crest (an uneven outline)
         rs, _dk = rings(L)
-        rows = list(rs[rs < L]) + list((rs[:-1] + 0.8 * np.diff(rs))[rs[:-1] < L])
+        rows = list(rs[rs < L][::2])
         for s0, s1 in rope_bands(L):
-            rows += list(np.arange(s0 - 0.01, s1 + 0.016, 0.015))
+            rows += list(np.arange(s0 - 0.01, s1 + 0.012, 0.01))
         s_main = np.unique(np.round(np.clip(np.array(rows + [0.0, L]), 0.0, L), 4))
     s_main = np.append(s_main[s_main < L - 0.004], L)
     cap_rows = 6 if high else 2
@@ -275,7 +275,7 @@ def horn_mesh(name: str, s: int, high: bool, quick: bool) -> bpy.types.Object:
         rng = np.random.default_rng(11 + s)
         ph = rng.uniform(0, 2 * np.pi, 8)
         # fine lengthwise grain: striations along the horn, wandering slowly round it
-        grain = (0.0008 * np.sin(phi[None, :] * 57 + ph[0] + 2.5 * np.sin(s_main[:, None] * 7 + ph[1]))
+        grain = 0.45 * (0.0008 * np.sin(phi[None, :] * 57 + ph[0] + 2.5 * np.sin(s_main[:, None] * 7 + ph[1]))
                  + 0.0005 * np.sin(phi[None, :] * 131 + ph[2] + 4.0 * np.sin(s_main[:, None] * 13 + ph[3]))
                  + 0.0003 * np.sin(phi[None, :] * 23 + s_main[:, None] * 31 + ph[4]))
         rad = rad + grain * fade[:, :1] * (1.0 - 0.7 * band)
@@ -333,7 +333,7 @@ def rope_centre(s: int, start: float, loops: float, n: int):
     # off the top of the curl)
     end = np.minimum(a, span - a) / (0.32 * 2 * np.pi)
     tuck = smooth(0.0, 1.0, end)
-    off = R + ROPE_R * (0.66 * tuck - 1.6 * (1 - tuck))
+    off = R + ROPE_R * (0.42 * tuck - 1.6 * (1 - tuck))
     C_ = P + rad_dir * off[:, None]
     return C_, rad_dir, tuck, a
 
@@ -361,9 +361,9 @@ def rope_mesh(name: str, s: int, high: bool, quick: bool) -> list[bpy.types.Obje
         sl = cv.s
         _P, T, N1, N2 = cv.at(sl)
         if not high:
-            sides = 6
+            sides = 8          # v1.25: covers the high plies (6 sides let them show on the horn as a dashed seam)
             ph = np.linspace(0, 2 * np.pi, sides, endpoint=False)
-            r = ROPE_R * 1.04 * (0.8 + 0.2 * tuck)
+            r = ROPE_R * 1.16 * (0.8 + 0.2 * tuck)
             pts = Cc[:, None, :] + (np.cos(ph)[None, :, None] * N1[:, None, :] + np.sin(ph)[None, :, None] * N2[:, None, :]) * r[:, None, None]
             attrs = {'part': np.full((n, sides), PART_ROPE), 'strand': np.ones((n, sides)), 'along': np.repeat((sl / cv.length)[:, None], sides, 1),
                      'side': np.full((n, sides), float(s))}
@@ -397,13 +397,13 @@ def rope_mesh(name: str, s: int, high: bool, quick: bool) -> list[bpy.types.Obje
 SCARF_C = np.array((0.0, -0.4, 0.772))          # the band's centre
 SCARF_TILT = 0.62                                # the band's plane: z rises this much per metre toward the back
 SCARF_W = 0.132                                  # band width (along the neck)
-SCARF_T = 0.074                                  # band thickness
+SCARF_T = 0.054                                  # band thickness
 KNOT_BETA = math.radians(-58)                    # where the knot sits round the band (0 = the left side, −90° = the front)
 END_LEN = 0.2                                   # the hanging end, from under the knot to the fringe
 END_W = 0.126
 END_T = 0.034
 FRINGE = (9, 0.082, 0.0078)                      # tassels: count, length, radius
-KNIT = (0.021, 0.016, 0.0062)                  # stitch column width, row height, relief depth
+KNIT = (0.024, 0.022, 0.0078)                  # stitch column width, row height, relief depth
 
 
 def scarf_axes():
@@ -455,7 +455,7 @@ def scarf_band(name: str, high: bool, quick: bool, body_radius) -> bpy.types.Obj
     fold = 1.0 + 0.12 * np.sin(beta * 3 + 0.6) * np.sin(beta * 2 - 0.3) + 0.26 * (0.5 + 0.5 * np.cos(beta * 7 + 0.4)) ** 2 - 0.06
     thick = SCARF_T * fold
     width = SCARF_W * (1.0 + 0.07 * np.sin(beta * 2 + 1.1) + 0.05 * np.cos(beta * 7 + 0.4))
-    centre_r = rb + thick * 0.5 + 0.003
+    centre_r = rb + thick * 0.38          # v1.25 final: snug, a little into the coat (review: a torus off the neck)
     C_, d = _band_ring(beta, centre_r)
     # the cross-section: a rounded rectangle (superellipse) in (radial d, along the neck n)
     th = np.linspace(-np.pi, np.pi, na, endpoint=False)
@@ -614,7 +614,7 @@ def ear_point(s: int, u, v, side: float):
     root = EAR_ROOT * v3((s, 1, 1))
     w = ear_width(u)
     cup = 0.013 * (1 - v ** 2) * smooth(0.0, 0.25, u) * smooth(1.0, 0.7, u)
-    th = (0.011 * (1 - 0.55 * u) + 0.002) * np.sqrt(np.clip(1 - v ** 2, 0, 1)) ** 0.5
+    th = (0.016 * (1 - 0.5 * u) + 0.004) * np.sqrt(np.clip(1 - v ** 2, 0, 1)) ** 0.5
     mid = root + d * (EAR_LEN * u)[..., None] + a * (v * w)[..., None]
     # the whole leaf curls: its edges come forward (toward the lining side), and the tip droops a touch
     mid = mid + o * (0.012 * v ** 2)[..., None] - v3((0, 0, 1)) * (0.012 * u ** 2)[..., None]
@@ -676,10 +676,10 @@ def ear_lookup(p: np.ndarray) -> dict:
 
 
 # ----------------------------------------------------------------------------- the hooves (cloven; in the voxel body)
-HOOF_LEN = 0.172       # heel to toe (round 2: big hooves)
+HOOF_LEN = 0.19       # heel to toe (round 2: big hooves)
 HOOF_H = 0.094         # at the heel
-TOE_W = 0.048          # half width of one toe
-SPLIT = 0.0135         # the cleft between the toes (stays open at 3.5 mm voxels), closing toward the heel
+TOE_W = 0.056          # half width of one toe
+SPLIT = 0.017         # the cleft between the toes (stays open at 3.5 mm voxels), closing toward the heel
 
 
 def hoof_toes(cx: float, cy: float, nring: int = 14, nsides: int = 40) -> list[bpy.types.Object]:

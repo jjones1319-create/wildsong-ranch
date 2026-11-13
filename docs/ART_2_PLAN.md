@@ -272,13 +272,13 @@ ART_2_DETAIL §5.1 also has a **High** column (≤ 40,000 triangles, ≤ 3.5 MB)
 
 ## 4. Body plans, rigs and batches
 
-The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below; each other plan is written when its first batch starts.
+The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below. The biped plan `plans/biped.py` exists (Nov 12): IK legs and arms, all 32 clips, eight strike styles. The floater plan `plans/floater.py` is under way (Nov 12): its rig and all 32 clips are written and tested on a stand-in, and no breed uses it yet. Each other plan is written when its first batch starts.
 
 | Plan | Breeds (looks) | Rig notes | Batch |
 |---|---|---|---|
 | quadruped | Puddlepup · Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack · Stripeneck (31), Petalphant, Cobblemaw, Hearthwing (young, grown) | spine, neck, head, jaw, two-bone ears, four three-bone legs, a tail chain. Options: a long neck and wings (grown Hearthwing), a longer 4–5 bone neck and hooves (Stripeneck), a trunk chain (Petalphant) | P1 · B1 · B2 |
-| biped | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | B3 |
-| floater | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
+| biped (`plans/biped.py`, built) | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | B3 |
+| floater (`plans/floater.py`, under way) | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
 | shelled | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs. Crab option: six legs, two claws (one big), eye stalks | B5 |
 | blob | Bloatoad, Scrollopus | a squash chain for the body, a throat sac (Bloatoad), six to eight tentacle chains (Scrollopus) | B5 |
 | serpent | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline, head and jaw. For Aurelwyrm, which floats: ribbon-fin chains, whiskers, antlers | B6 |

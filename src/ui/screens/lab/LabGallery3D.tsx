@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { isUltraId, ULTRA_IDS, ULTRA_LOOKS, ultraVariant, type UltraId } from '../../../art/ultraLooks.ts'
 import type { Gallery3D, GalleryStats } from '../../../art3d/gallery/gallery3d.ts'
-import { GALLERY_CLIPS, GALLERY_LOOPS, type GalleryClip } from '../../../art3d/ultra/clips.ts'
+import { FLY_CLIPS, GALLERY_CLIPS, GALLERY_LOOPS, type GalleryMove } from '../../../art3d/ultra/clips.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { SECRETS } from '../../../data/secrets.ts'
 import { GALLERY3D_TEXT as T } from '../../../data/text/gallery3d.ts'
@@ -19,9 +19,9 @@ interface GalleryHook {
   phase: Phase
   /** A look id: a breed, or a grown form (`hearthwing-grown`). */
   show(look: string, variant?: string | null, compare?: boolean): void
-  play(clip: GalleryClip): void
+  play(clip: GalleryMove): void
   /** Review only: hold a move at a share of its length; null plays on. */
-  pose(clip: GalleryClip | null, t?: number): void
+  pose(clip: GalleryMove | null, t?: number): void
   turn(yawDeg: number, pitchDeg?: number): void
   zoom(k: number): void
   stats(): GalleryStats | null
@@ -58,7 +58,9 @@ export function LabGallery3DScreen() {
   const [phase, setPhase] = useState<Phase>('starting')
   const [sel, setSel] = useState(lastShown)
   const [held, setHeld] = useState<string[]>([])
-  const [clip, setClip] = useState<GalleryClip>('idle')
+  const [clip, setClip] = useState<GalleryMove>('idle')
+  // a look that flies shows its flying moves too
+  const [flies, setFlies] = useState(false)
   const [stats, setStats] = useState<GalleryStats | null>(null)
   // a failed load is tried again from the stage's note
   const [retry, setRetry] = useState(0)
@@ -94,8 +96,10 @@ export function LabGallery3DScreen() {
       if (!g) return
       const s = g.stats()
       setStats(s)
-      // a move that settled back into idle on its own: the Idle button lights again
+      // a move that settled back into idle on its own: the Idle button lights again; up in the air after a take-off or
+      // a breath, the Fly button
       if (s.clip && /idle/.test(s.clip)) setClip((c) => (GALLERY_LOOPS.has(c) ? c : 'idle'))
+      else if (s.clip === 'fly') setClip((c) => (c === 'fly_takeoff' || c === 'fly_cast' ? 'fly' : c))
     }, 500)
     return () => {
       alive = false
@@ -116,6 +120,7 @@ export function LabGallery3DScreen() {
       () => {
         if (!alive) return
         setHeld(g.variants())
+        setFlies(g.flies())
         setClip('idle')
         setPhase('ready')
       },
@@ -129,7 +134,7 @@ export function LabGallery3DScreen() {
     }
   }, [sel.look, sel.variant, sel.compare, retry, phase === 'starting' || phase === 'error'])
 
-  const play = (c: GalleryClip) => {
+  const play = (c: GalleryMove) => {
     gallery.current?.play(c)
     if (c !== 'blink') setClip(c)
   }
@@ -244,7 +249,7 @@ export function LabGallery3DScreen() {
         <>
           <p class="field__label small">{T.moves}</p>
           <div class="chips gallery3d__moves" role="group" aria-label={T.moves}>
-            {GALLERY_CLIPS.map((c) => (
+            {[...GALLERY_CLIPS, ...(flies ? FLY_CLIPS : [])].map((c) => (
               <button key={c} type="button" data-clip={c} aria-pressed={c !== 'blink' && c === clip} class={`chip ${c !== 'blink' && c === clip ? 'chip--on' : ''}`} disabled={busy} onClick={() => play(c)}>
                 {T.clips[c]}
               </button>

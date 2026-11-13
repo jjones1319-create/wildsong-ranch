@@ -1,10 +1,10 @@
 """Petalphant at Art 2.1 Ultra (docs/ART_2_DETAIL.md; batch 2): the recipe for `tools/blender/monsters/build_ultra.py`.
 
 A round, chubby sage-green elephant calf (chatgpt/monsters/07-petalphant/: the card, 1-hero.png and 2-turnaround.png):
-  - velvety skin with no locks and no tuft: the detail is carved into the high source and baked: ring wrinkles on the
-    trunk, deep rings at the knees and ankles, broad curved folds behind the shoulders and in front of the hips, fine
-    soft wrinkles, folds at the throat; per-pixel velvet specks and a faint leaf-vein pattern on the pale chest; the
-    only fur cards are a short ruff of soft 'hair' cards round each ear's base (round 3);
+  - velvety skin with no locks, tuft or fur cards: the detail is carved into the high source and baked: ring wrinkles
+    on the trunk, deep rings at the knees and ankles, broad curved folds behind the shoulders and in front of the hips,
+    two crossing families of fine soft wrinkles over a pebbled grain, folds at the throat, a ruff of fur strands round
+    each ear's root (round 4); per-pixel mottling, velvet specks and a faint leaf-vein pattern on the pale chest;
   - huge magnolia-petal ears, the trunk's flower bud (5 petals that open on the bud bones, an inner core, 5 sepals), the
     leaf sprout on the crown and the tail's three leaves are props (`petalphant_parts.py`): closed shells with rounded
     rims, thick at the root (no paper edges);
@@ -50,20 +50,18 @@ BROW_HEX = '#4B3F3A'
 LASH_HEX = '#211816'
 MOUTH_HEX = '#5B3A3A'
 
-# velvet skin without locks or tuft; round 3: one short ruff of soft 'hair' cards wraps each ear's base (the sculpted
-# lobes read as a caterpillar), so the atlas keeps its strip for the card tiles
-CARD_LAYERS = 2
-# round 3b: the default soft fur lobes; the 'hair' tiles' thin strands and highlight lines read as scratchy white glints
-CARD_SHADE = 0.72                # round 3b: with the skin's own paint (below) the ruff reads sage-green (0.82 read pale)
-CARD_COLOUR_FROM = 'paint'       # round 3b: the skin's paint at each root, not the atlas: the ear-root crease's AO greyed the cards
-CARD_EDGE_FADE = (0.05, 0.35)    # round 3b: the cards show more face-on (the default fade washed them to sparse strands)
-# round 3: the normal map's strength in the game (the folds and the fine wrinkles read at film distance)
-NORMAL_SCALE = 1.0
-AO_FLOOR = 0.4                   # round 3b: the closed bud's inside never bakes near black (it showed as dark slits)
+# velvet skin without locks, tuft or fur cards. Round 4: every card ruff round the ear roots (rounds 3-4: 'hair' cards,
+# dense fur cards, broad fur locks) read as pale grain from behind (cards are lit without the skin's ambient occlusion),
+# so the ruff is carved fur strands and soft clumps round each ear's root (wrinkles 'ruff'), painted a deeper sage; the
+# atlas has no card strip
+CARD_LAYERS = 0
+# rounds 3-4: the normal map's strength in the game (the folds, the fine wrinkles and the pebbled grain at film distance)
+NORMAL_SCALE = 1.3                # round 5: the flank's fine wrinkles and grain read in the game
+AO_FLOOR = 0.5                   # rounds 3b-4: the closed bud's inside never bakes dark (slits; the open flower read muddy)
 # round 3: a light see-through glow on the ears' cream rim
-GLOW = {'strength': 0.5, 'tint': None}
-BODY_TRIS = 60000                # rounds 2-3b: a rounder belly in ko and a smooth topline (52k faceted into planes)
-ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 1.1}     # build 1: the big ears read a little soft
+GLOW = {'strength': 0.18, 'tint': None}     # round 5: faint (bloom turned the rim into a white sticker outline)
+BODY_TRIS = 52000                # round 4: the rounder body needs fewer (60k in rounds 2-3b; the budget aims at 60-80k in all)
+ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 1.35}    # round 5: more texels on the ears (stair-steps in the root's fade)
 # the Lite copy keeps 4.5k triangles of props (the default 2.4k would crush the ears and the bud: 15.4k at Ultra)
 LITE_PROPS_TRIS = 4500
 
@@ -74,12 +72,14 @@ def lin(h: str) -> np.ndarray:
 
 def colours(pal: dict) -> dict:
     skin, pale, pink = pal['body'], pal['belly'], pal['accent']
-    leaf = C.mix_hex(skin, '#4C9156', 0.42)
+    leaf = C.mix_hex(skin, '#6F8B5B', 0.38)          # round 5: sage-olive, close to the skin (it read as a strawberry top)
     return {
         'skin': skin,
-        'skin_top': C.shade_hex(skin, 0.9, cool=0.012),
+        'skin_top': C.mix_hex(skin, '#A3B58B', 0.3),        # round 6: a faint warm tint on the lit tops (base stays #8FB996)
+        'belly_warm': C.mix_hex(skin, '#D4D6A8', 0.45),     # round 6: warm toward the belly
         # the creases: a deeper, cooler green (never grey or olive)
         'crease': C.mix_hex(C.shade_hex(skin, 0.7), '#3F7A66', 0.3),
+        'ruff': C.mix_hex(C.shade_hex(skin, 0.86), '#6E9A70', 0.3),      # round 4: the carved ear-root ruff, a deeper sage
         'sole': C.mix_hex(NAIL_HEX, '#D9BFA3', 0.35),          # round 2: cream sole pads (5-poses.png hit), not green
         'pale': pale,
         'face_pale': C.mix_hex(skin, pale, 0.66),
@@ -90,14 +90,20 @@ def colours(pal: dict) -> dict:
         'pink_pale': C.mix_hex(pink, '#FFF4F2', 0.35),
         'blush': C.mix_hex(pink, '#F2869A', 0.35),
         'leaf': leaf,
-        'leaf_light': C.mix_hex(leaf, '#E4F2D6', 0.42),
+        'leaf_light': C.mix_hex(leaf, '#DCE8C8', 0.25),
         'leaf_dark': C.shade_hex(leaf, 0.78, cool=0.01),
-        'leaf_deep': C.mix_hex(skin, '#2C6E3E', 0.72),
-        'ear_rim': C.mix_hex(pink, '#FFF4EA', 0.8),
+        'leaf_deep': C.mix_hex(skin, '#62804F', 0.42),
+        'ear_rim': C.mix_hex(pink, '#FFE4CF', 0.45),       # rounds 5-6: soft and warm (translucent, no outline)
         'ear_base': C.mix_hex(C.mix_hex(skin, '#FFF6E6', 0.62), pink, 0.25),
-        'ear_vein': C.mix_hex(pink, '#B9466C', 0.62),
-        'petal_inside': C.mix_hex(pink, '#FFF5EF', 0.6),
-        'petal_heart': '#FBEFD2',
+        'ear_vein': C.mix_hex(pink, '#C24E74', 0.5),        # round 4: softer (the strong veins read as streaks)
+        'petal_inside': C.mix_hex(pink, '#FFF0F2', 0.45),   # round 4: pinker (the creamy inside read grey-mauve)
+        'petal_heart': '#FFF1CF',
+        'heart_gold': '#F6D857',
+        'heart_green': '#DCE6B4',
+        'pistil': '#C9DDA4',
+        'filament': '#FBF2D2',
+        'anther': '#F1CC45',
+        'core': C.mix_hex('#FFF0C8', pink, 0.22),
         'nail': NAIL_HEX,
         'nail_shade': C.mix_hex(NAIL_HEX, '#C9B08E', 0.45),
         'brow': BROW_HEX,
@@ -109,7 +115,7 @@ def colours(pal: dict) -> dict:
 # ----------------------------------------------------------------------------- measurements (2-turnaround.png, 2.72 mm/px)
 HEAD_C = Vector((0.0, -0.48, 1.02))
 HEAD_R = (0.265, 0.235, 0.245)
-CHEEK = ((0.15, -0.55, 0.835), (0.1, 0.085, 0.088))     # rounds 2-3: sunk into the face (they stood off as balls in profile)
+CHEEK = ((0.145, -0.535, 0.835), (0.1, 0.065, 0.08))    # rounds 2-6: flat into the face (in profile a ball stood off it)
 FOREHEAD = ((0.0, -0.575, 1.07), (0.2, 0.125, 0.15))
 JAW = ((0.0, -0.588, 0.8), (0.18, 0.11, 0.1))         # round 3: wider, so the cheeks blend into a full lower face
 
@@ -141,7 +147,8 @@ MOUTH_SOCKET = (0.0, -0.712, 0.79)
 SOCKET_POINTS = {'socket_bud': (f'trunk.{len(TRUNK_PTS) - 1}', tuple(map(float, BUD_POINT)))}
 
 # legs: pillar legs, the front at ±0.225 m, the hind ones a little wider under the haunches
-LEGS = {'FL': (0.225, -0.33), 'FR': (-0.225, -0.33), 'BL': (0.245, 0.31), 'BR': (-0.245, 0.31)}
+# round 5: closer together under a torso about 12% shorter
+LEGS = {'FL': (0.225, -0.3), 'FR': (-0.225, -0.3), 'BL': (0.245, 0.27), 'BR': (-0.245, 0.27)}
 LEG_R = {'F': 0.124, 'B': 0.12}
 FOOT_C = 0.07
 FOOT_R = (0.142, 0.146, 0.085)          # the foot's ellipsoid; it dips under the ground and the carving flattens the sole
@@ -164,7 +171,8 @@ def nail_centres(leg: str) -> list[tuple[Vector, tuple[float, float, float], flo
     return out
 
 
-TAIL_PTS = [(0.0, 0.405, 0.69), (0.0, 0.468, 0.625), (0.0, 0.528, 0.528)]
+# round 4: 7 cm lower, on the rounder, lower rump (2-turnaround side view)
+TAIL_PTS = [(0.0, 0.36, 0.62), (0.0, 0.422, 0.555), (0.0, 0.482, 0.458)]
 TAIL_END = v3(TAIL_PTS[-1])
 TAIL_DIR = PP.unit(v3(TAIL_PTS[-1]) - v3(TAIL_PTS[-2]))
 
@@ -174,7 +182,7 @@ CROWN = v3((0.0, -0.525, 1.243))         # the leaf sprout's root, a little unde
 # ----------------------------------------------------------------------------- eyes
 EYE_R = 0.07
 EYE_SHAPE = (0.96, 1.02)
-EYE_DEPTH = (0.7, 0.3)           # rounds 2-3: the lens bulges, so the eye reads round from the side too
+EYE_DEPTH = (0.55, 0.42)         # round 5: flatter and sunk deeper, seated in the face (in profile it read as a stuck-on disc)
 EYE_XZ = (0.18, 0.96)
 
 
@@ -312,11 +320,14 @@ def fur_clumps() -> list[Part]:
     for s in (1, -1):
         mx = v3((s, 1, 1))
         # round 3: no lobes (they read as a caterpillar) and no cheek clump: one low smooth collar along the ear's root
-        # blends the petal into the head, and the hair cards (card_params) make the soft ruff over it
+        # blends the petal into the head; round 4: fur strands and soft clumps carved over it (wrinkles 'ruff') make the ruff
         for k, (va, vb) in enumerate(((0.1, 0.4), (0.36, 0.66), (0.62, 0.94))):
             a_ = PP._bez(PP.EAR_ROOT[0], PP.EAR_ROOT[1], PP.EAR_ROOT[2], va) - v3((0.006, 0.0, 0.0))
             b_ = PP._bez(PP.EAR_ROOT[0], PP.EAR_ROOT[1], PP.EAR_ROOT[2], vb) - v3((0.006, 0.0, 0.0))
             out.append(Part(f'collar{s}_{k}', 'capsule', loc=tuple(a_ * mx), to=tuple(b_ * mx), radius=0.024))
+            # round 5: behind the root too, so no dark gap shows behind the ear in profile
+            back = v3((-0.012, 0.022, 0.0))
+            out.append(Part(f'collarb{s}_{k}', 'capsule', loc=tuple((a_ + back) * mx), to=tuple((b_ + back) * mx), radius=0.02))
     return out
 
 
@@ -328,7 +339,8 @@ def head_parts() -> list[Part]:
         _ell('jaw', *JAW),
         _ell('chin', (0.0, -0.66, 0.77), (0.062, 0.045, 0.036)),
         _ell('trunkroot', (0.0, -0.66, 0.92), (0.082, 0.085, 0.13)),
-        Part('neck', 'capsule', loc=(0.0, -0.33, 0.7), to=(0.0, -0.45, 0.86), radius=0.21),
+        # round 6: thicker and deeper into the head, so the head sits straight into the shoulders (no neck ledge)
+        Part('neck', 'capsule', loc=(0.0, -0.31, 0.68), to=(0.0, -0.46, 0.92), radius=0.235),
     ] + trunk_parts() + fur_clumps()
 
 
@@ -340,7 +352,7 @@ def leg_parts(leg: str) -> list[Part]:
         Part(f'leg{leg}', 'capsule', loc=(lx, ly + 0.005, top), to=(lx, ly, 0.17), radius=r),
         _ell(f'ankle{leg}', (lx, ly - 0.003, 0.13), (r * 1.03, r * 1.04, 0.09)),
         # round 2: a soft knee (the legs read as smooth tubes): forward on the front legs, back on the hind ones
-        _ell(f'knee{leg}', (lx, ly + (-0.014 if leg[0] == 'F' else 0.014), 0.28 if leg[0] == 'F' else 0.29), (r * 1.03, r * 1.07, 0.07)),
+        _ell(f'knee{leg}', (lx, ly + (-0.014 if leg[0] == 'F' else 0.014), 0.28 if leg[0] == 'F' else 0.29), (r * 1.015, r * 1.035, 0.09)),
         _ell(f'foot{leg}', (lx, ly - 0.005, FOOT_C), FOOT_R),
     ]
     for k, (c, rr, a) in enumerate(nail_centres(leg)):
@@ -349,14 +361,18 @@ def leg_parts(leg: str) -> list[Part]:
 
 
 def torso_parts() -> list[Part]:
+    # round 4: a rounder, softer, heavier body (it read as a boxy barrel; 2-turnaround side view, 1-hero.png): the back
+    # lower and sloping down to a round rump, the belly hanging lower in a curve, the chest fuller and further forward,
+    # heavier shoulders and haunches
     ps = [
-        _ell('torso', (0.0, -0.03, 0.54), (0.355, 0.48, 0.32)),
-        _ell('chest', (0.0, -0.28, 0.55), (0.32, 0.25, 0.3)),
-        _ell('belly', (0.0, 0.02, 0.4), (0.33, 0.42, 0.2)),
-        _ell('rump', (0.0, 0.265, 0.53), (0.34, 0.19, 0.3)),
-        _ell('back', (0.0, 0.14, 0.6), (0.31, 0.3, 0.255)),      # round 3b: fills the notch between the back and the rump
-        _ell('shoulder', (0.2, -0.3, 0.5), (0.14, 0.17, 0.2), mirror=True),
-        _ell('haunch', (0.2, 0.3, 0.48), (0.16, 0.19, 0.22), mirror=True),
+        # round 5: about 12% shorter, a round pot belly sagging between the legs, rounder hips from behind
+        _ell('torso', (0.0, -0.03, 0.505), (0.345, 0.42, 0.3)),      # round 6: narrower (the head reads bigger)
+        _ell('chest', (0.0, -0.28, 0.53), (0.31, 0.26, 0.31)),
+        _ell('belly', (0.0, -0.01, 0.36), (0.35, 0.36, 0.22)),
+        _ell('rump', (0.0, 0.215, 0.47), (0.32, 0.2, 0.28)),           # round 6: rounder from behind
+        _ell('back', (0.0, 0.06, 0.56), (0.32, 0.29, 0.23)),      # round 3b: fills the notch between the back and the rump
+        _ell('shoulder', (0.195, -0.27, 0.52), (0.15, 0.18, 0.23), mirror=True),
+        _ell('haunch', (0.19, 0.235, 0.48), (0.19, 0.19, 0.24), mirror=True),
         Part('tailroot', 'tube', loc=TAIL_PTS[0], to=TAIL_PTS[1], radius=0.03, r2=0.021),
         Part('tail', 'tube', loc=TAIL_PTS[1], to=TAIL_PTS[2], radius=0.021, r2=0.016),
     ]
@@ -506,36 +522,6 @@ def ear_root_near(p: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return dist, vv
 
 
-def flow(p: np.ndarray, n: np.ndarray, z=None) -> np.ndarray:
-    """The hair cards' comb (they grow only round the ear roots): out along the petal from the head, as the fan's ray
-    at the nearest root point runs, drooping a little."""
-    _d, v = ear_root_near(p)
-    th = PP.TH_TOP + (PP.TH_BOT - PP.TH_TOP) * v
-    g = np.cos(th)[:, None] * PP.EAR_OUT[None] + np.sin(th)[:, None] * PP.EAR_W[None]
-    g[:, 0] *= np.where(p[:, 0] < 0, -1.0, 1.0)
-    g = g + v3((0.0, 0.0, -0.1))
-    return S.tangent(S.norm(g), n)
-
-
-def card_params(p, n, layer: int):
-    """Round 3: a short, soft ruff of 'hair' cards wrapping each ear's base on the head (1-hero.png, 4-details.png panel
-    1): a dense short layer within 8 cm of the root, a longer, sparser one within 5.5 cm; none near the eyes or on the
-    face. Everywhere else the skin stays card-free (NaN spacing)."""
-    k = len(p)
-    dr, _v = ear_root_near(p)
-    eye = np.minimum(np.linalg.norm(p - v3(EYE_C[1]), axis=1), np.linalg.norm(p - v3(EYE_C[-1]), axis=1))
-    # round 3b: longer, wider, denser and standing up more (round 3's short cards read as a few thin wisps)
-    # round 3b: denser and shorter, lying flatter, and short at the top of the root (they poked above the head's outline)
-    reach = 0.085 if layer == 0 else 0.06
-    near = (dr < reach) & (p[:, 2] > 0.87) & (eye > 0.12) & (np.abs(p[:, 0]) > 0.12)
-    sp = np.where(near, 0.0085 if layer == 0 else 0.012, np.nan)
-    top = smooth(0.32, 0.08, _v) * 0.5
-    L = (0.046 if layer == 0 else 0.062) * (0.75 + 0.4 * smooth(reach, 0.0, dr)) * (1.0 - top)
-    W = np.full(k, 0.028 if layer == 0 else 0.034)
-    lift = np.full(k, math.radians(14.0 if layer == 0 else 19.0))
-    return sp, L, W, lift, None
-
-
 def decimate_keep(co: np.ndarray) -> np.ndarray:
     z = zones(co)
     keep = 1.0 * z['face'] + 1.0 * (z['eye_d'] < 0.1) + 0.45 * z['trunk'] + 0.8 * z['toes'] + 0.3 * z['paw'] + 0.35 * z['ear_root']
@@ -608,12 +594,12 @@ def wrinkles(co: np.ndarray, z: dict) -> dict[str, np.ndarray]:
         az = np.arctan2(x[m] - lx, -(y[m] - ly))
         zm = zz[m]
         kz = 0.28 if leg[0] == 'F' else 0.29
-        rings_at = [kz - 0.036, kz - 0.012, kz + 0.012, kz + 0.036, 0.088, 0.108, 0.128]
+        rings_at = [kz - 0.026, kz, kz + 0.026, 0.096, 0.122]      # round 6: three soft rings at the knee, two at the ankle
         acc = np.zeros(int(m.sum()))
         for j, zr in enumerate(rings_at):
             zc = zr + 0.006 * np.sin(az * 2.0 + j * 1.7 + lx * 9.0) + 0.003 * np.sin(az * 5.0 + j)
             strength = 0.75 + 0.25 * np.sin(az * 3.0 + j * 2.3)
-            acc = np.maximum(acc, np.exp(-((zm - zc) / 0.0032) ** 2) * strength)
+            acc = np.maximum(acc, np.exp(-((zm - zc) / 0.0055) ** 2) * strength)
         k = 0.03
         ph = zm / k + 0.3 * np.sin(az * 2.0 + zm * 9.0)
         fr = ph % 1.0
@@ -623,25 +609,76 @@ def wrinkles(co: np.ndarray, z: dict) -> dict[str, np.ndarray]:
     # thin straight lines read as long dark vertical lines), no flank lines
     side = smooth(0.17, 0.24, np.abs(x)) * z['torso']
     body = np.zeros(n)
-    for y0, c in ((-0.16, 1.3), (-0.11, 1.1)):
+    for y0, c in ((-0.14, 1.3), (-0.09, 1.1)):
         yc = y0 + c * (zz - 0.5) ** 2
         body = np.maximum(body, np.exp(-((y - yc) / 0.0075) ** 2) * smooth(0.28, 0.38, zz) * smooth(0.72, 0.6, zz))
-    for y0, c in ((0.12, -1.3), (0.165, -1.1)):
+    for y0, c in ((0.09, -1.3), (0.135, -1.1)):
         yc = y0 + c * (zz - 0.48) ** 2
         body = np.maximum(body, np.exp(-((y - yc) / 0.0075) ** 2) * smooth(0.26, 0.36, zz) * smooth(0.7, 0.58, zz) * 0.9)
+    # round 6: a few long soft arcs along the flank and over the shoulder (directional creases, not noise)
+    for z0, a in ((0.5, 0.55), (0.42, 0.7)):
+        zc = z0 + a * (y + 0.02) ** 2
+        body = np.maximum(body, np.exp(-((zz - zc) / 0.007) ** 2) * smooth(-0.32, -0.22, y) * smooth(0.3, 0.2, y) * 0.8)
+    shz = 0.62 - 0.9 * (y + 0.27) ** 2
+    body = np.maximum(body, np.exp(-((zz - shz) / 0.007) ** 2) * smooth(-0.45, -0.36, y) * smooth(-0.08, -0.17, y) * 0.7)
     net = body * side * (1.0 - 0.5 * pale_mask(co, z))
     # fine soft wrinkles over the coat: short, broken, wavy lines that read at film distance (normal map only)
     coat = (z['torso'] | z['leg'] | (z['head'] & ~z['face'] & ~z['trunk'])) & ~z['toes']
     ph = (y * 0.8 + zz * 0.6) / 0.013 + 1.4 * _noise(co, 9.0, 2.0)
     fr = ph % 1.0
     brk = smooth(-0.1, 0.45, _noise(co, 17.0, 5.0))
-    fine = np.exp(-((np.minimum(fr, 1 - fr) * 0.013) / 0.0016) ** 2) * brk * coat * (1.0 - 0.6 * pale_mask(co, z))
+    fine = np.exp(-((np.minimum(fr, 1 - fr) * 0.013) / 0.0024) ** 2) * brk * coat * (1.0 - 0.6 * pale_mask(co, z))
+    # round 4: a second family crossing the first at about 70°, finer and more broken, so the skin reads as a soft
+    # network of fine wrinkles (4-details.png panels 3 and 6), not lines combed one way
+    ph2 = (-y * 0.45 + zz * 0.9 + x * 0.3) / 0.0105 + 1.2 * _noise(co, 11.0, 7.0)
+    fr2 = ph2 % 1.0
+    brk2 = smooth(0.05, 0.55, _noise(co, 21.0, 9.0))
+    fine2 = np.exp(-((np.minimum(fr2, 1 - fr2) * 0.0105) / 0.0021) ** 2) * brk2 * coat * (1.0 - 0.6 * pale_mask(co, z))
+    # round 4: the pebbled grain of the hide (4-details.png panel 6): soft domes about 8 mm across with fine grooves
+    # between them, lower on the pale belly and the trunk, none on the face's features or the toenails
+    peb = pebbles(co, 0.009)          # round 6: finer and a third as strong (12 mm at 0.9 mm read as lumpy noise)
+    pebw = (coat.astype(np.float64) * (1.0 - 0.5 * pale_mask(co, z)) + 0.5 * z['trunk'] * smooth(0.1, 0.25, z['trunk_t'])
+            + 0.6 * (z['face'] & (z['eye_d'] > 0.12)))
+    peb = peb * np.clip(pebw, 0, 1)
     # the throat: three soft folds under the chin
-    thr = (y < -0.36) & (zz > 0.6) & (zz < 0.8) & (np.abs(x) < 0.26) & ~z['trunk'] & ~z['face']
+    thr = (y < -0.36) & (zz > 0.64) & (zz < 0.7) & (np.abs(x) < 0.26) & ~z['trunk'] & ~z['face']      # round 6: one chin fold
     ph = (zz - 0.62 + 0.25 * x * x) / 0.045
     fr = ph % 1.0
     folds = np.exp(-((np.minimum(fr, 1 - fr) * 0.045) / 0.005) ** 2) * thr * smooth(0.26, 0.12, np.abs(x))
-    return {'rings': rings, 'legc': legc, 'net': net, 'folds': folds, 'fine': fine}
+    # round 4: the ear-root ruff, carved: fine strands (about 7 mm apart, broken along their length) combed out along the
+    # root and soft clumps about 2.5 cm across, over the low collar, within about 8 cm of each ear's root (not the eyes)
+    dr, vroot = ear_root_near(co)
+    ruffw = smooth(0.085, 0.035, dr) * (zz > 0.85) * (z['eye_d'] > 0.11) * (np.abs(x) > 0.11) * ~z['trunk']
+    sp = vroot * 0.27 / 0.007 + 1.6 * _noise(co, 26.0, 3.0)
+    fr = sp % 1.0
+    strand = np.exp(-((np.minimum(fr, 1 - fr)) / 0.24) ** 2) * smooth(-0.25, 0.35, _noise(co, 38.0, 11.0))
+    clump = smooth(-0.1, 0.6, _noise(co, 14.0, 4.0))
+    ruff = ruffw * (0.55 * strand + 0.45 * clump)
+    return {'rings': rings, 'legc': legc, 'net': net, 'folds': folds, 'fine': fine, 'fine2': fine2, 'peb': peb * (1.0 - ruffw),
+            'ruff': ruff, 'ruffw': ruffw}
+
+
+def pebbles(co: np.ndarray, cell: float) -> np.ndarray:
+    """0..1 per point: a 3D cellular grain (jittered cells `cell` metres across): 1 on each cell's soft dome, falling to 0
+    in the narrow grooves where two cells meet (F2 − F1 small)."""
+    q = co / cell
+    base = np.floor(q)
+    f1 = np.full(len(co), 9.0)
+    f2 = np.full(len(co), 9.0)
+    for di in (-1, 0, 1):
+        for dj in (-1, 0, 1):
+            for dk in (-1, 0, 1):
+                c = base + v3((di, dj, dk))
+                h = np.sin(c @ v3((127.1, 311.7, 74.7))) * 43758.5453
+                j1 = h - np.floor(h)
+                h = np.sin(c @ v3((269.5, 183.3, 246.1))) * 43758.5453
+                j2 = h - np.floor(h)
+                h = np.sin(c @ v3((113.5, 271.9, 124.6))) * 43758.5453
+                j3 = h - np.floor(h)
+                d = np.linalg.norm(q - (c + 0.15 + 0.7 * np.stack([j1, j2, j3], axis=1)), axis=1)
+                f2 = np.where(d < f1, f1, np.minimum(f2, d))
+                f1 = np.minimum(f1, d)
+    return smooth(0.0, 0.32, f2 - f1) * (1.0 - 0.35 * smooth(0.2, 0.6, f1))
 
 
 def carve(ob: bpy.types.Object) -> None:
@@ -651,13 +688,21 @@ def carve(ob: bpy.types.Object) -> None:
     groove = mouth_groove(co, z)
     lip = np.exp(-((z['nail'] - 1.0) / 0.07) ** 2) * (z['nail'] < 1.6)
     bulge, lash = closed_lid(co)
-    disp = (-0.0014 * w['rings'] - 0.0022 * w['legc'] - 0.0026 * w['net'] - 0.0022 * w['folds'] - 0.0004 * w['fine'] - 0.0022 * groove
-            - 0.0016 * lip + 0.0032 * bulge - 0.0011 * lash)
+    # round 4: deeper fine wrinkles in two crossing families and the pebbled grain (a soft, organic hide; it read as vinyl)
+    # round 5: the fine wrinkles and the grain deeper (they didn't show on the flank, back and rump in the game)
+    # round 6: the noise a third (it read as cottage cheese), the knee and ankle rings shallow folds, not cuffs
+    disp = (-0.0014 * w['rings'] - 0.0012 * w['legc'] - 0.0026 * w['net'] - 0.0022 * w['folds'] - 0.0004 * w['fine']
+            - 0.0003 * w['fine2'] + 0.0003 * w['peb'] + 0.0018 * w['ruff'] - 0.0022 * groove - 0.0016 * lip + 0.0032 * bulge
+            - 0.0011 * lash)
     new = co + vn * disp[:, None]
     new[:, 2] = np.maximum(new[:, 2], 0.0)          # the flat soles
     S.set_positions(ob, new)
-    crease = np.clip(np.maximum.reduce([w['rings'], w['legc'], w['net'] * 0.45, w['folds'], lip * 0.8, w['fine'] * 0.12]), 0, 1)
+    crease = np.clip(np.maximum.reduce([w['rings'], w['legc'], w['net'] * 0.45, w['folds'], lip * 0.8, w['fine'] * 0.16,
+                                        w['fine2'] * 0.12]), 0, 1)
     S.base_attrs(ob, co, {'mouth': groove})
+    S.add_attr(ob, 'peb', w['peb'])
+    S.add_attr(ob, 'ruff', w['ruff'])
+    S.add_attr(ob, 'ruffw', w['ruffw'])
     S.add_attr(ob, 'crease', crease)
     S.add_attr(ob, 'lash', lash)
     S.add_attr(ob, 'lid', bulge)
@@ -692,7 +737,7 @@ def face_mask(p: np.ndarray, z: dict) -> np.ndarray:
     """The lighter lower face: the cheeks round and under the eyes, the mouth and the chin (not the trunk)."""
     m = np.zeros(len(p))
     for s in (1, -1):
-        m = np.maximum(m, ell_soft(p, (0.17 * s, -0.64, 0.835), (0.13, 0.1, 0.1), 0.5))
+        m = np.maximum(m, ell_soft(p, (0.17 * s, -0.64, 0.835), (0.13, 0.1, 0.1), 0.5) * 0.45)     # round 6: green cheeks
         m = np.maximum(m, ell_soft(p, (0.15 * s, -0.66, 0.95), (0.08, 0.06, 0.06), 0.6) * 0.7)
     m = np.maximum(m, ell_soft(p, (0.0, -0.64, 0.76), (0.14, 0.09, 0.07), 0.5))
     return np.clip(m * (~z['trunk']), 0, 1)
@@ -706,11 +751,13 @@ def body_colour(p: np.ndarray, z: dict, pal: dict, crease: np.ndarray | None = N
     col = colours(pal)
     zz = p[:, 2]
     rgb = np.tile(lin(col['skin']), (len(p), 1))
-    top = smooth(0.62, 0.86, zz) * z['torso'] * 0.7 + smooth(1.12, 1.24, zz) * z['head'] * 0.4
+    top = smooth(0.62, 0.9, zz) * 0.5 * (1.0 - z['face'])          # round 6: one continuous tint (a nape band showed)
     rgb = rgb * (1 - top[:, None]) + lin(col['skin_top'])[None] * top[:, None]
     fm = face_mask(p, z) * 0.85
     rgb = rgb * (1 - fm[:, None]) + lin(col['face_pale'])[None] * fm[:, None]
     pm = pale_mask(p, z)
+    warm = (np.clip(pm * (1.0 - pm) * 4.0, 0, 1) * 0.5)[:, None]
+    rgb = rgb * (1 - warm) + lin(col['belly_warm'])[None] * warm
     rgb = rgb * (1 - pm[:, None]) + lin(col['pale'])[None] * pm[:, None]
     if crease is not None:
         k = (np.clip(crease, 0, 1) * 0.55)[:, None]
@@ -735,10 +782,18 @@ def paint_arrays(ob: bpy.types.Object, pal: dict) -> dict[str, np.ndarray]:
     z = zones(root)
     crease = S.attr_array(ob, 'crease').astype(np.float64) if 'crease' in ob.data.attributes else np.zeros(len(root))
     rgb = body_colour(root, z, pal, crease)
+    if 'ruffw' in ob.data.attributes:
+        col = colours(pal)
+        rw = (S.attr_array(ob, 'ruffw').astype(np.float64) * 0.6)[:, None]
+        rf = S.attr_array(ob, 'ruff').astype(np.float64)[:, None]
+        rgb = rgb * (1 - rw) + lin(col['ruff'])[None] * rw
+        rgb = rgb * (1.0 + 0.1 * (rf - 0.4) * (rw > 0))
     nm = nail_mask(z)
     pm = pale_mask(root, z)
     # round 3: rougher velvet, no clearcoat (the lit tops washed out to pale mint in the game)
-    rough = 0.8 + 0.04 * pm + 0.06 * crease
+    # round 4: rougher and varied: the pebbles' tops a touch smoother than the grooves, the creases roughest
+    peb = S.attr_array(ob, 'peb').astype(np.float64) if 'peb' in ob.data.attributes else np.full(len(root), 0.5)
+    rough = np.clip(0.86 + 0.03 * pm + 0.07 * crease - 0.06 * (peb - 0.5), 0, 1)
     coat = np.full(len(root), 0.0)
     rough = rough * (1 - nm) + 0.24 * nm
     coat = coat * (1 - nm) + 0.85 * nm
@@ -769,9 +824,10 @@ def head_leaves() -> list[dict]:
     """The crown's sprout: three upright leaves and four lower ones fanning out, their tips curling out (every picture)."""
     out = []
     # round 3: a rosette that reads from the front as 5-7 leaves (the low ones hid behind the crown)
-    for az, el, ln, wd, curl in ((90, 76, 0.17, 0.076, -0.3), (210, 72, 0.16, 0.072, -0.35), (330, 72, 0.16, 0.072, -0.35),
-                                 (30, 46, 0.135, 0.064, -0.55), (150, 44, 0.13, 0.062, -0.55), (210 + 20, 44, 0.13, 0.062, -0.55),
-                                 (330 - 20, 46, 0.135, 0.064, -0.55)):
+    # round 6: a low rosette sitting on the head (it stood up on a stalk with one tall blade)
+    for az, el, ln, wd, curl in ((90, 62, 0.13, 0.07, -0.45), (210, 58, 0.125, 0.066, -0.45), (330, 58, 0.125, 0.066, -0.45),
+                                 (30, 36, 0.115, 0.06, -0.6), (150, 34, 0.11, 0.058, -0.6), (210 + 20, 34, 0.11, 0.058, -0.6),
+                                 (330 - 20, 36, 0.115, 0.06, -0.6)):
         a, e = math.radians(az), math.radians(el)
         along = v3((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
         face = v3((-math.sin(a) * math.sin(e), math.cos(a) * math.sin(e), math.cos(e)))
@@ -809,12 +865,16 @@ def build_props(high: bool, quick: bool) -> list[bpy.types.Object]:
     for i in range(PP.BUD_PETALS):
         v, q, a = PP.petal_arrays(BUD_TIP, BUD_PREV, i, high, quick)
         out.append(_obj(f'{tag}_petal{i}', v, q, a, PP.PART_PETAL, 0.0, float(i)))
-    for k in range(3):
-        v, q, a = PP.core_arrays(BUD_TIP, BUD_PREV, k, high, quick)
-        out.append(_obj(f'{tag}_core{k}', v, q, a, PP.PART_CORE, 0.0, float(k)))
+    # round 5: the open flower's centre is a pale-green pistil ringed by cream-yellow stamens (round 4's cone of inner
+    # petals read as a grey dome)
+    v, q, a = PP.pistil_arrays(BUD_TIP, BUD_PREV, high, quick)
+    out.append(_obj(f'{tag}_pistil', v, q, a, PP.PART_PISTIL, 0.0, 0.0))
+    for k in range(PP.STAMENS):
+        v, q, a = PP.stamen_arrays(BUD_TIP, BUD_PREV, k, high, quick)
+        out.append(_obj(f'{tag}_stamen{k}', v, q, a, PP.PART_STAMEN, 0.0, float(k)))
     v, q, a = PP.heart_arrays(BUD_TIP, BUD_PREV, high, quick)
     out.append(_obj(f'{tag}_heart', v, q, a, PP.PART_HEART, 0.0, 0.0))
-    for k in range(PP.BUD_PETALS):
+    for k in range(PP.BUD_SEPALS):
         v, q, a = PP.sepal_arrays(BUD_TIP, BUD_PREV, k, high, quick)
         out.append(_obj(f'{tag}_sepal{k}', v, q, a, PP.PART_SEPAL, 0.0, float(k)))
     for k, lf in enumerate(head_leaves()):
@@ -855,40 +915,44 @@ def prop_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray
         # collar on the inner face (the fur covers the root), a third of the way up the back (2-turnaround back view)
         # round 3b: a wide, smooth fade (about 9 cm) with no corner, feathered along the veins, through a pale cream-green
         # petal base: the narrow sage/pink edge broke into ETC1S blocks with a peach fringe in the game
-        G = np.where(ff > 0, 0.04, 0.17)
-        capu = np.where(ff > 0, 0.1, 0.34)
-        t = np.log(np.exp((um - G) / 0.09 * 3.0) + np.exp((uu - capu) / 0.12 * 3.0)) / 3.0
-        t = t - 0.45 * ve * smooth(-0.2, 0.8, t)
+        # round 4: a narrower band (on the bigger round-4 ear it covered about 40% of the radius)
+        # round 4: the fade's shape is PP.ear_fade_t (shared with prop_material's per-pixel map)
+        G = np.where(ff > 0, 0.015, 0.12)
+        t = PP.ear_fade_t(uu, v[ear], ve, ff > 0)
         green = 1.0 - smooth(0.0, 1.0, t)
-        pale_base = (smooth(-0.1, 0.45, t) * smooth(1.25, 0.55, t) * 0.55)[:, None]
         base = lin(col['pink'])[None] * np.ones((len(uu), 1))
         deep = smooth(G, G + 0.1, um) * smooth(0.85, 0.35, uu) * 0.45
         base = base * (1 - deep[:, None]) + lin(col['pink_deep'])[None] * deep[:, None]
         base = base * (1.0 + 0.035 * mottle[ear])[:, None]
-        # fine crisp veins in a deeper pink, forking toward the rim
-        vk = (ve * smooth(G + 0.01, G + 0.07, um) * 0.92)[:, None]
-        base = base * (1 - vk) + lin(col['ear_vein'])[None] * vk
         # lighter toward the rim, then a pale cream rim about 2 cm wide (and the rounded edge itself)
         lite = (smooth(0.55, 0.95, uu) * 0.22)[:, None]
         base = base * (1 - lite) + lin(col['pink_rim'])[None] * lite
-        band = np.clip(smooth(0.03, 0.012, dist_rim) * 0.85 + rim[ear] * 0.35, 0, 0.9)[:, None]
+        # round 5: a narrow, soft cream-to-pink fade at the very edge (round 4's 2 cm cream band read as a sticker outline)
+        band = np.clip(smooth(0.035, 0.0, dist_rim) * 0.32 + rim[ear] * 0.12, 0, 0.4)[:, None]     # round 6: no outline
         base = base * (1 - band) + lin(col['ear_rim'])[None] * band
-        base = base * (1 - pale_base) + lin(col['ear_base'])[None] * pale_base
-        skin = lin(col['skin'])[None] * np.ones((len(uu), 1))
-        rgb[ear] = base * (1 - green[:, None]) + skin * green[:, None]
+        # round 4: the veins, the pale petal base and the green root are painted per pixel by prop_material (from
+        # PP.ear_map), so the vertex paint keeps only the smooth pink layers
+        rgb[ear] = base
         rough[ear] = 0.42 + 0.12 * smooth(0.5, 1.0, uu) + 0.15 * green
         coat[ear] = 0.12 * (1 - green)
     pet = (np.abs(part - PP.PART_PETAL) < 0.1) | (np.abs(part - PP.PART_CORE) < 0.1)
     if pet.any():
         uu, ff = u[pet], face[pet]
         core = np.abs(part[pet] - PP.PART_CORE) < 0.1
-        base = np.where(core[:, None], lin(col['pink_pale'])[None], lin(col['pink'])[None]) * np.ones((len(uu), 1))
+        # round 4: the core a warm cream with a hint of pink (a flower's light centre): any pale pink there bakes under the
+        # closed bud's ambient occlusion into grey-mauve
+        base = np.where(core[:, None], lin(col['core'])[None], lin(col['pink'])[None]) * np.ones((len(uu), 1))
         # round 2: the open flower's inside is pale pink fading to cream at the heart (it read as a dark mauve well)
         inside = smooth(0.2, -0.6, ff) * smooth(0.82, 0.62, uu)        # round 3b: deep pink inside near the point
         base = base * (1 - (inside * 0.75)[:, None]) + lin(col['petal_inside'])[None] * (inside * 0.75)[:, None]
-        foot = (smooth(0.35, 0.0, uu) * (0.35 + 0.55 * inside))[:, None]
+        foot = (smooth(0.3, 0.0, uu) * (0.35 + 0.55 * inside))[:, None]
         base = base * (1 - foot) + lin(col['petal_heart'])[None] * foot
-        blush = (smooth(0.45, 0.95, uu) * 0.35)[:, None]
+        # round 4: the inside a little brighter than painted: it bakes under the closed bud's ambient occlusion and read
+        # grey-mauve in the open flower (cast, win, idle_happy)
+        base = np.minimum(base * (1.0 + 0.3 * inside)[:, None], 1.0)
+        # round 4: the core brightest of all (enclosed by the closed petals, it bakes darkest)
+        base = np.where(core[:, None], np.minimum(base * 1.3, 1.0), base)
+        blush = (smooth(0.45, 0.95, uu) * 0.55)[:, None]          # round 6: darker pink tips
         base = base * (1 - blush) + lin(col['pink_deep'])[None] * blush
         vk = (np.exp(-((((v[pet] * 9.0) % 1.0) - 0.5) / 0.1) ** 2) * smooth(0.1, 0.4, uu) * 0.18)[:, None]
         base = base * (1 - vk) + lin(col['pink_vein'])[None] * vk
@@ -896,7 +960,7 @@ def prop_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray
         across = np.abs(v[pet] - 0.5) * 2.0
         mid = ((1 - smooth(0.0, 0.7, across)) * smooth(0.15, 0.4, uu) * 0.3 * (ff > 0))[:, None]
         base = base * (1 - mid) + lin(col['pink_deep'])[None] * mid
-        edge = np.clip(rim[pet] * 0.5 + smooth(0.6, 1.0, across) * 0.45, 0, 0.75)[:, None]
+        edge = np.clip(rim[pet] * 0.55 + smooth(0.55, 1.0, across) * 0.6, 0, 0.8)[:, None]       # round 5: paler edges
         base = base * (1 - edge) + lin(col['pink_rim'])[None] * edge
         rgb[pet] = base
         rough[pet] = 0.4
@@ -904,30 +968,43 @@ def prop_arrays(ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray
     heart = np.abs(part - PP.PART_HEART) < 0.1
     if heart.any():
         uu = u[heart]
-        c0 = lin(C.mix_hex('#F2D45E', col['leaf_light'], 0.15))[None]
-        c1 = lin(col['leaf_light'])[None]
-        k = smooth(0.3, 1.0, uu)[:, None]
-        dots = (0.5 + 0.5 * np.sin(co[heart] @ v3((900.0, 700.0, 800.0))))[:, None] * 0.25
-        rgb[heart] = (c0 * (1 - k) + c1 * k) * (1.0 - dots * (1 - k))
+        # round 5: a pale yellow-green base under the stamens, no dots (they read as a dotted seam)
+        c0 = lin(col['heart_gold'])[None]
+        c1 = lin(col['heart_green'])[None]
+        k = smooth(0.2, 0.9, uu)[:, None]
+        rgb[heart] = np.minimum((c0 * (1 - k) + c1 * k) * 1.1, 1.0)
         rough[heart] = 0.6
         coat[heart] = 0.0
+    stam = np.abs(part - PP.PART_STAMEN) < 0.1
+    if stam.any():
+        k = smooth(0.5, 0.75, u[stam])[:, None]
+        rgb[stam] = np.minimum((lin(col['filament'])[None] * (1 - k) + lin(col['anther'])[None] * k) * 1.15, 1.0)
+        rough[stam] = 0.6
+        coat[stam] = 0.0
+    pis = np.abs(part - PP.PART_PISTIL) < 0.1
+    if pis.any():
+        k = smooth(0.7, 1.0, u[pis])[:, None]
+        rgb[pis] = np.minimum((lin(col['pistil'])[None] * (1 - k) + lin(col['heart_gold'])[None] * k) * 1.12, 1.0)
+        rough[pis] = 0.55
+        coat[pis] = 0.05
     leafy = (np.abs(part - PP.PART_SEPAL) < 0.1) | (np.abs(part - PP.PART_LEAF) < 0.1) | (np.abs(part - PP.PART_TAIL_LEAF) < 0.1)
     if leafy.any():
         uu, ff = u[leafy], face[leafy]
         tailk = (np.abs(part[leafy] - PP.PART_TAIL_LEAF) < 0.1)[:, None]
-        base = np.where(tailk, lin(col['leaf_deep'])[None], lin(col['leaf'])[None]) * np.ones((len(uu), 1))
+        crown = (np.abs(part[leafy] - PP.PART_LEAF) < 0.1)[:, None]
+        base = np.where(tailk | crown, lin(col['leaf_deep'])[None], lin(col['leaf'])[None]) * np.ones((len(uu), 1))
         under = smooth(0.2, -0.6, ff)[:, None] * np.where(tailk, 0.18, 0.35)
         base = base * (1 - under) + lin(col['leaf_light'])[None] * under
         dark = smooth(0.3, 0.0, uu)[:, None] * 0.45
         base = base * (1 - dark) + lin(col['leaf_dark'])[None] * dark
-        mid = (vein[leafy] * np.where(np.abs(part[leafy] - PP.PART_TAIL_LEAF) < 0.1, 0.75, 0.5))[:, None]
+        mid = (vein[leafy] * np.where(np.abs(part[leafy] - PP.PART_TAIL_LEAF) < 0.1, 0.4, 0.3))[:, None]     # round 5: quieter midribs
         base = base * (1 - mid) + lin(col['leaf_light'])[None] * mid
         edge = (rim[leafy] * 0.55 + smooth(0.8, 1.0, uu) * 0.25)[:, None]
         base = base * (1 - np.clip(edge, 0, 0.7)) + lin(col['leaf_light'])[None] * np.clip(edge, 0, 0.7)
         base = base * (1.0 + 0.05 * mottle[leafy])[:, None]
         rgb[leafy] = base
-        rough[leafy] = 0.5
-        coat[leafy] = 0.12
+        rough[leafy] = 0.75          # round 6: matte (the sepals' tips caught a silver highlight)
+        coat[leafy] = 0.0
     return rgb, np.stack([np.ones(n), rough, coat], axis=1)
 
 
@@ -938,7 +1015,7 @@ def rim_glow(ob: bpy.types.Object) -> np.ndarray:
     v = S.attr_array(ob, 'pv').astype(np.float64)
     rim = S.attr_array(ob, 'prim').astype(np.float64)
     reach = PP.ear_reach(PP.TH_TOP + (PP.TH_BOT - PP.TH_TOP) * v)
-    band = np.clip(smooth(0.03, 0.01, (1.0 - u) * reach) + 0.5 * rim * smooth(0.5, 0.9, u), 0, 1)
+    band = np.clip(smooth(0.014, 0.002, (1.0 - u) * reach) + 0.5 * rim * smooth(0.5, 0.9, u), 0, 1)     # round 5: narrow
     return np.where(np.abs(part - PP.PART_EAR) < 0.1, 0.45 * band, 0.0)
 
 
@@ -1019,6 +1096,10 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
     # velvet: a slow mottle (±4%) and fine pale specks (4-details.png panel 6)
     mot = nb.noise(pos, 22.0, 3.0, 0.55)
     c = nb.mix(1.0, c, nb.comb(*(nb.math('ADD', 0.96, nb.math('MULTIPLY', mot, 0.08)),) * 3), blend='MULTIPLY')
+    # round 4: broad soft blotches (±6%, about 8 cm), the blue a touch lower in the darker ones (organic, not minty)
+    big = nb.math('SUBTRACT', nb.noise(pos, 6.5, 2.0, 0.5), 0.5)
+    c = nb.mix(1.0, c, nb.comb(nb.math('ADD', 1.0, nb.math('MULTIPLY', big, 0.12)), nb.math('ADD', 1.0, nb.math('MULTIPLY', big, 0.12)),
+                               nb.math('ADD', 1.0, nb.math('MULTIPLY', big, 0.2))), blend='MULTIPLY')
     vor = nb.voronoi(pos, 85.0)
     speck = nb.math('MULTIPLY', nb.smooth(vor, 0.17, 0.1), 0.34)
     c = nb.mix(speck, c, nb.rgb(C.lin(col['speck'])))
@@ -1051,12 +1132,55 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
     return m
 
 
+def _ear_image() -> bpy.types.Image:
+    """PP.ear_map as a float image (made once per Blender session: about a minute of numpy)."""
+    img = bpy.data.images.get('petalphant_ear_map')
+    if img is None:
+        arr = PP.ear_map()
+        nu, nv = arr.shape[:2]
+        img = bpy.data.images.new('petalphant_ear_map', width=nv, height=nu, alpha=True, float_buffer=True)
+        img.colorspace_settings.name = 'Non-Color'
+        img.pixels.foreach_set(np.ascontiguousarray(arr, dtype=np.float32).ravel())
+        img.update()
+        C.log(f'ear map: {nv} x {nu} (veins, the fade inside and out)')
+    return img
+
+
+def prop_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
+    """Round 4 (RECIPE: prop_material): the props' colour pass. Their vertex paint, and on the ears, per pixel: the
+    branching veins in a deeper pink, the pale petal base and the green root's smooth fade (from PP.ear_map, sampled at
+    each pixel's (pv, pu)), so the veins are crisp lines at the atlas's texel size and the fade has no vertex steps."""
+    col = colours(pal)
+    m, nb = new_mat(name)
+    c = nb.attribute(attr).outputs['Color']
+    part = nb.attribute('part').outputs['Fac']
+    pu = nb.attribute('pu').outputs['Fac']
+    pv = nb.attribute('pv').outputs['Fac']
+    pface = nb.attribute('pface').outputs['Fac']
+    is_ear = nb.math('COMPARE', part, PP.PART_EAR, 0.1)
+    tex = nb.new('ShaderNodeTexImage', image=_ear_image(), interpolation='Cubic', extension='EXTEND')
+    nb.link(nb.comb(pv, pu, 0.0), tex.inputs['Vector'])
+    ch = nb.sep_rgb(tex.outputs['Color'])
+    vein, t_in, t_out = ch[0], ch[1], ch[2]
+    t = nb.mix(nb.smooth(pface, -0.3, 0.3), t_out, t_in, dtype='FLOAT')
+    # the veins (0.6 of the vein colour at full strength), quiet in the cream rim band
+    vk = nb.math('MULTIPLY', nb.math('MULTIPLY', vein, 0.6), nb.math('MULTIPLY', nb.smooth(pu, 0.975, 0.93), is_ear))
+    c = nb.mix(vk, c, nb.rgb(C.lin(col['ear_vein'])))
+    # round 5: no pale petal base (from behind, the root faded through a cream-yellow band): green straight into pink
+    green = nb.math('SUBTRACT', 1.0, nb.smooth(t, 0.0, 1.0))
+    c = nb.mix(nb.math('MULTIPLY', green, is_ear), c, nb.rgb(C.lin(col['skin'])))
+    em = nb.new('ShaderNodeEmission')
+    nb.link(c, em.inputs['Color'])
+    nb.output(em.outputs[0])
+    return m
+
+
 # ----------------------------------------------------------------------------- the rig
 def rig_p() -> dict:
     eb, ed, el = PP.ear_bone(1)
     return {
-        'hip': (0.0, 0.27, 0.6),
-        'chest': (0.0, -0.3, 0.62),
+        'hip': (0.0, 0.23, 0.6),
+        'chest': (0.0, -0.27, 0.62),
         'head_c': tuple(HEAD_C),
         'head_r': 0.245,
         'ear_base': tuple(map(float, eb)),
@@ -1076,7 +1200,14 @@ def rig_p() -> dict:
         # a heavy calf charges head-low with the trunk leading rather than leaping like a cat (decided Nov 7)
         'strike_style': 'charge',
         # round 3: a third of the charge's head turn and roll, so the near petal ear doesn't stand up like a sail
-        'charge_head_turn': 0.3,
+        'charge_head_turn': 0.2,          # round 5: less roll (the near ear still rose like a sail)
+        # round 6 (plan knobs, Nov 13): a compact charge (all four feet planted, a small forward shift), the head hardly
+        # dipping (a dipping head swung the bent-back ears up like wings), the trunk raised and the bud opening at the
+        # impact (5-poses attack); the hit's knock gentler so the far ear stays below the crown
+        'charge_lunge': 0.25,
+        'charge_dip': 0.2,
+        'strike_trunk_raise': 0.75,
+        'hit_head': 0.45,
         'trunk': {'points': TRUNK_PTS, 'parent': 'head', 'curl': 1.0, 'counter': 0.5,
                   # open 50°, not the default 70: a cupped magnolia (4-details.png panel 4), not a flat star
                   'bud': {'petals': PP.BUD_PETALS, 'length': 0.11, 'closed': 14.0, 'open': 50.0, 'roll': PP.BUD_ROLL}},
@@ -1126,16 +1257,17 @@ def prop_weight_regions(co: np.ndarray, attr, names: list[str]) -> list:
         m = (np.abs(part - PP.PART_PETAL) < 0.1) & (np.abs(pid - i) < 0.1)
         if m.any():
             regions.append(U.rigid(m, f'bud.{i + 1}'))
-    m = (np.abs(part - PP.PART_CORE) < 0.1) | (np.abs(part - PP.PART_HEART) < 0.1)
+    m = ((np.abs(part - PP.PART_CORE) < 0.1) | (np.abs(part - PP.PART_HEART) < 0.1) | (np.abs(part - PP.PART_PISTIL) < 0.1)
+         | (np.abs(part - PP.PART_STAMEN) < 0.1))
     if m.any():
         regions.append(U.rigid(m, TRUNK_BONES[-1]))
     # each sepal sits between petals k and k+1: half on each bone, so it opens with them (about 44°, the blend of two
     # 50° turns 72° apart) and stays under the open flower instead of standing inside it
-    for k in range(PP.BUD_PETALS):
+    for k in range(PP.BUD_SEPALS):
         m = (np.abs(part - PP.PART_SEPAL) < 0.1) & (np.abs(pid - k) < 0.1)
         if m.any():
             n = int(m.sum())
-            regions.append((m, {f'bud.{k + 1}': np.full(n, 0.5), f'bud.{(k + 1) % PP.BUD_PETALS + 1}': np.full(n, 0.5)}))
+            regions.append((m, {f'bud.{i + 1}': np.full(n, w) for i, w in PP.sepal_bones(k) if w > 1e-3}))
     m = np.abs(part - PP.PART_LEAF) < 0.1
     if m.any():
         regions.append(U.rigid(m, 'head'))
@@ -1152,12 +1284,14 @@ CLIP_CALM = {
     # never spread the ears like wings in the airborne clips
     'ko': {'ear': 0.12, 'tail': 0.5, 'trunk': 0.6},
     'hit_heavy': {'ear': 0.0, 'tail': 0.6, 'trunk': 0.7},       # round 3: the far ear still flicked up like a rabbit's
-    'strike': {'ear': 0.1},
-    'hit': {'ear': 0.3, 'bud': 0.3},  # round 3b: the bud's surprised flick only hints (it parted the tips: dark slits)
+    # round 5: the charge's own ear motion inverted (at +0.1 and +0.6 the near ear rose over the back like a sail as the
+    # head dips): the ears press back and down instead
+    'strike': {'ear': 0.15},
+    'hit': {'ear': 0.0, 'bud': 0.3},    # round 5: the ears ride the head only (the far ear's tip poked above the crown)  # round 3b: the bud's surprised flick only hints (it parted the tips: dark slits)
     'win': {'ear': 0.18},
     'celebrate': {'ear': 0.25},
     'hop': {'ear': 0.25},
-    'cast': {'ear': 0.35},
+    'cast': {'ear': 0.15, 'trunk': 0.75},     # round 5: a softer bend at the trunk's root; the far ear stays down
     'sidestep_l': {'ear': 0.35},
     'sidestep_r': {'ear': 0.35},
     'run': {'ear': 0.4},

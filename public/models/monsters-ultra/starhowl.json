@@ -4,17 +4,17 @@
  "plan": "quadruped",
  "version": 2,
  "heightUnits": 195,
- "restHeight": 1.276,
+ "restHeight": 1.2742,
  "bounds": {
   "min": [
-   -0.2582,
-   -0.7149,
-   -0.0044
+   -0.3447,
+   -0.7147,
+   -0.0042
   ],
   "max": [
-   0.2579,
-   1.1946,
-   1.276
+   0.3256,
+   1.2727,
+   1.2742
   ]
  },
  "bones": {
@@ -92,7 +92,7 @@
  },
  "face": {
   "mode": "baked",
-  "note": "The eyes are glossy lenses (lo_eyes) with the pale-blue iris, pupil, catchlights and the upper lash line baked into the atlas; the brows, the eye-liner wing, the brow star cluster, the nose and the smile are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid sculpted and painted under it. The mane, the tail's aurora locks and the tail star are fins (lo_fins) and glow softly with their own colour.",
+  "note": "The eyes are glossy lenses (lo_eyes) with the sky-blue iris, pupil, catchlights and the upper lash band baked into the atlas; the dark brow strokes, the eye-liner wing, the brow star cluster, the nose and the smile are baked into the body. No face sheet and no morphs: expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each lens squashes onto the closed lid's lash line and sinks into the head, showing the closed lid sculpted and painted under it. The mane's locks and the plume's clumps are sculpted into the body under hair cards; the coat's stars and constellations are baked into the atlas and its glow mask; the tail star is a fin (lo_fins) and glows with its own colour.",
   "eyeBones": [
    "eye.L",
    "eye.R"
@@ -691,33 +691,25 @@
    "faces": []
   }
  },
- "restHeightWithProps": 1.276,
- "cards": {
-  "edgeFade": [
-   0.05,
-   0.35
-  ]
- },
+ "restHeightWithProps": 1.2742,
  "glow": {
   "strength": 1,
   "tint": null
  },
- "build": "c238d68e32",
+ "build": "c8d74f094b",
  "buildStats": {
   "cards": {
-   "total": 3995,
+   "total": 570,
    "layers": [
-    2363,
-    1095,
-    537
+    570
    ]
   },
   "tuftLocks": 0,
   "lyingLocks": {
-   "head": 6867,
-   "body": 12371
+   "head": 6154,
+   "body": 23145
   },
-  "sourceTriangles": 3091540,
+  "sourceTriangles": 4632139,
   "uvOverlapTexels": {
    "lo_body": 0,
    "lo_eyes": 0,
@@ -751,51 +743,51 @@
  },
  "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
  "budget": {
-  "triangles": 56844,
+  "triangles": 61136,
   "trianglesByMesh": {
-   "lo_body": 40000,
-   "lo_cards": 15980,
+   "lo_body": 57992,
+   "lo_cards": 2280,
    "lo_eyes": 624,
    "lo_fins": 240
   },
-  "vertices": 49708,
-  "cards": 3995,
-  "cardLayers": 3,
+  "vertices": 45703,
+  "cards": 570,
+  "cardLayers": 1,
   "joints": 38,
   "animations": 32,
   "animationBytes": 235840,
   "download": {
-   "glb": 4420584,
-   "glbKtx2": 4420584,
-   "glbWebp": 3606676,
+   "glb": 4218268,
+   "glbKtx2": 4218268,
+   "glbWebp": 3692676,
    "ktx2": {
-    "body": 2865808,
+    "body": 2738281,
     "variants": 0
    },
    "webp": {
-    "body": 2051908,
+    "body": 2212702,
     "variants": 0
    },
-   "totalKtx2": 4420584,
-   "totalWebp": 3606676
+   "totalKtx2": 4218268,
+   "totalWebp": 3692676
   },
   "textures": {
    "body": {
     "base": {
      "px": 2048,
-     "ktx2": 807149,
-     "webp": 442954
+     "ktx2": 807909,
+     "webp": 478364
     },
     "normal": {
      "px": 2048,
      "ktx2Px": 1024,
-     "ktx2": 1078383,
-     "webp": 913070
+     "ktx2": 1149233,
+     "webp": 1042974
     },
     "orm": {
      "px": 2048,
-     "ktx2": 980276,
-     "webp": 695884
+     "ktx2": 781139,
+     "webp": 691364
     }
    }
   },
@@ -838,28 +830,28 @@
  },
  "lite": {
   "file": "starhowl.lite.glb",
-  "build": "4d39a5e022",
-  "bytes": 1128732,
-  "triangles": 11660,
+  "build": "2009c0f6db",
+  "bytes": 1300484,
+  "triangles": 11784,
   "trianglesByMesh": {
-   "lo_body": 10970,
+   "lo_body": 11098,
    "lo_eyes": 624,
-   "lo_fins": 66
+   "lo_fins": 62
   },
   "simplified": {
    "lo_fins": {
     "from": 240,
-    "to": 66
+    "to": 62
    },
    "lo_body": {
-    "from": 40000,
-    "to": 10970
+    "from": 57992,
+    "to": 11098
    }
   },
   "joints": 38,
   "animations": 32,
   "atlasPx": 1024,
-  "textureBytes": 481922,
+  "textureBytes": 559108,
   "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
   "problems": []
  }

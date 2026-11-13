@@ -26,6 +26,7 @@ from lib import ultra as U
 from lib.mesh import Part
 from lib.nodes import NB, new_mat
 from lib.surface import ell_soft, in_ellipsoid, norm, smooth, tangent, v3
+from monsters.breeds import hearthwing_mouth as MO
 from monsters.breeds import hearthwing_parts as HP
 
 lin = HP.lin
@@ -35,6 +36,7 @@ MOUTH_HEX = '#3A2224'
 LASH_HEX = '#16110F'
 # prop kinds (attribute pkind): the build joins every prop into lo_props and prop_weight_regions skins them by kind
 P_HORN, P_CLAW, P_ARM, P_FINGER, P_WCLAW, P_SPINE = 0, 1, 2, 3, 4, 5
+P_MOUTH = 6                 # Nov 13: the mouth's inner skin, palate, tongue floor, throat and fangs (hearthwing_mouth)
 
 
 def colours(pal: dict) -> dict:
@@ -284,7 +286,9 @@ class Form:
     def body_extras(self) -> list[bpy.types.Object]:
         sp = self.G['spade']
         objs = [HP.blade(f'spike{i}', b, rings=12, seg=12) for i, b in enumerate(self.spikes())]
-        objs.append(HP.teardrop('spade', sp['base'], sp['tip'], (1.0, 0.0, 0.0), sp['width'], sp['thick'], sp['bulge'], sp['curl'],
+        ax_ = HP.unit(v3(sp['tip']) - v3(sp['base']))
+        side_ = tuple(HP.unit(np.cross(ax_, v3((1.0, 0.0, 0.0))))) if sp.get('profile') else (1.0, 0.0, 0.0)
+        objs.append(HP.teardrop('spade', sp['base'], sp['tip'], side_, sp['width'], sp['thick'], sp['bulge'], sp['curl'],
                                 taper=sp.get('taper', 1.6)))
         return objs
 
@@ -399,7 +403,7 @@ class Form:
                 for k in range(n):
                     V = np.full(1, k / (n - 1))
                     nr = 14 if high else 5
-                    u = np.linspace(-0.05, F.get('spine_end', 0.99), nr)
+                    u = np.linspace(F.get('spine_start', -0.05), F.get('spine_end', 0.99), nr)
                     pts = np.concatenate([self.frill_point(s, np.array([1.0]), V, reach=np.array([x]), F=F)[None, 0] for x in u])
                     t = np.linspace(0.0, 1.0, nr)
                     r = r0 * (1 - t) + r1 * t
@@ -485,7 +489,8 @@ class Form:
                 d = (dx / max(abs(d) for d in L['toe_dx']) * 0.35, -1.0, -0.42 if not blunt else (-0.5 if cone else -0.6))
                 ob = HP.talon(f'{tag}_claw{leg}{i}', r, d, (0.0, -0.15, -1.0), length * k * (0.9 if outer else 1.0), radius * k,
                               curve=curve, rings=(14 if cone else (9 if not blunt else 11)) if high else 6,
-                              seg=(18 if cone else 12) if high else 7, flat=0.85 if not blunt else (0.95 if cone else 0.92), blunt=blunt)
+                              seg=(18 if cone else 12) if high else 7, flat=0.85 if not blunt else (0.95 if cone else 0.92), blunt=blunt,
+                              cap=L.get('claw_cap', 0.38))
                 out.append(self._prop_attrs(ob, P_CLAW, LEG_INDEX[leg], S.attr_array(ob, 'talon_t')))
         return out
 
@@ -506,11 +511,29 @@ class Form:
             ta = np.linspace(0, 1, len(arm))
             ra = np.interp(ta, [0.0, 0.5, 1.0], ar)
             wb = W.get('wrist_bulge', 0.12)
-            ra = ra * (1.0 + 0.14 * np.exp(-((ta - 0.5) / 0.08) ** 2) + wb * np.exp(-((ta - 1.0) / 0.07) ** 2))
-            seg = (20 if not quick else 12) if high else 8
+            ra = ra * (1.0 + W.get('elbow_bulge', 0.14) * np.exp(-((ta - 0.5) / 0.08) ** 2) + wb * np.exp(-((ta - 1.0) / 0.07) ** 2))
+            seg = (20 if not quick else 12) if high else W.get('arm_seg_lo', 8)
+            if W.get('shoulder_dome'):
+                # Nov 13: a rounded root at the shoulder (its flat end cap showed as a block when the wing lifted)
+                d0 = HP.unit(el - sh)
+                pre = np.array([0.95, 0.8, 0.55, 0.28])
+                arm = np.concatenate([sh[None] - d0[None] * (ar[0] * pre)[:, None], arm])
+                ra = np.concatenate([ar[0] * np.sqrt(1.0 - pre ** 2), ra])
+                ta = np.concatenate([np.zeros(len(pre)), ta])
             ob = HP.tube(f'{tag}_warm{U.wing_tag(s)}', arm, ra, (0.0, 0.0, 1.0), seg=seg,
                          tip=wr + HP.unit(wr - el) * ar[2] * W.get('wrist_cap', 0.9))
             out.append(self._prop_attrs(ob, P_ARM, s, np.concatenate([np.repeat(ta, seg), [0.0, 1.0]])))
+            if W.get('knuckle'):
+                # Nov 12: a rounded knuckle over the wrist joint (the arm's end and the leading edge's root met there as
+                # tube ends; folded, one read as a cut pipe from the front)
+                kr = ar[2] * W['knuckle']
+                kd = HP.unit(wr - el)
+                nk = 14 if high else W.get('knuckle_lo', 6)
+                u = np.linspace(-1.0, 1.0, nk)
+                kp = wr[None] + kd[None] * (u * kr * 1.1)[:, None]
+                krad = kr * np.sqrt(np.clip(1.0 - u ** 2, 0.0, 1.0)) + 1e-4
+                ob = HP.tube(f'{tag}_wknuckle{U.wing_tag(s)}', kp[1:-1], krad[1:-1], (0.0, 0.0, 1.0), seg=seg, tip=kp[-1])
+                out.append(self._prop_attrs(ob, P_ARM, s, np.ones(len(ob.data.vertices))))
             for k, tip in enumerate(q['fingers']):
                 lead = k == 0 and bool(W.get('lead_r'))
                 nf = (16 if high else 5) if lead else (12 if high else 4)
@@ -543,8 +566,37 @@ class Form:
         return out
 
     def build_props(self, high: bool, quick: bool) -> list[bpy.types.Object]:
-        return (self.build_horns(high, quick) + self.build_claws(high, quick) + self.build_wing_bones(high, quick)
-                + self.build_frill_spines(high, quick))
+        out = (self.build_horns(high, quick) + self.build_claws(high, quick) + self.build_wing_bones(high, quick)
+               + self.build_frill_spines(high, quick))
+        lo = bpy.data.objects.get('lo_body')
+        if self.G.get('mouth_cut') and lo is not None and lo.get('mouth_cut'):
+            # Nov 13: the mouth behind the cut lips (made from the cut low body, so only once it exists)
+            ob = MO.mouth_mesh(f'{'hi' if high else 'lo'}_mouth', lo, self.mouth_spec(), target=self.G['mouth_cut'].get('tris', 1000))
+            parts = S.attr_array(ob, 'mouth_part_tmp').astype(np.float64)
+            ob.data.attributes.remove(ob.data.attributes['mouth_part_tmp'])
+            out.append(self._prop_attrs(ob, P_MOUTH, 0.0, np.zeros(len(parts)), parts))
+        return out
+
+    def lip_line(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """The lip line's height at (x, y): the smile across the front, and a long muzzle's side lines."""
+        M = self.G['mouth']
+        mc = np.array(self.mouth_curve())
+        lip = np.interp(x, mc[:, 0], mc[:, 1], left=mc[0, 1], right=mc[-1, 1])
+        if M.get('side'):
+            sy = np.array([q[0] for q in M['side']])
+            sz = np.array([q[1] for q in M['side']])
+            o = np.argsort(sy)
+            lip = np.where(np.abs(x) > M['side_x'] * 0.6, np.interp(y, sy[o], sz[o]), lip)
+        return lip
+
+    def mouth_spec(self) -> dict:
+        return {**self.G['mouth_cut'], 'lip': self.lip_line, 'k': self.G['k_face']}
+
+    def carve_low(self, ob: bpy.types.Object) -> None:
+        """Nov 13: the mouth's cut along the lip line, on the low body before its decimation (hearthwing_mouth)."""
+        if self.G.get('mouth_cut'):
+            MO.cut(ob, self.mouth_spec())
+            ob['mouth_cut'] = 1
 
     # ------------------------------------------------------------------------- the face's carving
     def mouth_curve(self) -> list[tuple[float, float]]:
@@ -793,6 +845,8 @@ class Form:
         on &= ~(self.chevron_region(p) > 0.3)
         on &= ~(z['eye_d'] < self.eye_r * 1.6)
         on &= ~z['head']                    # round 2: the cream face stays smooth skin (the bands smeared the cheeks)
+        if Sg.get('no_neck_bands'):
+            on &= ~z['neck'].astype(bool)
         sp = np.where(z['tail'], Sg['band'] * 0.75, Sg['band'])
         sp = np.where(z['leg'], Sg['band'] * 0.65, sp)
         return np.where(on, sp, np.nan), sp * 1.05, np.full(len(p), Sg['h_band'])
@@ -850,7 +904,7 @@ class Form:
             nos = np.maximum(nos, np.exp(-(dd / Nn['r']) ** 2))
         nos *= smooth(self.nose_c.y + 0.03 * k, self.nose_c.y + 0.01 * k, y)
         bulge, lash = self.closed_lid(co)
-        disp = (-0.0024 * groove - 0.004 * nos + 0.0028 * bulge - 0.0012 * lash) * k
+        disp = (-0.0024 * groove - 0.004 * nos + self.G['eye'].get('lid_dome', 0.0028) * bulge - 0.0012 * lash) * k
         if self.G['eye'].get('rim'):
             disp = disp + self.G['eye']['rim'] * self.eye_r * self.eye_rim(co)
         if self.G['eye'].get('lid_top'):
@@ -871,7 +925,8 @@ class Form:
             b_, tp_ = v3(SPg['base']), v3(SPg['tip'])
             ax_ = HP.unit(tp_ - b_)
             side_ = HP.unit(np.cross(ax_, np.cross(v3((1.0, 0.0, 0.0)), ax_)))     # the leaf's width runs along X
-            off = np.abs((co - b_) @ v3((1.0, 0.0, 0.0)))
+            wdir = HP.unit(np.cross(ax_, v3((1.0, 0.0, 0.0)))) if SPg.get('profile') else v3((1.0, 0.0, 0.0))
+            off = np.abs((co - b_) @ wdir)
             rib_ = np.exp(-(off / (SPg['midrib'][1] * kk)) ** 2) * smooth(0.05, 0.22, sp_t) * smooth(1.0, 0.8, sp_t) * (sp_on > 0.5)
             disp = disp + SPg['midrib'][0] * kk * rib_
         S.set_positions(ob, co + vn * disp[:, None])
@@ -955,8 +1010,9 @@ class Form:
         # the teal: each scale darker at its root (tucked under the one before), lighter toward its free edge, a fine dark
         # outline, a pale midrib; the gaps deep teal
         teal = np.tile(lin(col['teal']), (n, 1)) * (0.94 + 0.12 * hsh)[:, None]
-        rootk = smooth(0.4, -0.95, ul) * on
-        edge = smooth(0.8, 0.97, rho) * on
+        cc = self.G['scales'].get('contrast', 1.0)
+        rootk = smooth(0.4, -0.95, ul) * on * cc
+        edge = smooth(0.8, 0.97, rho) * on * cc
         teal = HP.blend(teal, rootk * 0.68, col['root'])
         teal = HP.blend(teal, smooth(-0.1, 0.75, ul) * (1 - edge) * on * 0.28, col['sheen'])
         teal = HP.blend(teal, mid * 0.22, col['sheen'])
@@ -974,7 +1030,7 @@ class Form:
         # the chest's leaf of chevrons: plates paler at their free lower edge, shaded where they tuck under the row above,
         # outlined by the seams (young: a warm tan; grown: the molten grate, painted with the glow below)
         plate = HP.blend(np.tile(lin(col['cream_base']), (n, 1)), smooth(0.55, 0.05, cfrac) * 0.3, col['cream_hi'])
-        plate = HP.blend(plate, smooth(0.5, 1.0, cfrac) * 0.35, col['cream_rim'])
+        plate = HP.blend(plate, smooth(0.5, 1.0, cfrac) * self.G['chevron'].get('edge_dark', 0.35), col['cream_rim'])
         plate = HP.blend(plate, cseam / np.maximum(region, 1e-3) * 0.75, col['cream_rim'])
         tint = self.G['chevron'].get('plate_tint')
         if tint:
@@ -992,6 +1048,12 @@ class Form:
         crs = HP.blend(crs, smooth(-0.1, 0.75, ul) * (1 - edge) * 0.3, col['cream_hi'])
         crs = HP.blend(crs, edge * 0.75, col['cream_rim'])
         cr = np.where(on[:, None], crs, cr)
+        if self.G['cream'].get('smooth_zones'):
+            # Nov 12 (grown): under the jaw and down the neck the scale-by-scale colour read as blotches: the smooth mask
+            zm = np.zeros(n, bool)
+            for zn in self.G['cream']['smooth_zones']:
+                zm |= z[zn].astype(bool)
+            ce = np.where(zm, smooth(0.35, 0.65, cream), ce)
         rgb = teal * (1 - ce[:, None]) + cr * ce[:, None]
         cream = ce
         # the spikes: teal at the root, orange toward the tip; the ruff's lifted scales stay teal, darker at the root
@@ -1015,7 +1077,12 @@ class Form:
         if SPg.get('collar'):
             # a short teal scaled collar where the bud meets the tail (the bud a solid scaled thing, never a flame)
             sk = sk * smooth(SPg['collar'] - 0.035, SPg['collar'] + 0.035, sp_t)
-        if SPg.get('saturated'):
+        if SPg.get('flat'):
+            # Nov 12 round 2 (originality): one flat orange leaf, its scales outlined a little deeper; no core, no spots
+            spade = HP.blend(np.tile(lin(col['orange']), (n, 1)), rootk * 0.3, col['membrane_dark'])
+            spade = HP.blend(spade, edge * 0.45, col['rib'])
+            hot = np.zeros(n)
+        elif SPg.get('saturated'):
             # round 3: a saturated #FF8A3D bud, its scales darker at the root and outlined deeper, a yellow core inside
             core = smooth(0.24, 0.04, np.abs(sp_t - 0.46))
             spade = HP.blend(np.tile(lin(col['orange']), (n, 1)), rootk * 0.5, col['membrane_dark'])
@@ -1035,7 +1102,7 @@ class Form:
             for c in root[pick]:
                 d2 = ((root - c) ** 2).sum(axis=1)
                 speck = np.maximum(speck, np.exp(-d2 / (0.0055 * self.G['k']) ** 2))
-        spade = HP.blend(spade, speck * (0.75 if SPg.get('saturated') else 0.9), '#FFF0B0')
+        spade = HP.blend(spade, speck * (0.0 if SPg.get('flat') else 0.75 if SPg.get('saturated') else 0.9), '#FFF0B0')
         rgb = rgb * (1 - sk[:, None]) + spade * sk[:, None]
         # the soles: cream with copper pads (a palm pad and one under each toe; 4-details panel 3)
         pads = np.zeros(n)
@@ -1085,6 +1152,38 @@ class Form:
             # hottest at the centre: the seams there run toward yellow
             rgb = HP.blend(rgb, cseam * ell_soft(root, self.G['glow']['centre'], tuple(r * 0.6 for r in self.G['glow']['radii']), 0.9) * 0.6,
                            col['glow_core'])
+        if self.G['eye'].get('lid_paint'):
+            # Nov 12: a teal upper lid over the top of each lens, edged by a dark lid line that thickens into lashes at the
+            # outer corner (the dark ring all round read as goggles)
+            lk = self.G['eye']['lid_paint']
+            er = self.eye_r
+            lid_t = np.zeros(n)
+            line = np.zeros(n)
+            for s_ in (1, -1):
+                c_, xax, yax, look = self.eye_frame(s_)
+                q = root - v3(c_)
+                xe, ye, ze = q @ v3(xax), q @ v3(yax), q @ v3(look)
+                rr = np.sqrt((xe / (er * self.eye_shape[0])) ** 2 + (ye / (er * self.eye_shape[1])) ** 2)
+                up = ye / er
+                outer = smooth(-0.1, 0.8, xe * s_ / er)
+                front = ze > -0.9 * er
+                lid_t = np.maximum(lid_t, smooth(0.96, 1.02, rr) * smooth(1.3, 1.15, rr) * smooth(0.2, 0.6, up) * front)
+                th = 0.05 + 0.07 * outer
+                line = np.maximum(line, np.exp(-((rr - 0.97) / th) ** 2) * smooth(-0.15, 0.3, up) * front)
+            rgb = HP.blend(rgb, lid_t * 0.9, col['teal'])
+            rgb = HP.blend(rgb, line * lk, LASH_HEX)
+        if self.G['eye'].get('liner'):
+            # Nov 12: a dark ring of skin round each lens (the eyes dissolved into the cream patch at 64 px)
+            lw, lk = self.G['eye']['liner']
+            er = self.eye_r
+            ring = np.zeros(n)
+            for s_ in (1, -1):
+                c_, xax, yax, look = self.eye_frame(s_)
+                q = root - v3(c_)
+                xe, ye, ze = q @ v3(xax), q @ v3(yax), q @ v3(look)
+                rr = np.sqrt((xe / (er * self.eye_shape[0])) ** 2 + (ye / (er * self.eye_shape[1])) ** 2)
+                ring = np.maximum(ring, smooth(0.78, 0.88, rr) * smooth(1.0 + lw, 1.0 + 0.5 * lw, rr) * (ze > -0.9 * er))
+            rgb = HP.blend(rgb, ring * lk, LASH_HEX)
         nose = ell_soft(root, tuple(self.nose_c), tuple(r * 1.1 for r in self.G['nose_r']), 0.25)
         rgb = HP.blend(rgb, nose * 0.18, NOSE_HEX)
         # roughness and clear coat: a soft sheen on the scales, glossier on the spikes, the spade and the nose
@@ -1095,8 +1194,8 @@ class Form:
         for m, r_, c_ in ((on_sp, 0.38, 0.28), (is_ruff * 1.0, 0.45, 0.14), (sk, *sk_rc), (nose, 0.52, 0.08), (pads, 0.3, 0.4)):
             rough = rough * (1 - m) + r_ * m
             coat = coat * (1 - m) + c_ * m
-        glow = np.maximum(g, sk * ((0.03 + 0.34 * hot ** 2) if SPg.get('saturated') else (0.45 + 0.55 * hot)))
-        glow = np.maximum(glow, sk * speck)
+        glow = np.maximum(g, sk * (0.0 if SPg.get('flat') else (0.03 + 0.34 * hot ** 2) * SPg.get('glow_k', 1.0) if SPg.get('saturated') else (0.45 + 0.55 * hot)))
+        glow = np.maximum(glow, sk * speck * (0.0 if SPg.get('flat') else 1.0))
         return {'paint': rgb, 'rough': np.stack([np.ones(n), np.clip(rough, 0.05, 1), np.clip(coat, 0, 1)], axis=1), 'glow': np.clip(glow, 0, 1)}
 
     def fin_arrays(self, ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -1116,16 +1215,24 @@ class Form:
         if np.abs(side).max() > 0.5:
             u, v = wuv[:, 1], wuv[:, 2]
             mid = np.sin(np.pi * np.clip(u, 0, 1)) * np.sin(np.pi * np.clip(v, 0, 1))
-            rgb = HP.blend(rgb, mid * 0.35, col['membrane_lite'])
+            rgb = HP.blend(rgb, mid * Wg.get('mid_lite', 0.35), col['membrane_lite'])
             rel = U.wing_relief(wuv, len(self.wings['fingers']))
             veins = self.wing_veins(co, wuv)
-            rgb = HP.blend(rgb, (1 - mid) * 0.25, col['membrane_dark'])
-            rgb = HP.blend(rgb, rel * 0.6, col['rib'])
-            rgb = HP.blend(rgb, veins * 0.62, col['rib'])
+            if Wg.get('clean_skin'):
+                # Nov 12: no brown smears: the ridges and the fine veins only a little darker orange
+                vein_hex = C.mix_hex(col['orange'], '#C9501C', 0.55)
+                rgb = HP.blend(rgb, rel * 0.3, vein_hex)
+                rgb = HP.blend(rgb, veins * 0.55, vein_hex)
+            else:
+                rgb = HP.blend(rgb, (1 - mid) * 0.25, col['membrane_dark'])
+                rgb = HP.blend(rgb, rel * 0.6, col['rib'])
+                rgb = HP.blend(rgb, veins * 0.62, col['rib'])
             if self.G.get('ember'):
-                e = smooth(0.84, 0.97, v)
-                rgb = HP.blend(rgb, smooth(0.7, 0.86, v) * (1 - e) * 0.5, col['membrane_dark'])
-                rgb = HP.blend(rgb, e * 0.85, col['ember'])
+                eb = Wg.get('ember_band')
+                e = smooth(1.0 - eb - 0.012, 1.0 - 0.4 * eb, v) if eb else smooth(0.84, 0.97, v)
+                if not eb:
+                    rgb = HP.blend(rgb, smooth(0.7, 0.86, v) * (1 - e) * 0.5, col['membrane_dark'])
+                rgb = HP.blend(rgb, e * Wg.get('ember_paint', 0.85), col['ember'])
             else:
                 rgb = HP.blend(rgb, smooth(0.86, 1.0, v) * 0.5, col['membrane_dark'])
             rough = 0.36 + 0.12 * smooth(0.6, 1.0, v) - 0.06 * rel
@@ -1141,17 +1248,27 @@ class Form:
             tr_ = self.G['wing'].get('frill_teal', 0.3)
             rgb = HP.blend(rgb, smooth(tr_, 0.05, u) * 0.85, col['teal_lo'])
             edge = smooth(0.8, 1.0, u / np.maximum(self.frill_edge(v), 0.3))
-            rgb = HP.blend(rgb, edge * 0.5, col['ember'] if self.G.get('ember') else col['membrane_dark'])
+            rgb = HP.blend(rgb, edge * 0.5, col['ember'] if (self.G.get('ember') and not Wg.get('backlit')) else col['membrane_dark'])
             rough = 0.38 + 0.12 * edge - 0.08 * rib
         rc = np.stack([np.ones(n), np.clip(rough + 0.06, 0.1, 1), np.full(n, 0.25)], axis=1)
         # a faint warmth through every membrane (the glow channel), stronger at the grown form's ember edge
         glow = np.full(n, Wg.get('glow', 0.0))
         if np.abs(side).max() > 0.5:
-            glow = glow * (1 - 0.5 * rel) * (1 - 0.6 * veins)
+            if Wg.get('backlit'):
+                # Nov 12: lit from behind in the middle of each panel (the see-through look), never hot at the edges; the
+                # membrane paler toward the trailing edge, as if thinner there
+                glow = glow * (0.15 + 0.85 * mid ** 0.7) * (1 - 0.7 * rel) * (1 - 0.6 * veins) * smooth(1.0, 0.9, v)
+                rgb = HP.blend(rgb, smooth(0.35, 0.85, v) * smooth(1.0, 0.9, v) * 0.22, col['membrane_lite'])
+            else:
+                glow = glow * (1 - 0.5 * rel) * (1 - 0.6 * veins)
             if self.G.get('ember'):
-                glow = np.maximum(glow, smooth(0.86, 0.98, wuv[:, 2]) * Wg.get('ember_glow', 0.55))
+                eb = Wg.get('ember_band')
+                ee = smooth(1.0 - eb - 0.012, 1.0 - 0.4 * eb, wuv[:, 2]) if eb else smooth(0.86, 0.98, wuv[:, 2])
+                glow = np.maximum(glow, ee * Wg.get('ember_glow', 0.55))
         else:
             glow = glow * (1 - 0.6 * rib) * smooth(0.1, 0.35, u)
+            if Wg.get('backlit'):
+                glow = glow * smooth(1.0, 0.75, u / np.maximum(self.frill_edge(v), 0.3))
         return rgb, rc, glow
 
     def prop_arrays(self, ob: bpy.types.Object, pal: dict) -> tuple[np.ndarray, np.ndarray]:
@@ -1172,7 +1289,7 @@ class Form:
         elif kind == P_ARM:
             # round 2: a scaled teal leading edge (rows of small scales, each outlined), not a banded stick
             rgb = np.tile(lin(col['teal']), (n, 1))
-            bands = 0.5 + 0.5 * np.cos(t * 2 * math.pi * self.G['wing']['arm_bands'])
+            bands = (0.5 + 0.5 * np.cos(t * 2 * math.pi * self.G['wing']['arm_bands'])) if self.G['wing'].get('arm_rings', True) else np.zeros(n)
             co, _vn = S.mesh_arrays(ob)
             cells = HP.cell_veins(co, 0.011 * self.G['k'], seed=13, width=0.12)
             rgb = HP.blend(rgb, bands ** 3 * 0.45, col['rim'])
@@ -1180,14 +1297,29 @@ class Form:
             rgb = HP.blend(rgb, (1 - bands) ** 4 * (1 - cells) * 0.25, col['sheen'])
             rough = 0.48 + 0.15 * bands
             coat = np.full(n, 0.12)
+        elif kind == P_MOUTH:
+            co, _vn = S.mesh_arrays(ob)
+            rgb = MO.mouth_colours(self.mouth_spec(), co, g, lin)
+            rough = np.full(n, 0.5)
+            coat = np.full(n, 0.25)
         elif kind == P_SPINE:
             rgb = np.tile(lin(col['teal']), (n, 1))
             rgb = HP.blend(rgb, smooth(0.12, 0.45, t), col['rib'])
             rgb = HP.blend(rgb, smooth(0.6, 1.0, t) * 0.6, col['spike_tip'])
             rough = np.full(n, 0.42)
             coat = np.full(n, 0.25)
+        elif self.G['wing'].get('finger_teal'):
+            # Nov 12: the finger bones raised teal struts, scaled like the arm, lighter toward the tips
+            co, _vn = S.mesh_arrays(ob)
+            cells = HP.cell_veins(co, 0.009 * self.G['k'], seed=17, width=0.12)
+            rgb = np.tile(lin(col['teal']), (n, 1))
+            rgb = HP.blend(rgb, cells * 0.45, col['rim'])
+            rgb = HP.blend(rgb, smooth(0.4, 1.0, t) * 0.3, col['sheen'])
+            rough = np.full(n, 0.46)
+            coat = np.full(n, 0.14)
         else:
             rgb = np.tile(lin(col['finger']), (n, 1))
+            rgb = HP.blend(rgb, np.full(n, self.G['wing'].get('finger_dark', 0.0)), col['rib'])
             rgb = HP.blend(rgb, smooth(0.25, 0.0, t) * 0.5, col['rib'])
             rough = np.full(n, 0.42)
             coat = np.full(n, 0.25)
@@ -1308,7 +1440,7 @@ class Form:
             'stride': R['stride'], 'wings': self.wings,
             'props': [{'name': 'horns', 'parent': 'head', 'head': R['horn_bone'][0], 'tail': R['horn_bone'][1]}],
         }
-        for key in ('neck_bones', 'neck_points', 'strike_style', 'jaw'):
+        for key in ('neck_bones', 'neck_points', 'strike_style', 'jaw', 'cast_paw', 'cast_rear', 'hit_wing_open'):
             if key in R:
                 out[key] = R[key]
         return out
@@ -1336,7 +1468,7 @@ class Form:
     def jaw_region(self, co: np.ndarray, names: list[str]) -> list:
         if 'jaw' not in names or not self.G.get('jaw_skin'):
             return []
-        w = self.jaw_weights(co)
+        w = MO.jaw_weight(self.mouth_spec(), co) if self.G.get('mouth_cut') else self.jaw_weights(co)
         jm = w > 0.01
         return [(jm, {'jaw': w[jm], 'head': 1.0 - w[jm]})] if jm.any() else []
 
@@ -1382,6 +1514,17 @@ class Form:
         side = np.round(attr('pside')).astype(int)
         t = attr('pt').astype(np.float64)
         regs = []
+        mo = kind == P_MOUTH
+        if mo.any():
+            # the palate, the throat and the fangs on the head; the floor and tongue with the lower jaw's own blend
+            gp = attr('pg').astype(np.float64)
+            up = mo & (gp > -0.5)
+            dn = mo & (gp < -0.5)
+            if up.any():
+                regs.append(U.rigid(up, 'head'))
+            if dn.any():
+                w = MO.jaw_weight(self.mouth_spec(), co[dn])
+                regs.append((dn, {'jaw': w, 'head': 1.0 - w}))
         horn = kind == P_HORN
         if horn.any():
             regs.append(U.rigid(horn, 'prop.horns' if 'prop.horns' in names else 'head'))
@@ -1462,7 +1605,7 @@ CONTRACT = ('all_parts', 'body_extras', 'build_eye', 'eye_material', 'blink_pivo
             'build_props', 'paint_sources', 'body_material', 'rig_p', 'body_weight_regions', 'fin_weight_regions',
             'prop_weight_regions', 'preview_colours', 'ear_weights')
 EXTRAS = ('fin_arrays', 'prop_arrays', 'body_arrays', 'spikes', 'cream_mask', 'scale_flow', 'tail_points', 'eye_frame', 'on_head',
-          'spade_field', 'frill_point', 'chevron_field', 'uv_smooth_mask')
+          'spade_field', 'frill_point', 'chevron_field', 'uv_smooth_mask', 'carve_low')
 
 
 def export(form: Form, ns: dict) -> None:
