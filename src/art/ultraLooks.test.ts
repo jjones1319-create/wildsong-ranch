@@ -297,6 +297,10 @@ describe('Ultra parts (tools/art/ultra.ts names)', () => {
     expect(glowOf({ glow: { strength: max + 1 } }, max)).toBeNull()
     expect(glowOf({ glow: { strength: '2' } }, max)).toBeNull()
     expect(glowOf({ glow: { strength: 2, tint: 'gold' } }, max)).toBeNull()
+    // Nov 14 (opt-in): a twinkle share in [0, 1]; without one (or out of range) the spec is as before
+    expect(glowOf({ glow: { strength: 2, tint: null, twinkle: 0 } }, max)).toEqual({ strength: 2, tint: null, twinkle: 0 })
+    expect(glowOf({ glow: { strength: 1.5, tint: '#ffffff', twinkle: 0.5 } }, max)!.twinkle).toBe(0.5)
+    expect(glowOf({ glow: { strength: 2, tint: null, twinkle: 3 } }, max)).toEqual({ strength: 2, tint: null })
     expect(softFinsOf({ fins: { soft: true } })).toBe(true)
     expect(normalScaleOf({ normal: { scale: 1.2 } })).toBe(1.2)
     expect(normalScaleOf({ normal: { scale: 2 } })).toBe(2)

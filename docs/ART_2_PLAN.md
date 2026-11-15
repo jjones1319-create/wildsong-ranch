@@ -272,19 +272,19 @@ ART_2_DETAIL §5.1 also has a **High** column (≤ 40,000 triangles, ≤ 3.5 MB)
 
 ## 4. Body plans, rigs and batches
 
-The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below. The biped plan `plans/biped.py` exists (Nov 12): IK legs and arms, all 32 clips, eight strike styles. The floater plan `plans/floater.py` is under way (Nov 12): its rig and all 32 clips are written and tested on a stand-in, and no breed uses it yet. Each other plan is written when its first batch starts.
+The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below. The biped plan `plans/biped.py` (Nov 12: IK legs and arms, all 32 clips, eight strike styles) and the floater plan `plans/floater.py` (Nov 12: a hover root, all 32 clips, six strike styles) shipped with B3 and B4 in v1.25.0, each grown with opt-in knobs by its breeds (RECIPE.md). The shelled and blob plans (`plans/shelled.py`, `plans/blob.py`) are written (Nov 14), and the construct and serpent plans (`plans/construct.py`, `plans/serpent.py`) followed (Nov 15): their rigs and all 32 clips are tested on stand-ins, and they share their posing machinery in `plans/kin.py`. Each other plan is written when its first batch starts.
 
 | Plan | Breeds (looks) | Rig notes | Batch |
 |---|---|---|---|
 | quadruped | Puddlepup · Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack · Stripeneck (31), Petalphant, Cobblemaw, Hearthwing (young, grown) | spine, neck, head, jaw, two-bone ears, four three-bone legs, a tail chain. Options: a long neck and wings (grown Hearthwing), a longer 4–5 bone neck and hooves (Stripeneck), a trunk chain (Petalphant) | P1 · B1 · B2 |
-| biped (`plans/biped.py`, built) | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | B3 |
-| floater (`plans/floater.py`, under way) | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
-| shelled | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs. Crab option: six legs, two claws (one big), eye stalks | B5 |
-| blob | Bloatoad, Scrollopus | a squash chain for the body, a throat sac (Bloatoad), six to eight tentacle chains (Scrollopus) | B5 |
-| serpent | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline, head and jaw. For Aurelwyrm, which floats: ribbon-fin chains, whiskers, antlers | B6 |
+| biped (`plans/biped.py`, shipped in v1.25.0) | Quillion, Grumblestone, Pluckrex (young, grown), Gloomgrin · Plumdrake (32) | hips, spine, neck, head, jaw, arms with hands, legs with feet. Options: a tail, small wings (Gloomgrin), big wings and a tail puff (Plumdrake), a cape chain (Quillion), hulking and squatting proportions | B3 |
+| floater (`plans/floater.py`, shipped in v1.25.0) | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
+| shelled (`plans/shelled.py`, written) | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs planted by IK, a tuck into the shell, a flag or tail chain, a turret's volley socket. Crab option: six legs, two claws (one big) with moving pincers, eye stalks with visors | B5 |
+| blob (`plans/blob.py`, written) | Bloatoad, Scrollopus | a squash chain for the body, four short legs planted by IK, a throat sac and a stretching tongue (Bloatoad), six to eight tentacle chains that rest on the ground, hold props or stay free (Scrollopus) | B5 |
+| serpent (`plans/serpent.py`, written) | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline (each bone's heading and rise along the body: slither waves, a cobra's S, an Archimedean coil-sit for sit and sleep), head and jaw, a forked tongue, a crest. For Aurelwyrm, which floats (hooks for now): `float`, ribbon-fin chains, whiskers, antler props | B6 |
 | avian | Galeheron, Paladove (young, grown) | long legs, a neck chain, head, beak, two wings (four on grown Paladove), tail and crest plumes | B6 |
 | insect | Nibblegrub (and its cocoon), Velvesper | a segment chain with tiny legs, antennae; moth wings (Velvesper) | B7 |
-| construct | Gearhoot, Lootlid | Gearhoot: an owl body with gear-feather wings, a turning key and a monocle. Lootlid: a box body whose lid is the jaw, stubby legs, a tongue chain | B7 (Gearhoot), B5 (Lootlid) |
+| construct (`plans/construct.py`, written for Lootlid) | Gearhoot, Lootlid | Gearhoot (hooks for now): a head on a turning neck with a beak, gear-feather wing chains, a spinner for the turning key, a monocle prop. Lootlid: a box body whose lid is the jaw (a separate rigid shell on the hinge), stubby legs planted by IK, a sliding tongue chain | B7 (Gearhoot), B5 (Lootlid) |
 
 ## 5. The clip contract
 
@@ -470,10 +470,10 @@ Each batch ends with a lineup sheet and the owner's verdict on the phone.
 | Batch | Looks |
 |---|---|
 | **B1** (v1.23.0): four-legged fur and wool | Tumblefox, Cinderlynx, Starhowl, Nimbusheep, Rammerjack |
-| **B2** | Stripeneck, Petalphant, Cobblemaw, Hearthwing (young and grown) |
-| **B3** | Quillion, Grumblestone, Gloomgrin, Pluckrex (young and grown), Plumdrake |
-| **B4** | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance |
-| **B5** | Moatshell, Reefclaw, Bloatoad, Scrollopus, Lootlid |
+| **B2** (v1.23.0, with B1; both upgraded in v1.24.0) | Stripeneck, Petalphant, Cobblemaw, Hearthwing (young and grown) |
+| **B3** (v1.25.0, two at a time): the biped plan | Quillion, Grumblestone, Gloomgrin, Pluckrex (young and grown), Plumdrake |
+| **B4** (v1.25.0, with B3): the floater plan | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance |
+| **B5** (started Nov 15, with Coilfang from B6) | Moatshell, Reefclaw, Bloatoad, Scrollopus, Lootlid |
 | **B6** | Coilfang, Aurelwyrm, Galeheron, Paladove (young and grown) |
 | **B7** | Nibblegrub and its cocoon, Velvesper, Gearhoot |
 

@@ -277,6 +277,7 @@ def crystals_object(name: str, specs: list[dict]) -> bpy.types.Object:
     `xtal` = (t along 0 base … 1 tip, facet shade −1..1, kind 0 prism / 1 gem), `anchor` = the crystal's base on the
     body (its skin weights come from there), `xid` = the crystal's index."""
     verts, faces, t_along, shade, kind, anchor, xid = [], [], [], [], [], [], []
+    face_xid: list[int] = []
     for i, sp in enumerate(specs):
         rings = crystal_rings(sp['base'], sp['axis'], sp['length'], sp['radius'], sp.get('sides', 6), sp['seed'],
                               tip=sp.get('tip', 0.32), bury=sp.get('bury', 0.5), kind=sp.get('kind', 'prism'),
@@ -297,6 +298,7 @@ def crystals_object(name: str, specs: list[dict]) -> bpy.types.Object:
                 anchor.append(v3(sp['anchor']))
                 xid.append(float(i))
             faces.append(tuple(range(base_i, base_i + len(pts))))
+            face_xid.append(i)
         for r in range(nring - 1):
             A, B = rings[r], rings[r + 1]
             m = len(A)
@@ -321,20 +323,19 @@ def crystals_object(name: str, specs: list[dict]) -> bpy.types.Object:
     S.add_attr(ob, 'anchor', np.array(anchor).reshape(n, 3))
     S.add_attr(ob, 'xid', np.array(xid))
     # every facet outward: away from its crystal's own axis line
-    axes = [(v3(sp['base']), v3(sp['axis']) / np.linalg.norm(sp['axis'])) for sp in specs]
+    axes = [(v3(sp['base']), v3(sp['axis']) / np.linalg.norm(sp['axis']), float(sp['length'])) for sp in specs]
+
+    fx = np.array(face_xid, np.int64)
 
     def inside(c: np.ndarray) -> np.ndarray:
-        # the nearest crystal's axis point for each face centre
-        best = np.full(len(c), np.inf)
-        pts = np.zeros_like(c)
-        for b, d in axes:
-            t = np.clip((c - b) @ d, -1.0, 2.0)
-            p = b[None] + t[:, None] * d[None]
-            dd = np.linalg.norm(c - p, axis=1)
-            closer = dd < best
-            best = np.where(closer, dd, best)
-            pts = np.where(closer[:, None], p, pts)
-        return pts
+        # each face against its OWN crystal's axis (the nearest axis could be a neighbour's in a tight cluster, which
+        # turned some faces inward: a crystal shown as a thin folded sheet), held to the crystal's lower half, so a
+        # face whose centre lies on the axis (a gem's flat table) still turns outward along it
+        B = np.array([axes[i][0] for i in fx])
+        D = np.array([axes[i][1] for i in fx])
+        L = np.array([axes[i][2] for i in fx])
+        t = np.clip(((c - B) * D).sum(1), -L, 0.5 * L)
+        return B + t[:, None] * D
     S.orient_away(ob, inside)
     for p in me.polygons:
         p.use_smooth = False
@@ -366,7 +367,7 @@ def cluster(base, normal, count: int, length: tuple[float, float], spread: float
         ax = main + (e1 * math.cos(ang) + e2 * math.sin(ang)) * spread * (0.3 + k) + rng.normal(0, 1, 3) * 0.08
         ax /= np.linalg.norm(ax)
         out.append({'base': b, 'axis': ax, 'length': L, 'radius': L * radius_k * rng.uniform(0.85, 1.15), 'seed': seed * 31 + i,
-                    'anchor': v3(anchor if anchor is not None else base), 'bury': 0.35})
+                    'anchor': v3(anchor if anchor is not None else base), 'bury': 0.25})
     return out
 
 

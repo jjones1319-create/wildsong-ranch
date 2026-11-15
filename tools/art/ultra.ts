@@ -157,27 +157,31 @@ export const sha10 = (b: Uint8Array): string => createHash('sha1').update(b).dig
 /**
  * Every vertex position and every node's transform in `doc` is a finite number; throws in words naming the meshes and
  * counts otherwise (a recipe's negative base to a fractional power gave Hearthwing's frills NaN positions: they would
- * have shipped). Read through getElement, so quantised positions count as a renderer reads them.
+ * have shipped). Read through getElement, so quantised positions count as a renderer reads them. Normals too (and
+ * tangents): a zero-area face exports NaN normals, which blanked Plumdrake's raw-material frame and show as black
+ * specks or a lost bloom frame in the game; quantising turns NaN into a zero-length normal, so that counts as bad.
  */
 export function assertFinite(doc: Document, what: string): void {
   const bad: string[] = []
   const el: number[] = []
   for (const mesh of doc.getRoot().listMeshes()) {
-    let n = 0
+    const n: Record<string, number> = { POSITION: 0, NORMAL: 0, TANGENT: 0 }
     for (const p of mesh.listPrimitives()) {
-      const pos = p.getAttribute('POSITION')
-      if (!pos) continue
-      for (let i = 0; i < pos.getCount(); i++) {
-        pos.getElement(i, el)
-        if (!el.every(Number.isFinite)) n++
+      for (const name of Object.keys(n)) {
+        const acc = p.getAttribute(name)
+        if (!acc) continue
+        for (let i = 0; i < acc.getCount(); i++) {
+          acc.getElement(i, el)
+          if (!el.every(Number.isFinite) || (name === 'NORMAL' && Math.hypot(el[0]!, el[1]!, el[2]!) < 1e-6)) n[name]!++
+        }
       }
     }
-    if (n) bad.push(`${mesh.getName()}: ${n} vertex positions`)
+    for (const [name, k] of Object.entries(n)) if (k) bad.push(`${mesh.getName()}: ${k} vertex ${{ POSITION: 'positions', NORMAL: 'normals', TANGENT: 'tangents' }[name]}`)
   }
   for (const node of doc.getRoot().listNodes()) {
     if (![...node.getTranslation(), ...node.getRotation(), ...node.getScale()].every(Number.isFinite)) bad.push(`node ${node.getName()}: its transform`)
   }
-  if (bad.length) throw new Error(`${what} has NaN or infinite numbers (${bad.join('; ')}): look at the recipe's shapes (a negative number to a fractional power, a division by zero) and build again`)
+  if (bad.length) throw new Error(`${what} has NaN or infinite numbers (${bad.join('; ')}): look at the recipe's shapes (a negative number to a fractional power, a division by zero, a face shrunk to nothing) and build again`)
 }
 
 function trianglesByMesh(doc: Document): Record<string, number> {

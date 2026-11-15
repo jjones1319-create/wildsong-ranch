@@ -1,0 +1,917 @@
+{
+ "look": "ashwraith",
+ "tier": "ultra",
+ "plan": "floater",
+ "version": 2,
+ "heightUnits": 165,
+ "restHeight": 1.0664,
+ "bounds": {
+  "min": [
+   -0.2931,
+   -0.2453,
+   0.2459
+  ],
+  "max": [
+   0.286,
+   0.281,
+   1.0664
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "chest",
+  "socket_mouth": "head",
+  "socket_core": "hover",
+  "socket_hand_L": "forearm.L",
+  "socket_paw_L": "forearm.L",
+  "socket_hand_R": "forearm.R",
+  "socket_paw_R": "forearm.R",
+  "socket_tail": "hips",
+  "socket_hood": "hood.3",
+  "socket_wispAL": "wispAL.3",
+  "socket_wispAR": "wispAR.3",
+  "socket_wispBL": "wispBL.3",
+  "socket_wispBR": "wispBR.3",
+  "socket_wispCL": "wispCL.3",
+  "socket_wispCR": "wispCR.3",
+  "socket_wispDL": "wispDL.3",
+  "socket_wispDR": "wispDR.3",
+  "socket_lashL": "lashL.3",
+  "socket_lashR": "lashR.3",
+  "socket_lantern": "prop.lantern"
+ },
+ "springs": [
+  {
+   "kind": "hood",
+   "chain": [
+    "hood.1",
+    "hood.2",
+    "hood.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispAL.1",
+    "wispAL.2",
+    "wispAL.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispAR.1",
+    "wispAR.2",
+    "wispAR.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispBL.1",
+    "wispBL.2",
+    "wispBL.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispBR.1",
+    "wispBR.2",
+    "wispBR.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispCL.1",
+    "wispCL.2",
+    "wispCL.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispCR.1",
+    "wispCR.2",
+    "wispCR.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispDL.1",
+    "wispDL.2",
+    "wispDL.3"
+   ]
+  },
+  {
+   "kind": "wisp",
+   "chain": [
+    "wispDR.1",
+    "wispDR.2",
+    "wispDR.3"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "lashL.1",
+    "lashL.2",
+    "lashL.3"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "lashR.1",
+    "lashR.2",
+    "lashR.3"
+   ]
+  }
+ ],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_props": "prop",
+  "lo_props_lantern-bearer": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "No face but two ember eyes in the dark of the hood: each eye is a matte crescent patch (lo_eyes) laid on the dark face egg, a hot core along its spine fading to ember and a thin halo, glowing (the glow map); a soft ember halo is painted on the face round each. No mouth (the jaw is merged into the head). Expressions in clips' `faces` are hints only. Blinking scales the blink bones (play `blink` over any clip): each crescent squashes onto a thin line and sinks into the face, where a faint arc is painted. The core's warm light, the embers, the cut edges and the cloth's underside by the hems glow too.",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.03,
+   "closedXYZ": [
+    0.94,
+    0.03,
+    0.2
+   ]
+  },
+  "eyeColor": "#FF6B3D"
+ },
+ "variants": {
+  "lantern-bearer-ashwraith": {
+   "textures": "lantern-bearer-ashwraith",
+   "colorAttribute": "COLOR_1",
+   "eyeColor": "#CFF0FF",
+   "palette": {
+    "body": "#2B2F3A",
+    "belly": "#4A5366",
+    "accent": "#5AB6FF",
+    "eye": "#CFF0FF"
+   },
+   "meshes": [
+    "lo_props_lantern-bearer"
+   ],
+   "holder": "__variant_lantern-bearer-ashwraith"
+  }
+ },
+ "palette": {
+  "body": "#A7A3A0",
+  "belly": "#CFCAC6",
+  "accent": "#FF6B3D",
+  "eye": "#FF6B3D"
+ },
+ "atlas": {
+  "strip": 0,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0,
+   0.03,
+   0.56
+  ],
+  "size": 1.26,
+  "head": {
+   "target": [
+    0,
+    -0.1,
+    0.74
+   ],
+   "size": 0.64
+  }
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.275,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 0.88,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.275,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.22,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    -1
+   ]
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.265,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "strafe_l": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.275,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ]
+  },
+  "strafe_r": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.275,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "sidestep_l": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "sidestep_r": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 1.1189,
+ "normal": {
+  "scale": 1
+ },
+ "body": {
+  "sheen": 0
+ },
+ "litePropsTris": 6000,
+ "glow": {
+  "strength": 1.6,
+  "tint": null,
+  "twinkle": 0.3
+ },
+ "build": "c515a917ed",
+ "buildStats": {
+  "cards": {
+   "total": 0,
+   "layers": []
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {},
+  "sourceTriangles": 864836,
+  "uvOverlapTexels": {
+   "lo_body": 0,
+   "lo_eyes": 0,
+   "lo_props": 0,
+   "lo_props_lantern-bearer": 0
+  }
+ },
+ "files": {
+  "glb": "ashwraith.glb",
+  "glbWebp": "ashwraith.webp.glb",
+  "lite": "ashwraith.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "ashwraith_base.ktx2",
+    "webp": "ashwraith_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "ashwraith_normal.ktx2",
+    "webp": "ashwraith_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "ashwraith_orm.ktx2",
+    "webp": "ashwraith_orm.webp",
+    "px": 2048
+   }
+  },
+  "lantern-bearer-ashwraith": {
+   "base": {
+    "ktx2": "ashwraith_lantern-bearer_base.ktx2",
+    "webp": "ashwraith_lantern-bearer_base.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 80107,
+  "trianglesByMesh": {
+   "lo_body": 40000,
+   "lo_eyes": 600,
+   "lo_props": 38424,
+   "lo_props_lantern-bearer": 1082,
+   "__variant_lantern-bearer-ashwraith": 1
+  },
+  "vertices": 48515,
+  "cards": 0,
+  "cardLayers": 0,
+  "joints": 46,
+  "animations": 32,
+  "animationBytes": 441880,
+  "download": {
+   "glb": 4321360,
+   "glbKtx2": 4321360,
+   "glbWebp": 3106140,
+   "ktx2": {
+    "body": 2117480,
+    "variants": 533836
+   },
+   "webp": {
+    "body": 1218824,
+    "variants": 217274
+   },
+   "totalKtx2": 4321360,
+   "totalWebp": 3106140
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 624504,
+     "webp": 263906
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 897361,
+     "webp": 585084
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 595615,
+     "webp": 369834
+    }
+   },
+   "lantern-bearer-ashwraith": {
+    "base": {
+     "px": 2048,
+     "ktx2": 533836,
+     "webp": 217274
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props_lantern-bearer": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "__variant_lantern-bearer-ashwraith": [
+    "POSITION",
+    "TEXCOORD_0"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "ashwraith.lite.glb",
+  "build": "85ebf75cf2",
+  "bytes": 1368908,
+  "triangles": 11831,
+  "trianglesByMesh": {
+   "lo_body": 5446,
+   "lo_eyes": 600,
+   "lo_props": 5626,
+   "lo_props_lantern-bearer": 158,
+   "__variant_lantern-bearer-ashwraith": 1
+  },
+  "simplified": {
+   "lo_props": {
+    "from": 38424,
+    "to": 5626
+   },
+   "lo_props_lantern-bearer": {
+    "from": 1082,
+    "to": 158
+   },
+   "lo_body": {
+    "from": 40000,
+    "to": 5446
+   }
+  },
+  "joints": 46,
+  "animations": 32,
+  "atlasPx": 1024,
+  "textureBytes": 412320,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

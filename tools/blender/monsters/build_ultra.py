@@ -272,6 +272,10 @@ def settle_ko(cb, plan, arm, P: dict, clips: list) -> list:
 
     i = next((k for k, m in enumerate(clips) if m.name == 'ko'), None)
     rest = posed_lowest(arm)
+    if rest is not None and P.get('ko_ground') is not None:
+        # Nov 14 (Wishlume; opt-in): a floater whose lo_body hovers at rest (its tassel is a prop) lies with its lowest
+        # point this high off the ground, not at its rest pose's lowest point (which floats)
+        rest = float(P['ko_ground'])
     if i is None or 'body_width' not in P or rest is None:
         return clips
     tol = 0.003 * float(P.get('size_k', 1.0))
@@ -402,8 +406,11 @@ FACE_MAX_RATIO = 4000
 FACE_P999_RATIO = 1000
 
 
-def check_faces(ob: bpy.types.Object) -> None:
-    """Stop in words when the low body has a few huge faces among small ones: skin flattened into facets."""
+def check_faces(ob: bpy.types.Object, limits=None) -> None:
+    """Stop in words when the low body has a few huge faces among small ones: skin flattened into facets. Nov 15
+    (construct plan; opt-in, absent = as before): a recipe's FACE_RATIO_LIMITS = (largest, 99.9th percentile) raises
+    the limits for a hard-surface body whose flat panels rightly decimate into big faces (a chest's lid and box)."""
+    lim_max, lim_p = limits if limits else (FACE_MAX_RATIO, FACE_P999_RATIO)
     me = ob.data
     area = np.empty(len(me.polygons), np.float32)
     me.polygons.foreach_get('area', area)
@@ -411,7 +418,7 @@ def check_faces(ob: bpy.types.Object) -> None:
     mx, p999 = float(area.max()), float(np.percentile(area, 99.9))
     r_max, r_p = mx / max(med, 1e-12), p999 / max(med, 1e-12)
     C.log(f'{ob.name}: face areas median {med * 1e6:.1f} mm², 99.9th percentile {p999 * 1e6:.0f} mm² ({r_p:.0f}x), largest {mx * 1e6:.0f} mm² ({r_max:.0f}x)')
-    if r_max > FACE_MAX_RATIO or r_p > FACE_P999_RATIO:
+    if r_max > lim_max or r_p > lim_p:
         c = me.polygons[int(area.argmax())].center
         raise SystemExit(f'{ob.name}: some faces are huge next to the rest (largest {mx * 1e4:.0f} cm², {r_max:.0f}x the median; '
                          f'99.9th percentile {r_p:.0f}x), at ({c.x:.2f}, {c.y:.2f}, {c.z:.2f}): the skin there was flattened into '
@@ -569,7 +576,7 @@ def stage_build(recipe, out: Path, quick: bool, body_tris: int) -> dict:
         box0, area0 = co.max(axis=0) - co.min(axis=0), S.mesh_area(lo_body)
         decimate_keep(lo_body, body_tris, keep_weights(recipe, co))
         check_decimation(lo_body, box0, area0)
-        check_faces(lo_body)
+        check_faces(lo_body, getattr(recipe, 'FACE_RATIO_LIMITS', None))
         if lo_body.data.validate(verbose=False):
             C.log('lo_body: validate() fixed invalid geometry')
         C.log(f'lo_body: {M.tri_count(lo_body)} tris')
@@ -970,10 +977,13 @@ def stage_bake(recipe, out: Path, quick: bool, atlas_px: int, with_cpu: bool = F
 
 # ----------------------------------------------------------------------------- rig
 def eye_bone_specs(recipe) -> list[R.BoneSpec]:
+    # Nov 14 (shelled plan; opt-in, absent = as before): EYE_PARENTS {'L': bone, 'R': bone} hangs the blink bones on
+    # another bone than `head` (a crab's eye stalks: 'stalkL.2', 'stalkR.2'), so the eyes ride it
+    parents = dict(getattr(recipe, 'EYE_PARENTS', None) or {})
     out = []
     for s, tag in ((1, 'L'), (-1, 'R')):
         pivot, up, *_ = recipe.blink_pivot(s)
-        out.append(R.BoneSpec(f'eye.{tag}', tuple(pivot), tuple(pivot + up * 0.05), 'head', radius=0.05))
+        out.append(R.BoneSpec(f'eye.{tag}', tuple(pivot), tuple(pivot + up * 0.05), parents.get(tag, 'head'), radius=0.05))
     return out
 
 
@@ -1364,10 +1374,17 @@ def present_meshes() -> dict[str, str]:
     return out
 
 
-def _vglow(baked: dict, short: str) -> dict | None:
-    """A variant ORM's glow for the sidecar ({strength, tint}), or None when that variant doesn't glow."""
+def _vglow(baked: dict, short: str, recipe=None) -> dict | None:
+    """A variant ORM's glow for the sidecar ({strength, tint}), or None when that variant doesn't glow. Nov 14 (opt-in):
+    with the recipe's VARIANT_ORM[short]['glow']['twinkle'], that too (the runtime's twinkle share)."""
     g = ((baked.get('variant_orm') or {}).get(short) or {}).get('glow')
-    return {'strength': float(g['strength']), 'tint': g.get('tint')} if g else None
+    if not g:
+        return None
+    out = {'strength': float(g['strength']), 'tint': g.get('tint')}
+    tw = (((getattr(recipe, 'VARIANT_ORM', None) or {}).get(short) or {}).get('glow') or {}).get('twinkle') if recipe is not None else None
+    if tw is not None:
+        out['twinkle'] = float(tw)
+    return out
 
 
 def stage_export(recipe, plan, out: Path) -> Path:
@@ -1446,7 +1463,7 @@ def stage_export(recipe, plan, out: Path) -> Path:
         'variants': {vid: {'textures': vid, 'colorAttribute': f'COLOR_{i + 1}', 'eyeColor': pal['eye'],
                            'palette': {k: pal[k] for k in ('body', 'belly', 'accent', 'eye')}, 'atlas': f'atlas_{short}.png',
                            # a variant with its own ORM (VARIANT_ORM): its file, and its glow (or null: it doesn't glow)
-                           **({'orm': f'atlas_{short}_orm.png', 'glow': _vglow(baked, short)} if short in (baked.get('variant_orm') or {}) else {}),
+                           **({'orm': f'atlas_{short}_orm.png', 'glow': _vglow(baked, short, recipe)} if short in (baked.get('variant_orm') or {}) else {}),
                            # VARIANT_CARDS_OFF: the runtime hides the fur cards on this variant (bare polished stone)
                            **({'cards': False} if short in set(getattr(recipe, 'VARIANT_CARDS_OFF', None) or ()) else {}),
                            # the props only this variant wears: the runtime hides these meshes unless the variant is on
@@ -1488,6 +1505,10 @@ def stage_export(recipe, plan, out: Path) -> Path:
     if getattr(recipe, 'GLOW', None) is not None:
         # the ORM's alpha is a glow mask: emissive = base colour x mask x strength (tint, when given, sets the hue)
         side['glow'] = {'strength': float(recipe.GLOW.get('strength', 1.0)), 'tint': recipe.GLOW.get('tint')}
+        if recipe.GLOW.get('twinkle') is not None:
+            # Nov 14 (Wishlume, opt-in): the runtime's twinkle share (0 = steady: a large glowing area showed the per-cell
+            # twinkle as a square stipple)
+            side['glow']['twinkle'] = float(recipe.GLOW['twinkle'])
     EX.write_sidecar(out / f'{recipe.LOOK}.json', side)
     return glb
 

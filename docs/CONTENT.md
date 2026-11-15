@@ -120,6 +120,7 @@ Each brief lists: body plan · signature features · palette (body / belly / acc
 4. **Moatshell**
    - Shelled tortoise: its shell is a tiny castle keep with crenellations, arrow slits and a pennant flag on top; stubby pillar legs, sleepy wise eyes.
    - Palette: #C9A66B / #E8D4A8 / #3AA6A1 (flag; brick details #9A5B3C) / #2B2B2B.
+   - Size (the 3D look; decided Nov 14, 2026, by the Frostlance rule): its height from the card (about 1.1 × Puddlepup's, with the flag), its length from the pictures (about 1.2 m, not the card's 1.5 × Puddlepup's length, about 2.2 m).
 5. **Wishlume**
    - Floater: a paper sky-lantern creature. The warm flame "heart" glows through its paper body; two stubby paper arms, a dangling tassel tail, eyes painted on the paper.
    - Palette: #F6E3B4 / #FFF2D6 / #D94F4F (ribs and tassel; glow #FFB85C) / #3A2A2A.
@@ -210,6 +211,7 @@ Each brief lists: body plan · signature features · palette (body / belly / acc
     - **Floater narwhal:** pale blue-white, it swims through the air and leaves a trail of snowflakes.
     - A long spiral tusk of clear ice, frost-edged fins, and a deep-teal back with snowflake freckles.
     - Palette: #D8EEF7 / #F5FBFE / #1F7A8C (tusk #BDE8F5) / #1B263B.
+    - Size (the 3D look; decided Nov 12, 2026): its height from the card (about 0.9 × Puddlepup's), its length from the pictures (about 1.2 m snout to tail, about 1.5 m to the tusk's point). The card's 2.2 × Puddlepup's length (about 3.2 m) would look nothing like the pictures.
 31. **Stripeneck** (`chatgpt/monsters/31-stripeneck/`)
     - **Quadruped giraffe–zebra with a long neck:** a lanky grazer that is giraffe at the front and zebra at the back, on four long but chunky legs with neat dark hooves. A long, thick neck (shorter and sturdier than a real giraffe's) holds up a round head with a soft cream muzzle.
     - Front half: golden tan with rounded chestnut patches outlined by thin cream lines. Back half: cream with bold charcoal stripes curving round the body. The patterns meet in a soft, wavy blend at the middle.

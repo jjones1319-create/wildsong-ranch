@@ -709,6 +709,72 @@ The owner, after v1.23.0: *"Do all of the upgrade. Bigger wings so it looks like
 - Tumblefox's saturated domino mask;
 - Cobblemaw's round-belly front (now a stone hood and a wide jaw).
 
+### 9.8 Batches 3 and 4 (Nov 13–15, v1.25.0)
+The owner, Nov 13, after v1.24.0: *"Do the next 10 2 at a time. Do not move onto the next two until the two you are working on are completely finished."* So the pairs ran strictly one after another: Quillion and Grumblestone, Gloomgrin and Plumdrake, Pluckrex (young and grown) and Wishlume, Ashwraith and Zipwisp, Mirrorkin and Frostlance. That is 11 looks: the first six on the biped plan, the last five on the floater plan. Each had a builder, three fresh-eyes review rounds against its pictures, then one defect-only polish pass checked by the session. Every look ended at "partly / partly" on the two review questions (Mirrorkin "partly / YES at 64 px"). The taste items left over are in PROGRESS v1.25.0.
+
+The same day the owner relaxed the originality rule: *"Stop on the originality things, can look like other things. They just shouldn't be exact."* CLAUDE.md now says resemblance is fine and only near-exact copies are off limits; the reviewers' copy question asks only that. No look had a copy concern.
+
+| Look | Plan | Triangles | Joints | Variants | Glow | Download | Lite |
+|---|---|---|---|---|---|---|---|
+| Quillion | biped | 63k | 37 | Champion | the blade's faint self-light (0.4) | 4.5 MB | 1.2 MB |
+| Grumblestone | biped | 62k | 21 | none | the crest crystals and knuckles (1.6) | 3.6 MB | 1.1 MB |
+| Gloomgrin | biped | 67k | 41 | none | the runes and eyes (2.3) | 3.9 MB | 1.2 MB |
+| Plumdrake | biped | 68k | 43 | Stormcloud | none | 4.2 MB | 1.2 MB |
+| Pluckrex | biped | 66k | 26 | none | the crest (1.5) | 3.6 MB | 1.1 MB |
+| Pluckrex (grown) | biped | 69k | 32 | none | the crest (1.5) | 3.8 MB | 1.1 MB |
+| Wishlume | floater | 89k | 16 | Beacon | the paper and its heart (2.0, steady; Beacon 2.5, warm) | 4.9 MB | 1.2 MB |
+| Ashwraith | floater | 80k | 46 | Lantern-bearer | the ember eyes and hem (1.6, twinkle 0.3) | 4.1 MB | 1.3 MB |
+| Zipwisp | floater | 53k | 19 | Prism | the strand tips, core and sparks (1.6, steady; Prism 3.0) | 4.5 MB | 1.5 MB |
+| Mirrorkin | floater | 71k | 19 | Obsidian | the glass's sheen and the gold's ridges (0.5, steady; Obsidian 1.4) | 3.5 MB | 0.9 MB |
+| Frostlance | floater | 77k | 16 | none | the tusk's ice and the fins' frost (0.5, steady) | 2.1 MB | 0.5 MB |
+
+None of the 11 uses fur cards (see "Alpha cards" below). Wishlume is above the 60–80k aim (its ribs, tassel and leaves are 48k of props) and under the 100k cap.
+
+**Lessons** (they went into each later pair's brief and into `tools/blender/monsters/breeds/RECIPE.md`):
+- **The in-game review camera is not Blender's.** `art:ultra-review` shoots `clip_strike` from about 70° at the `impact` marker; Blender's sheet uses 35°. It shoots hit and hit_heavy at about t = 0.3 and win at about t = 0.2.
+  - Poses that read in Blender failed in the game: Quillion's lunge looked flat, Grumblestone's slam curled away side-on, and Gloomgrin's claws vanished behind its jowls.
+  - The fixes were bigger poses and an opt-in turn toward the monster's left at the impact (`slam.yaw`, `headbutt.yaw`, `pulse_yaw`, `ram_yaw`, the new plans' `strike_yaw`).
+  - Every key pose is judged from the in-game shots.
+- **Glow washout:** too much emission washes a colour toward pastel or white through the tone map (Grumblestone's crystals; Gloomgrin's amber iris bleached to peach). Use a saturated base with moderate emission (Grumblestone landed at 1.6).
+- **The twinkle stipple and `glow.twinkle`:** the runtime's glow twinkle has a random phase per 4 × 4-texel cell. On a large glowing area (Wishlume's paper) it showed as a fine square stipple.
+  - The new opt-in `glow.twinkle` (0..1, the look's share of `film.glow.twinkleAmp`) comes from the recipe's `GLOW['twinkle']` or a `VARIANT_ORM` glow. It goes through the sidecar to `parts.ts` `glowOf`, then `perf/content.ts` (WebGL) and `perf/viewGpu.ts` (WebGPU).
+  - Absent or 1, every shader stays as it was. Wishlume, Zipwisp, Mirrorkin, Frostlance and their variants set 0 (steady); Ashwraith keeps 0.3.
+- **Jaw weight leaks:** Blender's heat solve gave Plumdrake's jaw bone, which runs the snout's length, 0.8–0.9 of the whole upper snout. Opening the jaw dropped the snout and left the palate's edge and a fang poking out as a thin dark "toothpick".
+  - The fix: `'jaw'` in `MERGE_INTO_HEAD`, `'jaw_open': True`, and only the lower lip weighted to `jaw` (by `U.rigid` or the recipe's own jaw weights).
+  - Pluckrex and the four new plans do the same.
+  - Hearthwing, from v1.23.0, uses the same code with `'jaw'` left out of `MERGE_INTO_HEAD`. Its upper snout carries jaw weight too (measured at this release, PROGRESS v1.25.0). It has not been rebuilt yet.
+- **NaN normals and the `assertFinite` guard:** zero-length feather quads at Plumdrake's wing tip exported NaN normals.
+  - The film material's clamps hid them. The raw material plus bloom spread them, so the "raw" review shot came out empty; in the game they show as black specks or a lost bloom frame.
+  - Fixed with a 10% minimum band length.
+  - `assertFinite` in `tools/art/ultra.ts` now checks every vertex normal and tangent as well as positions and node transforms. A zero-length normal counts as bad too, because quantising turns NaN into zero. All 45 shipped files and 15 raw exports passed.
+- **Alpha cards read glassy:** Plumdrake's ruff and tail-puff cards rendered as glossy glass shards in the game, as Nimbusheep's notes had warned for pale fluff. On dark regions the cards' edge fade left pale specks (Quillion's fur).
+  - Every look in these batches dropped its cards. Fluff is sculpted lobes and locks; wisps, sparks and flame tongues are geometry (Ashwraith, Zipwisp); Frostlance's ice is paint, with no alpha.
+  - A shared fix to the card material is still open.
+- **Mip bleed at 64 px:** Pluckrex's gold crest and spike islands bled into their neighbours in the small mip levels. That gave gold specks at 64–200 px, then olive pixels on the legs at 64 px.
+  - The gold specks are fixed in the recipe (the glow takes each texel's own colour, not a fixed tint).
+  - The olive pixels need a shared atlas packer option (gutters or island grouping): a follow-up.
+  - Mirrorkin's gold hairlines on the tilted glass were a texel-density seam instead (fixed).
+- **Value-noise lattices turn into KTX2 blocks:** the sparkle on Pluckrex's crest came from a value-noise lattice. Its grid beat against ETC1S's 4 × 4 blocks and showed as blocky compression checks up close. Voronoi flecks fixed it. A per-look UASTC option for the colour map in `tools/art/ultra.ts` is a follow-up.
+- **The voxel-snap fold (Frostlance):** the recurring fin-root defects (hairlines, black specks, a jagged root cut across rounds 1–3) had one cause: the voxel snap folded about 900 skin faces inward. Fixed with snap → remesh → snap and ellipsoid sections.
+- **Smaller ones:**
+  - **Metal renders dark** under the roughness floor (0.3) and the grey studio, so paint highlights into the colour: Quillion's blade, Mirrorkin's gold (gold without metalness, curvature-painted).
+  - **Faces are baked** (no morphs), so a breed has one expression per clip: no hit grimace, and blinks must close to a curved lid flush with the face.
+  - **A lens eye** must be laid along the surface's radius: Wishlume's eyes were sliced on one side and proud on the other.
+  - **Cycles' SVM stack** again: Ashwraith's ember dots baked "out of SVM stack" and moved into the vertex paint.
+
+**What the pipeline gained** (every change opt-in, with a dry run key-identical for every existing look):
+- **The biped plan's knobs:** `fencer`, `cape_drape`, the `slam` and `win` dicts, `pounce`, `squat_lean`, `squat_hand_dy`, `gust`, `hit_body`, `ko_wings`, `ko_head`, `headbutt`, `charge`, `walk_bob`, `ko_jaw`, `ko_arm`.
+- **The floater plan's knobs:** the `pulse_*` keys, `glide_lean`, `ram_yaw`, `ram_roll`, `arm_pitch`, `clip_bones` (per-clip bone bumps), `win_bones`, `strike_windup_bones`, `strike_hold`, the KO and hit chain hangs.
+- **`build_ultra.py`:** `ko_ground` (a hovering body's KO height), `glow.twinkle` (also per variant), `EYE_PARENTS` (blink bones on eye stalks), `FACE_RATIO_LIMITS` (hard-surface bodies).
+- **Four more plans,** tools only so far: `plans/shelled.py` (Moatshell, Reefclaw), `plans/blob.py` (Bloatoad, Scrollopus), `plans/construct.py` (Lootlid; hooks for Gearhoot) and `plans/serpent.py` (Coilfang; hooks for Aurelwyrm). They share their posing machinery in `plans/kin.py`, and each has a stand-in recipe whose quick build and clip-lab ground checks pass.
+
+**Decided during the batches** (the owner hears these with the release):
+- Frostlance's and Moatshell's size: the height from the card, the length from the pictures (CONTENT).
+- Frostlance's tusk leaves the forehead, as in every picture (the card says "upper lip").
+- Pluckrex's mouth uses Hearthwing's mouth colours, a pink its palette can't mix.
+- Plumdrake's Stormcloud crackle of light is allowed under the new rule but isn't built.
+- Mirrorkin's glass has two arched window reflections.
+
 ## 10. What approval changed in the other docs
 Puddlepup's Ultra look was approved on Nov 7, 2026. Applied the same day:
 - **ART_2_PLAN:**

@@ -417,6 +417,11 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     made: list[A.ClipMeta] = []
     hulk = float(P.get('hulk', 0.0))
     squat = float(P.get('squat', 0.0))
+    # `squat_lean` (opt-in, Gloomgrin): the statue crouch's forward lean in idle (degrees; look_around takes 0.6 of it),
+    # so short arms reach the ground; absent: 10 x squat, as before
+    squat_lean = float(P.get('squat_lean', 10.0 * squat))
+    # `squat_hand_dy` (opt-in, Gloomgrin): metres the statue crouch's hands rest further forward (in front of the toes)
+    squat_hand_dy = float(P.get('squat_hand_dy', 0.0))
     lean0 = float(P.get('lean', 0.0))
     style = strike_style(P)
     # 'thrust': degrees the tail's blade is raised as it points ahead (shared over the chain); or a list with one value
@@ -424,6 +429,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     thrust_lift = P.get('thrust_lift', 14.0)
     thrust_lift = [float(v) for v in thrust_lift] if isinstance(thrust_lift, (list, tuple)) else float(thrust_lift)
     thrust_swing = float(P.get('thrust_swing', -175.0))   # 'thrust': the tail's whole swing round the left side (degrees)
+    # `fencer` (Quillion; RECIPE.md "Biped plan"): a tail-blade duellist's battle clips. A dict of tail poses, each a list
+    # of (x, y, z) degrees per tail bone: 'guard' (battle_idle: the blade raised forward over the shoulder), 'windup'
+    # (strike: high over the shoulder), 'salute' (win: upright beside the head); the strike's lunge itself is the thrust
+    # pose (thrust_lift, thrust_swing). Absent: every clip as before.
+    FENCER = P.get('fencer') or None
+    # `cape_drape` [0]: 0..1, how far ko turns the cape chains back against the body's roll, so the cape hangs toward the
+    # ground instead of standing out from the back like a board
+    cape_drape = float(P.get('cape_drape', 0.0))
     has = rig.has
     TAIL = tail_names(P)
     PUFF = has('tail.puff')
@@ -436,6 +449,13 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     W_SPEC = wings_of(P)
     WQ = {s: wing_spread_quats(P, s) for s in (1, -1)} if W_SPEC else {}
     tail_ground = bool(P.get('tail_ground', False))
+    # `gust` (opt-in, Plumdrake): the 'gust' strike's amounts (RECIPE.md "Biped plan"); `hit_body` (opt-in): the hit's
+    # squash and half-step back. Absent: every clip as before.
+    GUST = P.get('gust') or None
+    HITB = P.get('hit_body') or None
+    # `ko_wings` (opt-in, Plumdrake): {'flap', 'sweep'} degrees the ko adds to the wings as it falls (sweep < 0 lays them
+    # back along the body), so wings held open at rest lie down instead of the upper one standing up. Absent: as before.
+    KO_W = P.get('ko_wings') or {}
 
     # the rest geometry the motions are measured in
     hipL = rig.head['thigh.L']
@@ -760,8 +780,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                     x -= lean
                 fr.r(b, x, 0, sway * k_kind / n * A.wave(t - lag, rate))
 
-    def wings(fr: Frame, k: float, flap: float = 0.0) -> None:
-        """Open both wings by k (0 folded, the rest pose; 1 the recipe's spread pose), beat them by `flap` degrees."""
+    def wings(fr: Frame, k: float, flap: float = 0.0, sweep: float = 0.0) -> None:
+        """Open both wings by k (0 folded, the rest pose; 1 the recipe's spread pose), beat them by `flap` degrees and
+        (opt-in, `gust`) sweep them forward by `sweep` degrees about the vertical, the tips coming ahead of the chest."""
         if not WQ:
             return
         for s, quats in WQ.items():
@@ -769,6 +790,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 qk = Quaternion().slerp(q, max(0.0, min(1.0, k)))
                 if j == 0:
                     qk = Quaternion((0.0, 1.0, 0.0), math.radians(s * flap)) @ qk
+                    if sweep:
+                        qk = Quaternion((0.0, 0.0, 1.0), math.radians(-s * sweep)) @ qk
                 fr.mat[bone] = qk.to_matrix()
 
     def jaw(fr: Frame, deg_: float) -> None:
@@ -792,14 +815,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     def squat_hands(fr: Frame, w: float = 1.0) -> None:
         """A squatter's hands resting on the ground in front of the feet (the rooftop statue)."""
         for tag, s in SIDES:
-            p = Vector((s * 0.55 * SW, ank[tag].y - 0.5 * foot_len - 0.25 * LEG, 0.02 * LEG))
+            p = Vector((s * 0.55 * SW, ank[tag].y - 0.5 * foot_len - 0.25 * LEG - squat_hand_dy, 0.02 * LEG))
             reach(fr, tag, p, w=w, hand=(30, 0, 0))
 
     # ================================================================= ranch life
     def p_idle(t: float) -> Frame:
         fr = Frame()
         c = rest_crouch()
-        body(fr, crouch=c, dx=0.06 * HW * A.wave(t, 1.0), lean=10 * squat, roll=1.2 * A.wave(t, 1.0),
+        body(fr, crouch=c, dx=0.06 * HW * A.wave(t, 1.0), lean=squat_lean, roll=1.2 * A.wave(t, 1.0),
              yaw=6 * A.pulse(t, 0.55, 0.8))
         feet(fr, out=0.12 * squat * HW)
         breathe(fr, t)
@@ -810,7 +833,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             hang(fr, swing=1.5 * A.wave(t, 1.0))
         ears(fr, t, 0, 3, 2.0)
         tail(fr, t, 4, 8, 1.0)
-        capes(fr, t, 2 + 2 * A.wave(t, 1.0), 4, 1.0, lean=10 * squat)
+        capes(fr, t, 2 + 2 * A.wave(t, 1.0), 4, 1.0, lean=squat_lean)
         wings(fr, 0.04 + 0.03 * A.wave(t, 1.0))
         return fr
 
@@ -940,7 +963,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     def p_look(t: float) -> Frame:
         fr = Frame()
         yaw = 35 * A.step_ease(t, 0.08, 0.22) * (1 - A.step_ease(t, 0.42, 0.56)) - 35 * A.step_ease(t, 0.5, 0.64) * (1 - A.step_ease(t, 0.84, 0.98))
-        body(fr, crouch=rest_crouch(), yaw=0.3 * yaw, lean=6 * squat)
+        body(fr, crouch=rest_crouch(), yaw=0.3 * yaw, lean=0.6 * squat_lean)
         feet(fr, out=0.1 * squat * HW)
         fr.r('head', 0, 0, 0.8 * yaw)
         if squat >= 0.5:
@@ -1039,7 +1062,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     lift_w = 0.13 * LEG
 
     def p_walk(t: float) -> Frame:
-        fr = gait(t, stride_w, lift_w, 0.6, 0.03 * LEG * (1 + 0.4 * hulk), 0.14 * HW * (1 + 1.2 * hulk), 3 + 4 * hulk,
+        # `walk_bob` (opt-in, Pluckrex): scales the walk's body bob [1]
+        fr = gait(t, stride_w, lift_w, 0.6, 0.03 * LEG * (1 + 0.4 * hulk) * float(P.get('walk_bob', 1.0)), 0.14 * HW * (1 + 1.2 * hulk), 3 + 4 * hulk,
                   6 + 3 * hulk, 22 * (1 - 0.3 * hulk), 18, 3)
         tail(fr, t, 6, 10, 1.0)
         ears(fr, t, 2, 5, 2.0)
@@ -1153,6 +1177,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
 
     # ================================================================= battle
     def p_battle_idle(t: float) -> Frame:
+        if FENCER:
+            return p_fencer_guard(t)
         fr = Frame()
         b = A.bounce(t, 2)
         body(fr, crouch=rest_crouch() * 0.6 + 0.07 * LEG + 0.025 * LEG * (1 - b), lean=8 + 6 * squat, yaw=-8)
@@ -1167,10 +1193,21 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         return fr
 
     def p_hit(t: float) -> Frame:
+        if FENCER:
+            return p_fencer_hit(t)
         fr = Frame()
         k = A.pulse(t, 0.0, 0.8)
-        body(fr, crouch=rest_crouch(False) + 0.04 * LEG * k, dy=0.08 * LEG * k, lean=-10 * k)
-        feet(fr)
+        if HITB:
+            # opt-in (`hit_body`, Plumdrake): the belly squashes (a deeper crouch), the body rocks back and the right foot
+            # takes a half-step back, then all returns
+            body(fr, crouch=rest_crouch(False) + float(HITB.get('squash', 0.04)) * LEG * k, dy=0.08 * LEG * k,
+                 lean=float(HITB.get('lean', -10.0)) * k)
+            st = float(HITB.get('step', 0.0)) * LEG * k
+            plant(fr, 'L', dy=0.25 * st)
+            plant(fr, 'R', dy=st, dz=0.04 * LEG * A.pulse(t, 0.0, 0.4), pitch=toe_lift_pitch(0.04 * LEG * A.pulse(t, 0.0, 0.4)))
+        else:
+            body(fr, crouch=rest_crouch(False) + 0.04 * LEG * k, dy=0.08 * LEG * k, lean=-10 * k)
+            feet(fr)
         fr.r('head', -6 * k, -14 * k, -30 * k)      # knocked aside, away from the review camera
         for tag, s in SIDES:      # forearms flinch up toward the face
             p = sh[tag] + Vector((-s * 0.2 * SW, -0.5 * ARM, 0.25 * ARM))
@@ -1183,13 +1220,22 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         return fr
 
     def p_hit_heavy(t: float) -> Frame:
+        if FENCER:
+            return p_fencer_hit_heavy(t)
         fr = Frame()
         k = A.pulse(t, 0.0, 0.55)
         rec = A.step_ease(t, 0.5, 1.0)
         shake = 6 * math.sin(t * 2 * math.pi * 3) * (1 - rec) * A.step_ease(t, 0.1, 0.3)
-        body(fr, crouch=rest_crouch(False) + 0.12 * LEG * k, dy=0.2 * LEG * k, lean=-22 * k, roll=shake)
-        plant(fr, 'L', out=0.1 * HW * k)
-        plant(fr, 'R', dy=0.22 * LEG * k, out=0.1 * HW * k, dz=0.04 * LEG * A.pulse(t, 0.05, 0.3))
+        if HITB and HITB.get('heavy'):
+            # opt-in (`hit_body` 'heavy', Plumdrake): a bigger shove than the hit's (crouch, lean, the step back)
+            hk = float(HITB['heavy'])
+            body(fr, crouch=rest_crouch(False) + 0.12 * hk * LEG * k, dy=0.2 * hk * LEG * k, lean=-22 * hk * k, roll=shake)
+            plant(fr, 'L', out=0.1 * HW * k)
+            plant(fr, 'R', dy=0.22 * hk * LEG * k, out=0.1 * HW * k, dz=0.04 * LEG * A.pulse(t, 0.05, 0.3))
+        else:
+            body(fr, crouch=rest_crouch(False) + 0.12 * LEG * k, dy=0.2 * LEG * k, lean=-22 * k, roll=shake)
+            plant(fr, 'L', out=0.1 * HW * k)
+            plant(fr, 'R', dy=0.22 * LEG * k, out=0.1 * HW * k, dz=0.04 * LEG * A.pulse(t, 0.05, 0.3))
         fr.r('head', -10 * k, -18 * k, -34 * k)
         hang(fr, swing=35 * k, bend=20, out=45 * k)
         ears(fr, t, 14 * k, 0)
@@ -1197,6 +1243,130 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         capes(fr, t, -25 * k)
         wings(fr, 0.7 * k)
         jaw(fr, 14 * k)
+        return fr
+
+    # ---- the fencer (opt-in, P['fencer']): its tail is its blade
+    def tail_pose(fr: Frame, pose, k: float) -> None:
+        for i, b in enumerate(TAIL):
+            if i < len(pose) and k:
+                x, y, z = pose[i]
+                fr.r(b, x * k, y * k, z * k)
+
+    def lunge_pose() -> list:
+        n = len(TAIL)
+        out = []
+        for i in range(n):
+            lift = (thrust_lift[i] if i < len(thrust_lift) else 0.0) if isinstance(thrust_lift, list) else thrust_lift / max(1, n)
+            out.append((lift, 0.0, thrust_swing / max(1, n) * (1.0 + 0.2 * (i - (n - 1) / 2) / max(1, n))))
+        return out
+
+    def hip_hand(fr: Frame) -> Vector:
+        """The right hand's spot on the right hip (the off hand of the guard and the salute): outside the body's side."""
+        return body_point(fr, Vector((-1.95 * HW, rig.head['hips'].y - 0.05 * LEG, HZ + 0.4 * LEG)), 'hips')
+
+    def p_fencer_guard(t: float) -> Frame:
+        """En garde: side-on (the left side toward the foe), knees bent, the left foot forward and the right back and
+        turned out, the left hand forward and out in guard, the right hand on the hip, the blade raised forward over
+        the left shoulder, bouncing lightly."""
+        fr = Frame()
+        b = A.bounce(t, 2)
+        body(fr, crouch=rest_crouch() + 0.16 * LEG + 0.04 * LEG * (1 - b), lean=8, yaw=-32)
+        plant(fr, 'L', dy=-0.32 * LEG, out=0.08 * HW, yaw=-10)
+        plant(fr, 'R', dy=0.32 * LEG, out=0.35 * HW, yaw=-45)
+        reach(fr, 'L', body_point(fr, sh['L'] + Vector((0.25 * SW, -0.62 * ARM, 0.1 * ARM))), hand=(-20, 0, 0))
+        reach(fr, 'R', hip_hand(fr), hint=Vector((-1.0, 0.6, 0.0)), hand=(30, 0, 0))
+        fr.r('head', -3 * A.wave(t, 2.0), 0, 0)
+        tail_pose(fr, FENCER.get('guard', []), 1.0)
+        tail(fr, t, 2 * A.wave(t, 2.0), 3, 2.0)
+        ears(fr, t, -8, 3, 2.0)
+        capes(fr, t, 6 + 3 * A.wave(t, 2.0), 5, 2.0, lean=8)
+        return fr
+
+    def p_fencer_strike(t: float, fr: Frame) -> None:
+        """A real lunge, at full stretch from just before `impact` (frame 13) to frame 18: the blade drawn back high over
+        the shoulder as the body coils, then the front (left) foot shoots out, the back leg straightens, the pelvis drops,
+        the torso leans in and the blade drives fully forward beside the left hip at chest height, the cape flaring
+        back; it recovers to the guard."""
+        wind = _ramp(t, 0.0, 0.28)
+        drive = _ramp(t, 0.34, 0.48)
+        back = _ramp(t, 0.8, 1.0)
+        go = drive * (1 - back)
+        coil = wind * (1 - drive)
+        body(fr, crouch=rest_crouch(False) + 0.14 * LEG * coil + 0.3 * LEG * go, dy=0.1 * LEG * coil - 0.55 * LEG * go,
+             lean=-8 * coil + 34 * go, yaw=-30 * (coil + go) - 6 * go, gaze=0.45)
+        plant(fr, 'L', dy=0.05 * LEG * coil - 1.3 * LEG * go, out=0.1 * HW + 0.3 * HW * go, yaw=-8 * go)
+        plant(fr, 'R', dy=0.15 * LEG * coil + 0.6 * LEG * go, out=0.25 * HW + 0.35 * HW * go, yaw=-40 * (coil + go),
+              dz=0.03 * LEG * go, pitch=toe_lift_pitch(0.03 * LEG * go))
+        # the left hand follows the blade forward; the right arm swings up and back for balance
+        fwd = sh['L'] + Vector((0.1 * SW, -0.95 * ARM, -0.05 * ARM))
+        guard_ = sh['L'] + Vector((0.2 * SW, -0.55 * ARM, 0.1 * ARM))
+        reach(fr, 'L', body_point(fr, guard_.lerp(fwd, go)), w=min(1.0, 2.0 * (coil + go) + 0.3), hand=(-15, 0, 0))
+        up = sh['R'] + Vector((0.6 * SW, 0.5 * ARM, 0.6 * ARM))
+        reach(fr, 'R', body_point(fr, up), w=min(1.0, 2.0 * (coil + go)), hint=Vector((-1.0, 0.6, 0.0)), hand=(20, 0, 0))
+        wp = FENCER.get('windup', [])
+        lp = FENCER.get('lunge') or lunge_pose()
+        for i, b in enumerate(TAIL):
+            if i >= len(lp):
+                break
+            w_ = wp[i] if i < len(wp) else (0.0, 0.0, 0.0)
+            x, y, z = (w_[j] * coil + lp[i][j] * go for j in range(3))
+            fr.r(b, x, y, z)
+        capes(fr, t, 14 * coil + 46 * go, 10 * go, 1.0, lean=14 * go)
+        ears(fr, t, 6 * coil - 10 * go, 0)
+        jaw(fr, 8 * go)
+
+    def p_fencer_salute(t: float) -> Frame:
+        """Victory: the fencer's salute, held from early on (the review samples it at t 0.2): chin up, the blade raised
+        upright beside the body, the left hand flourished out, the right hand on the hip, the cape flaring; a small
+        bounce."""
+        fr = Frame()
+        up = A.step_ease(t, 0.0, 0.14)
+        bob = 0.03 * LEG * A.wave(t, 2.0) * A.step_ease(t, 0.2, 0.3)
+        body(fr, crouch=rest_crouch(False) + 0.04 * LEG * up + bob, lean=-8 * up, yaw=-16 * up, gaze=0.2)
+        for tag, _s in SIDES:
+            plant(fr, tag, dy=(-0.14 if tag == 'L' else 0.14) * LEG * up, out=0.1 * HW * up)
+        fr.r('head', -16 * up, 0, 8 * up)
+        reach(fr, 'L', body_point(fr, sh['L'] + Vector((0.75 * SW, -0.35 * ARM, 0.3 * ARM))), w=up, hand=(-10, 0, 0))
+        reach(fr, 'R', hip_hand(fr), w=up, hint=Vector((-1.0, 0.6, 0.0)), hand=(30, 0, 0))
+        tail_pose(fr, FENCER.get('salute', []), up)
+        tail(fr, t, 0, 3 * A.step_ease(t, 0.3, 0.4), 2.0)
+        ears(fr, t, -8, 6, 2.0)
+        capes(fr, t, 26 * up + 5 * A.wave(t, 1.0), 8, 1.0)
+        jaw(fr, 14 * up)
+        return fr
+
+    def p_fencer_hit(t: float) -> Frame:
+        """Knocked back: the body squashes down and leans back about 20°, the head goes back with it and is knocked
+        aside, the arms are flung out (5-poses hit)."""
+        fr = Frame()
+        k = A.pulse(t, 0.0, 0.8)
+        body(fr, crouch=rest_crouch(False) + 0.42 * LEG * k, dy=0.16 * LEG * k, lean=-20 * k, gaze=0.15)
+        feet(fr)
+        fr.r('head', -6 * k, -12 * k, -24 * k)
+        hang(fr, swing=-25 * k, bend=55 * k, out=38 * k)
+        ears(fr, t, -20 * k, 0)
+        tail(fr, t, -10 * k)
+        capes(fr, t, -16 * k, 6 * k, 1.0, lean=-26 * k)
+        jaw(fr, 10 * k)
+        return fr
+
+    def p_fencer_hit_heavy(t: float) -> Frame:
+        """Hit hard: knocked off its feet (both feet lift, the toes up), squashed and thrown back about 30°, arms and
+        legs flung, then it lands and recovers (5-poses hit)."""
+        fr = Frame()
+        k = A.pulse(t, 0.0, 0.6)
+        air = A.pulse(t, 0.06, 0.5)
+        rec = A.step_ease(t, 0.55, 1.0)
+        fr.o('root', 0, mm(0.06) * k, mm(0.07) * air)
+        body(fr, crouch=rest_crouch(False) + 0.35 * LEG * k, dy=0.2 * LEG * k, lean=-34 * k * (1 - 0.5 * rec), gaze=0.1)
+        for tag, s in SIDES:
+            plant(fr, tag, dy=-0.12 * LEG * air, dz=0.3 * LEG * air, out=0.2 * HW * k, pitch=-30 * air)
+        fr.r('head', -16 * k, -14 * k, -28 * k)
+        hang(fr, swing=-20 * k, bend=20, out=80 * k)
+        ears(fr, t, 14 * k, 0)
+        tail(fr, t, -18 * k)
+        capes(fr, t, -30 * k, 10 * k, 1.0, lean=-34 * k)
+        jaw(fr, 16 * k)
         return fr
 
     lift_tab = P.get('ko_lift') or []
@@ -1227,8 +1397,20 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         for nm in NECK:
             fr.r(nm, 6 * fall / len(NECK), 14 * fall / len(NECK), 0)
         fr.r('head', 8 * fall, 26 * fall, 0)
+        if P.get('ko_head'):
+            # opt-in (Plumdrake): the head turned further as it falls (x, y, z degrees), so the face isn't buried
+            fr.r('head', *(float(v) * fall for v in P['ko_head']))
         fr.r('upperarm.R', -20 * fall, (160 - abd['R']) * fall, 0).r('forearm.R', -15 * fall, 0, 0)
-        fr.r('upperarm.L', -55 * fall, (abd['L'] - relax + 15) * fall, 0).r('forearm.L', -30 * fall, 0, 0)
+        if P.get('ko_arm'):
+            # opt-in (Pluckrex grown): the top arm laid down instead of draped (a long arm stood up like a periscope)
+            ka = P['ko_arm']
+            fr.r('upperarm.L', *(float(v) * fall for v in ka.get('upper', (0, 0, 0))))
+            fr.r('forearm.L', *(float(v) * fall for v in ka.get('fore', (0, 0, 0))))
+        else:
+            fr.r('upperarm.L', -55 * fall, (abd['L'] - relax + 15) * fall, 0).r('forearm.L', -30 * fall, 0, 0)
+        if P.get('ko_jaw'):
+            # opt-in (Pluckrex): the jaw's turn as it falls (a grin modelled open goes slack or shut)
+            jaw(fr, float(P['ko_jaw']) * fall)
         # the feet: planted through the wobble and the buckle, then (as it topples) folded loosely in the hips' frame:
         # the top (left) knee drawn up more than the lower one
         gone = A.step_ease(t, 0.36, 0.7)
@@ -1244,10 +1426,17 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         ears(fr, t, 10 * fall, 0)
         tail(fr, t, -10 * fall, 0, 1.0, curl=20 * fall)
         capes(fr, t, 10 * fall)
-        wings(fr, 0.2 * fall)
+        if cape_drape:
+            for m in CHAINS:
+                if m['kind'] == 'cape':
+                    for i, b in enumerate(m['bones'][:2]):
+                        fr.r(b, 0, cape_drape * KO_ROLL * fall * (0.65 if i == 0 else 0.35), 0)
+        wings(fr, 0.2 * fall, float(KO_W.get('flap', 0.0)) * fall, float(KO_W.get('sweep', 0.0)) * fall)
         return fr
 
     def p_win(t: float) -> Frame:
+        if FENCER:
+            return p_fencer_salute(t)
         fr = Frame()
         air = A.pulse(t, 0.04, 0.36)
         spin = 360 * A.step_ease(t, 0.42, 0.82)
@@ -1258,9 +1447,16 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         for tag, _s in SIDES:
             plant(fr, tag, dz=0.12 * LEG * air, pitch=15 * air)
         up = A.step_ease(t, 0.0, 0.15)
+        # `win` (opt-in, Grumblestone): {'over': (x, y, z)} the left fist's goal in the rest pose, carried by the chest
+        # (mirrored for the right, so both fists go up), and 'hand' its turn at the wrist; absent: as before
+        wn = P.get('win') or {}
+        hw = tuple(wn.get('hand', (-20, 0, 0)))
         for tag, s in SIDES:
-            v = sh[tag] + Vector((s * (0.35 if tag == 'L' else 0.5) * ARM, -0.1 * ARM, (0.85 if tag == 'L' else 0.5) * ARM))
-            reach(fr, tag, body_point(fr, v), w=up, hint=Vector((s, 0.4, -0.3)), hand=(-20, 0, 0))
+            if wn.get('over'):
+                v = _mirror(wn['over'], s)
+            else:
+                v = sh[tag] + Vector((s * (0.35 if tag == 'L' else 0.5) * ARM, -0.1 * ARM, (0.85 if tag == 'L' else 0.5) * ARM))
+            reach(fr, tag, body_point(fr, v), w=up, hint=Vector((s, 0.4, -0.3)), hand=(hw[0], s * hw[1], s * hw[2]))
         fr.r('head', -10 * air, 10 * A.wave(t, 2.0) * A.step_ease(t, 0.84, 0.9), 0)
         ears(fr, t, -8, 12, 3.0)
         tail(fr, t, 26, 30, 4.0)
@@ -1305,23 +1501,38 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             jaw(fr, 18 * go)
         elif style == 'headbutt':
             # leans back and crouches, then springs forward and up a little, the crown leading, the arms swept back
+            # `headbutt` (opt-in, Pluckrex; RECIPE.md "Biped plan"): {'hop', 'rear', 'lean', 'reach', 'gaze', 'neck',
+            # 'head', 'lift', 'yaw', 'jaw', 'crouch', 'neck_wind', 'head_wind', 'jaw_wind'}, each optional, defaulting to the
+            # numbers below; absent: as before
+            hb = P.get('headbutt') or {}
             air = A.pulse(t, 0.38, 0.7)
-            fr.o('root', 0, 0, mm(0.08) * air)
-            body(fr, crouch=c0 + 0.14 * LEG * ant, dy=0.08 * LEG * ant - 0.22 * LEG * go, lean=-18 * ant + 42 * go, gaze=0.2)
+            fr.o('root', 0, 0, mm(float(hb.get('hop', 0.08))) * air)
+            hb_yaw = float(hb.get('yaw', 0.0)) * max(0.6 * ant, go)
+            body(fr, crouch=c0 + float(hb.get('crouch', 0.14)) * LEG * ant, dy=0.08 * LEG * ant - float(hb.get('reach', 0.22)) * LEG * go,
+                 lean=-float(hb.get('rear', 18.0)) * ant + float(hb.get('lean', 42.0)) * go, gaze=float(hb.get('gaze', 0.2)),
+                 **({'yaw': hb_yaw} if hb_yaw else {}))
             for nm in NECK:
-                fr.r(nm, (-10 * ant + 16 * go) / len(NECK))
-            fr.r('head', -12 * ant + 22 * go, 0, 0)
+                fr.r(nm, (float(hb.get('neck_wind', -10.0)) * ant + float(hb.get('neck', 16.0)) * go) / len(NECK))
+            fr.r('head', float(hb.get('head_wind', -12.0)) * ant + float(hb.get('head', 22.0)) * go, 0, 0)
             for tag, _s in SIDES:
-                plant(fr, tag, dz=0.08 * LEG * air, dy=-0.1 * LEG * go * (1 if tag == 'L' else 0.3), pitch=20 * air)
-            hang(fr, swing=25 * ant + 55 * go, bend=30, out=12 * go)
-            jaw(fr, 22 * go)
+                # `headbutt.trail` (opt-in, default 0): the feet trail back in the air (a long, flat hop)
+                plant(fr, tag, dz=float(hb.get('lift', 0.08)) * LEG * air, dy=-0.1 * LEG * go * (1 if tag == 'L' else 0.3) + float(hb.get('trail', 0.0)) * LEG * air, pitch=20 * air)
+            hang(fr, swing=25 * ant + 55 * go, bend=30 + float(hb.get('arm_wind', 0.0)) * ant, out=12 * go)
+            jaw(fr, float(hb.get('jaw_wind', 0.0)) * ant + float(hb.get('jaw', 22.0)) * go)
         elif style == 'slam':
             # both fists rise overhead as the chest arches back, then come down together to the ground in front: the
             # hips drop, the body pitches over, a beat on the ground, then it straightens
             hold_ = A.step_ease(t, 0.42, 0.5) * (1 - A.step_ease(t, 0.72, 0.95))
-            body(fr, crouch=c0 + 0.02 * LEG * ant + 0.2 * LEG * hold_, lean=-16 * ant + 34 * hold_, gaze=0.5)
+            # a recipe's `slam` dict (each key optional): `over` and `ground` points for the left fist (mirrored), the
+            # body's `lean` (degrees) at the impact, the head's `gaze` (how much of the lean it takes back, so the face
+            # stays visible), the fist's turn at the wrist overhead and at the ground (`hand_up`, `hand_down`) and a
+            # `yaw` (degrees, + toward the monster's left) through the wind-up and the impact, the chest to the camera
+            sl = P.get('slam') or {}
+            body(fr, crouch=c0 + 0.02 * LEG * ant + 0.2 * LEG * hold_, lean=-16 * ant + float(sl.get('lean', 34)) * hold_,
+                 gaze=float(sl.get('gaze', 0.5)), yaw=float(sl.get('yaw', 0.0)) * max(0.6 * ant, hold_))
             feet(fr, out=0.12 * HW)
-            sl = P.get('slam') or {}        # a recipe's own overhead and ground points for the left fist (mirrored)
+            hk = _ramp(t, 0.42, 0.52)
+            hand_ = tuple(a + (b - a) * hk for a, b in zip(sl.get('hand_up', (-30, 0, 0)), sl.get('hand_down', (-30, 0, 0))))
             for tag, s in SIDES:
                 over = _mirror(sl['over'], s) if sl.get('over') else sh[tag] + Vector((-s * 0.3 * SW, 0.0, 0.85 * ARM))
                 ground = _mirror(sl['ground'], s) if sl.get('ground') else Vector((s * 0.45 * SW, ank[tag].y - 0.35 * LEG - 0.25 * ARM, 0.05 * LEG))
@@ -1331,8 +1542,10 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 else:
                     tgt = body_point(fr, over).lerp(ground, _ramp(t, 0.42, 0.52))
                     w = 1.0 - A.step_ease(t, 0.75, 1.0)
-                reach(fr, tag, tgt, w=w, hint=Vector((s * 0.6, 0.6, -0.2)), hand=(-30, 0, 0))
+                reach(fr, tag, tgt, w=w, hint=Vector((s * 0.6, 0.6, -0.2)), hand=(hand_[0], s * hand_[1], s * hand_[2]))
             jaw(fr, 16 * go)
+        elif style == 'thrust' and FENCER:
+            p_fencer_strike(t, fr)
         elif style == 'thrust':
             # a fencing lunge with the tail's blade: side-on and low, the tail swings round under the left arm until
             # its tip points straight ahead at chest height, then the front (left) foot steps out and it drives in
@@ -1355,25 +1568,65 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             # the legs trail back; it lands on the end
             air = A.pulse(t, 0.32, 0.86)
             fr.o('root', 0, 0, mm(0.16) * air)
-            body(fr, crouch=c0 + 0.22 * LEG * ant + 0.1 * LEG * A.pulse(t, 0.8, 1.0), dy=-0.3 * LEG * air, lean=-6 * ant + 40 * air, gaze=0.8)
+            # `pounce` (opt-in, Gloomgrin): {'hand': (x, y, z)} the left claw's goal in the rest pose, carried by the
+            # chest and mirrored for the right (claws spread wide and out, clear of a broad face); 'gaze' [0.8] how much
+            # of the lean the head takes back (less: the head pitches forward), 'tuck' [0 m] extra lift of the feet in
+            # the air (the legs tuck up), 'wings' [none] (windup, air) openings (else 0.05 throughout); absent: as before
+            pn = P.get('pounce') or {}
+            body(fr, crouch=c0 + 0.22 * LEG * ant + 0.1 * LEG * A.pulse(t, 0.8, 1.0), dy=-0.3 * LEG * air, lean=-6 * ant + 40 * air,
+                 gaze=float(pn.get('gaze', 0.8)))
             for tag, s in SIDES:
-                plant(fr, tag, dy=0.15 * LEG * air, dz=0.16 * LEG * air, pitch=35 * air)
-                p = sh[tag] + Vector((-s * 0.1 * SW, -0.85 * ARM, 0.35 * ARM))
+                plant(fr, tag, dy=0.15 * LEG * air, dz=0.16 * LEG * air + float(pn.get('tuck', 0.0)) * air, pitch=35 * air)
+                p = _mirror(pn['hand'], s) if pn.get('hand') else sh[tag] + Vector((-s * 0.1 * SW, -0.85 * ARM, 0.35 * ARM))
                 reach(fr, tag, body_point(fr, p), w=min(1.0, 2.0 * air + 0.6 * ant), hand=(-35, 0, 0))
-            wings(fr, 0.05)
+            if pn.get('wings'):
+                wk = pn['wings']
+                wings(fr, float(wk[0]) * A.pulse(t, 0.0, 0.42) + float(wk[1]) * air)
+            else:
+                wings(fr, 0.05)
             jaw(fr, 26 * air)
         elif style == 'charge':
             # head down and low, then a hard drive forward with the head leading, the arms tucked to the chest
-            body(fr, crouch=c0 + 0.12 * LEG * ant + 0.08 * LEG * go, dy=0.06 * LEG * ant - 0.3 * LEG * go, lean=10 * ant + 30 * go, gaze=0.3)
+            # `charge` (opt-in, Pluckrex grown; RECIPE.md "Biped plan"): {'lean', 'gaze', 'neck', 'head', 'reach', 'step',
+            # 'yaw', 'jaw'}, each optional, defaulting to the numbers below; absent: as before
+            cg = P.get('charge') or {}
+            cg_yaw = float(cg.get('yaw', 0.0)) * max(0.6 * ant, go)
+            body(fr, crouch=c0 + 0.12 * LEG * ant + 0.08 * LEG * go, dy=0.06 * LEG * ant - float(cg.get('reach', 0.3)) * LEG * go,
+                 lean=10 * ant + float(cg.get('lean', 30.0)) * go, gaze=float(cg.get('gaze', 0.3)), **({'yaw': cg_yaw} if cg_yaw else {}))
             for nm in NECK:
-                fr.r(nm, (14 * ant + 12 * go) / len(NECK))
-            fr.r('head', 10 * ant + 10 * go, 0, 0)
-            plant(fr, 'L', dy=-0.3 * LEG * go, out=0.1 * HW)
-            plant(fr, 'R', dy=0.15 * LEG * go, dz=0.05 * LEG * go, pitch=toe_lift_pitch(0.05 * LEG * go), out=0.1 * HW)
+                fr.r(nm, (14 * ant + float(cg.get('neck', 12.0)) * go) / len(NECK))
+            fr.r('head', 10 * ant + float(cg.get('head', 10.0)) * go, 0, 0)
+            cs = float(cg.get('step', 0.3))
+            plant(fr, 'L', dy=-cs * LEG * go, out=0.1 * HW)
+            cb_ = float(cg.get('back', 0.15))
+            plant(fr, 'R', dy=cb_ * LEG * go, dz=0.05 * LEG * go, pitch=toe_lift_pitch(0.05 * LEG * go), out=0.1 * HW)
+            if cg.get('tail'):
+                tail(fr, t, float(cg['tail']) * go, 0, 1.0)
             for tag, s in SIDES:
-                p = sh[tag] + Vector((-s * 0.25 * SW, -0.35 * ARM, -0.25 * ARM))
+                # `charge.hand` (opt-in): the left hand's goal in the rest pose, carried by the chest, mirrored (long arms tucked in)
+                p = _mirror(cg['hand'], s) if cg.get('hand') else sh[tag] + Vector((-s * 0.25 * SW, -0.35 * ARM, -0.25 * ARM))
                 reach(fr, tag, body_point(fr, p), w=min(1.0, 2.5 * (ant + go)), hand=(-30, 0, 0))
-            jaw(fr, 12 * go)
+            jaw(fr, float(cg.get('jaw', 12.0)) * go)
+        elif style == 'gust' and GUST:
+            # opt-in (`gust`, Plumdrake): it rears back and up onto its toes as the wings rise high, then leans in over one
+            # great downbeat: the wings stay spread and sweep forward (the tips ahead of the chest), the palms push out,
+            # the mouth opens wide, turned a little toward the monster's left (the in-game strike camera's side)
+            g_rear, g_toes = float(GUST.get('rear', 20.0)), float(GUST.get('toes', 0.0)) * LEG
+            g_lean, g_yaw = float(GUST.get('lean', 16.0)), float(GUST.get('yaw', 0.0))
+            body(fr, crouch=c0 + 0.03 * LEG * ant + 0.07 * LEG * go, dy=0.05 * LEG * ant - 0.1 * LEG * go,
+                 lean=-g_rear * ant + g_lean * go, yaw=g_yaw * max(0.5 * ant, go), gaze=float(GUST.get('gaze', 0.6)))
+            for tag, s in SIDES:
+                plant(fr, tag, dy=(-1 if tag == 'L' else 1) * 0.06 * LEG, out=0.1 * HW, dz=g_toes * ant,
+                      pitch=toe_lift_pitch(g_toes * ant))
+            wings(fr, min(1.0, 1.8 * ant + go), -float(GUST.get('raise', 35.0)) * ant + float(GUST.get('beat', 45.0)) * go,
+                  float(GUST.get('sweep', 0.0)) * go)
+            px, py, pz = GUST.get('push', (0.2, 0.9, 0.15))
+            for tag, s in SIDES:
+                up = sh[tag] + Vector((s * 0.3 * SW, 0.05 * ARM, 0.6 * ARM))
+                out_ = sh[tag] + Vector((-s * px * SW, -py * ARM, pz * ARM))
+                tgt = up.lerp(out_, _ramp(t, 0.36, 0.52))
+                reach(fr, tag, body_point(fr, tgt), w=min(1.0, 2.2 * (ant + go)), hand=(60, 0, 0))
+            jaw(fr, float(GUST.get('jaw', 20.0)) * max(go, 0.4 * ant))
         elif style == 'gust':
             # the wings rise and spread high on the wind-up, then one great downbeat drives a gust forward with both
             # palms thrust out (without wings, the palms alone)

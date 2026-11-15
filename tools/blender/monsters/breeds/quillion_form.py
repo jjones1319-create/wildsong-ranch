@@ -22,25 +22,25 @@ from lib.surface import norm, smooth, v3
 # ----------------------------------------------------------------------------- the head (a chibi head, ~35% of the height)
 HEAD_C = (0.0, -0.01, 0.655)
 HEAD_R = (0.148, 0.142, 0.15)          # half-axes (across, depth, height) of the skull
-EYE_R = 0.0355                         # the lens' half-width (front view: 55 px across)
+EYE_R = 0.052                          # the lens' half-width (front view: 55 px across)
 EYE_SHAPE = (1.0, 0.97)
-EYE_DEPTH = (0.46, 0.16)               # the dome's depth and how far it sits sunk, in EYE_R
-EYE_Z = 0.607                          # the eye line (front view y 330)
-EYE_X = 0.084
-NOSE_C = (0.0, -0.2, 0.574)
+EYE_DEPTH = (0.6, 0.3)               # the dome's depth and how far it sits sunk, in EYE_R
+EYE_Z = 0.614                          # the eye line (front view y 330)
+EYE_X = 0.096
+NOSE_C = (0.0, -0.182, 0.573)
 NOSE_R = (0.0185, 0.014, 0.0135)
-MUZZLE = ((0.0, -0.148, 0.562), (0.052, 0.058, 0.04))
-CHIN = ((0.0, -0.124, 0.52), (0.036, 0.032, 0.024))
+MUZZLE = ((0.0, -0.136, 0.561), (0.036, 0.045, 0.029))   # round 2: a smaller, tapered snout
+CHIN = ((0.0, -0.104, 0.528), (0.027, 0.024, 0.018))       # build 2: a smaller chin (it read as a lip block)
 # the smile (front view: about ±6 cm at the corners, the middle under the nose): (x, z) on the muzzle's front
-SMILE_W = 0.052
+SMILE_W = 0.046
 JAW_HINGE = (0.0, -0.085, 0.552)
-JAW_TIP = (0.0, -0.172, 0.515)
+JAW_TIP = (0.0, -0.162, 0.522)
 # the small round ears on the upper sides of the head, in front of the quills (side view: y +0.02, z 0.70)
-EAR_C = (0.152, 0.008, 0.706)
+EAR_C = (0.16, -0.036, 0.712)       # round 2: bigger, further forward, clear of the quills
 EAR_N = (0.5, -0.84, 0.2)              # where the ear's cup opens: forward and out (the pink lining shows from the front)
 EAR_UP = (0.58, 0.12, 0.8)             # the ear's long axis, standing out of the head
-EAR_SIZE = (0.0125, 0.034, 0.038)      # half thickness, half width, half height
-BROW_Z = 0.684
+EAR_SIZE = (0.015, 0.042, 0.046)      # half thickness, half width, half height
+BROW_Z = 0.694
 
 # ----------------------------------------------------------------------------- the body
 HIP = (0.0, 0.012, 0.2)
@@ -62,15 +62,16 @@ TOE_DX = (-0.025, -0.0085, 0.0085, 0.025)   # four toes a foot (4-details 3)
 # the tail: from the rump back and a little up to the blade's root, in its ruff of quills; tail.3 is the blade
 # the hero: the tail leaves the rump toward the monster's left and the blade rises beside the body (the three-quarter
 # view sees it beside the quills, not hidden behind them)
-TAIL_POINTS = [(0.0, 0.1, 0.205), (0.055, 0.195, 0.245), (0.125, 0.275, 0.295), (0.26, 0.37, 0.665)]
-TAIL_TUBE = ((0.0, 0.07, 0.195), (0.12, 0.27, 0.295), 0.05, 0.03)
+TAIL_POINTS = [(0.0, 0.09, 0.2), (0.035, 0.235, 0.105), (0.14, 0.315, 0.1), (0.25, 0.3, 0.9)]
+TAIL_TUBE = (TAIL_POINTS[1], TAIL_POINTS[2], 0.034, 0.028)      # its outer part, out under the hem (the ruff)
+TAIL_ROOT = ((0.0, 0.06, 0.205), TAIL_POINTS[1], 0.046, 0.034)  # from the rump down under the cape
 # the blade-quill: a scimitar-curved quill in the body's mid-plane (a quadratic Bezier in y, z), from inside the tail's
 # end up behind the body; the hero's tip stands at about 0.7 of the height
-BLADE_BEZ = ((0.112, 0.255, 0.287), (0.2, 0.4, 0.43), (0.26, 0.37, 0.665))
+BLADE_BEZ = ((0.13, 0.31, 0.098), (0.36, 0.31, 0.4), (0.25, 0.3, 0.9))   # up beside the body, its flat face to the front
 
 # the quill mantle: the hedgehog's raised spine-bed over the back of the head and the upper back, so the quills stand
 # out from a rounded mass (2-turnaround side: their tips at y ≈ +0.33, the body's back at ≈ +0.15)
-MANTLE = ((0.0, 0.075, 0.562), (0.198, 0.18, 0.25))
+MANTLE = ((0.0, 0.09, 0.59), (0.19, 0.17, 0.235))   # round 2: off the shoulders (the cape lies over them)
 SRC = (0.0, -0.32, 0.57)               # the quills sweep away from a point in front of the face
 
 
@@ -117,7 +118,7 @@ EYE_C = {s: _eye_centre(s) for s in (1, -1)}
 def eye_frame(s: int):
     """Centre, right, up and look axes of an eye (+Z of its dome looks out: forward, a little out and up)."""
     c = EYE_C[s]
-    look = (head_normal(c) * 0.55 + Vector((0, -1, 0)) * 0.45).normalized()
+    look = (head_normal(c) * 0.68 + Vector((0, -1, 0)) * 0.32).normalized()      # rounds 2-3: wraps the head's curve
     look = (look + Vector((0, 0, 0.03))).normalized()
     xax = Vector((0, 0, 1)).cross(look).normalized()
     yax = look.cross(xax).normalized()
@@ -182,9 +183,9 @@ def head_parts() -> list[Part]:
         # the face's front: a broad, gently rounded face under the forehead, the eyes set on it (2-turnaround front)
         Part('face', 'sphere', loc=FACE[0], radius=1.0, scale=FACE[1]),
         # soft full cheeks below the eyes (their fluff is fur cards), not pouches
-        Part('cheek', 'sphere', loc=(0.082, -0.07, 0.548), radius=1.0, scale=(0.06, 0.056, 0.048), mirror=True),
+        Part('cheek', 'sphere', loc=(0.08, -0.058, 0.552), radius=1.0, scale=(0.052, 0.05, 0.042), mirror=True),
         # a short pointed snout: a tapered tube from the face to the nose, its underside the muzzle (2-turnaround side)
-        Part('snout', 'tube', loc=(0.0, -0.105, 0.574), to=(0.0, -0.188, 0.568), radius=0.046, r2=0.02),
+        Part('snout', 'tube', loc=(0.0, -0.105, 0.575), to=(0.0, -0.172, 0.571), radius=0.034, r2=0.015),
         Part('muzzle', 'sphere', loc=MUZZLE[0], radius=1.0, scale=MUZZLE[1]),
         Part('nose', 'sphere', loc=NOSE_C, radius=1.0, scale=NOSE_R),
         Part('chin', 'sphere', loc=CHIN[0], radius=1.0, scale=CHIN[1]),
@@ -235,7 +236,8 @@ def limb_parts() -> list[Part]:
 
 def tail_parts() -> list[Part]:
     a, b, r1, r2 = TAIL_TUBE
-    return [Part('tail', 'tube', loc=a, to=b, radius=r1, r2=r2)]
+    c, d, q1, q2 = TAIL_ROOT
+    return [Part('tailroot', 'tube', loc=c, to=d, radius=q1, r2=q2), Part('tail', 'tube', loc=a, to=b, radius=r1, r2=r2)]
 
 
 def all_parts() -> list[Part]:
@@ -268,14 +270,23 @@ def shoulder_dist(p: np.ndarray) -> np.ndarray:
 
 
 def tail_param(p: np.ndarray):
-    """(0..1 along the tail tube, distance to its axis)."""
-    a, b, _r1, _r2 = TAIL_TUBE
-    a, b = v3(a), v3(b)
-    ab = b - a
-    t = ((p - a) @ ab) / float(ab @ ab)
-    tc = np.clip(t, 0, 1)
-    d = np.linalg.norm(p - (a + tc[:, None] * ab), axis=1)
-    return t, d
+    """(0..1 along the furry tail: its root under the cape, then its outer part; distance to its axis)."""
+    segs = [(v3(TAIL_ROOT[0]), v3(TAIL_ROOT[1])), (v3(TAIL_TUBE[0]), v3(TAIL_TUBE[1]))]
+    lens = [float(np.linalg.norm(b - a)) for a, b in segs]
+    tot = sum(lens)
+    best_d = np.full(len(p), 9.0)
+    best_t = np.zeros(len(p))
+    start = 0.0
+    for i, ((a, b), ln) in enumerate(zip(segs, lens)):
+        ab = b - a
+        u = ((p - a) @ ab) / float(ab @ ab)
+        uc = np.clip(u, -9 if i == 0 else 0, 9 if i == len(segs) - 1 else 1)
+        d = np.linalg.norm(p - (a + np.clip(uc, 0, 1)[:, None] * ab), axis=1)
+        better = d < best_d
+        best_d = np.where(better, d, best_d)
+        best_t = np.where(better, (start + uc * ln) / tot, best_t)
+        start += ln
+    return best_t, best_d
 
 
 def quill_zone(p: np.ndarray, soft: float = 0.012) -> np.ndarray:
@@ -284,7 +295,9 @@ def quill_zone(p: np.ndarray, soft: float = 0.012) -> np.ndarray:
     y, z = p[:, 1], p[:, 2]
     k = smooth(-soft, soft, y - hairline_y(z))
     k = k * smooth(0.27, 0.31, z)
-    k = k * smooth(0.055, 0.07, ear_dist(p))
+    k = k * (1.0 - smooth(0.42, 0.37, z) * smooth(0.06, 0.12, y))    # the lowest back rows: none where the cape flares
+    k = k * smooth(0.075, 0.095, ear_dist(p))
+    k = k * (1.0 - smooth(0.54, 0.48, z) * smooth(0.2, 0.15, y))      # polish: clear of the cape's top edge
     k = k * smooth(0.075, 0.095, shoulder_dist(p))
     tt, td = tail_param(p)
     k = k * (1.0 - smooth(0.065, 0.05, td) * smooth(-0.05, 0.05, tt))
@@ -297,7 +310,7 @@ def quill_flow(p: np.ndarray, n: np.ndarray) -> np.ndarray:
     (up and out at the top, out at the sides, down and out low); drooping on the lower back."""
     k = len(p)
     r = norm(p - v3(SRC))
-    fan = np.stack([p[:, 0], np.full(k, 0.0), p[:, 2] - 0.74], axis=1)
+    fan = np.stack([p[:, 0] * 0.45, np.full(k, 0.0), p[:, 2] - 0.76], axis=1)
     small = np.linalg.norm(fan, axis=1) < 1e-4
     fan[small] = np.array([0.0, 0.0, 1.0])
     fan = norm(fan) + v3((0.0, 0.95, 0.0))[None]

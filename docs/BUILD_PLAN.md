@@ -683,18 +683,20 @@ The owner, Nov 12, after v1.23.0: *"Do all of the upgrade. Bigger wings so it lo
 - [x] 4. Battle 3D: Hearthwing takes off for its Special (Bellows Blaze) and its Signature (Hearthfire Torrent), breathes fire from the air and lands. This is presentation only; the duel's rules and timing are unchanged. Lab → 3D Gallery gets the flight moves.
 - [x] 5. The ranch shows the Ultra monsters (option A, by the owner's 10-minute rule; ART_2_DETAIL §9.6), and Hearthwing flies a lap about once a minute.
 - [x] 6. Shared pipeline and renderer: `VARIANT_ORM`, `VARIANT_CARDS_OFF`, `prop_material`, `BODY_SHEEN`, the opt-in quadruped knobs; the studio world, tone-map toe, warmth, roughness floor, rim facing and variant eyes (ART_2_DETAIL §9.7).
-- [ ] 7. Docs, tests, `npm run verify`, e2e, PROGRESS, v1.24.0, commit, deploy, phone checklist.
+- [x] 7. Docs, tests, `npm run verify`, e2e, PROGRESS, v1.24.0, commit, deploy, phone checklist (Nov 13; the owner: "Good for now", and Cobblemaw "looks amazing").
 
-### Batches 3 and 4, two at a time (from v1.25.0)
-Ten more breeds, two at a time, with the same review process as batches 1 and 2.
+### Batches 3 and 4, two at a time (v1.25.0)
+Ten more breeds, two at a time, with the same review process as batches 1 and 2. The owner, Nov 13: *"Do the next 10 2 at a time. Do not move onto the next two until the two you are working on are completely finished."* Every pair had three fresh-eyes rounds and a polish pass; the lessons are in ART_2_DETAIL §9.8, the known issues in PROGRESS v1.25.0.
 - **The biped plan** (`plans/biped.py`, ART_2_PLAN §5 line 280) is for B3. Its prep started during the upgrade round, using shape previews and a stand-in recipe only; full builds wait for the upgrades.
 - **The floater plan** (`plans/floater.py`) is for B4.
-- [ ] 1. Quillion and Grumblestone (the biped plan's first pair).
-- [ ] 2. Gloomgrin and Plumdrake (biped wings).
-- [ ] 3. Pluckrex young and grown, and Wishlume (the floater plan's first).
-- [ ] 4. Ashwraith and Zipwisp.
-- [ ] 5. Mirrorkin and Frostlance.
-- [ ] 6. Docs, tests, `npm run verify`, e2e, PROGRESS, release, phone checklist.
+- [x] 1. Quillion and Grumblestone (the biped plan's first pair; Nov 13).
+- [x] 2. Gloomgrin and Plumdrake (biped wings; Nov 13–14).
+- [x] 3. Pluckrex young and grown, and Wishlume (the floater plan's first; Nov 14).
+- [x] 4. Ashwraith and Zipwisp (Nov 14).
+- [x] 5. Mirrorkin and Frostlance (Nov 14–15).
+- [x] 6. Docs, tests (`npm run verify` 1,441 green; e2e; Battle 3D with every new look), PROGRESS, v1.25.0, commit, deploy, phone checklist (Nov 15).
+
+**Batch 5 started Nov 15** (the owner, Nov 14: *"start the next 6 in pairs of two again right after these finish"*), while the owner's look at v1.25.0 is pending: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan, the first of batch 6). The four new plans (`plans/shelled.py`, `blob.py`, `construct.py`, `serpent.py`, with the shared `plans/kin.py`) and their stand-ins shipped as tools in v1.25.0; no look uses them yet.
 
 ## LATER (after v1.0)
 

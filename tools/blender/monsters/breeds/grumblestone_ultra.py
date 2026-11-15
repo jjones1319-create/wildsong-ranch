@@ -58,40 +58,47 @@ BODY_TRIS = 60000                # the plates' bevels reach the silhouette
 VOXELS = {'lo': 0.009}           # a big body: the heat solve fails on fine proxies (Cobblemaw's lesson)
 ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 1.1}
 UV_SMOOTH = 40                   # the plated shell unwraps into fewer, larger islands
-GLOW = {'strength': 1.6, 'tint': None}
+GLOW = {'strength': 1.6, 'tint': None}       # round 3: saturated, not washed toward white
+BODY_SHEEN = 0                   # stone: the film's fur sheen would read as felt with a halo (Cobblemaw's lesson)
 LITE_PROPS_TRIS = 3200           # the crystals are the signature: keep them in the Lite copy
 FACE_NOTE = ('Baked face: two heavy granite brow blocks (no brow bone), small yellow lenses with big black pupils that '
              'squash and sink to blink, a wide closed smile. The cracks and the crystals glow violet (ORM alpha).')
 
 # ============================================================================= proportions (2-turnaround, 309 px/m)
 # the shell: an egg from the rump to the hood; the hood over the face makes the head's top (no neck)
-SHELL = ((0.0, -0.03, 0.95), (0.44, 0.48, 0.52))
-HOOD = ((0.0, -0.22, 1.385), (0.39, 0.39, 0.36))
+SHELL = ((0.0, -0.01, 1.0), (0.45, 0.48, 0.58))
+HOOD = ((0.0, -0.18, 1.38), (0.40, 0.40, 0.36))
+# round 2: the upper back fills behind the hood, so the hood and the shell read as one hunched hump (the head juts
+# forward from under it), and the upper chest fills under the chin (no step from the chin to the chest)
+UPPERBACK = ((0.0, -0.02, 1.36), (0.42, 0.40, 0.34))
+CHESTTOP = ((0.0, -0.38, 1.05), (0.30, 0.22, 0.14))
 PLASTRON = ((0.0, -0.24, 0.82), (0.36, 0.31, 0.38))
 RUMP = ((0.0, 0.04, 0.58), (0.33, 0.22, 0.19))
 PELVIS = ((0.0, -0.02, 0.56), (0.36, 0.28, 0.16))
-SHOULDER = ((0.50, -0.03, 1.07), (0.25, 0.28, 0.26))
+SHOULDER = ((0.47, -0.02, 1.17), (0.25, 0.30, 0.29))     # round 2: the tops at eye level
 # the face (lighter stone, set into the hood): a broad, flat-fronted panel (1-hero, 3-faces), wide cheeks, the eyes
 # tucked under the brows, a hanging chin; no snout
 # one tall, flat-fronted shield from the brows (z 1.42) to the chin (1.03), widest across the cheeks and narrower at
 # the bottom (2-turnaround front: a rounded hexagon), its front near vertical in profile; the eyes sit in sockets
 # cut into it under the brows, the smile across its upper half, a big chin below
-FACE = {'c': (0.0, -0.53, 1.235), 'half': (0.30, 0.145, 0.205), 'rot': (-2.0, 0.0, 0.0), 'm': (0.68, 0.72, 0.5), 'taper': 0.34}
-CHEEK = ((0.17, -0.63, 1.31), (0.085, 0.055, 0.07))       # soft fullness above the mouth's corners
+FACE = {'c': (0.0, -0.48, 1.235), 'half': (0.30, 0.20, 0.205), 'rot': (5.0, 0.0, 0.0), 'm': (0.62, 0.6, 0.45), 'taper': 0.34}
+# round 3: granite blocks flanking the face hide the shield's flat sides (no boxy slab behind the cheek)
+CHEEKGUARD = ((0.31, -0.46, 1.30), (0.10, 0.16, 0.19))
+CHEEK = ((0.17, -0.635, 1.31), (0.075, 0.05, 0.065))       # soft fullness above the mouth's corners
 # the brows: a thick granite block over each eye (2-turnaround side: its front-bottom edge is the most forward point
 # of the head, the front face leaning back), the inner end lower (grumpy), the outer end turned back with the face
-BROW = {'c': (0.15, -0.625, 1.468), 'half': (0.11, 0.10, 0.056), 'rot': (-8.0, -4.0, 8.0)}     # nearly meeting at the middle
+BROW = {'c': (0.145, -0.607, 1.50), 'half': (0.11, 0.085, 0.062), 'rot': (5.0, -18.0, 8.0)}   # wedges, inner end low (grumpy)
 # arms (the left; mirrored): a big shoulder, a pillar upper arm and forearm, a big round fist
 ARM_PTS = [(0.53, -0.01, 1.0), (0.70, -0.08, 0.71), (0.745, -0.22, 0.48)]
-ARM_R = (0.185, 0.18, 0.17)
-FIST = ((0.76, -0.31, 0.30), (0.195, 0.18, 0.19))                # the fist's mass
-PALM = {'c': (0.755, -0.25, 0.35), 'half': (0.16, 0.12, 0.13), 'rot': (0.0, 0.0, 0.0)}
+ARM_R = (0.185, 0.21, 0.21)
+FIST = ((0.77, -0.31, 0.32), (0.235, 0.215, 0.225))     # clear of the foot (2.5 cm+)                # the fist's mass
+PALM = {'c': (0.77, -0.24, 0.38), 'half': (0.19, 0.14, 0.15), 'rot': (0.0, 0.0, 0.0)}
 # the knuckles wrap the fist's front-outer corner (2-turnaround: two or three gems show from the front AND the side)
 KNUCKLE_ANG = (-26.0, 6.0, 38.0, 70.0)                           # degrees from straight ahead toward the outside
-KNUCKLE_R = 0.158                                                # from the fist's centre, in plan
-FINGER_UP = {'dz': 0.055, 'half': (0.052, 0.076, 0.088), 'pitch': -6.0}        # chiselled rounded blocks
-FINGER_LO = {'dz': -0.10, 'back': 0.025, 'half': (0.049, 0.07, 0.066), 'pitch': 12.0}
-THUMB = {'ang': -68.0, 'r': 0.165, 'dz': -0.04, 'half': (0.054, 0.085, 0.08)}
+KNUCKLE_R = 0.19                                                # from the fist's centre, in plan
+FINGER_UP = {'dz': 0.06, 'half': (0.062, 0.088, 0.105), 'pitch': -6.0}        # chiselled rounded blocks
+FINGER_LO = {'dz': -0.12, 'back': 0.03, 'half': (0.058, 0.082, 0.078), 'pitch': 12.0}
+THUMB = {'ang': -62.0, 'r': 0.19, 'dz': 0.01, 'half': (0.06, 0.095, 0.09)}
 # legs (the left): short thick columns on big flat feet with four rounded toe blocks
 LEG_PTS = [(0.25, 0.0, 0.56), (0.27, -0.04, 0.34), (0.29, -0.01, 0.16)]
 LEG_R = (0.13, 0.13, 0.14)
@@ -107,7 +114,7 @@ HEAD_BASE = (0.0, -0.30, 1.30)           # in front of the chest: the neck is a 
 HEAD_C = Vector((0.0, -0.50, 1.40))
 HEAD_R = 0.27
 LEGS = {'hip': (0.25, 0.0, 0.58), 'knee': (0.27, -0.05, 0.34), 'ankle': (0.30, -0.01, 0.15), 'toe': (0.32, -0.32, 0.05)}
-ARMS = {'shoulder': (0.50, 0.0, 1.08), 'elbow': (0.70, -0.08, 0.72), 'wrist': (0.75, -0.24, 0.46), 'hand': (0.76, -0.44, 0.24)}
+ARMS = {'shoulder': (0.50, 0.0, 1.08), 'elbow': (0.70, -0.08, 0.72), 'wrist': (0.76, -0.24, 0.48), 'hand': (0.78, -0.44, 0.27)}
 
 
 # the big fists in front of the deep belly and the broad face: the hands' goals are kept out of these (rest pose,
@@ -118,23 +125,33 @@ ARMS = {'shoulder': (0.50, 0.0, 1.08), 'elbow': (0.70, -0.08, 0.72), 'wrist': (0
 HAND_CLEAR = [
     {'bone': 'spine', 'c': (0.0, -0.10, 0.84), 'r': (0.40, 0.46, 0.44), 'margin': 0.13, 'push': (0.0, -1.0, 0.0)},
     {'bone': 'head', 'c': (0.0, -0.50, 1.27), 'r': (0.30, 0.17, 0.22), 'margin': 0.10, 'push': (0.0, -1.0, 0.0)},
+    # round 2: overhead fists (win, celebrate, cast) are pushed forward out of the hump, in front of the head
+    {'bone': 'chest', 'c': (0.0, 0.1, 1.6), 'r': (1.0, 0.45, 0.4), 'margin': 0.05, 'push': (0.0, -1.0, 0.0)},
 ]
-SLAM = {'over': (0.58, -0.12, 1.98), 'ground': (0.40, -0.88, 0.07)}
+# round 2: the impact leans in less with the face kept up (it hid the face), the fists land nearer the middle
+SLAM = {'over': (0.55, -0.30, 1.95), 'ground': (0.32, -0.92, 0.07), 'lean': 18.0, 'gaze': 0.6,
+        'hand_up': (60.0, 0.0, 0.0), 'hand_down': (-30.0, 0.0, 0.0),       # overhead the knuckle gems face forward
+        'yaw': 45.0}                                                       # polish: the chest and face to the camera's side
+# round 3: win raises both fists high and out to the sides, the knuckle gems toward the camera (plans/biped.py `win`)
+WIN = {'over': (0.85, -0.38, 1.82), 'hand': (60.0, 0.0, 0.0)}
 
 
 # no neck: the face is set in the hood, so the plan's head turns (up to ~30-34 degrees in hit, hit_heavy, look_around)
 # would slide it across the shell; the head and the neck stub keep half their keyed rotation in every clip
-CLIP_CALM = {'*': {'head': 0.5}}
+CLIP_CALM = {'*': {'head': 0.5}, 'strike': {'head': 1.0}, 'ko': {'head': 1.0, 'torso': 0.35},
+             'hit_heavy': {'head': 0.3, 'torso': 0.5}}     # no face crushed or thrown out of view
 
 
 def calm_group(bone: str) -> str | None:
-    return 'head' if bone in ('head', 'neck') else None
+    if bone in ('head', 'neck'):
+        return 'head'
+    return 'torso' if bone in ('spine', 'chest') else None
 
 
 def rig_p() -> dict:
     return {'hip': HIP, 'chest': CHEST, 'head_c': tuple(HEAD_C), 'head_r': HEAD_R, 'head_base': HEAD_BASE,
             'legs': LEGS, 'arms': ARMS, 'hulk': 1.0, 'strike_style': 'slam', 'arm_relax': 15.0,
-            'arm_radius': 0.3, 'leg_radius': 0.22, 'hand_clear': HAND_CLEAR, 'hand_gap': 0.2, 'slam': SLAM}
+            'arm_radius': 0.3, 'leg_radius': 0.22, 'hand_clear': HAND_CLEAR, 'hand_gap': 0.2, 'slam': SLAM, 'win': WIN}
 
 
 # ============================================================================= the body
@@ -188,7 +205,7 @@ def toe_boxes(s: int) -> list[tuple[str, tuple, tuple, tuple]]:
 def all_parts() -> list[Part]:
     ps = [
         _ell('shell', SHELL), _ell('hood', HOOD), _ell('plastron', PLASTRON), _ell('rump', RUMP), _ell('pelvis', PELVIS),
-        _ell('shoulder', SHOULDER, mirror=True),
+        _ell('shoulder', SHOULDER, mirror=True), _ell('upperback', UPPERBACK), _ell('cheekguard', CHEEKGUARD, mirror=True),
         _ell('cheek', CHEEK, mirror=True),
     ]
     for s, tag in ((1, 'L'), (-1, 'R')):
@@ -197,7 +214,7 @@ def all_parts() -> list[Part]:
         ps += [
             Part(f'upperarm{tag}', 'tube', loc=a[0], to=a[1], radius=ARM_R[0], r2=ARM_R[1]),
             Part(f'forearm{tag}', 'tube', loc=a[1], to=a[2], radius=ARM_R[1], r2=ARM_R[2]),
-            Part(f'elbow{tag}', 'sphere', loc=a[1], radius=0.19),
+            Part(f'elbow{tag}', 'sphere', loc=a[1], radius=0.2),
             _ell(f'fist{tag}', (m(FIST[0]), FIST[1])),
             _box(f'palm{tag}', m(PALM['c']), PALM['half'], PALM['rot']),
         ]
@@ -218,7 +235,7 @@ def body_extras() -> list[bpy.types.Object]:
     for s in (1, -1):
         c = v3(BROW['c']) * v3((s, 1, 1))
         r = (BROW['rot'][0], BROW['rot'][1] * s, BROW['rot'][2] * s)
-        out.append(K.rounded_block(f'brow{s}', c, BROW['half'], r, m=0.4))
+        out.append(K.rounded_block(f'brow{s}', c, BROW['half'], r, m=0.32))
         for n, c, h, r in finger_boxes(s) + toe_boxes(s):
             out.append(K.rounded_block(f'{n}{s}', c, h, r, m=0.45))
     return out
@@ -273,7 +290,7 @@ def brow_sdf(p: np.ndarray) -> np.ndarray:
 
 def face_sdf(p: np.ndarray) -> np.ndarray:
     """< 0 on the lighter face panel: inside the face's shield and cheeks (a little grown), in front, under the brows."""
-    d = K.box_sdf(p, FACE['c'], v3(FACE['half']) + 0.012, FACE['rot']) - 0.012
+    d = K.box_sdf(p, FACE['c'], v3(FACE['half']) + v3((-0.025, 0.012, 0.012)), FACE['rot']) - 0.012
     for s in (1, -1):
         d = np.minimum(d, K.ell_sdf(p, (CHEEK[0][0] * s, CHEEK[0][1], CHEEK[0][2]), v3(CHEEK[1]) * 1.08))
     # under the brow line (it rises toward the middle, over the nose bridge) and in front of the hood
@@ -293,7 +310,7 @@ def fist_mask(p: np.ndarray) -> np.ndarray:
 def chest_mask(p: np.ndarray) -> np.ndarray:
     """The lighter plastron's area seen from the front (its seeds lay the light plates; the cracks bound the colour)."""
     x, y, z = p[:, 0], p[:, 1], p[:, 2]
-    r = (np.abs(x) / 0.40) ** 2.2 + (np.abs(z - 0.80) / 0.37) ** 2.2
+    r = (np.abs(x) / 0.36) ** 2.2 + (np.abs(z - 0.80) / 0.37) ** 2.2
     return (r < 1.0) & (y < -0.28) & (z < 1.15)
 
 
@@ -312,6 +329,7 @@ def zones(p: np.ndarray, n: np.ndarray | None = None) -> dict[str, np.ndarray]:
     sole = z < 0.006
     if n is not None:
         sole = sole | ((n[:, 2] < -0.6) & (z < 0.05))
+        sole = sole | ((n[:, 2] < -0.55) & (z < 0.42) & (fist | fing | toes | ((z < 0.16) & (ax < 0.56))))
     chest = chest_mask(p) & ~face & ~arm
     eye_d = np.minimum(np.linalg.norm(p - v3(EYE_C[1]), axis=1), np.linalg.norm(p - v3(EYE_C[-1]), axis=1))
     th = mouth_theta(p)
@@ -346,16 +364,19 @@ def plate_spacing(p: np.ndarray, n: np.ndarray, z: dict) -> np.ndarray:
     the biggest plates on the back (2-turnaround back), smaller up the hood, on the shoulders, arms and legs."""
     x, y, zz = p[:, 0], p[:, 1], p[:, 2]
     ax = np.abs(x)
-    sp = np.full(len(p), 0.30)
-    sp = sp - 0.13 * smooth(1.3, 1.6, zz) * smooth(0.15, -0.15, y)          # the hood's top and front (~0.15 m)
-    sp = sp - 0.06 * smooth(0.3, 0.5, ax) * smooth(0.8, 1.1, zz)             # the shoulders
-    sp = sp - 0.08 * smooth(-0.2, -0.45, y) * smooth(1.05, 1.25, zz)         # around the face
-    sp = np.where(z['chest'], 0.205, sp)
-    sp = np.where(z['arm'], 0.15, sp)
-    sp = np.where(z['fist'], 0.12, sp)
-    sp = np.where(z['leg'], 0.12, sp)
-    sp = np.where(z['foot'], 0.10, sp)
-    sp = np.where((zz < 0.62) & ~z['leg'] & ~z['arm'] & ~z['chest'], np.minimum(sp, 0.19), sp)     # the rump's underside
+    # round 3: big irregular boulders (about 10 on the back, 5-7 per arm segment), sizes varying about 2x
+    sp = np.full(len(p), 0.38)
+    sp = sp - 0.13 * smooth(1.3, 1.6, zz) * smooth(0.15, -0.15, y)          # the hood's top and front (~0.25 m cobbles)
+    sp = sp - 0.08 * smooth(0.3, 0.5, ax) * smooth(0.8, 1.1, zz)             # the shoulders
+    sp = sp - 0.10 * smooth(-0.2, -0.45, y) * smooth(1.05, 1.25, zz)         # around the face
+    sp = np.where(z['chest'], 0.22, sp)
+    sp = np.where(z['arm'], 0.27, sp)
+    sp = np.where(z['fist'], 0.17, sp)
+    sp = np.where(z['leg'], 0.19, sp)
+    sp = np.where(z['foot'], 0.13, sp)
+    sp = np.where((zz < 0.62) & ~z['leg'] & ~z['arm'] & ~z['chest'], np.minimum(sp, 0.24), sp)     # the rump's underside
+    vary = 0.65 + 0.7 * K.value_noise(p, 1 / 0.45, 59)
+    sp = np.where(z['chest'], sp, sp * vary)
     no =z['face'] | (z['face_sdf'] < 0.03) | (z['brow']) | z['toes'] | z['sole']
     return np.where(no, np.nan, sp)
 
@@ -371,14 +392,19 @@ def seed_params(c: np.ndarray, n: np.ndarray) -> dict:
     H = np.where(z['fist'] | z['foot'], 0.018, H)
     w = np.where(chest, 0.0035, np.where(limb, 0.0055, 0.0075))
     cd = np.where(chest, 0.004, np.where(limb, 0.008, 0.012))
-    kf = np.where(chest, 0.45, 0.82)
-    sb = np.where(chest, 1.6, 2.1)
+    curved = (c[:, 2] > 1.3) | limb | (np.abs(c[:, 0]) > 0.4)
+    kf = np.where(chest, 0.45, np.where(curved, 0.55, 0.82))
+    sb = np.where(chest, 1.8, 3.0)
     rnd = np.stack([K.hash1(np.arange(k), SEED + j) for j in range(6)], axis=1)
-    H = H * (0.82 + 0.36 * rnd[:, 0])
+    H = H * (0.62 + 0.76 * rnd[:, 0])                     # some boulders stand proud of their neighbours
     g = rnd[:, 1:4] - 0.5
     g = g - n * (g * n).sum(1, keepdims=True)
-    g = g / np.maximum(np.linalg.norm(g, axis=1, keepdims=True), 1e-9) * np.where(chest, 0.04, 0.13)[:, None] * rnd[:, 4:5]
+    g = g / np.maximum(np.linalg.norm(g, axis=1, keepdims=True), 1e-9) * np.where(chest, 0.04, np.where(curved, 0.09, 0.15))[:, None] * rnd[:, 4:5]
     sp = plate_spacing(c, n, z)
+    ax_ = np.abs(c[:, 0])
+    armpit = smooth(0.30, 0.38, ax_) * smooth(0.58, 0.50, ax_) * smooth(0.62, 0.72, c[:, 2]) * smooth(1.15, 1.05, c[:, 2])
+    elbow = np.minimum(np.linalg.norm(c - v3(ARM_PTS[1]), axis=1), np.linalg.norm(c - v3(ARM_PTS[1]) * v3((-1, 1, 1)), axis=1))
+    H = H * (1.0 - 0.5 * armpit) * (0.5 + 0.5 * smooth(0.1, 0.22, elbow)) * (0.45 + 0.55 * smooth(0.03, 0.15, z['face_sdf']))
     return {'kind': chest.astype(np.float64), 'H': H, 'w': w, 'cd': cd, 'kf': kf, 'sb': sb, 'g': g,
             'sp': np.where(np.isfinite(sp), sp, 0.15)}
 
@@ -413,7 +439,7 @@ def plate_field(co: np.ndarray, vn: np.ndarray, plates: dict, z: dict, scale: fl
                        np.minimum(finger_sdf(co) - 0.008, toe_sdf(co) - 0.008))
     plain = np.where(plain < 0, 0.0, plain)
     dw = np.minimum(dw, plain)
-    on = ~(z['face'] | z['brow'] | z['toes'])
+    on = ~(z['face'] | z['brow'] | z['toes'] | z['sole'])
     q = co - c[i1]
     n1 = n[i1]
     H, w, cd, kf, sb, g, sp = (plates[k][i1] for k in ('H', 'w', 'cd', 'kf', 'sb', 'g', 'sp'))
@@ -437,15 +463,16 @@ def plate_field(co: np.ndarray, vn: np.ndarray, plates: dict, z: dict, scale: fl
     edge = -cd + sb * (dw - w)
     h = np.maximum(np.minimum(top, edge), -cd)
     h = np.where(on, h, 0.0) * scale
-    crack = np.where(on, smooth(w * 1.6, w * 0.6, dw), 0.0)
+    crack = np.where(on, smooth(w * 1.3, w * 0.5, dw), 0.0)          # the glowing core, deep in the crack
+    gap = np.where(on, smooth(w * 2.2, w * 1.0, dw), 0.0)             # the dark crack walls round it
     topm = np.where(on, smooth(0.0, 0.35, dw / np.maximum(sp, 1e-3)), 0.0)
     return {'h': h, 'dw': dw, 'dj': dj, 'w': w, 'pid': np.where(on, i1, -1), 'kind': np.where(on, plates['kind'][i1], -1.0),
-            'crack': crack, 'top': topm}
+            'crack': crack, 'gap': gap, 'top': topm}
 
 
 # ============================================================================= the face
-EYE_C = {s: Vector((0.125 * s, -0.622, 1.387)) for s in (1, -1)}
-EYE_R = 0.046
+EYE_C = {s: Vector((0.125 * s, -0.665, 1.38)) for s in (1, -1)}
+EYE_R = 0.055
 EYE_DEPTH = (0.45, 0.30)
 EYE_SHAPE = (1.0, 0.96)
 MOUTH_AXIS_Y = -0.40
@@ -505,20 +532,27 @@ def closed_lid(co: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return bulge, lash
 
 
-def eye_socket(co: np.ndarray) -> np.ndarray:
-    """Metres to push in round each eye: a soft dip so the lens sits in a socket under the brow."""
-    d = np.zeros(len(co))
+def eye_socket(co: np.ndarray, vn: np.ndarray | None = None) -> np.ndarray:
+    """Metres to move each vertex near an eye along its normal: inside the lens's outline the face becomes a dome 3 mm
+    behind the lens (the closed lid: hidden while the eye is open, a smooth curved lid flush with the face when a blink
+    sinks the lens), easing out into the cheek and the brow by 1.45 radii (never pulling them forward)."""
+    out = np.zeros(len(co))
+    off_brow = smooth(-0.004, 0.006, brow_sdf(co))      # never the brow blocks above (a spike rose through them)
     for s in (1, -1):
         c, xax, yax, look = eye_frame(s)
         q = co - v3(c)
         xe, ye, ze = q @ v3(xax), q @ v3(yax), q @ v3(look)
         r = np.sqrt((xe / (EYE_R * EYE_SHAPE[0])) ** 2 + (ye / (EYE_R * EYE_SHAPE[1])) ** 2)
-        # inside the rim the face is pushed back to just behind the lens's widest point (it shows about 2 cm proud of
-        # its socket), easing out to the cheek and the brow at 1.75 radii
-        floor = -0.28 * EYE_R
-        blend = smooth(1.65, 1.1, r) * (ze > -0.06) * (ze < 0.10)
-        d = np.maximum(d, np.maximum(0.0, ze - floor) * blend)
-    return -d
+        lens = (np.sqrt(np.clip(1.0 - r * r, 0.0, 1.0)) * EYE_DEPTH[0] - EYE_DEPTH[1]) * EYE_R - 0.004
+        blend = smooth(1.12, 0.98, r) * (ze > -0.06) * (ze < 0.10)
+        # only ever pushed back (a forward pull overshot over the lens where the face tilts): the closed lid is this
+        # smooth dome 1 cm behind the lens
+        delta = (lens - ze) * blend * off_brow
+        if vn is not None:      # the move is along each vertex's normal: scale it to land on the target along the eye's axis
+            delta = delta / np.clip(vn @ v3(look), 0.6, 1.0)
+        delta = np.clip(delta, -0.05, 0.006)
+        out = np.where(blend > 0, delta, out)
+    return out
 
 
 def face_marks(co: np.ndarray, z: dict) -> dict:
@@ -533,7 +567,7 @@ def face_marks(co: np.ndarray, z: dict) -> dict:
         a = v3((0.215 * s, -0.625, 1.352))
         b = v3((0.245 * s, -0.595, 1.40))
         d, t = _seg_dist(co, a, b)
-        curl = np.maximum(curl, np.exp(-(d / 0.006) ** 2) * (1.0 - 0.6 * t))
+        curl = np.maximum(curl, np.exp(-(d / 0.007) ** 2) * (1.0 - 0.6 * t) * smooth(0.0, 0.25, t))
     return {'groove': groove, 'curl': curl * z['face']}
 
 
@@ -573,6 +607,18 @@ def soften(ob: bpy.types.Object) -> None:
     eyes = np.minimum(np.linalg.norm(co - v3(EYE_C[1]), axis=1), np.linalg.norm(co - v3(EYE_C[-1]), axis=1))
     m = smooth(0.03, -0.01, face_sdf(co)) * smooth(0.05, 0.08, eyes) * smooth(0.0, 0.02, brow_sdf(co))
     _region_smooth(ob, m, int(np.clip((0.03 / edge) ** 2, 6, 300)), 0.55)
+    co, _vn = S.mesh_arrays(ob)
+    x, y, z = co[:, 0], co[:, 1], co[:, 2]
+    chin = smooth(0.9, 1.0, z) * smooth(1.2, 1.1, z) * smooth(-0.3, -0.42, y) * smooth(0.34, 0.24, np.abs(x))
+    _region_smooth(ob, chin, int(np.clip((0.05 / edge) ** 2, 8, 400)), 0.6)
+
+
+def sole_grooves(co: np.ndarray) -> np.ndarray:
+    """0..1 along the grooves between the sole's pads (4-details: a plated pad under each foot)."""
+    q = co.copy()
+    q[:, 2] = 0.0
+    f1, f2, _ = K.voronoi(q, 0.08, 41)
+    return smooth(0.008, 0.002, f2 - f1)
 
 
 def carve(ob: bpy.types.Object) -> None:
@@ -587,34 +633,39 @@ def carve(ob: bpy.types.Object) -> None:
     light = np.clip((f['kind'] > 0.5) * 1.0 + z['face'] * 1.0, 0.0, 1.0)
     blocks = z['brow'] | z['toes']
     # chips: flat chipped cuts near the plates' edges and over the blocks (4-details panels 5, 6: chipped facets)
-    chips = K.facets(co, 0.028, 73) * (smooth(0.06, 0.01, f['dw']) * gran + 0.3 * blocks)
-    flats = K.facets(co, 0.05, 77) * gran * 0.6 + K.facets(co, 0.075, 78) * blocks * 1.4
+    chips = K.facets(co, 0.026, 73) * (smooth(0.07, 0.012, f['dw']) * gran + 0.6 * blocks)
+    flats = K.facets(co, 0.075, 77) * gran * 1.0 + K.facets(co, 0.06, 78) * blocks * 2.2
     pits = np.clip(K.fbm(co, 1 / 0.006, 79, 1) - 0.15, 0.0, 1.0)
     pf1, _pf2, _ = K.voronoi(co, 0.012, 87)
     dimples = smooth(0.0035, 0.0013, pf1) * smooth(-0.3, 0.25, K.fbm(co, 1 / 0.05, 88, 2))
     gr = K.grain(co)
-    d_stone = (0.0015 * gr - 0.010 * chips - 0.004 * flats - 0.0016 * pits - 0.0015 * dimples) * (1.0 - 0.6 * light)
-    d_light = (0.0008 * gr - 0.0012 * pits - 0.0018 * dimples) * light
-    hair = K.cracks(co, 0.16, 0.0018, 61, warp=0.05) * smooth(-0.1, 0.3, K.fbm(co, 1 / 0.3, 62, 2)) * (gran | z['face'])
+    d_stone = (0.0015 * gr - 0.013 * chips - 0.009 * flats - 0.0016 * pits - 0.0015 * dimples) * (1.0 - 0.6 * light)
+    # round 3: the lighter stone's pits coarser and sparser (fine ones read as felt at grazing angles)
+    pl1, _pl2, _ = K.voronoi(co, 0.022, 89)
+    lpits = smooth(0.0055, 0.0022, pl1) * smooth(-0.25, 0.3, K.fbm(co, 1 / 0.07, 90, 2))
+    d_light = (0.0004 * gr - 0.003 * lpits) * light
+    hair = 0.35 * K.cracks(co, 0.16, 0.0018, 61, warp=0.05) * smooth(0.2, 0.5, K.fbm(co, 1 / 0.3, 62, 2)) * (gran | z['face'])   # polish: faint (they read as tears)
     hair = hair * smooth(0.02, 0.05, f['dw']) * (1.0 - smooth(0.12, 0.06, z['eye_d']))
     fm = face_marks(co, z)
-    d_face = -0.007 * fm['groove'] - 0.004 * fm['curl']
+    d_face = -0.007 * fm['groove'] - 0.0025 * fm['curl']
     bulge, lash = closed_lid(co)
-    d_lid = 0.004 * bulge - 0.0012 * lash
-    disp = f['h'] + d_stone + d_light - 0.0025 * hair + d_face + d_lid + eye_socket(co)
-    disp = np.where(z['sole'], 0.0, disp)
+    d_lid = -0.0015 * lash                       # the lid itself is the dome eye_socket leaves behind the lens
+    sole_g = sole_grooves(co) * z['sole']
+    hair = np.maximum(hair, sole_g)
+    disp = f['h'] + d_stone + d_light - 0.0025 * hair + d_face + d_lid + eye_socket(co, vn)
+    disp = np.where(z['sole'], -0.007 * sole_g, disp)
     new = co + vn * disp[:, None]
     new[:, 2] = np.maximum(new[:, 2], 0.0)
     S.set_positions(ob, new)
     S.base_attrs(ob, co, {'mouth': fm['groove']})
     for name, val in (('plate_id', f['pid'].astype(np.float64)), ('plate_kind', f['kind']), ('crack', f['crack']),
                       ('plate_top', f['top']), ('chips', chips), ('hairline', hair), ('lash', lash), ('lid', bulge),
-                      ('light', light), ('dw', f['dw']), ('curl', fm['curl'])):
+                      ('light', light), ('dw', f['dw']), ('curl', fm['curl']), ('gap', f['gap']), ('pits', lpits * light)):
         S.add_attr(ob, name, np.asarray(val, np.float64))
     _LAST.clear()
     _LAST.update({'n': len(co), 'co': new.copy(), 'vn': vn.copy(), 'base': co.copy(), 'pid': f['pid'], 'kind': f['kind'],
                   'crack': f['crack'], 'top': f['top'], 'light': light, 'dw': f['dw'], 'dj': f['dj'], 'w': f['w'],
-                  'chips': chips, 'groove': fm['groove'], 'curl': fm['curl'], 'lash': lash})
+                  'chips': chips, 'groove': fm['groove'], 'curl': fm['curl'], 'lash': lash, 'gap': f['gap'], 'pits': lpits * light})
     C.log(f'carve: {len(plates["c"])} plates; {int((f["crack"] > 0.5).sum())} of {len(co)} vertices in a crack; '
           f'height {float(disp.min()) * 1000:.1f}..{float(disp.max()) * 1000:.1f} mm')
 
@@ -627,7 +678,7 @@ def carve_low(ob: bpy.types.Object) -> None:
     z = zones(co, vn)
     plates = make_plates(co, vn)
     f = plate_field(co, vn, plates, z, 0.9)
-    disp = f['h'] + eye_socket(co)
+    disp = f['h'] + eye_socket(co, vn)
     disp = np.where(z['sole'], 0.0, disp)
     new = co + vn * disp[:, None]
     new[:, 2] = np.maximum(new[:, 2], 0.0)
@@ -666,15 +717,19 @@ def eye_material(name: str, rough_pass: bool = False) -> bpy.types.Material:
     side = nb.attribute('eye_side').outputs['Fac']
     rx, ry, _z = nb.sep(e)
     inner = nb.smooth(nb.math('MULTIPLY', nb.math('MULTIPLY', rx, side), -1.0), 0.0, 0.9)
-    edge = nb.math('ADD', nb.math('ADD', 0.70, nb.math('MULTIPLY', nb.math('SUBTRACT', 1.0, nb.math('MULTIPLY', rx, rx)), 0.08)),
-                   nb.math('MULTIPLY', inner, -0.10))
+    edge = nb.math('ADD', nb.math('ADD', 0.72, nb.math('MULTIPLY', nb.math('SUBTRACT', 1.0, nb.math('MULTIPLY', rx, rx)), 0.08)),
+                   nb.math('MULTIPLY', inner, -0.04))
     upper = nb.smooth(nb.math('SUBTRACT', ry, edge), -0.015, 0.015)
     low_edge = nb.math('ADD', -0.80, nb.math('MULTIPLY', nb.math('MULTIPLY', rx, rx), 0.14))
     lower = nb.smooth(nb.math('SUBTRACT', low_edge, ry), -0.02, 0.02)
     lid = nb.math('MAXIMUM', upper, lower)
     if rough_pass:
-        rr = nb.math('ADD', 0.05, nb.math('MULTIPLY', lid, 0.78))
-        cc = nb.math('SUBTRACT', 1.0, lid)
+        # glossy lens (the runtime floors roughness at 0.3), the pupil a touch matter with a low coat, matte lids
+        ri0 = nb.vmath('LENGTH', nb.comb(nb.math('DIVIDE', nb.math('ADD', rx, nb.math('MULTIPLY', side, 0.03)), 0.98),
+                                         nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.02), 0.98), 0.0))
+        pupil = nb.smooth(ri0, 0.5, 0.42)
+        rr = nb.math('ADD', nb.math('ADD', 0.3, nb.math('MULTIPLY', pupil, 0.1)), nb.math('MULTIPLY', lid, 0.5))
+        cc = nb.math('MULTIPLY', nb.math('SUBTRACT', 1.0, lid), nb.math('SUBTRACT', 0.6, nb.math('MULTIPLY', pupil, 0.3)))
         em = nb.new('ShaderNodeEmission')
         nb.link(nb.comb(1.0, rr, cc), em.inputs['Color'])
         nb.output(em.outputs[0])
@@ -683,18 +738,18 @@ def eye_material(name: str, rough_pass: bool = False) -> bpy.types.Material:
     ix = nb.math('ADD', rx, nb.math('MULTIPLY', side, 0.03))
     iy = nb.math('SUBTRACT', ry, 0.02)
     ri = nb.vmath('LENGTH', nb.comb(nb.math('DIVIDE', ix, 0.98), nb.math('DIVIDE', iy, 0.98), 0.0))
-    deep = C.mix_hex(yel, '#C98A1E', 0.6)
+    deep = C.mix_hex(yel, '#C98A1E', 0.45)
     iris = nb.ramp(ri, [(0.0, C.lin(PUPIL_HEX)), (0.44, C.lin(PUPIL_HEX)), (0.49, C.lin(C.shade_hex(deep, 0.7))),
-                        (0.56, C.lin(deep)), (0.70, C.lin(yel)), (0.84, C.lin(C.mix_hex(yel, '#FFF6C0', 0.25))),
+                        (0.5, C.lin(deep)), (0.55, C.lin(yel)), (0.88, C.lin(C.mix_hex(yel, '#FFF8D0', 0.3))),
                         (0.93, C.lin(C.mix_hex(yel, '#8A6410', 0.5))), (1.0, C.lin('#3A2A10'))])
     ang = nb.math('ARCTAN2', iy, ix)
     streak = nb.math('MULTIPLY', nb.math('SINE', nb.math('MULTIPLY', ang, 21.0)), 0.5)
     streak = nb.math('MULTIPLY', nb.math('ADD', streak, 0.5), nb.math('MULTIPLY', nb.smooth(ri, 0.5, 0.6), nb.smooth(ri, 0.95, 0.85)))
     c = nb.mix(nb.math('MULTIPLY', streak, 0.2), iris, nb.rgb(C.lin(C.mix_hex(yel, '#FFF4C8', 0.5))))
-    big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', rx, 0.2), nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.18), 1.15), 0.0)), 0.15, 0.115)
+    big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', rx, 0.2), nb.math('DIVIDE', nb.math('SUBTRACT', ry, 0.18), 1.15), 0.0)), 0.21, 0.16)
     small = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('SUBTRACT', rx, 0.22), nb.math('ADD', ry, 0.26), 0.0)), 0.06, 0.045)
     c = nb.mix(nb.math('MAXIMUM', big, small), c, nb.rgb((1.0, 1.0, 1.0)))
-    sh = nb.math('MULTIPLY', nb.smooth(nb.math('SUBTRACT', ry, edge), -0.32, 0.0), 0.45)
+    sh = nb.math('MULTIPLY', nb.smooth(nb.math('SUBTRACT', ry, edge), -0.32, 0.0), 0.22)
     c = nb.mix(sh, c, nb.rgb(C.lin('#2A2420')), blend='MULTIPLY')
     lid_col = C.shade_hex(PALETTE['belly'], 0.86, cool=0.01)
     c = nb.mix(upper, c, nb.rgb(C.lin(lid_col)))
@@ -708,31 +763,19 @@ def eye_material(name: str, rough_pass: bool = False) -> bpy.types.Material:
 
 
 # ============================================================================= the crystals (rigid, glowing props)
-# geode clusters (2-turnaround and 1-hero): a big one on the left shoulder's top, one at the top right of the hood,
-# a smaller one on the right shoulder, and a trail of medium ones down the back-left; each seated on the carved body
-# (sizes from 2-turnaround: the left shoulder's crystals reach 0.70 m out and 1.68 m up, the crest's 1.83 m)
+# round 2: a near-symmetric crest of big faceted crystals across both shoulder tops and down the spine (1-hero,
+# 2-turnaround back), the tallest about half the head's height; never one big crystal on the head itself. Smaller ones
+# sit in the seams beside the face and down the outside of each arm; the small crack crystals are added below.
 CLUSTERS = [
-    # the left shoulder's big geode, up and out over the shoulder
-    {'at': (0.38, 0.03, 1.44), 'count': 11, 'len': (0.09, 0.27), 'spread': 0.55, 'up': 0.3, 'lean': (1.0, 0.0, 0.0), 'jit': 0.11, 'seed': 11},
-    # the crest at the top right of the hood, and a small pair at its top
-    {'at': (-0.16, -0.10, 1.70), 'count': 8, 'len': (0.06, 0.15), 'spread': 0.45, 'up': 0.9, 'lean': (-0.15, 0.08, 0.0), 'jit': 0.08, 'seed': 12},
-    {'at': (0.03, -0.12, 1.75), 'count': 2, 'len': (0.05, 0.08), 'spread': 0.4, 'up': 0.8, 'lean': (0.0, 0.0, 0.0), 'jit': 0.03, 'seed': 19},
-    # the right shoulder's smaller geode, out over the shoulder
-    {'at': (-0.38, 0.02, 1.42), 'count': 8, 'len': (0.07, 0.18), 'spread': 0.5, 'up': 0.5, 'lean': (-0.5, 0.0, 0.0), 'jit': 0.08, 'seed': 13},
-    # a ridge down the back-left (2-turnaround side)
-    {'at': (0.18, 0.18, 1.60), 'count': 5, 'len': (0.07, 0.17), 'spread': 0.42, 'up': 0.15, 'lean': (0.05, 0.9, 0.0), 'jit': 0.07, 'seed': 14},
-    {'at': (0.30, 0.34, 1.40), 'count': 5, 'len': (0.06, 0.15), 'spread': 0.45, 'up': 0.15, 'lean': (0.15, 0.55, 0.0), 'jit': 0.07, 'seed': 15},
-    {'at': (0.40, 0.44, 1.08), 'count': 3, 'len': (0.05, 0.11), 'spread': 0.45, 'up': 0.1, 'lean': (0.2, 0.4, 0.0), 'jit': 0.05, 'seed': 16},
-    # small ones along the seams between the face's hood and each shoulder (2-turnaround front)
-    {'at': (0.37, -0.34, 1.30), 'count': 5, 'len': (0.05, 0.11), 'spread': 0.5, 'up': 0.2, 'lean': (0.25, -0.2, 0.0), 'jit': 0.06, 'seed': 17},
-    {'at': (-0.37, -0.33, 1.26), 'count': 5, 'len': (0.05, 0.11), 'spread': 0.5, 'up': 0.2, 'lean': (-0.25, -0.2, 0.0), 'jit': 0.06, 'seed': 18},
-    {'at': (0.42, -0.22, 1.12), 'count': 3, 'len': (0.04, 0.08), 'spread': 0.5, 'up': 0.1, 'lean': (0.3, -0.2, 0.0), 'jit': 0.05, 'seed': 25},
-    {'at': (-0.42, -0.22, 1.10), 'count': 3, 'len': (0.04, 0.08), 'spread': 0.5, 'up': 0.1, 'lean': (-0.3, -0.2, 0.0), 'jit': 0.05, 'seed': 26},
-    # a line down the outside of each arm
-    {'at': (0.86, -0.05, 0.88), 'count': 3, 'len': (0.04, 0.08), 'spread': 0.45, 'up': 0.1, 'lean': (0.3, 0.0, 0.0), 'jit': 0.05, 'seed': 21},
-    {'at': (0.89, -0.12, 0.66), 'count': 2, 'len': (0.035, 0.065), 'spread': 0.45, 'up': 0.0, 'lean': (0.3, 0.0, 0.0), 'jit': 0.04, 'seed': 22},
-    {'at': (-0.86, -0.05, 0.86), 'count': 3, 'len': (0.04, 0.08), 'spread': 0.45, 'up': 0.1, 'lean': (-0.3, 0.0, 0.0), 'jit': 0.05, 'seed': 23},
-    {'at': (-0.89, -0.12, 0.68), 'count': 2, 'len': (0.035, 0.065), 'spread': 0.45, 'up': 0.0, 'lean': (-0.3, 0.0, 0.0), 'jit': 0.04, 'seed': 24},
+    {'at': (0.38, 0.03, 1.50), 'count': 7, 'len': (0.10, 0.36), 'spread': 0.45, 'up': 0.45, 'lean': (0.6, 0.1, 0.0), 'jit': 0.10, 'seed': 11},
+    {'at': (-0.38, 0.03, 1.50), 'count': 7, 'len': (0.10, 0.35), 'spread': 0.45, 'up': 0.45, 'lean': (-0.6, 0.1, 0.0), 'jit': 0.10, 'seed': 12},
+    {'at': (0.0, 0.14, 1.66), 'count': 4, 'len': (0.11, 0.32), 'spread': 0.4, 'up': 0.8, 'lean': (0.0, 0.35, 0.0), 'jit': 0.08, 'seed': 13},
+    {'at': (0.0, 0.30, 1.52), 'count': 4, 'len': (0.10, 0.22), 'spread': 0.42, 'up': 0.6, 'lean': (0.0, 0.3, 0.0), 'jit': 0.08, 'seed': 14},
+    {'at': (0.0, 0.42, 1.32), 'count': 3, 'len': (0.08, 0.17), 'spread': 0.42, 'up': 0.4, 'lean': (0.0, 0.35, 0.0), 'jit': 0.06, 'seed': 15},
+    {'at': (0.88, -0.05, 0.88), 'count': 3, 'len': (0.05, 0.10), 'spread': 0.45, 'up': 0.1, 'lean': (0.3, 0.0, 0.0), 'jit': 0.05, 'seed': 21},
+    {'at': (-0.88, -0.05, 0.88), 'count': 3, 'len': (0.05, 0.10), 'spread': 0.45, 'up': 0.1, 'lean': (-0.3, 0.0, 0.0), 'jit': 0.05, 'seed': 23},
+    {'at': (0.87, -0.04, 0.62), 'count': 2, 'len': (0.04, 0.08), 'spread': 0.45, 'up': 0.0, 'lean': (0.3, 0.0, 0.0), 'jit': 0.04, 'seed': 22},
+    {'at': (-0.87, -0.04, 0.62), 'count': 2, 'len': (0.04, 0.08), 'spread': 0.45, 'up': 0.0, 'lean': (-0.3, 0.0, 0.0), 'jit': 0.04, 'seed': 24},
 ]
 _XTAL: dict = {}
 
@@ -748,31 +791,52 @@ def crystal_specs() -> list[dict]:
     specs: list[dict] = []
     for cl in CLUSTERS:
         p, nrm = K.surface_point(co, vn, cl['at'])
-        specs += K.cluster(p - nrm * 0.012, nrm, cl['count'], cl['len'], cl['spread'], cl['seed'], up=cl['up'], lean=cl['lean'],
-                           jitter=cl['jit'], radius_k=0.34)
+        for sp_ in K.cluster(p - nrm * 0.012, nrm, cl['count'], cl['len'], cl['spread'], cl['seed'], up=cl['up'], lean=cl['lean'],
+                             jitter=cl['jit'], radius_k=0.34):
+            q, nq = K.surface_point(co, vn, sp_['base'])
+            nq = nq / np.linalg.norm(nq)
+            ax = sp_['axis'] / np.linalg.norm(sp_['axis'])
+            if ax @ nq < 0.45:
+                ax = ax + nq * (0.45 - ax @ nq) * 1.6
+                ax = ax / np.linalg.norm(ax)
+            sp_['base'] = q - nq * 0.015
+            for _try in range(2):
+                tip_ = sp_['base'] + ax * sp_['length']
+                ti, tn = K.surface_point(co, vn, tip_)
+                clear = float((tip_ - ti) @ (tn / np.linalg.norm(tn)))
+                if clear >= 0.55 * sp_['length']:
+                    break
+                ax = nq + 0.25 * ax
+                ax = ax / np.linalg.norm(ax)
+            sp_['axis'] = ax
+            if clear >= 0.4 * sp_['length']:
+                specs.append(sp_)
+            else:
+                C.log(f"crystals: dropped one at {np.round(sp_['base'], 3)} (only {clear * 100:.1f} cm clear of the body)")
     # the knuckle gems (4-details panel 3): a big faceted gem set in the front of each finger's upper block, facing the
     # knuckle's own way round the fist's corner
     for s in (1, -1):
         for i, kn in enumerate(knuckles(s)):
             k, d = kn['k'], kn['d']
             ax = d + v3((0.0, 0.0, 0.1))
-            base = kn['c'] + d * (FINGER_UP['half'][1] * k - 0.006) + v3((0.0, 0.0, 0.006))
-            specs.append({'base': base, 'axis': ax / np.linalg.norm(ax), 'length': 0.05 * k, 'radius': 0.044 * k,
-                          'sides': 8, 'kind': 'gem', 'bury': 0.6, 'aspect': 1.22, 'seed': 500 + i + (0 if s > 0 else 10), 'anchor': base})
+            base = kn['c'] + d * (FINGER_UP['half'][1] * k - 0.004) + v3((0.0, 0.0, 0.01))
+            specs.append({'base': base, 'axis': ax / np.linalg.norm(ax), 'length': 0.062 * k, 'radius': 0.054 * k,
+                          'sides': 8, 'kind': 'gem', 'bury': 0.5, 'aspect': 1.25, 'seed': 500 + i + (0 if s > 0 else 10), 'anchor': base})
     # small crystals growing in the cracks (shoulders, arms, the back and the hood; few on the legs, none on the chest)
     w = _LAST['w']
     zz = zones(co, vn)
     up = co[:, 2] > 0.55
-    ok = (_LAST['kind'] == 0) & (_LAST['pid'] >= 0) & up & ~zz['fist'] & (co[:, 1] > -0.42)
-    spots = K.crack_spots(co, _LAST['dw'], _LAST['dj'], ok, 0.13, w, SEED + 5, 48)
+    ok = (_LAST['kind'] == 0) & (_LAST['pid'] >= 0) & up & ~zz['fist'] & (co[:, 1] > -0.42) & (zz['face_sdf'] > 0.1)
+    ok &= (_LAST['dw'] < 0.8 * w) & (_LAST['dj'] < 2.0 * w + 0.004)
+    spots = K.crack_spots(co, _LAST['dw'], _LAST['dj'], ok, 0.16, w, SEED + 5, 24)
     rng = np.random.default_rng(SEED + 6)
     for j, i in enumerate(spots):
         nrm = vn[i] / np.linalg.norm(vn[i])
-        L = rng.uniform(0.04, 0.08)
-        for m in range(1 + int(rng.random() < 0.45)):
-            ax = K.tilt(nrm + v3((0, 0, 0.25)), 0.35, rng)
-            b = co[i] - nrm * 0.012 + rng.normal(0, 0.006, 3)
-            specs.append({'base': b, 'axis': ax, 'length': L * (1.0 if m == 0 else 0.7), 'radius': L * 0.26,
+        L = rng.uniform(0.05, 0.09)
+        for m in range(1 + int(rng.random() < 0.5)):
+            ax = K.tilt(nrm, 0.25, rng)
+            b = co[i] - nrm * 0.03 + rng.normal(0, 0.003, 3)
+            specs.append({'base': b, 'axis': ax, 'length': L * (1.0 if m == 0 else 0.7), 'radius': L * 0.3,
                           'seed': 900 + 3 * j + m, 'anchor': co[i], 'bury': 0.45})
     C.log(f'crystals: {len(specs)} ({len(spots)} crack spots)')
     _XTAL['specs'] = specs
@@ -833,11 +897,12 @@ def colours(pal: dict) -> dict:
         'fleck_pale': C.mix_hex(light, '#FFFFFF', 0.35),
         'light': light,
         'light_dark': C.shade_hex(light, 0.8, cool=0.01),
-        'crack': C.shade_hex(cry, 0.55),
+        'crack': cry,
+        'crack_gap': C.mix_hex(C.shade_hex(body, 0.35), cry, 0.12),
         'crack_glow': cry,
         'crystal': cry,
-        'crystal_deep': C.shade_hex(cry, 0.6, cool=0.03),
-        'crystal_pale': C.mix_hex(cry, '#FFFFFF', 0.45),
+        'crystal_deep': C.shade_hex(cry, 0.62, cool=0.02),
+        'crystal_pale': C.mix_hex(cry, '#FFFFFF', 0.5),
     }
 
 
@@ -849,29 +914,35 @@ def _body_paint(I: dict, pal: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]
     ph = U.plate_hash(pid, 5)
     ph2 = U.plate_hash(pid, 9)
     mott = K.fbm(I['co'], 1 / 0.12, 81, 3)
-    granite = lin(col['granite'])[None] * (0.86 + 0.26 * ph + 0.07 * mott)[:, None]
-    warm = (ph2 - 0.5)[:, None] * 0.6
-    granite = granite * (1 - np.abs(warm)) + np.where(warm > 0, 1.0, 0.0) * np.abs(warm) * lin(col['granite_warm'])[None] \
-        + np.where(warm <= 0, 1.0, 0.0) * np.abs(warm) * lin(col['granite_dark'])[None] * 1.15
+    granite = lin(col['granite'])[None] * (1.04 + 0.16 * ph + 0.06 * mott)[:, None] * np.array([[1.04, 1.0, 0.94]])
+    warm = (smooth(0.25, 1.0, ph2) * 0.45)[:, None]
+    granite = granite * (1 - warm) + lin(col['granite_warm'])[None] * (1.04 + 0.1 * ph[:, None]) * warm
     lt = I['light'][:, None]
-    light = lin(col['light'])[None] * (0.95 + 0.08 * ph[:, None] + 0.05 * mott[:, None])
+    light = lin(col['light'])[None] * (1.06 + 0.06 * ph[:, None] + 0.04 * mott[:, None])
+    light = light * (1.0 - 0.35 * np.asarray(I.get('pits', np.zeros(k)))[:, None])      # its pits a little darker
     rgb = granite * (1 - lt) + light * lt
     # the plates' bevelled shoulders a little darker, the chips paler (fresh broken stone)
-    rimk = (smooth(0.05, 0.01, I['dw']) * 0.25 * (1 - lt[:, 0]))[:, None]
+    rimk = (smooth(0.05, 0.01, I['dw']) * 0.14 * (1 - lt[:, 0]))[:, None]
     rgb = rgb * (1 - rimk)
-    chip = (I['chips'] * 0.35)[:, None]
+    chip = (I['chips'] * 0.0)[:, None]          # round 3: no per-vertex chip paint (it streaked down the bevels)
     rgb = rgb * (1 - chip) + lin(col['granite_top'])[None] * chip
     # the cracks: deep violet at the floor (it glows), dark where the bevels meet it
+    gk = (np.asarray(I.get('gap', I['crack'])) * 0.6)[:, None]
+    rgb = rgb * (1 - gk) + lin(col['crack_gap'])[None] * gk
     ck = I['crack'][:, None]
-    rgb = rgb * (1 - ck) + lin(col['crack'])[None] * ck
+    chestk = (I['kind'] > 0.5)[:, None]
+    crack_col = np.where(chestk, lin(col['light_dark'])[None] * 0.5, lin(col['crack'])[None])
+    rgb = rgb * (1 - ck) + crack_col * ck
+    lsh = (np.clip(np.asarray(I.get('lash', np.zeros(k))), 0.0, 1.0) * 0.8)[:, None]       # the closed lid's line
+    rgb = rgb * (1 - lsh) + lin(LASH_HEX)[None] * lsh
     mo = (np.clip(I.get('mouth', np.zeros(k)) * 1.2, 0.0, 1.0) * 0.75)[:, None]
     rgb = rgb * (1 - mo) + lin(col['light_dark'])[None] * 0.45 * mo
-    hl = (I['hairline'] * 0.8)[:, None]
+    hl = (I['hairline'] * 0.5)[:, None]
     rgb = rgb * (1 - hl) + lin(col['granite_dark'])[None] * 0.7 * hl
     rough = np.stack([np.ones(k), 0.82 - 0.1 * I['light'] - 0.3 * I['crack'], 0.05 + 0.3 * I['crack']], axis=1)
     chest_seam = (I['kind'] > 0.5) * I['crack']
     glow = np.clip(I['crack'] * (I['kind'] < 0.5), 0.0, 1.0)
-    glow = np.maximum(glow, 0.3 * chest_seam)
+    glow = glow + 0.0 * chest_seam
     return rgb, rough, glow
 
 
@@ -880,7 +951,8 @@ def paint_sources(body_srcs, fins, props=()) -> None:
         get = lambda nm, d=0.0, ob=ob: S.attr_array(ob, nm).astype(np.float64) if nm in ob.data.attributes else np.full(len(ob.data.vertices), d)  # noqa: E731
         co = S.attr_array(ob, 'root').astype(np.float64) if 'root' in ob.data.attributes else S.mesh_arrays(ob)[0]
         I = {'co': co, 'pid': get('plate_id', -1.0), 'kind': get('plate_kind', -1.0), 'crack': get('crack'), 'dw': get('dw', 1.0),
-             'light': get('light'), 'chips': get('chips'), 'hairline': get('hairline'), 'mouth': get('mouth') + get('curl')}
+             'light': get('light'), 'chips': get('chips'), 'hairline': get('hairline'), 'mouth': get('mouth') + get('curl'),
+             'gap': get('gap'), 'pits': get('pits'), 'lash': get('lash')}
         rgb, rough, glow = _body_paint(I, PALETTE)
         S.set_colour_attr(ob, 'paint', rgb)
         S.set_colour_attr(ob, 'rough', rough)
@@ -890,13 +962,13 @@ def paint_sources(body_srcs, fins, props=()) -> None:
         t, fs, gem = a[:, 0], a[:, 1], a[:, 2]
         col = colours(PALETTE)
         base = lin(col['crystal_deep'])[None] * (1 - t[:, None]) + lin(col['crystal'])[None] * t[:, None]
-        tip = (smooth(0.6, 1.0, t) * 0.5)[:, None]
+        tip = (smooth(0.8, 1.0, t) * 0.5 * (1.0 - gem))[:, None]
         base = base * (1 - tip) + lin(col['crystal_pale'])[None] * tip
-        base = base * (1.0 + 0.22 * fs)[:, None]
+        base = base * (1.0 + 0.25 * fs)[:, None]           # a shade per facet: bright and deep faces side by side
         S.set_colour_attr(ob, 'paint', np.clip(base, 0.0, 1.0))
         n = len(t)
-        S.set_colour_attr(ob, 'rough', np.stack([np.ones(n), np.full(n, 0.12), np.full(n, 0.9)], axis=1))
-        S.add_attr(ob, 'glow', np.clip(0.75 - 0.35 * t + 0.1 * fs + 0.15 * gem, 0.0, 1.0))
+        S.set_colour_attr(ob, 'rough', np.stack([np.ones(n), np.full(n, 0.3), np.full(n, 0.8)], axis=1))
+        S.add_attr(ob, 'glow', np.clip((0.3 + 0.45 * smooth(0.35, 1.0, t) + 0.08 * fs) * (1.0 - gem) + (0.55 + 0.1 * fs) * gem, 0.0, 1.0))
 
 
 def body_material(name: str, attr: str, pal: dict, marks):
@@ -909,12 +981,14 @@ def body_material(name: str, attr: str, pal: dict, marks):
     crack = nb.attribute('crack').outputs['Fac']
     col = colours(pal)
     stone = nb.math('MULTIPLY', nb.math('SUBTRACT', 1.0, crack), nb.math('SUBTRACT', 1.0, nb.math('MULTIPLY', light, 0.55)))
-    dark = nb.math('MULTIPLY', nb.smooth(nb.noise(pos, 90.0, 2.0, 0.6), 0.6, 0.66), stone)
-    c = nb.mix(nb.math('MULTIPLY', dark, 0.85), base, nb.rgb(C.lin(col['fleck_dark'])))
-    pale = nb.math('MULTIPLY', nb.smooth(nb.noise(nb.vmath('ADD', pos, nb.comb(3.1, 7.7, 1.3)), 120.0, 1.0, 0.5), 0.64, 0.69), stone)
-    c = nb.mix(nb.math('MULTIPLY', pale, 0.7), c, nb.rgb(C.lin(col['fleck_pale'])))
-    rust = nb.math('MULTIPLY', nb.smooth(nb.noise(nb.vmath('ADD', pos, nb.comb(-5.3, 2.9, 4.1)), 60.0, 2.0, 0.55), 0.62, 0.7), stone)
-    c = nb.mix(nb.math('MULTIPLY', rust, 0.45), c, nb.rgb(C.lin(col['granite_warm'])))
+    warp = nb.vmath('ADD', pos, nb.vmath('SCALE', nb.comb(nb.noise(pos, 40.0, 1.0, 0.5), nb.noise(nb.vmath('ADD', pos, nb.comb(1.7, 0.3, 2.9)), 40.0, 1.0, 0.5), 0.0), scale=0.004))
+    dark = nb.math('MULTIPLY', nb.smooth(nb.voronoi(warp, 170.0, 'F1'), 0.24, 0.16), stone)
+    c = nb.mix(nb.math('MULTIPLY', dark, 0.8), base, nb.rgb(C.lin(col['fleck_dark'])))
+    rust = nb.math('MULTIPLY', nb.smooth(nb.voronoi(nb.vmath('ADD', warp, nb.comb(-5.3, 2.9, 4.1)), 110.0, 'F1'), 0.26, 0.18), stone)
+    rust = nb.math('MULTIPLY', rust, nb.smooth(nb.noise(nb.vmath('ADD', pos, nb.comb(2.2, 5.1, 0.4)), 18.0, 1.0, 0.5), 0.45, 0.6))
+    c = nb.mix(nb.math('MULTIPLY', rust, 0.65), c, nb.rgb(C.lin(col['granite_warm'])))
+    pale = nb.math('MULTIPLY', nb.smooth(nb.voronoi(nb.vmath('ADD', warp, nb.comb(3.1, 7.7, 1.3)), 240.0, 'F1'), 0.18, 0.11), stone)
+    c = nb.mix(nb.math('MULTIPLY', pale, 0.55), c, nb.rgb(C.lin(col['fleck_pale'])))
     em = nb.new('ShaderNodeEmission')
     nb.link(c, em.inputs['Color'])
     nb.output(em.outputs[0])
@@ -926,7 +1000,7 @@ def preview_colours(co: np.ndarray, vn: np.ndarray) -> np.ndarray:
     if _LAST and _LAST.get('n') == len(co):
         I = {'co': _LAST['base'], 'pid': _LAST['pid'].astype(np.float64), 'kind': _LAST['kind'], 'crack': _LAST['crack'],
              'dw': _LAST['dw'], 'light': _LAST['light'], 'chips': _LAST['chips'], 'hairline': np.zeros(len(co)),
-             'mouth': _LAST['groove'] + _LAST['curl']}
+             'mouth': _LAST['groove'] + _LAST['curl'], 'gap': _LAST['gap'], 'pits': _LAST['pits'], 'lash': _LAST['lash']}
         rgb, _r, glow = _body_paint(I, PALETTE)
         g = glow[:, None]
         return rgb * (1 - g) + lin(PALETTE['accent'])[None] * 1.4 * g

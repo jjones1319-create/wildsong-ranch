@@ -14,7 +14,7 @@ tall** (Puddlepup: 150 units, 0.986 m), so every breed stands at true relative s
 |---|---|
 | `ID` | the breed id, e.g. `'tumblefox'` (bone rig `<ID>_rig`, files `<ID>.glb`) |
 | `LOOK` | `f'{ID}-ultra'` (the out folder `tools/blender/out/<LOOK>/`) |
-| `PLAN` | `'quadruped'` (`plans/quadruped.py`), `'biped'` (`plans/biped.py`: see *Biped plan* below) or `'floater'` (`plans/floater.py`: see *Floater plan*) |
+| `PLAN` | `'quadruped'` (`plans/quadruped.py`), `'biped'` (`plans/biped.py`: see *Biped plan* below), `'floater'` (`plans/floater.py`: see *Floater plan*), `'shelled'` (`plans/shelled.py`: see *Shelled plan*), `'blob'` (`plans/blob.py`: see *Blob plan*), `'construct'` (`plans/construct.py`: see *Construct plan*) or `'serpent'` (`plans/serpent.py`: see *Serpent plan*) |
 | `HEIGHT_UNITS` | the breed's height in game units (CONTENT); sets the model's size (above) |
 | `PALETTE` | `{'body', 'belly', 'accent', 'eye'}` hex colours (more keys allowed). The shape preview paints with it |
 | `VARIANTS` | `{variant_id: paint}`, **0..N entries** (`{}` = no variant). Id `'<short>-<ID>'`, e.g. `'songheart-puddlepup'`, `'town-crier-tumblefox'`; `<short>` is the id minus `-<ID>`, hyphens kept (`town-crier`). `paint` has at least `body, belly, accent, eye`, and optionally `'props': ['bell', ...]` (props only this variant wears, below). There is no `VARIANT_ID` any more |
@@ -149,6 +149,7 @@ For monsters on two legs: Quillion, Grumblestone, Gloomgrin, Plumdrake, Pluckrex
   - the still clips (idle, look_around, battle_idle, pet, idle_happy) crouch deep (0.42 × squat × the leg's reach) with the body leaning over;
   - from 0.5 the hands rest on the ground in front of the feet in idle and look_around (the rooftop statue);
   - the moving clips crouch only a quarter as much.
+  - `squat_lean` [10 × squat degrees] (Nov 13, opt-in): idle's forward lean in the statue crouch (look_around takes 0.6 of it), so short arms reach the ground (Gloomgrin 36). `squat_hand_dy` [0 m] (opt-in): the statue crouch's hands rest this much further forward (Gloomgrin 0.08: in front of the toes). Absent: as before.
 - For a bulky body with big hands (Grumblestone), each off by default. The plan's hand goals in front of the body (the guard, idle_sad, idle_sick, pet, eat, sit's lap, hit, shove, cast, the strikes) are set from the shoulder and the arm's length, so on a deep belly or a broad face they land inside it:
   - `hand_clear` [[]]: ellipsoids `{'bone', 'c', 'r', 'margin', 'push'}` in the rest pose (model space), each carried by its bone as it is posed. Every hand goal is pushed out of each one to its surface grown by `margin` (radially from its centre, or along `push`, a direction in the bone's rest frame), and so is the wrist behind the goal, so the whole fist stays in front. Grumblestone: the belly on `spine` and the face on `head`, margins about the fist's half thickness, pushed straight forward (0, −1, 0) so the hulk's low guard stays low (a radial push lifted it beside the face).
   - `hand_gap` [0 m]: each hand's goal stays at least this far from the mid-line (in the chest's frame), so two big fists brought together (hands clasped, both to the mouth) touch instead of overlapping. Grumblestone 0.2.
@@ -159,11 +160,29 @@ For monsters on two legs: Quillion, Grumblestone, Gloomgrin, Plumdrake, Pluckrex
   - `'punch'`: the left fist chambers as the body coils, then drives straight out at shoulder height while the right fist guards.
   - `'swipe'`: the left claw rises high and back, then rakes down and across the face.
   - `'headbutt'`: leans back and crouches, then hops forward with the crown leading and the arms swept back (Pluckrex young).
-  - `'slam'`: both fists rise overhead, then come down together to the ground in front, hips dropping, a beat held (Grumblestone). `slam` [the plan's own points] = `{'over': (x, y, z), 'ground': (x, y, z)}` places the left fist (mirrored) instead: `over` in the rest pose, carried by the chest; `ground` in model space. Grumblestone raises its fists high and wide overhead and lands them well in front of its big feet (the plan's ground point is 0.35 × the leg ahead, on its toes).
+    - `headbutt` [none] (Nov 14, Pluckrex; opt-in, absent = as before): `{'hop', 'rear', 'lean', 'reach', 'gaze', 'neck', 'head', 'lift', 'yaw', 'jaw'}`, each optional: the hop's height [0.08 × size_k m], the wind-up's lean back [18°] and the impact's lean in [42°], the hips' forward travel [0.22 × the leg], how much of the lean the head takes back [0.2], the neck's and the head's extra pitch at the impact [16°, 22°; negative lifts the face], the feet's tuck in the air [0.08 × the leg], a turn toward the monster's left [0°] (the in-game strike shot is taken from 70°), the jaw's opening [22°]; and for the wind-up, the crouch [0.14 × the leg] and the neck's, head's and jaw's turn [-10°, -12°, 0°; positive tucks the head down, a negative jaw closes a grin modelled open], and `arm_wind` [0°] more elbow bend (the arms tucked); `trail` [0 × the leg] the feet trailing back in the air (a long, flat hop).
+  - `'slam'`: both fists rise overhead, then come down together to the ground in front, hips dropping, a beat held (Grumblestone). `slam` [the plan's own points] = `{'over': (x, y, z), 'ground': (x, y, z)}` places the left fist (mirrored) instead: `over` in the rest pose, carried by the chest; `ground` in model space. More keys, each optional: `lean` [34°] the body's lean at the impact, `gaze` [0.5] how much of it the head takes back (raise it so the face stays visible), `hand_up` / `hand_down` [(−30, 0, 0)] the fist's turn at the wrist overhead and on the ground (mirrored for the right), `yaw` [0°] a turn toward the monster's left through the wind-up and the impact (the in-game strike shot is taken from 70°, so Grumblestone turns its chest that way).
+- `win` [the plan's pose] = `{'over': (x, y, z), 'hand': (x, y, z)}`: win's raised fists. `over` is the left fist's goal in the rest pose, carried by the chest, mirrored for the right so both go up (the plan raises the left high and the right to the side); `hand` is the turn at the wrist [(−20, 0, 0)]. Grumblestone raises both high and wide with the knuckle gems toward the camera. Grumblestone raises its fists high and wide overhead and lands them well in front of its big feet (the plan's ground point is 0.35 × the leg ahead, on its toes).
   - `'thrust'`: a fencing lunge with the tail's blade. The tail swings round under the left arm to point straight ahead while the left foot steps out and the cape flares (Quillion). `thrust_lift` [14°] raises the blade.
+    - `thrust_lift` may also be a list, one value per tail bone, each applied as given (Quillion `[0, 0, -62]`): a blade that stands upright at rest is pushed down to level on its own bone while the furry tail keeps its height (one shared lift would leave it pointing up).
+    - `thrust_swing` [−175°]: the tail's whole swing round the left side, shared over the chain as before. A blade that leans out at rest needs less (Quillion −160°) to point straight ahead.
+- `fencer` [none] (Nov 13, Quillion): a tail-blade duellist's battle clips. A dict of tail poses, each a list of `(x, y, z)` degrees per tail bone (world-aligned, relative to the parent at rest, as the clips key them; Quillion's recipe solves them from a target direction per bone):
+  - `'guard'`: battle_idle becomes en garde: side-on, the left foot forward and the right back and turned out, knees bent, the left hand forward in guard, the right hand on the hip, the blade in this pose (raised forward over the shoulder).
+  - `'windup'` and `'lunge'` (the lunge defaults to the thrust pose from `thrust_lift` / `thrust_swing`): the thrust strike becomes a real lunge, fully stretched from just before `impact` to frame 18. The blade is drawn back to the windup as the body coils, then the front foot shoots out, the back leg straightens, the pelvis drops, the torso leans about 34°, the right arm swings up for balance and the blade drives into the lunge pose, with the cape flaring.
+  - `'salute'`: win becomes a salute held from early on: chin up, the left hand flourished, the right hand on the hip, the blade in this pose, the cape flaring.
+  - hit and hit_heavy squash and lean back with the arms flung out; hit_heavy is knocked off its feet.
+  - Absent: every clip as before.
+- `cape_drape` [0]: 0..1. In ko, each cape chain's first two bones turn back against the body's roll by this share, so the cape sags toward the ground instead of standing out like a board.
   - `'pounce'`: a leap from a deep crouch, the body stretched out, both claws reaching forward (Gloomgrin).
+    - `pounce` [none] (Nov 13, opt-in): `{'hand': (x, y, z)}`, the left claw's goal in the rest pose, carried by the chest and mirrored for the right, so the claws spread wide and clear of a broad face (the default goal lands in front of Gloomgrin's jowls and the claws vanish in the 70° strike shot). More keys, each optional: `gaze` [0.8] how much of the leap's lean the head takes back (less pitches the head forward), `tuck` [0 m] extra lift of the feet in the air (the legs tuck up), `wings` [none] `(windup, air)` openings (else 0.05 throughout). Absent: as before (dry run: the stand-in, Quillion and Grumblestone key-identical).
   - `'charge'`: head down and low, then a hard drive with the head leading and the arms tucked (Pluckrex grown).
+    - `charge` [none] (Nov 14, Pluckrex grown; opt-in, absent = as before): `{'lean', 'gaze', 'neck', 'head', 'reach', 'step', 'yaw', 'jaw'}`, each optional: the drive's lean [30°], how much of it the head takes back [0.3], the neck's and the head's extra pitch [12°, 10°; negative lifts the face], the hips' forward travel [0.3 × the leg], the front foot's step [0.3 × the leg], a turn toward the monster's left [0°], the jaw's opening [12°], `back` [0.15 × the leg] the rear foot's push back, `tail` [none] degrees the tail is lifted at the drive (negative keeps it level as the body tips), `hand` [none] the left hand's goal (x, y, z) in the rest pose, carried by the chest and mirrored (long arms tucked to the chest).
   - `'gust'`: the wings rise and spread, then one great downbeat with both palms thrust out (Plumdrake). Without wings, the palms alone.
+    - `gust` [none] (Nov 13, Plumdrake; opt-in, absent = as before): `{'rear', 'toes', 'lean', 'yaw', 'gaze', 'raise', 'beat', 'sweep', 'push', 'jaw'}`, each optional. The wind-up rears back `rear` degrees [20] and up onto the toes (the heels rise `toes` × the leg's length [0]) as the wings rise `raise` degrees [35]. The impact leans in `lean` degrees [16], beats down `beat` degrees [45] and sweeps the spread wings forward `sweep` degrees [0] about the vertical (the tips ahead of the chest). The palms push out to `push` = (across × the shoulders' half width, forward and up × the arm's length) [(0.2, 0.9, 0.15)], the mouth opens `jaw` degrees [20], and the body turns `yaw` degrees toward the monster's left [0]. `wings(fr, k, flap, sweep)` gained the sweep (0 for every other caller).
+- `hit_body` [none] (Nov 13, Plumdrake; opt-in): `{'squash', 'lean', 'step'}`. The hit's crouch is `squash` × the leg's length [0.04], its lean `lean` degrees [-10], and the right foot takes a half-step back of `step` × the leg's length [0] (the left a quarter of it). `'heavy'` [none] scales hit_heavy's crouch, lean and step back by that factor (a clearly bigger shove).
+- `ko_wings` [none] (Nov 13, Plumdrake; opt-in): `{'flap', 'sweep'}` degrees the ko adds to both wings as it falls (a negative sweep lays them back along the body), so wings held open at rest lie down instead of the upper one standing up.
+- `ko_arm` [none] (Nov 14, Pluckrex grown; opt-in): `{'upper': (x, y, z), 'fore': (x, y, z)}` degrees for the top (left) arm in ko, in place of the plan's draped arm (a long arm stood up like a periscope). `ko_jaw` [none] (opt-in): degrees the jaw turns as it falls (a grin modelled open goes slack or shut). `walk_bob` [1] (opt-in): scales the walk's body bob.
+- `ko_head` [none] (Nov 14, Plumdrake; opt-in): (x, y, z) degrees the ko adds to the head as it falls, so the face isn't buried in the ground or a ruff.
 - `body_width` and `ko_lift`: as the quadruped's. ko topples onto the right side, the arm underneath stretched above the head; the build measures and settles it.
 
 **Clips:**
@@ -247,6 +266,17 @@ For monsters that hover instead of standing: Wishlume, Ashwraith, Zipwisp, Mirro
   - `'lash'`: hands raised, then the wisps and tails whip forward over the body (Ashwraith).
 - `pulse_tilt` [0°]: how far 'pulse' tips to catch the light first (Mirrorkin ≈ 15–20).
 - `body_width`, `ko_lift`: as in the other plans. ko drifts down and settles on its right side, measured and settled by the build.
+- Nov 14 (Wishlume), each opt-in (absent = as before; the stand-in's clips are key-identical):
+  - `pulse_lean` [0°] more forward tip at the pulse's burst; `pulse_stretch` [1] scales its tall stretch (0.4: an even swell, not an egg); `pulse_yaw` [0°] turns it toward its left at the burst, so the face shows in the in-game strike shot (70°).
+  - `pulse_push` [0 m] more forward travel at the burst (Wishlume 0.07 with `pulse_lean` −26: it leans back about 12° and pushes its lower front at the target). `glide_lean` [1] scales the glides' lean (walk, run, dash, the guarded steps).
+  - `ko_ground` [the rest pose's lowest point] (read by build_ultra's ko settle): where the body's lowest point lies in ko. A floater whose lo_body hovers at rest (its tassel a prop) needs it (Wishlume 0.012), or ko lies in the air.
+  - `ko_arm` [none] (x, y, z) degrees added to the little arm underneath (`upperarm.R`) as it falls, so the body doesn't lie propped on it (Wishlume (0, 120, 0): the paddle swings up beside the crown). `ko_chain_hang` [0] (0..1) turns hanging trailing chains back against the roll, so a tassel droops to the ground instead of standing out sideways. `hit_heavy_chain_hang` [0] (0..1) does the same against hit_heavy's tip and tilt and halves the chains' forward fling, so a tassel lags and droops instead of standing out along the body's axis (Wishlume 0.85).
+  - `arms` may name its `parent` bone as documented (it used to crash the mirror); Wishlume's paddles ride `head`, as does its tassel chain (`'parent': 'head'`), because its paper is one rigid lantern on `head` (the lenses ride the head's blink bones).
+- Nov 14 (Ashwraith), opt-in (absent = as before; the stand-in, with gloves and with arms, and Wishlume are key-identical): `arm_pitch` [0] (0..1) turns that share of the little arms' raise into a pitch up (−x) instead of the −y turn, which only rolls an arm that reaches forward out of a cloak. Put the shoulder above and behind the hand (Ashwraith: under the collar), so the pitch carries the hand up and forward in front of the body (1: the battle guard lifts the mittens about 9 cm, the lash strike about 13 cm).
+  - `clip_bones` [none] `{clip: {bone: [(t0, t1, (x, y, z)[, (dx, dy, dz)])]}}`: adds each rotation (degrees) and offset (metres × size_k) to that clip's own pose in a smooth bump from t0 to t1 (0..1 of the clip; the bone is keyed 0 outside it). CLIP_CALM still scales chain bones. Ashwraith: the lash's coil and whip of its front streamers, the strike's turn toward the 70° camera, the win's higher rise and the cloth's flare.
+- Nov 14 (Zipwisp), each opt-in (absent = as before; the stand-in, with the pulse and with the ram strike, and Wishlume are key-identical): `ko_bones`, `hit_bones`, `hit_heavy_bones`, `strike_bones` and `win_bones`, each `{bone: (x, y, z) degrees}`, added with ko's fall, the hit's and hit_heavy's knock, the strike's drive (any style) and win's jump and spin. A bone may be `hover` (Zipwisp: ko rolls only about 45 degrees, hit_heavy tips back about 23 instead of 45 and turns less away, the ram leans in 20). Zipwisp also uses them for the wings (folded up and drooped in ko, swept flat back in the dart, flared up in win) and the bolt tail (lifted in the knocks, trailing straight behind in the dart). `strike_windup_bones` (same form) is added with the strike's wind-up (Zipwisp tilts back and spreads its wings before the dart). `ko_scale` and `win_scale`, each `{bone: s}`, scale a bone toward s as ko falls or while win is in the air. Zipwisp's sparks ride a `prop.sparks` bone from the ball's centre: they fizzle to 0.02 in ko and burst to 1.3 in win. `ram_yaw` [0] turns the ram strike that many degrees toward the monster's left as it darts, so the face shows in the in-game strike shot (Zipwisp 30). A tuft that stands up on the crown is best a 2-bone `tail`-kind chain (a trailing kind would tip it forward in the glides); list the real tail first, as `socket_tail` takes the first tail-kind chain.
+- Nov 14 (Frostlance), opt-in (absent = as before; key-identical for every other look): `ram_roll` [0] degrees of roll about the body's long axis while the ram strike darts, easing over `ram_roll_span` [(0.3, 0.52)] of the clip, so a full turn (360) is upright again by the impact (Frostlance's spiralling tusk thrust).
+- Nov 14 (Mirrorkin), opt-in (absent = as before; the stand-in with gloves and with arms, Wishlume, Ashwraith and Zipwisp are key-identical): `strike_hold` [0] (0..1 of the clip) holds the strike's drive flat at its peak round `impact` for that long (any style), and the pulse's swell too, so a beam has a clear, still source (Mirrorkin 0.1: about 2.5 frames). `plans.floater.held_pulse(t, start, end, hold)` is the held bump.
 
 **Clips:** the same 32 names, lengths, markers and faces as every plan, played the floater way.
 - **Ranch life:**
@@ -276,10 +306,288 @@ For monsters that hover instead of standing: Wishlume, Ashwraith, Zipwisp, Mirro
 | Breed | Estimate |
 |---|---|
 | Wishlume | ≈ 17 (arms 4, a 3-bone tassel, a cap prop) |
-| Ashwraith | ≈ 37 (arms 4, a hood tip 3, about 8 wisps × 3) |
+| Ashwraith | 46 (arms 4, a hood tip 3, 8 wisp chains × 3, 2 lash streamers × 3, the lantern prop) |
 | Zipwisp | ≈ 16 (spark wings 2, a 3-bone bolt tail, a 2-bone tuft) |
 | Mirrorkin | ≈ 22 (hands 2, a handle 1–2, two 3–4-bone cloak panels, a crest prop) |
 | Frostlance | ≈ 17 (a 3-bone tail with its fluke, 2 fins, a tusk prop) |
+
+## Shelled plan (`PLAN = 'shelled'`, `plans/shelled.py`; batch 5, Nov 14)
+For monsters that carry a rigid shell on short legs: Moatshell (a tortoise) and Reefclaw (the crab option). Everything else in this contract works the same. The stand-in `breeds/_shelled_test_ultra.py` switches every tortoise option on; `WS_SHELLED_CRAB=1` makes it the crab instead. It is not a breed and is never shipped or registered. The shelled and blob plans share their posing machinery in `plans/kin.py` (the biped's FK and two-bone IK, the per-clip knobs, the ko's lie-down); the biped keeps its own copy, so no existing look changes.
+
+**`rig_p()`, required** (model it standing):
+- `hip` (x, y, z): the shell's centre. The bone `hips` (parent `root`) carries the shell and never bends or squashes: give every shell vertex, and anything fixed on it, `U.rigid(…, 'hips')`.
+- `chest` (x, y, z): the front opening, where the neck and the front legs come out. `chest` (parent `hips`) slides back into the shell when it tucks; let the neck's root skin and the soft front body blend onto it.
+- `head_c`, `head_r`: the face.
+- `legs`: the left legs, front to back, `[{'hip', 'knee', 'ankle', 'toe'?, 'parent': 'hips'}, …]`, mirrored to the right → `leg<i>.L` / `.R`, `shin<i>`, `foot<i>` (with a `toe`). Give the front legs `'parent': 'chest'`, so they tuck with it. Every gait plants the feet by IK, so no foot slides at the root speeds. The knees bend in their rest plane, so model them a little bent (outward for pillar legs, up for a crab's). Two legs a side walk in diagonal pairs; three walk in alternating tripods.
+
+**Options** (each off by default):
+- `neck` [none]: `[p0 … pN]` → `neck.1..N`, from the opening to the head. Without one, the head sits on `chest` (a crab's face on its shell) and turns `head_turn` [0.3] as far.
+- `head_base`, `head_tip` [from `head_c`]: the head bone.
+- `jaw` `{'head', 'tail'}`. Heat weights leak the jaw over the snout, so put `'jaw'` in `MERGE_INTO_HEAD`, set `'jaw_open': True` in `rig_p()`, and weight the lower lip to `jaw` with `U.rigid`.
+- `shell_top` [`hip` + 0.3 m × size_k]: the shell's top, for `socket_back` and `socket_shell` (a turret's volley starts there).
+- `claws` (the crab option): one dict, mirrored, or `{'L': {…}, 'R': {…}}` for a big and a small one. Keys: `{'shoulder', 'elbow', 'wrist', 'tip', 'finger': (head, tail), 'open_axis'?}`. Bones (parent `chest`):
+  - `arm`, `forearm`, `claw` (the hand and its fixed finger);
+  - `pincer` (the moving finger). It opens about `open_axis` (model space; by default it lifts its tip; `(1, 0, 0)` opens a lower finger downward).
+  - `big_claw` [the longer one]: the side the 'claw' strike swings.
+  - Claws get no heat weights (`claw_heat: True` keeps them): skin each segment with `U.segment_weights`.
+- `stalks` `{'base', 'mid', 'tip', 'visor'?: (head, tail)}` (the left one; mirrored) → `stalkL.1`, `.2` and `visor.L` (and the right ones).
+  - Set `EYE_PARENTS = {'L': 'stalkL.2', 'R': 'stalkR.2'}` in the recipe (a build option, below), so the blink bones ride the stalks.
+  - The stalks fold back onto the shell when it tucks (brace, hit, sleep, ko), and lean, look and sway in every clip. Each is a `springs` entry of kind `stalk`.
+  - No heat weights: skin them with `U.chain_weights` and the visors with `U.rigid`.
+- `rigid_legs` [on with claws]: the legs get no heat weights. Skin them with `U.segment_weights`, since a shell's legs bend only at the joints.
+- `tail` [none]: points → `tail.1..N` (springs kind `tail`). It lifts by itself when the shell sinks or tips back.
+- `chains`: `[{'name', 'kind', 'parent': 'hips', 'points', 'stiff', 'heat', 'mirror', 'spring': True}]` → bones `<name>.1..N`, a `springs` entry and `socket_<name>`. The props are made before the chains, so a flag can fly from a pole prop (`'parent': 'prop.pole'`). Kinds:
+  - `flag`: flutters about its pole; moving, it swings toward the back.
+  - `tassel` and `cloth`: hang and sway, and trail back. One hanging from `hips` swings back just enough to stay off the ground when the shell sinks or tips.
+  - `antenna`, `tail`.
+  - No heat weights for flag, tassel or cloth unless `heat: True`.
+- `props` [parent `hips`]: `prop.<name>` (a tower, a pole).
+- `tuck` [1; 0.35 with claws]: how far the head and the front body pull in, × `tuck_depth` [0.75 × the neck's length + 0.3 × `head_r`]. The feet draw in under the shell too.
+- `sink` [measured: the lowest vertex owned by `hips` or `chest`]: the room under the shell. Sit and sleep lower it onto its belly.
+- `stride` [1] scales the gait strides (the root speeds follow).
+- `hop` [1] scales the jump in hop, celebrate and win (a heavy breed 0.5–0.7).
+- `strike_style` ['bash'; 'claw' with claws]. Every style is 24 frames with `impact` at 13:
+  - `'bash'`: draws back low with the head in, then rams the shell's front at the target, its feet skidding (Shell Bump).
+  - `'bite'`: coils the neck with the mouth opening wide, then shoots the head out and snaps shut on the impact (Drawbridge Snap).
+  - `'launch'`: braces wide and low with the head half in and the shell tipped back `launch_pitch` [−6°]. The volley leaves `socket_shell` on the impact, and the recoil rocks the shell (Turret Toss).
+  - `'claw'`: the big claw rears up and out, then sweeps across in front at the target, the body turning into it (Sideways Slash; Reefclaw's attack picture).
+  - `'pinch'`: both claws spread with the pincers open, then lunge in together and snap shut on the impact (Pincer Pinch, Tidebreaker Clamp).
+- `cast_style` ['brace'; 'raise' with claws]: `'brace'` is the launch over the cast's 36 frames (the shot at `release`, 20); `'raise'` lifts the claws (or the head) high, then thrusts them at the target at `release`.
+- `strike_yaw` [0°]: turns the strike, shove and launch toward the monster's left as they drive, so the face shows in the in-game strike shot (about 70°; the battle and three-quarter camera is about 35°).
+- `ko_style` ['roll']:
+  - `'roll'` falls `ko_roll` [80°] onto the right side; about 160–175 lands it on its back, legs up, with the stalks folded flat so they don't prop it.
+  - `'tuck'` pulls everything in and drops the shell onto its belly.
+  - `body_width` and `ko_lift` work as in the other plans; the build's settle is exact for every style.
+- The per-clip knobs, with the same meaning as the floater's: `clip_bones`, `ko_bones`, `ko_scale`, `hit_bones`, `hit_heavy_bones`, `strike_bones`, `strike_windup_bones`, `win_bones`, `win_scale`, `ko_chain_hang`, `hit_heavy_chain_hang`, and the build's `ko_ground`. IK-planted leg bones ignore rotations given to them; the knobs suit the shell, the neck, the claws, the stalks, the chains and the props.
+
+**Build option** (Nov 14, opt-in; absent = as before): `EYE_PARENTS = {'L': bone, 'R': bone}` hangs the blink bones `eye.L` / `eye.R` on those bones instead of `head`.
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan.
+- `body()` keeps every shell vertex at least 3 mm off the ground whatever a clip asks (a tip back raises the shell by just enough).
+- **Ranch life:**
+  - idle: breathing and rocking, with a glance; a crab's stalks glance on their own.
+  - idle_happy: bobbing, the head up, the claws clacking.
+  - idle_tired (a yawn), idle_sad (half tucked, the head low) and idle_sick (a wobble and a shiver).
+  - sleep: the shell on its belly, everything tucked, the eyes shut.
+  - eat: the head dips to the ground; a crab's small claw feeds the mouth.
+  - pet, look_around (a crab's stalks look one at a time), hop, celebrate.
+- **Moving:** walk, run, dash, step_fwd, step_back and strafe are IK gaits. The root speeds come from the strides: stride ÷ (planted share × cycle). Sidestep is a quick sideways hop.
+- **Scenes:** sit_down and sit lower the shell onto its belly with the legs splaying; dizzy circles.
+- **Battle:** battle_idle is a ready stance (a crab's claws up, clacking). Then strike, cast, shove (a shell bump), hit (knocked back, half tucked), hit_heavy (flipped up and back, the legs flailing), ko and win (a hop, then proud, the claws up).
+- **Groups and sockets:**
+  - CLIP_CALM groups: `tail`, `neck`, `stalk`, each chain by its name or kind, `claw` and `leg`.
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the claws' tips with claws, else the front feet), plus `socket_shell`, `socket_claw_L` / `_R`, `socket_<chain>` and `socket_<prop>`.
+
+**Joints:** the base rig has 7 (root, hips, chest, head, jaw, 2 blink bones). Add the neck's bones, 2–3 per leg, 4 per claw, 2–3 per stalk, the tail, the chains and the props. The stand-in has 30 as a tortoise and 38 as a crab. Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Moatshell | ≈ 28 (neck 2, 4 legs × 3, a 2-bone tail, the tower and pole props, a 3-bone flag) |
+| Reefclaw | ≈ 33 (no neck; 6 legs × 2, 2 claws × 4, 2 stalks × 2 + 2 visors) |
+
+**Per breed:**
+- **Moatshell:**
+  - Pillar legs with feet. `tuck` 1; `hop` ≈ 0.5.
+  - strike `'bash'` (Shell Bump); cast `'brace'` (its tower fires Turret Toss, Siege Volley, Catapult Barrage and Arrow Slit Shot from `socket_shell`; `SOCKET_POINTS` can move it to the tower's top); `strike_yaw` ≈ 20.
+  - ko `'roll'` at 85–90. On its back, the tower would prop it up, as the stand-in shows.
+  - Size (decided Nov 14, as for Frostlance: FOR-CLAUDE-CODE §2, the size line sets the size and the pictures set the proportions): the height from the card (`HEIGHT_UNITS` 165, the flag included), the length from the pictures, about 1.2 m. The card's "1.5 × Puddlepup's length" (≈ 2.2 m) does not apply.
+- **Reefclaw:**
+  - `claws` per side, with `big_claw` `'R'` (its pictures put the big coral claw on its right). The coral branches are part of `claw.R`'s rigid mesh (watch the triangles).
+  - Six legs with `rigid_legs`; `stalks` with visors and `EYE_PARENTS`. Barnacle pauldrons are rigid on `hips` (no bones).
+  - strike `'claw'` (the attack picture's sweep) or `'pinch'`; cast `'raise'`; ko `'roll'` at 100–160.
+
+## Blob plan (`PLAN = 'blob'`, `plans/blob.py`; batch 5, Nov 14)
+For soft, squashy monsters that sit on the ground: Bloatoad (a toad on four short legs) and Scrollopus (an octopus). The stand-in `breeds/_blob_test_ultra.py` switches every toad option on; `WS_BLOB_OCTO=1` makes it the octopus instead. It is not a breed and is never shipped or registered.
+
+**`rig_p()`, required** (model it sitting):
+- `hip` (x, y, z): the body's centre. The bone `body` (parent `root`) carries everything: it leans, turns, hops and falls about this point, but never squashes. Legs and tentacles hang from it.
+- `chest` (x, y, z): the top of the squash chain (the crown of the head-body).
+- `body_base` [straight under `hip`, 2 cm up]: its bottom. The squash chain is `hips` (base → ⅓), `chest` (⅓ → `head_split` [⅔]) and `head` (`head_split` → top). It squashes and stretches about the bottom, so the bottom stays on the ground. The face and the blink bones belong to `head`: set `head_split` so the face sits above it (Bloatoad ≈ 0.6, Scrollopus ≈ 0.45).
+- `head_c`, `head_r`: the face.
+
+**Options** (each off by default):
+- `jaw`: as the shelled plan's (`'jaw'` in `MERGE_INTO_HEAD`, `'jaw_open': True`, the lower lip on `jaw` by `U.rigid`).
+- `sac` `{'head', 'tail', 'parent': 'head', 'max': 1.8}`: a throat sac (bone `sac`, from where it hangs to its far side). It scales up to `max` when it balloons: idle_happy, pet, win, cast 'inflate'; a slow bubble in sleep; a pulse in idle. Skin it with a smooth falloff, e.g. `{sac: w, head: 1 − w}`; it gets no heat weights. `socket_sac` sits at its far side.
+- `tongue` `{'points': [p0 … pN] inside the mouth, 'parent': 'jaw', 'reach': 0.6 m × size_k}` → `tongue.1..N`, unconnected:
+  - The bones after the first slide out along the tongue as it lashes, stretching the skin between them, and level out against the jaw's opening.
+  - Model the tongue as a prop mesh (`build_props`) and skin it with `U.chain_weights` over the tongue's points in `prop_weight_regions` (parent `jaw`). Inside the body it would vanish into the voxel union.
+  - `socket_tongue` sits at its tip, where a lash lands. `tongue_aim` [4°] tips the lash down.
+- `legs`: as the shelled plan's (parent `body`), planted by IK. Walk and the steps crawl in diagonal pairs; run and dash hop with every foot together.
+- `tentacles`: `[{'name', 'points', 'parent': 'body', 'role', 'mirror'}]` → `<name>.1..N` (mirror: `<name>L` / `<name>R`), CLIP_CALM kind `tentacle`, `socket_<name>` at each tip. They get no heat weights (`tentacle_heat: True` keeps them): neighbours would share weights, so skin each with `U.chain_weights`. Roles:
+  - `'ground'`: curled on the ground and carrying it. They breathe (curling up a little, each in its own time) and lift just enough whenever the body's lean or drop would push them under. Without legs they shuffle: each lifts and reaches toward the travel in its turn round the body.
+  - `'hold'`: raised, holding a prop (a scroll, a book: `props` with `'parent': '<name>.N'`). They gesture.
+  - `'free'`: raised and empty, with springs (`'spring': True` on any tentacle adds one).
+- `chains`: `tassel` (a cap's tassel on `prop.cap`), `frill`, `tail`, `antenna`, as the shelled plan's.
+- `props` [parent `head`]: a cap, spectacles, or a held scroll or quill on a tentacle's tip bone. They are made after the tentacles and before the chains.
+- `hop` [1], `stride` [1]: as the shelled plan's.
+- `strike_style` ['tongue' with a tongue, else 'slap' with tentacles, else 'belly']. Every style is 24 frames with `impact` at 13:
+  - `'tongue'`: rears back with the sac filling and the mouth opening, then the tongue lashes out, fully out from 0.48 to 0.62 of the clip, and snaps back (Tongue Lash; Bloatoad's attack picture).
+  - `'belly'`: crouches wide, hops at the target and lands belly first on the impact, squashed flat (Belly Bounce, Bog Slam).
+  - `'slap'`: the `slap_arm` tentacle rears up and out, then whips down across in front (Tentacle Swat).
+  - `'ink'`: the `ink_arm` tentacle rises beside the head with the body drawing in, then points at the target. The ink leaves `socket_<ink_arm>` on the impact as the body puffs (Ink Flick; Scrollopus's attack picture).
+  - `slap_arm` / `ink_arm` [the first free tentacle, else hold, else ground, on its left] name the tentacle. The ink arm should rest low or free, since it is raised about 80°.
+- `cast_style` ['raise' with tentacles, else 'inflate']: `'inflate'` swells with the sac at its fullest by `release` (20), then lets it all out at once (Croak Quake, Balloon Belly); `'raise'` rises tall with the tentacles and what they hold raised, then thrusts them at the target at `release` (a lecture).
+- `strike_yaw` [0°]: as the shelled plan's.
+- `ko_style` ['back']:
+  - `'back'` falls `ko_pitch` [95°] onto its back: belly up, legs splayed and kicking, a tail folded along the back.
+  - `'front'` falls onto its face; `'roll'` falls `ko_roll` [80°] onto its side.
+  - Every tentacle is laid out level and away from the body, so none props it up. The sac goes flat and the tongue lolls.
+  - `body_width` and `ko_lift`: as the other plans.
+- The per-clip knobs: as the shelled plan's.
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan, played the squishy way: every clip breathes, squashes and stretches about the bottom.
+- `body()` keeps the body's own vertices (the squash chain, the jaw, the sac and the roots of the chains on it) at least 3 mm off the ground.
+- A tail lifts by itself as the body leans or sinks.
+- **Ranch life:**
+  - idle: breathing, the sac pulsing, the tentacles curling.
+  - idle_happy: the sac balloons and goes down; bouncy.
+  - idle_tired (a yawn, the tongue peeking out), idle_sad and idle_sick.
+  - sleep: squashed low, a slow snoring bubble from the sac.
+  - eat: the tongue flicks to the ground twice, or a holding tentacle feeds the mouth.
+  - pet, look_around, hop, celebrate.
+- **Moving:** gaits as above; sidestep is a quick banked hop.
+- **Scenes:** sit_down and sit settle low and wide; dizzy circles with the tongue out.
+- **Battle:** battle_idle is ready and bouncing with the holding tentacles up. Then strike, cast, shove (a body bump), hit (squashed front to back, the tentacles flung), hit_heavy (knocked onto its rump), ko and win (a hop, then the sac ballooning and the tentacles waving).
+- **Groups and sockets:**
+  - CLIP_CALM groups: each tentacle (kind `tentacle`), `tongue`, each chain by its name or kind, and `leg`.
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the front feet, else the foremost tentacle tip on that side), plus `socket_core`, `socket_sac`, `socket_tongue`, `socket_<tentacle>`, `socket_<chain>` and `socket_<prop>`.
+
+**Joints:** the base rig has 8 (root, body, hips, chest, head, jaw, 2 blink bones). Add the sac (1), the tongue's bones, 2–3 per leg, each tentacle's bones, the chains and the props. The stand-in has 26 as a toad and 38 as an octopus. Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Bloatoad | ≈ 24 (sac 1, a 3-bone tongue, 4 legs × 3) |
+| Scrollopus | ≈ 39 (8 tentacles × 3, cap, spectacles, scroll, quill and book props, a 2-bone cap tassel); ≈ 47 with 4-bone tentacles for rounder curls |
+
+**Per breed:**
+- **Bloatoad:**
+  - Four legs (the front short, the hind folded like a frog's), a `sac` with `max` ≈ 2 (its pictures balloon it bigger than the head), a 3-bone tongue prop.
+  - strike `'tongue'` (Tongue Lash, the attack picture) or `'belly'` (Belly Bounce); cast `'inflate'` (Croak Quake, Balloon Belly); ko `'back'` (its hit picture).
+  - `hop` ≈ 0.6; `head_split` ≈ 0.6. The crown bumps are part of the head's mesh.
+- **Scrollopus:**
+  - Eight tentacles: 4 `ground` (mirrored), 3 `hold` (the scroll, the quill on its right, the book), and 1 `free` on its left as the `ink_arm` (the attack picture sprays from a raised tentacle beside the head on its left).
+  - Cap and spectacles are props on `head`; a cap tassel chain.
+  - strike `'ink'` (Ink Flick) or `'slap'` (Tentacle Swat); cast `'raise'` (a lecture with the props aloft); ko `'front'` or `'back'`. `head_split` ≈ 0.45.
+
+## Construct plan (`PLAN = 'construct'`, `plans/construct.py`; batch 5, Nov 15)
+For machines and furniture that move as rigid parts: Lootlid now; Gearhoot later, through the hooks below, which are not tuned yet. The stand-in `breeds/_construct_test_ultra.py` is a chest with every lid option on; `WS_CONSTRUCT_NECK=1` tries the Gearhoot hooks. It is not a breed and is never shipped or registered.
+
+**`rig_p()`, required** (model it standing, the lid shut):
+- `hip` (x, y, z): the body's centre. The bone `hips` (parent `root`) carries the body rigidly.
+- `chest` (x, y, z): the body's top, the neck's base in the 'neck' head mode (the build's ko measure reads it).
+- `head_c`, `head_r`: the face.
+- `legs`: as the shelled plan's (`leg<i>` / `shin<i>` / `foot<i>`, parent `hips`), planted by IK. Two pairs walk in diagonal pairs; one pair alternates.
+
+**The head** (`head_mode`: `'lid'` when `hinge` is given, else `'neck'`):
+- `'lid'` (Lootlid): `hinge` (the lid's hinge, at the back) and `lid_front` (its front edge). The bone `head` (parent `hips`) runs between them and swings up `lid_max` [70°] about the hinge to open the mouth. The eyes and everything on the lid ride it; there is no jaw bone.
+  - The jaw lesson, for a lid that is the jaw: no part gets heat weights. Model the lid and the box as **separate shells**, with a gap of 2–3 voxels (≈ 2.5 cm) along the seam, so the voxel union keeps them apart. Then weight the box with `U.rigid(…, 'hips')` and the lid with `U.rigid(…, 'head')`: the seam is a hard split at the hinge, and nothing of the lid stretches over the box when it opens.
+  - `mouth` [the box's front lip]: `socket_mouth`, where coins (or bolts) leave.
+- `'neck'` (a Gearhoot hook): `neck` points → `neck.1..N` from `chest`, `head` to `head_tip`, and a `jaw` (a beak) with `'jaw_open': True` (as the other plans'). `look()` turns the neck far, as an owl does.
+
+**Options:**
+- `tongue` `{'points': [p0 … pN] (inside the box), 'parent': 'hips', 'reach'}` → `tongue.1..N`, unconnected, as the blob plan's. The bones slide out along it, and the part that is out droops over the lip (`droop`). The lid is held at least 40° open whenever the tongue is out. Model it as a prop mesh skinned with `U.chain_weights` in `prop_weight_regions`. `socket_tongue` sits at its tip.
+- `spinners` `[{'name', 'head', 'tail' (its axis), 'parent': 'hips', 'rate': turns a second}]` → `spin.<name>`: a wind-up key or gears that turn a whole number of times in every loop and rest in the one-shots. `socket_<name>`.
+- `chains`: kinds `tassel`, `tail`, `antenna`, `tuft` and `wing` (a Gearhoot hook: gear-feather wings that flap about the body's long axis; no springs). `props` [parent `hips`] (a coin hoard inside the box).
+- `sink` [measured: the body's lowest vertex owned by `hips`], `sit_drop` [measured: where the legs, coming down with the body, would meet the ground]: how far sit and sleep lower the body. Stubby legs give a squat with the feet splayed. `hop`, `stride` [1].
+- `heat` [none]: a list of bones to keep heat weights for. Otherwise every moving part is skinned by the recipe: `head`, `jaw`, the legs, the tongue, the spinners and the chains.
+- `strike_style` ['chomp' with a lid, else 'peck']. Every style is 24 frames with `impact` at 13:
+  - `'chomp'`: rears back with the mouth wide open, then lunges and slams it shut on the impact (Lid Chomp).
+  - `'tongue'`: the tongue lashes out, fully out from 0.48 to 0.62 of the clip (Tongue Grab). `tongue_aim` [8°] tips it down.
+  - `'spit'`: shut tight and reared back, then the mouth snaps wide as it pitches forward; the coins burst from `socket_mouth` on the impact (Lootlid's attack picture).
+  - `'slam'`: a hop at the target, landing front first on the impact (Treasure Slam).
+  - `'peck'`: a Gearhoot hook (the head jabs on its neck).
+- `cast_style` ['spit' with a lid, else 'raise']: `'spit'` gathers low and shut, then bursts open at `release` (a shower from `socket_mouth`: Coin Toss, Gold Rain); `'raise'` rises tall on its legs with the mouth opening, then thrusts.
+- `strike_yaw`, `ko_style` ['roll' (`ko_roll` [80°]) or 'back' (`ko_pitch` [90°])], `body_width`, `ko_lift`, and the per-clip knobs: as the shelled plan's. In ko the lid falls open, the tongue lolls out and the legs splay.
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan.
+- `body()` keeps the body (and the props on it) at least 3 mm off the ground.
+- The lid breathes a crack open in idle, chatters in battle_idle, flaps at every step, pops open in a hit (the tongue flung out, as the hit picture), yawns in idle_tired, snores in sleep, and stays open with the tongue out in idle_happy, pet, sit, celebrate and win.
+- **Groups and sockets:**
+  - CLIP_CALM groups: `neck`, `tongue`, `spin`, each chain by its name or kind, and `leg`.
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the front feet), plus `socket_core`, `socket_tongue`, `socket_<spinner>`, `socket_<chain>` and `socket_<prop>`.
+
+**Joints:** the base rig has 5 (root, hips, head, 2 blink bones). Add 2–3 per leg, the tongue's bones, the spinners, the chains and the props; plus the neck and a jaw in the 'neck' mode. The stand-in has 24 as a chest and 18 as an owl. Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Lootlid | ≈ 21 (4 legs × 3, a 3-bone tongue, a coin-hoard prop) |
+| Gearhoot (later) | ≈ 20–30 (neck 1–2, a beak, 2 legs × 3, 2 gear-wing chains × 2–3, the key spinner, the monocle prop) |
+
+**Per breed:**
+- **Lootlid:** `HEIGHT_UNITS` 135 (0.9 × Puddlepup's height).
+  - The lid and the box are separate shells. The eyes and the keyhole plate are on the lid; the gold bands are split with them.
+  - A 3-bone tongue prop lying on a coin-hoard prop inside. There are no teeth: the card says goofy, never menacing.
+  - strike `'chomp'` (Lid Chomp) or `'tongue'`; cast `'spit'` (Coin Toss: the attack picture's burst of coins); ko `'roll'`.
+
+## Serpent plan (`PLAN = 'serpent'`, `plans/serpent.py`; batch 5, Nov 15)
+For long, legless monsters: Coilfang now; Aurelwyrm later, through the `float` option and the ribbon and whisker chains, which are not tuned yet. The stand-in `breeds/_serpent_test_ultra.py` is a snake with every option on; `WS_SERPENT_FLOAT=1` tries the Aurelwyrm hooks. It is not a breed and is never shipped or registered.
+
+**`rig_p()`, required** (model it resting, head raised):
+- `spine`: `[Q0 … QN]`, the body's centre line from the back of the head to the tail's tip. Use 12–16 bones of about equal length; the parts lying on the ground have their centre line at the body's radius.
+- `hip` (x, y, z): the anchor. The spine point nearest it is where `hips` starts, pointing toward the head.
+  - The forward chain `spine.1..`, `neck.1..N` runs to the head; the last `neck_bones` [4] are the neck (neck.1 nearest the body).
+  - `tail.1..` runs from the anchor back to the tip.
+  - Put the anchor on the ground at the body's first curve behind the neck.
+- `chest`: a point on the neck's base (the build's ko measure reads it).
+- `radius`: the body's half thickness (the ground clearance, the coil's spacing).
+- `head_c`, `head_r`, `head_tip`: `head` runs from Q0 to `head_tip`, with a `jaw` (`'jaw'` in `MERGE_INTO_HEAD`, `'jaw_open': True`, the lower jaw by `U.rigid`).
+
+**How it moves:**
+- Every spine bone keeps its length and gets a heading and an elevation along the body's arc length: the rest pose's, plus the clip's bends, travelling waves, rears and the coil. The chain is rebuilt from the anchor each frame; the spline is the polyline through the joints.
+- The body stays belly down unless a clip twists it (hit_heavy, ko). Each bone's far end never goes below its rest height where it lies, or below `radius` for the neck. The head holds itself level, taking `head_follow` [0.35] of the neck's rise.
+
+**Options:**
+- `coil` `{'turn': ±1, 'spacing': 2.3 × radius, 'inner': 1.6 × radius, 'centre': True}`: the coil-sit for sit_down, sit and sleep. It is an Archimedean spiral through the anchor: the tail winds inward and the body outward.
+  - In sit, the neck rises out of the coil and turns to face forward.
+  - In sleep, the neck lies along the coil and the head rests on it.
+  - `centre` moves the coil under the root.
+- `tongue` `{'points', 'parent': 'jaw', 'reach': 0.12 m × size_k}`: a forked tongue (a prop mesh, skinned with `U.chain_weights`) that flicks in idle, look_around, sit, battle_idle and win. `socket_tongue`.
+- `chains` [parent `head`]. They get no heat weights unless `heat: True`. Kinds:
+  - `crest`: a fan of feathers that flares in idle_happy, battle_idle, strike, cast and win, and lies flat when sad, tired or ko.
+  - `whisker` and `tassel`: hang and trail.
+  - `ribbon`: fins that trail and ripple (the Aurelwyrm hooks).
+  - `tail`.
+  - `tail_springs` [2]: the tail's last bones as a `springs` entry of kind `tail`.
+- `float` [0 m]: a floating serpent (the Aurelwyrm hook) is lifted that high, with no ground guard.
+- `strike_style` ['lunge']. Every style is 24 frames with `impact` at 13:
+  - `'lunge'`: coils the neck back into an S, then shoots the head out level at the target with the mouth wide, the body sliding after it (Fang Snap; the attack picture).
+  - `'squeeze'`: the body's front loops out and closes round the target ahead (Coil Squeeze).
+  - `'whip'`: the tail swings round from behind and lashes forward.
+- `cast_style` ['hiss']: `'hiss'` rears up with the crest raised, then hisses at `release` (Venom Mist, from `socket_mouth`); `'rise'` rears up tall, the body's front lifting too, then sweeps down.
+- `strike_yaw`: as the shelled plan's (on the neck).
+- `ko_style` ['belly']:
+  - `'belly'` flops flat with the neck and head down on the ground, twisted belly-up by `ko_twist` [140°].
+  - `'flat'` doesn't twist; the head lies on its side.
+  - `body_width` and `ko_lift`: the anchor's height, settled exactly by the build.
+- The per-clip knobs: as the shelled plan's (`clip_bones` rotations add a local bend on a spine bone).
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan.
+- **Ranch life:**
+  - idle: a slow breathing wave, the neck swaying, a glance and a tongue flick.
+  - idle_happy: bobbing, the crest up, the tail tip rattling.
+  - idle_tired (a yawn), idle_sad (the neck low, the crest flat) and idle_sick.
+  - sleep and sit: the coil. eat: the head to the ground, gulping.
+  - pet, look_around, hop (the body springs off the ground and the neck rears), celebrate.
+- **Moving:**
+  - walk, run, dash and the steps slither: one wavelength of bends runs down the body each clip, toward the head going backwards. The root speed is the wave's travel × `grip` (0.4–0.65; the rest slips).
+  - strafe is an approximate sidewind; sidestep is a quick sideways spring.
+- **Battle:** battle_idle is a cobra's raised S, swaying, with the tail tip rattling. Then strike, cast, shove (a neck bump), hit (the head thrown back), hit_heavy (the front flung up and rolled, the belly showing), ko and win (a rear and a dance).
+- **Groups and sockets:**
+  - CLIP_CALM groups: `spine`, `neck`, `tail`, `tongue`, and each chain by its name or kind.
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the head's sides, where a strike's effect starts; `socket_tail` at the tail's tip), plus `socket_core` (the anchor), `socket_tongue`, `socket_<chain>` and `socket_<prop>`.
+
+**Joints:** the spine (12–16) + head, jaw, root and 2 blink bones, + the tongue, the chains and the props. The stand-in has 23 (14 spine bones). Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Coilfang | ≈ 25–27 (16 spine bones, a 2-bone forked tongue, a 2–3-bone crest) |
+| Aurelwyrm (later) | ≈ 35–45 (16 spine bones, ribbon-fin chains, 2 whiskers × 2–3, antler props) |
+
+**Per breed:**
+- **Coilfang:**
+  - Size: `HEIGHT_UNITS` 150 (coiled, 1 × Puddlepup's height). Its pictures agree with the card's length, 3.5 × Puddlepup's (≈ 3.3 m snout to tail tip): the turnaround's path measures about 3.3 × its height.
+  - A golden feather crest (a `crest` chain, or a few for a fan), two fangs in the head's mesh, a forked tongue prop.
+  - strike `'lunge'` (Fang Snap) or `'squeeze'` (Coil Squeeze); cast `'hiss'` (Venom Mist); ko `'belly'`; `strike_yaw` ≈ 15.
 
 ## Coats without fur (skin, velvet, scales, stone)
 A recipe without `head_lock_params`, `body_lock_params`, `card_params` (or with `CARD_LAYERS = 0`) and `tuft_frames` builds a body with no locks, no cards and no tuft: the detail comes from the high source's carving and plates baked into the normal map and AO, and from `paint_sources` (and `body_material`'s per-pixel marks). Every step handles it: the build makes no `lo_cards` / `lo_tuft` (the sidecar's `meshes` lists only what exists; `buildStats.cards` is 0), the bake, rig and export skip them, `tools/art/ultra.ts` ships without colour sets to promote, and the Lite copy has nothing to drop. `flow` is not needed. The game treats every mesh as optional.
@@ -313,6 +621,7 @@ A recipe without `head_lock_params`, `body_lock_params`, `card_params` (or with 
 ## Glow (a channel of its own)
 Parts that really glow and bloom (Starhowl's constellations and star tips, Cinderlynx's embers, Hearthwing's chest, later Pluckrex and Grumblestone):
 - `GLOW = {'strength': 1.0, 'tint': None}` turns the glow pass on. Without it nothing changes (no pass, the ORM stays RGB, no sidecar entry).
+  - `'twinkle'` [1] (Nov 14, opt-in; also in a `VARIANT_ORM` glow): the runtime's twinkle share, written to the sidecar's `glow.twinkle` (src/art3d/ultra/parts.ts glowOf, perf/content.ts and viewGpu.ts). The twinkle has a random phase per 4 × 4-texel cell, so a large glowing area (Wishlume's paper) showed it as a fine square stipple; 0 keeps the glow steady. Absent: as before.
 - Paint a per-vertex `glow` (FLOAT point attribute, 0..1) on any source in `paint_sources` (body sources, membranes, props; a source without it glows 0), and/or give `glow_material(name, marks)` → the body sources' glow-pass material for crisp per-pixel shapes (`lib.marks.glow_material(name, marks_fn)` makes one from the `glow` attribute and your marks; `marks` is what `make_marks` returned). Membranes, props and the eyes use the attribute.
 - The bake renders the glow on the atlas's UVs after the other maps and writes it into the **alpha of `atlas_orm.png`** (A = glow mask, R AO, G roughness, B clearcoat as before); shared by every variant. The sidecar gets `glow: {strength, tint}`; the runtime's emissive is base colour × mask × strength (`tint`, a hex, overrides the hue). `tools/art/ultra.ts` keeps the alpha through the padding and encodes the ORM as RGBA (KTX2 ETC1S, WebP yuva420p), in the Lite copy too. The Blender review sheets show it glowing.
 - Fur cards and the tuft take their tiles from the shared strip, so they can't glow by the atlas; lying locks (baked into the body) can.
@@ -413,6 +722,10 @@ A grown form is its own look, built and shipped beside the young one:
 Bones: `root, hips, spine, chest, neck, head, jaw, ear.{L,R}.{1,2}, tail.1..N, thigh/shin/foot.{FL,FR,BL,BR}, eye.{L,R}`, plus `mane.i` / `<name>.i` and `prop.<name>`; with the batch-2 options `neck.1..N` (instead of `neck`), `trunk.1..N`, `bud.1..n`, `wing.{L,R}.1`, `.2`, `.f1..fK`. Sockets also `socket_trunk`, `socket_wing_L` / `_R` with those options.
 Biped bones (`plans/biped.py`): `root, hips, spine, chest, neck` (or `neck.1..N`), `head, jaw, ear.{L,R}.{1,2}, upperarm/forearm/hand.{L,R}, thigh/shin/foot.{L,R}, tail.1..N, tail.puff, eye.{L,R}`, plus each cape or mane chain `<name>.i`, `wing.{L,R}.1`, `.2`, `.f1..fK` and `prop.<name>`. Biped sockets add `socket_hand_L` / `_R` and `socket_foot_L` / `_R` (`socket_paw_L` / `_R` sit at the hands).
 Floater bones (`plans/floater.py`): `root, hover, hips, chest, head, jaw, eye.{L,R}`, plus `upperarm/forearm.{L,R}` (arms) or `hand.{L,R}` (floating hands), each chain `<name>.i` and `prop.<name>`. Floater sockets add `socket_core`, `socket_hand_L` / `_R` and `socket_<chain>`.
+Shelled bones (`plans/shelled.py`): `root, hips, chest, neck.1..N, head, jaw, eye.{L,R}`, plus `leg<i>/shin<i>/foot<i>.{L,R}`, `arm/forearm/claw/pincer.{L,R}` (claws), `stalk{L,R}.1..2` and `visor.{L,R}` (stalks), `tail.1..N`, each chain `<name>.i` and `prop.<name>`. Shelled sockets add `socket_shell`, `socket_claw_L` / `_R` and `socket_<chain>`.
+Blob bones (`plans/blob.py`): `root, body, hips, chest, head, jaw, eye.{L,R}`, plus `sac`, `tongue.1..N`, `leg<i>/shin<i>/foot<i>.{L,R}`, each tentacle and chain `<name>.i` and `prop.<name>`. Blob sockets add `socket_core`, `socket_sac`, `socket_tongue`, `socket_<tentacle>` and `socket_<chain>`.
+Construct bones (`plans/construct.py`): `root, hips, head` (the lid, or a head on `neck.1..N`), `eye.{L,R}`, plus `jaw` (the 'neck' mode), `tongue.1..N`, `leg<i>/shin<i>/foot<i>.{L,R}`, `spin.<name>`, each chain `<name>.i` and `prop.<name>`. Construct sockets add `socket_core`, `socket_tongue`, `socket_<spinner>` and `socket_<chain>`.
+Serpent bones (`plans/serpent.py`): `root, hips, spine.1..K, neck.1..N, head, jaw, tail.1..M, eye.{L,R}`, plus `tongue.1..N`, each chain `<name>.i` and `prop.<name>`. Serpent sockets add `socket_core` (the anchor), `socket_tongue` and `socket_<chain>`.
 Meshes: `lo_body` body, `lo_eyes` eye, `lo_fins` fin, `lo_cards` card, `lo_tuft` lock, `lo_props` prop, `lo_props_<short>` prop (a variant's own; only those built).
 Per variant: bake pass and `atlas_<short>.png`, attribute `paint_<short>`, cards' colour `Col_<short>` → glTF `COLOR_1`, `COLOR_2`, … in `VARIANTS` order, holder mesh `__variant_<id>`, its own props `lo_props_<short>` (sidecar `variants[vid].meshes`), review sheet `variant_<short>.png`. The Lite copy (`<breed>.lite.glb`, ≤ 12k triangles in all): no cards, no tuft (unless `LITE_KEEP`); the membranes simplified to a quarter; props kept as they are up to 2.4k triangles in all, else simplified to fit; the body gets the rest. `npm run art:ultra -- <breed> --lite-only` rebuilds just it from the last ship.
 

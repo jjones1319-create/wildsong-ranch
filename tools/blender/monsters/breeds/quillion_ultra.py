@@ -31,7 +31,7 @@ import math
 import bmesh
 import bpy
 import numpy as np
-from mathutils import Vector
+from mathutils import Euler, Matrix, Vector
 from mathutils.kdtree import KDTree
 
 from lib import common as C
@@ -50,10 +50,11 @@ PLAN = 'biped'
 HEIGHT_UNITS = 135
 
 CHAMPION_GOLD = '#E8B923'
+PALETTE_BASE_ACCENT = '#C0392B'     # the inner ears and blush are pink in every variant
 PALETTE = {'body': '#8C5A3C', 'belly': '#EED9C4', 'accent': '#C0392B', 'eye': '#1E1E1E', 'quill': '#C9D3DD',
-           'clasp': C.mix_hex(CHAMPION_GOLD, '#8C5A3C', 0.32)}
+           'clasp': C.mix_hex(CHAMPION_GOLD, '#8C5A3C', 0.45)}
 VARIANTS = {'champion-quillion': {'body': '#6B4A2E', 'belly': '#F1E4D0', 'accent': CHAMPION_GOLD, 'eye': '#1E1E1E',
-                                  'quill': '#C9D3DD', 'clasp': C.mix_hex(CHAMPION_GOLD, '#6B4A2E', 0.42), 'embroidery': True}}
+                                  'quill': '#C9D3DD', 'clasp': C.mix_hex(CHAMPION_GOLD, '#6B4A2E', 0.62), 'embroidery': True}}
 
 
 def colours(pal: dict) -> dict:
@@ -61,20 +62,20 @@ def colours(pal: dict) -> dict:
     fur, cream, cape, eye = pal['body'], pal['belly'], pal['accent'], pal['eye']
     return {
         'fur': fur, 'cream': cream, 'cape': cape, 'eye': eye, 'blade': pal['quill'], 'clasp': pal['clasp'],
-        'fur_dark': C.mix_hex(fur, eye, 0.32),               # the quills' roots, the shaded fur
+        'fur_dark': C.shade_hex(fur, 0.62),                  # the quills' roots, the shaded fur (the chestnut, darker: warm)
         'fur_light': C.mix_hex(fur, cream, 0.22),            # the forehead's lighter fur
-        'quill_tip': C.mix_hex(cream, '#FFFFFF', 0.08),
+        'quill_tip': cream,
         'quill_mid': C.mix_hex(fur, cream, 0.38),
-        'brow': C.mix_hex(fur, eye, 0.45),
-        'ear_in': C.mix_hex(cream, cape, 0.2),
-        'blush': C.mix_hex(cream, cape, 0.42),
+        'brow': C.shade_hex(fur, 0.52),
+        'ear_in': C.mix_hex(cream, PALETTE_BASE_ACCENT, 0.38),     # polish: the base pink in every variant
+        'blush': C.mix_hex(cream, PALETTE_BASE_ACCENT, 0.42),
         'nose': C.mix_hex(eye, fur, 0.12),
-        'mouth': C.mix_hex(eye, fur, 0.3),
+        'mouth': C.mix_hex(eye, fur, 0.2),
         'claw': C.mix_hex(fur, eye, 0.62),
         'pad': C.mix_hex(fur, eye, 0.5),
         'iris': C.mix_hex(eye, fur, 0.62),
         'iris_deep': C.mix_hex(eye, fur, 0.3),
-        'stitch': C.mix_hex(cream, '#FFFFFF', 0.25),
+        'stitch': C.shade_hex(cape, 0.68),                   # round 3: a darker tone-on-tone stitch
         'cape_dark': C.mix_hex(cape, eye, 0.28),
         'embroidery': C.mix_hex(cape, fur, 0.5),
     }
@@ -90,7 +91,18 @@ def all_parts() -> list[Part]:
 
 
 BODY_TRIS = 44000
-ATLAS_DENSITY = {'lo_eyes': 1.4, 'lo_props': 0.62}
+ATLAS_DENSITY = {'lo_eyes': 1.4}
+
+
+def texel_k(co: np.ndarray) -> np.ndarray:
+    """lo_body's texel density per face (build 1's atlas left the face blurry): the face and the ears 1.6, the hands
+    and feet 1.2, the spine-bed under the quills 0.55 (mostly hidden), the rest 1."""
+    z = zones(co)
+    k = np.ones(len(co))
+    k = np.where(z['quill'] > 0.5, 0.55, k)
+    k = np.where(z['hand'] | z['foot'], 1.2, k)
+    k = np.where(z['head'] & (z['quill'] < 0.5), 1.6, k)
+    return k
 VOXELS = {'hi': 0.0032, 'hi_quick': 0.0055, 'lo': 0.005}
 
 
@@ -98,7 +110,7 @@ VOXELS = {'hi': 0.0032, 'hi_quick': 0.0055, 'lo': 0.005}
 def smile_z(x: np.ndarray) -> np.ndarray:
     """The smile's height across the muzzle's front (x in metres): a gentle curve whose corners turn up."""
     a = np.clip(np.abs(x) / F.SMILE_W, 0, 1.4)
-    return 0.5385 + 0.0045 * a ** 2 + 0.0055 * smooth(0.72, 1.05, a)
+    return 0.5385 + 0.0055 * a ** 2 + 0.0075 * smooth(0.65, 1.05, a)
 
 
 def mouth_mask(co: np.ndarray) -> np.ndarray:
@@ -106,7 +118,7 @@ def mouth_mask(co: np.ndarray) -> np.ndarray:
     x, y, z = co[:, 0], co[:, 1], co[:, 2]
     front = smooth(-0.13, -0.155, y)
     on = np.abs(x) < F.SMILE_W * 1.06
-    g = np.exp(-((z - smile_z(x)) / 0.0017) ** 2) * front * on
+    g = np.exp(-((z - smile_z(x)) / 0.0024) ** 2) * front * on
     phil = np.exp(-(x / 0.0016) ** 2) * (z < F.NOSE_C[2] - 0.009) * (z > 0.538) * smooth(-0.17, -0.19, y)
     return np.clip(np.maximum(g, phil), 0, 1)
 
@@ -129,8 +141,8 @@ def closed_lid(co: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         xn = xe / (ax * LID_W)
         arc = -(LID_LASH + LID_DROP * (1.0 - np.clip(xn, -1, 1) ** 2)) * F.EYE_R
         th = 0.003 + 0.0025 * smooth(0.2, 1.0, xn * s)
-        on = front & (np.abs(xn) < 1.04) & (r2 < 1.4)
-        lash = np.maximum(lash, np.exp(-((ye - arc) / th) ** 2) * on * smooth(1.04, 0.9, np.abs(xn)))
+        on = front & (np.abs(xn) < 0.92) & (r2 < 1.1)     # round 3: kept under the lens (it showed as ticks at the corners)
+        lash = np.maximum(lash, np.exp(-((ye - arc) / th) ** 2) * on * smooth(0.92, 0.78, np.abs(xn)))
     return bulge, lash
 
 
@@ -171,7 +183,7 @@ def carve(ob: bpy.types.Object) -> None:
             cleft = np.maximum(cleft, np.exp(-d ** 2) * (z < 0.035) * (z > 0.003))
     cup = ear_cup(co)
     bulge, lash = closed_lid(co)
-    disp = -0.0016 * groove - 0.003 * nos - 0.0025 * cleft - 0.0012 * lash - 0.0065 * cup
+    disp = -0.003 * groove - 0.003 * nos - 0.0025 * cleft - 0.0012 * lash - 0.0065 * cup
     S.set_positions(ob, co + vn * disp[:, None])
     S.base_attrs(ob, co, {'mouth': groove})
     S.add_attr(ob, 'lash', lash)
@@ -189,7 +201,7 @@ def carve_low(ob: bpy.types.Object) -> None:
 # ----------------------------------------------------------------------------- the eyes
 def build_eye(name: str, s: int, high: bool) -> bpy.types.Object:
     bm = bmesh.new()
-    seg = 48 if high else 24
+    seg = 48 if high else 32
     bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=seg // 2, radius=1.0)
     back = [v for v in bm.verts if v.co.z < -0.35]
     bmesh.ops.delete(bm, geom=back, context='VERTS')
@@ -233,10 +245,10 @@ def eye_material(name: str, rough_pass: bool = False, pal: dict | None = None) -
     side = nb.attribute('eye_side').outputs['Fac']
     x, y, _z = nb.sep(e)
     # the iris sits a little toward the nose and down, so the eyes look ahead
-    ix = nb.math('ADD', x, nb.math('MULTIPLY', side, 0.09))
+    ix = x
     iy = nb.math('ADD', y, 0.04)
-    ri = nb.vmath('LENGTH', nb.comb(nb.math('DIVIDE', ix, 0.74), nb.math('DIVIDE', iy, 0.76), 0.0))
-    sclera = C.lin(C.mix_hex('#F7F1EA', col['cream'], 0.25))
+    ri = nb.vmath('LENGTH', nb.comb(nb.math('DIVIDE', ix, 1.0), nb.math('DIVIDE', iy, 1.0), 0.0))
+    sclera = C.lin(C.mix_hex('#F7F1EA', col['cream'], 0.5))
     iris = nb.ramp(ri, [(0.0, C.lin(col['eye'])), (0.5, C.lin(col['eye'])), (0.56, C.lin(col['iris_deep'])),
                         (0.78, C.lin(col['iris'])), (0.92, C.lin(C.mix_hex(col['iris'], col['eye'], 0.35))),
                         (0.97, C.lin(col['eye'])), (1.0, C.lin(col['eye'])), (1.06, sclera), (1.6, sclera)])
@@ -249,7 +261,7 @@ def eye_material(name: str, rough_pass: bool = False, pal: dict | None = None) -
     shade = nb.math('MULTIPLY', nb.smooth(nb.vmath('LENGTH', nb.comb(x, y, 0.0)), 0.75, 1.0), nb.smooth(ri, 1.0, 1.1))
     c = nb.mix(nb.math('MULTIPLY', shade, 0.35), c, nb.rgb(C.lin('#B8A898')))
     big = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('ADD', x, nb.math('MULTIPLY', side, 0.22)), nb.math('DIVIDE', nb.math('SUBTRACT', y, 0.32), 1.1), 0.0)), 0.2, 0.16)
-    small = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('SUBTRACT', x, nb.math('MULTIPLY', side, 0.2)), nb.math('ADD', y, 0.28), 0.0)), 0.085, 0.065)
+    small = nb.smooth(nb.vmath('LENGTH', nb.comb(nb.math('SUBTRACT', x, nb.math('MULTIPLY', side, 0.2)), nb.math('ADD', y, 0.28), 0.0)), 0.12, 0.095)
     c = nb.mix(nb.math('MAXIMUM', big, small), c, nb.rgb((1.0, 1.0, 1.0)))
     outer = nb.math('MULTIPLY', nb.smooth(nb.math('MULTIPLY', x, side), 0.1, 0.95), 0.16)
     lash = nb.smooth(nb.math('ADD', y, outer), 0.7, 0.8)
@@ -416,22 +428,23 @@ def body_lock_params(p, n):
     L = np.where(z['belly'], 0.03, L)
     W = np.where(z['belly'], 0.0092, W)
     L = np.where(z['arm'] | z['leg'], 0.032, L)
-    lift = np.where(z['arm'] | z['leg'], _rad(9.0), lift)
+    lift = np.where(z['arm'] | z['leg'], _rad(4.0), lift)
     L = np.where(z['hand'] | z['foot'], 0.013, L)
     W = np.where(z['hand'] | z['foot'], 0.0052, W)
     L = np.where(z['tail'], 0.05, L)
     W = np.where(z['tail'], 0.014, W)
     sp = np.where(q, W * 0.62, W * 0.58)
     claws = _claw_mask(p) > 0.3
-    skip = (z['head'] & ~q) | z['sole'] | claws | (z['toes'] & (p[:, 2] < 0.012))
+    skip = (z['head'] & ~q) | z['sole'] | claws | (z['toes'] & (p[:, 2] < 0.012)) | (collar_dist(p) < 0.045)
     return np.where(skip, np.nan, sp), L, W, lift, z
 
 
-CARD_LAYERS = 2
-CARD_SHADE = 0.95
-AO_FLOOR = 0.35
-AO_SOFTEN = 1.5
-CARD_COLOUR_FROM = 'skin'
+CARD_LAYERS = 0                # round 3: no fur cards (their edges glinted as pale specks; the Lite copy is clean without)
+ATLAS_STRIP = 0
+CARD_SHADE = 0.82
+AO_FLOOR = 0.5
+AO_SOFTEN = 2.5
+CARD_COLOUR_FROM = 'paint'
 
 
 def card_params(p, n, layer: int):
@@ -446,8 +459,8 @@ def card_params(p, n, layer: int):
         W = np.full(k, 0.024)
         lift = np.full(k, _rad(10))
         sp = np.full(k, 0.02)
-        on = z['arm'] | z['leg'] | z['tail'] | (z['torso'] & (z['quill'] < 0.2))
-        skip = ~on | z['hand'] | z['foot'] | (z['quill'] > 0.2)
+        on = z['arm'] | z['leg']
+        skip = ~on | z['hand'] | z['foot'] | (z['quill'] > 0.2) | (cream_soft(p) > 0.02) | (collar_dist(p) < 0.06)
     else:
         L = np.full(k, 0.05)
         W = np.full(k, 0.026)
@@ -468,7 +481,7 @@ def build_props(high: bool, quick: bool) -> list[bpy.types.Object]:
     return [qo, bo, K.cape_object(f'{tag}_cape', high), K.collar_object(f'{tag}_collar', high), K.clasp_object(f'{tag}_clasp', high)]
 
 
-LITE_PROPS_TRIS = 6200
+LITE_PROPS_TRIS = 7000
 
 
 def preview_prop_colour(name: str):
@@ -499,7 +512,50 @@ def _pad_mask(p: np.ndarray) -> np.ndarray:
     return out
 
 
-def body_paint(p: np.ndarray, pal: dict, kind=None, tpos=None, lrand=None) -> dict:
+def cream_soft(p: np.ndarray) -> np.ndarray:
+    """0..1 how cream the coat is (round 2: soft, fur-feathered borders instead of round 1's hard boolean edges): the
+    face, cheeks, muzzle and chin, the belly, the hands from the wrist and the feet from the ankle."""
+    x, y, z = p[:, 0], p[:, 1], p[:, 2]
+    ax = np.abs(x)
+    head = (_head_mask(p) & (F.ear_dist(p) > 0.05)).astype(float) * (1.0 - smooth(0.4, 0.6, F.quill_zone(p)))
+    cz = 0.69 - 0.075 * np.exp(-(x / 0.03) ** 2)
+    yth = -0.035 - 0.25 * np.clip(0.6 - z, 0, 1)
+    face = smooth(cz + 0.012, cz - 0.012, z) * smooth(yth + 0.018, yth - 0.018, y) * smooth(0.165, 0.135, ax)
+    cheek = smooth(0.05, 0.075, ax) * smooth(0.635, 0.6, z) * smooth(0.015, -0.025, y)
+    chin = smooth(0.545, 0.52, z) * smooth(-0.04, -0.07, y)
+    c = np.maximum(np.maximum(face, cheek), chin) * head
+    c = np.maximum(c, ell_soft(p, F.MUZZLE[0], tuple(r * 1.25 for r in F.MUZZLE[1]), 0.15) * head)
+    e = (x / (0.098 + 0.02 * smooth(0.42, 0.2, z))) ** 2 + ((z - 0.27) / 0.175) ** 2
+    thr = -0.02 - 0.06 * smooth(0.2, 0.0, np.abs(z - 0.27))
+    belly = smooth(1.12, 0.88, e) * smooth(thr + 0.018, thr - 0.018, y) * (z < 0.47)
+    c = np.maximum(c, belly * (1.0 - head))
+    for s in (1, -1):
+        w, h, _ac, _pl = F.hand_frame(s)
+        along = (p - v3(w)) @ v3(h)
+        near = np.linalg.norm(p - v3(w + h * 0.025), axis=1) < 0.06
+        c = np.maximum(c, smooth(-0.014, 0.008, along) * near)
+        fc = v3(F.mirror(F.FOOT_C, s))
+        nearf = np.linalg.norm((p - fc) * v3((1.0, 0.75, 0.0)), axis=1) < 0.085
+        c = np.maximum(c, smooth(0.075, 0.052, z) * nearf)
+    return np.clip(c, 0.0, 1.0)
+
+
+_COLLAR = None
+
+
+def collar_dist(p: np.ndarray) -> np.ndarray:
+    """Distance to the collar's centre line (no locks or cards poke through the collar)."""
+    global _COLLAR
+    if _COLLAR is None:
+        _COLLAR = K.collar_ring(np.linspace(-math.pi, math.pi, 72, endpoint=False))
+    d = np.full(len(p), 9.0)
+    for i in range(0, len(p), 20000):
+        q = p[i:i + 20000]
+        d[i:i + 20000] = np.sqrt(((q[:, None, :] - _COLLAR[None]) ** 2).sum(-1)).min(1)
+    return d
+
+
+def body_paint(p: np.ndarray, pal: dict, kind=None, tpos=None, lrand=None, pos=None) -> dict:
     """Per point of a body source: 'paint' (linear RGB), 'shade', 'rough' (1, roughness, coat). `p` is each point's
     root on the skin (locks take the colour under their root; their tips lighten)."""
     col = colours(pal)
@@ -510,7 +566,11 @@ def body_paint(p: np.ndarray, pal: dict, kind=None, tpos=None, lrand=None) -> di
     rgb = np.tile(fur, (k, 1))
     # the spine-bed: deeper chestnut
     rgb = rgb * (1 - q * 0.45) + lin(col['fur_dark'])[None] * (q * 0.45)
-    creamk = (z['face'] | z['belly'] | z['hand'] | z['foot'] | z['cheek'] | z['chin']).astype(float)
+    creamk = cream_soft(p)
+    if pos is not None and kind is not None:
+        # a lock that crosses a border blends toward the colour under its tip along its length (Puddlepup P1.2)
+        wk = np.where(kind > 0.5, 0.75 + 0.25 * np.clip(tpos, 0, 1), 0.0)
+        creamk = creamk * (1 - wk) + cream_soft(pos) * wk
     # soft borders: the face's cream fades into the chestnut forehead; the hands' cream starts at the wrist
     rgb = rgb * (1 - creamk[:, None]) + cream[None] * creamk[:, None]
     # the forehead above the brows, a lighter chestnut
@@ -531,13 +591,19 @@ def body_paint(p: np.ndarray, pal: dict, kind=None, tpos=None, lrand=None) -> di
         lock = kind > 0.5
         t = np.clip(tpos, 0, 1)
         # locks: darker roots, lighter tips; on the spine-bed the tips turn cream like the quills'
-        shade = np.where(lock, 0.7 + 0.38 * t + 0.12 * (lrand - 0.5), 1.0)
-        tip = np.where(lock, smooth(0.55, 0.9, t), 0.0) * q[:, 0]
+        # build 1: strong root shade read as grey streaks on the cream face and belly: softer on the cream
+        ck = creamk
+        shade = np.where(lock, (0.84 + 0.16 * t + 0.08 * (lrand - 0.5)) * (1 - ck) + (0.94 + 0.08 * t + 0.04 * (lrand - 0.5)) * ck, 1.0)
+        # the cream locks' roots warm toward a tan instead of greying (round 3: the muzzle's shade read grey-beige)
+        warm = np.where(lock, (1 - t) * 0.22, 0.0) * ck
+        rgb = rgb * (1 - warm[:, None]) + lin(col['fur_light'])[None] * warm[:, None]
+        tip = np.where(lock, smooth(0.6, 0.95, t), 0.0) * q[:, 0] * 0.45
         rgb = rgb * (1 - tip[:, None]) + lin(col['quill_tip'])[None] * tip[:, None]
         rough = np.where(lock, 0.62 + 0.18 * np.abs(t - 0.45), rough)
     glossy = np.maximum(nose, claw * 0.8)
-    rough = rough * (1 - glossy) + 0.26 * glossy
-    coat = coat * (1 - glossy) + 0.75 * glossy
+    # the nose, claws and pads a little glossy, never glassy (Nov 13: roughness at least 0.4, coat at most 0.3)
+    rough = rough * (1 - glossy) + 0.42 * glossy
+    coat = coat * (1 - glossy) + 0.28 * glossy
     rough = rough * (1 - cup) + 0.55 * cup
     return {'paint': rgb, 'shade': shade, 'rough': np.stack([np.ones(k), rough, coat], axis=1)}
 
@@ -549,7 +615,7 @@ def preview_colours(co: np.ndarray, vn: np.ndarray) -> np.ndarray:
 def _quill_paint(qt: np.ndarray, qrand: np.ndarray, col: dict) -> np.ndarray:
     """A quill: a dark chestnut root, the chestnut body, a cream tip (its length varies per quill)."""
     t = np.clip(qt, 0, 1)
-    start = 0.6 + 0.12 * (qrand - 0.5)
+    start = 0.64 + 0.12 * (qrand - 0.5)
     rgb = lin(col['fur_dark'])[None] * (1 - smooth(0.0, 0.35, t))[:, None] + lin(col['fur'])[None] * smooth(0.0, 0.35, t)[:, None]
     mid = smooth(start - 0.12, start, t)
     rgb = rgb * (1 - mid[:, None] * 0.5) + lin(col['quill_mid'])[None] * (mid[:, None] * 0.5)
@@ -571,34 +637,43 @@ def prop_paint(ob: bpy.types.Object, pal: dict) -> np.ndarray:
     blade = np.abs(part - Q.PART_BLADE) < 0.5
     if blade.any():
         # polished silver: brighter along the middle, a touch darker toward the edges, warmer where it leaves the ruff
-        b = lin(col['blade'])[None] * (0.82 + 0.22 * (1 - np.abs(qside[blade]) ** 2))[:, None]
-        root = smooth(0.14, 0.02, qt[blade])[:, None]
-        rgb[blade] = b * (1 - root * 0.55) + lin(col['fur'])[None] * (root * 0.55)
+        # round 2 (4-details 4): polished silver: the base #C9D3DD, a bright highlight along both edges and one darker
+        # reflection band down one face (never black chrome), warmer where it leaves the ruff
+        qs = qside[blade]
+        b = np.tile(lin(C.mix_hex(col['blade'], '#FFFFFF', 0.22)), (int(blade.sum()), 1))
+        edge = smooth(0.62, 0.92, np.abs(qs))[:, None]
+        b = b * (1 - edge * 0.75) + lin('#FFFFFF')[None] * (edge * 0.75)
+        band = (smooth(-0.5, -0.32, qs) * smooth(0.0, -0.18, qs))[:, None]
+        b = b * (1 - band * 0.4) + lin(C.shade_hex(col['blade'], 0.7))[None] * (band * 0.4)
+        root = smooth(0.08, 0.01, qt[blade])[:, None]
+        rgb[blade] = b * (1 - root * 0.5) + lin(col['fur'])[None] * (root * 0.5)
     cloth = (np.abs(part - Q.PART_CAPE) < 0.5) | (np.abs(part - Q.PART_COLLAR) < 0.5)
-    rgb[cloth] = lin(col['cape'])
+    rgb[cloth] = lin(C.mix_hex(col['cape'], col['cape_dark'], 0.3))
     clasp = np.abs(part - Q.PART_CLASP) < 0.5
     rgb[clasp] = lin(col['clasp'])
     return rgb
 
 
-def prop_rough(ob: bpy.types.Object) -> np.ndarray:
+def prop_rough(ob: bpy.types.Object, satin: bool = False) -> np.ndarray:
     part = S.attr_array(ob, 'part')
     qt = S.attr_array(ob, 'qt').astype(np.float64)
     n = len(part)
     rough = np.full(n, 0.6)
     coat = np.full(n, 0.05)
     quill = (np.abs(part - Q.PART_QUILL) < 0.5) | (np.abs(part - Q.PART_TAILQ) < 0.5)
-    rough[quill] = 0.55 - 0.15 * qt[quill]
-    coat[quill] = 0.08
+    # build 2: matte keratin (they read as plastic pencils)
+    rough[quill] = 0.74 - 0.1 * qt[quill]
+    coat[quill] = 0.03
     blade = np.abs(part - Q.PART_BLADE) < 0.5
-    rough[blade] = 0.14
-    coat[blade] = 1.0
+    rough[blade] = 0.22
+    coat[blade] = 0.6
     cloth = (np.abs(part - Q.PART_CAPE) < 0.5) | (np.abs(part - Q.PART_COLLAR) < 0.5)
-    rough[cloth] = 0.9
-    coat[cloth] = 0.0
+    # wool: matte; Champion's gold cape a soft satin sheen (VARIANT_ORM)
+    rough[cloth] = 0.55 if satin else 0.94
+    coat[cloth] = 0.18 if satin else 0.0
     clasp = np.abs(part - Q.PART_CLASP) < 0.5
-    rough[clasp] = 0.3
-    coat[clasp] = 0.8
+    rough[clasp] = 0.36
+    coat[clasp] = 0.3
     return np.stack([np.ones(n), rough, coat], axis=1)
 
 
@@ -608,17 +683,81 @@ def paint_sources(body_srcs, fins, props=()) -> None:
         kind = S.attr_array(ob, 'kind')
         tpos = S.attr_array(ob, 'tpos').astype(np.float64)
         lrand = S.attr_array(ob, 'lrand').astype(np.float64)
-        a = body_paint(root, PALETTE, kind, tpos, lrand)
+        co = np.empty(len(ob.data.vertices) * 3, np.float32)
+        ob.data.vertices.foreach_get('co', co)
+        pos = co.reshape(-1, 3).astype(np.float64)
+        a = body_paint(root, PALETTE, kind, tpos, lrand, pos)
         S.set_colour_attr(ob, 'paint', a['paint'])
         S.set_colour_attr(ob, 'rough', a['rough'])
         S.add_attr(ob, 'shade', a['shade'])
         for vid, var in VARIANTS.items():
-            S.set_colour_attr(ob, U.variant_attr(vid, ID), body_paint(root, var, kind, tpos, lrand)['paint'])
+            S.set_colour_attr(ob, U.variant_attr(vid, ID), body_paint(root, var, kind, tpos, lrand, pos)['paint'])
     for ob in props:
         S.set_colour_attr(ob, 'paint', prop_paint(ob, PALETTE))
         S.set_colour_attr(ob, 'rough', prop_rough(ob))
+        S.set_colour_attr(ob, 'rough_champion', prop_rough(ob, satin=True))
+        # polish: the blade lifts itself a little out of the body's shadow (it read mid-grey in the game's grey studio)
+        S.add_attr(ob, 'glow', np.where(np.abs(S.attr_array(ob, 'part') - Q.PART_BLADE) < 0.5, 1.0, 0.0))
         for vid, var in VARIANTS.items():
             S.set_colour_attr(ob, U.variant_attr(vid, ID), prop_paint(ob, var))
+
+
+# polish: the glow channel, used only by the blade (a faint self-light on the painted silver, far under the bloom
+# threshold), so it reads light silver beside the body instead of mid-grey in its shadow
+GLOW = {'strength': 0.4, 'tint': None}
+
+# Champion's gold cape takes its own roughness and coat (a satin sheen; the props' `rough_champion`)
+VARIANT_ORM = {'champion': {}}
+
+
+def prop_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
+    """The props per pixel: the cape's stitched hem (a dashed line of pale thread just above the rolled hem, 1-hero and
+    4-details 5), and on Champion Quillion's gold cape an embroidered vine band above it (variant-champion-quillion)."""
+    col = colours(pal)
+    m, nb = new_mat(name)
+    c = nb.attribute(attr).outputs['Color']
+    part = nb.attribute('part').outputs['Fac']
+    cape = nb.math('MULTIPLY', nb.math('GREATER_THAN', part, 3.5), nb.math('LESS_THAN', part, 4.5))
+    v = nb.attribute('qt').outputs['Fac']
+    u = nb.attribute('qside').outputs['Fac']
+    if pal.get('embroidery'):
+        mid = nb.math('ADD', 0.86, nb.math('MULTIPLY', nb.math('SINE', nb.math('MULTIPLY', u, 46.0)), 0.016))
+        stem = nb.smooth(nb.math('ABSOLUTE', nb.math('SUBTRACT', v, mid)), 0.0045, 0.002)
+        # small leaves on alternate sides of the stem
+        side = nb.math('SINE', nb.math('MULTIPLY', u, 92.0))
+        lv = nb.math('ADD', mid, nb.math('MULTIPLY', side, 0.022))
+        leaf = nb.math('MULTIPLY', nb.smooth(nb.math('ABSOLUTE', nb.math('SUBTRACT', v, lv)), 0.009, 0.004),
+                       nb.smooth(nb.math('ABSOLUTE', side), 0.55, 0.85))
+        emb = nb.math('MULTIPLY', nb.math('MAXIMUM', stem, leaf), cape)
+        c = nb.mix(emb, c, nb.rgb(C.lin(col['embroidery'])))
+    # the quills: fine strands along each clump (build 2: smooth cones read as plastic), lighter and darker streaks
+    # that fade toward the point, and a little shade along the clump's edges
+    quill = nb.math('LESS_THAN', part, 2.5)
+    qr = nb.attribute('qrand').outputs['Fac']
+    ph = nb.math('ADD', nb.math('MULTIPLY', u, 19.0), nb.math('MULTIPLY', qr, 23.0))
+    streak = nb.math('ADD', nb.math('MULTIPLY', nb.math('SINE', ph), 0.6), nb.math('MULTIPLY', nb.math('SINE', nb.math('MULTIPLY', ph, 2.7)), 0.4))
+    sk = nb.math('ADD', 1.0, nb.math('MULTIPLY', nb.math('MULTIPLY', streak, 0.3), nb.smooth(v, 0.98, 0.45)))
+    sk = nb.math('MULTIPLY', sk, nb.math('SUBTRACT', 1.0, nb.math('MULTIPLY', nb.smooth(nb.math('ABSOLUTE', u), 0.6, 1.0), 0.18)))
+    sk = nb.math('ADD', nb.math('MULTIPLY', sk, quill), nb.math('SUBTRACT', 1.0, quill))
+    c = nb.mix(1.0, c, nb.comb(sk, sk, sk), blend='MULTIPLY')
+    band = nb.math('MULTIPLY', nb.smooth(v, 0.935, 0.944), nb.smooth(v, 0.962, 0.953))
+    dash = nb.smooth(nb.math('SINE', nb.math('MULTIPLY', u, 260.0)), -0.1, 0.3)
+    stitch = nb.math('MULTIPLY', nb.math('MULTIPLY', band, dash), cape)
+    c = nb.mix(nb.math('MULTIPLY', stitch, 0.6), c, nb.rgb(C.lin(col['stitch'])))
+    # the wool: a fine colour noise in the weave (round 2: it read as flat plastic)
+    cloth = nb.math('MULTIPLY', nb.math('GREATER_THAN', part, 3.5), nb.math('LESS_THAN', part, 5.5))
+    pos = nb.coords().outputs['Object']
+    wn = nb.math('ADD', 0.8, nb.math('MULTIPLY', nb.noise(pos, 120.0, 4.0, 0.65), 0.3))
+    wk = nb.math('ADD', nb.math('MULTIPLY', wn, cloth), nb.math('SUBTRACT', 1.0, cloth))
+    c = nb.mix(1.0, c, nb.comb(wk, wk, wk), blend='MULTIPLY')
+    # the clasp: a dark rim ring so it reads as a disc on the cloth (Champion's gold collar too)
+    clasp = nb.math('GREATER_THAN', part, 5.5)
+    rim = nb.math('MULTIPLY', nb.smooth(v, 0.84, 0.94), clasp)
+    c = nb.mix(nb.math('MULTIPLY', rim, 0.6), c, nb.rgb(C.lin(C.shade_hex(col['clasp'], 0.45))))
+    em = nb.new('ShaderNodeEmission')
+    nb.link(c, em.inputs['Color'])
+    nb.output(em.outputs[0])
+    return m
 
 
 def _ell(nb: NB, p, c, r, soft=0.08):
@@ -667,12 +806,70 @@ def body_material(name: str, attr: str, pal: dict, marks) -> bpy.types.Material:
 
 # ----------------------------------------------------------------------------- the rig (plans/biped.py)
 CAPE_COLUMNS = (('capeR', -0.62), ('capeC', 0.0), ('capeL', 0.62))
-CAPES = [{'name': nm, 'parent': 'chest', 'points': K.chain_points(k * K.THETA)} for nm, k in CAPE_COLUMNS]
-EAR_LEN = 0.06
+CAPES = [{'name': nm, 'parent': 'chest', 'points': K.chain_points(k)} for nm, k in CAPE_COLUMNS]
+EAR_LEN = 0.085
+
+
+def _blade_normal() -> Vector:
+    p0, p1, p2 = (Vector(p) for p in F.BLADE_BEZ)
+    n = (p1 - p0).cross(p2 - p0).normalized()
+    return n if n.x >= 0 else -n
+
+
+def _chain_pose(targets, face=None) -> list:
+    """Tail-bone rotations (x, y, z degrees each, world-aligned relative to the parent at rest, as plans/biped.py keys
+    them) that point each bone of the tail along its target world direction (the least turn from its rest direction)."""
+    out = []
+    w_prev = Matrix.Identity(3)
+    for i, tg in enumerate(targets):
+        d = Vector(F.TAIL_POINTS[i + 1]) - Vector(F.TAIL_POINTS[i])
+        t = Vector(tg).normalized()
+        w_i = d.normalized().rotation_difference(t).to_matrix()
+        if face is not None and i == len(targets) - 1:
+            # roll the blade about its own axis so its flat face looks toward `face` (either side of the face will do)
+            n1 = w_i @ _blade_normal()
+            nd = Vector(face) - t * Vector(face).dot(t)
+            if nd.length > 1e-6:
+                nd.normalize()
+                if n1.dot(nd) < 0:
+                    nd = -nd
+                ang = math.atan2(n1.cross(nd).dot(t), n1.dot(nd))
+                w_i = Matrix.Rotation(ang, 3, t) @ w_i
+        e = (w_prev.transposed() @ w_i).to_euler('XYZ')
+        out.append((math.degrees(e.x), math.degrees(e.y), math.degrees(e.z)))
+        w_prev = w_i
+    return out
+
+
+def _blade_pose(z12: float, x1: float, target) -> list:
+    """Tail-bone rotations (x, y, z degrees each, world-aligned relative to the parent at rest, as plans/biped.py keys
+    them) that swing the furry tail round by z12 per bone (lifted x1) and turn the blade toward `target`."""
+    r1 = Euler((math.radians(x1), 0.0, math.radians(z12)), 'XYZ').to_matrix()
+    r2 = Euler((0.0, 0.0, math.radians(z12)), 'XYZ').to_matrix()
+    d_rest = (Vector(F.TAIL_POINTS[3]) - Vector(F.TAIL_POINTS[2])).normalized()
+    rmin = d_rest.rotation_difference(Vector(target).normalized()).to_matrix()
+    e = ((r1 @ r2).transposed() @ rmin).to_euler('XYZ')
+    return [(x1, 0.0, z12), (0.0, 0.0, z12), (math.degrees(e.x), math.degrees(e.y), math.degrees(e.z))]
+
+
+def fencer_poses() -> dict:
+    """The fencer's tail poses (5-poses, CONTENT trait En Garde): the guard holds the blade forward and up over the left
+    shoulder; the windup raises it high over the shoulder; the salute stands it upright beside the head. Each blade
+    stays outside the quill halo (checked numerically against the rest geometry)."""
+    # round 3 (the tail now leaves the rump under the cape): each pose names a direction per tail bone, checked
+    # numerically against the rest geometry: the guard holds the blade forward and up over the left shoulder; the
+    # windup raises it high over the shoulder; the salute stands it upright beside the head; the lunge brings the
+    # blade's root round the outside of the left hip to chest height and the blade level, straight ahead
+    front = (0.35, -0.94, 0.0)
+    return {'guard': _chain_pose([(0.75, 0.25, 0.6), (0.55, -0.35, 0.75), (0.45, -0.75, 0.6)], front),
+            'windup': _chain_pose([(0.6, 0.4, 0.7), (0.5, 0.05, 0.85), (0.4, 0.2, 1.0)], front),
+            'salute': _chain_pose([(0.7, 0.2, 0.65), (0.6, -0.3, 0.75), (0.35, -0.3, 1.0)], front),
+            # the lunge's blade shows its flat face to the side (the in-game strike camera is at 70°)
+            'lunge': _chain_pose([(0.7, 0.15, 0.7), (0.6, -0.75, 0.3), (0.06, -1.0, 0.08)], (1.0, 0.0, 0.0))}
 
 
 def rig_p() -> dict:
-    eb = v3(F.EAR_C) - v3(F.EAR_UP) / np.linalg.norm(F.EAR_UP) * 0.03
+    eb = v3(F.EAR_C) - v3(F.EAR_UP) / np.linalg.norm(F.EAR_UP) * 0.042
     return {
         'hip': F.HIP, 'chest': F.CHEST, 'head_c': F.HEAD_C, 'head_r': 0.15,
         'legs': {'hip': F.LEG_HIP, 'knee': F.KNEE, 'ankle': F.ANKLE, 'toe': F.TOE},
@@ -686,7 +883,10 @@ def rig_p() -> dict:
         # toward level (per tail bone: the furry tail keeps its height, clear of the hip; the blade bone −62°), so
         # the blade drives ahead from beside the left hip, rising about 12° toward a target's chest; the blade leans
         # out at rest (the hero), so 160° of swing (not the plan's 175°) aims it straight
-        'strike_style': 'thrust', 'thrust_lift': [0.0, 0.0, -62.0], 'thrust_swing': -160.0,
+        'strike_style': 'thrust', 'thrust_lift': [15.0, 0.0, -50.0], 'thrust_swing': -170.0,
+        # round 2: the fencer's battle clips (plans/biped.py `fencer`): en garde, the windup over the shoulder, the
+        # lunge, the salute; a longer walking stride; the cape drapes in ko
+        'fencer': fencer_poses(), 'stride': 0.2, 'cape_drape': 0.75,
     }
 
 
@@ -711,7 +911,7 @@ def body_weight_regions(co: np.ndarray, names: list[str]) -> list:
         b = v3(F.mirror(P['ear_base'], s))
         d = v3(F.mirror(P['ear_dir'], s))
         d /= np.linalg.norm(d)
-        on = (F.ear_dist(co) < 0.052) & (np.sign(co[:, 0]) == s)
+        on = (F.ear_dist(co) < 0.064) & (np.sign(co[:, 0]) == s)
         if on.any():
             pts = [tuple(b), tuple(b + d * EAR_LEN * 0.5), tuple(b + d * EAR_LEN)]
             out.append((on, U.chain_weights(co[on], pts, [f'ear.{tag}.1', f'ear.{tag}.2'], 'head', fade=(0.25, 0.05))))
@@ -766,6 +966,13 @@ def cape_weights(co: np.ndarray, u: np.ndarray) -> dict[str, np.ndarray]:
         cw = U.chain_weights(co, c['points'], [f'{nm}.{j + 1}' for j in range(len(c['points']) - 1)], 'chest')
         for b, v in cw.items():
             w[b] = w.get(b, 0.0) + v * bl
+    # round 2: over the shoulder tops the cloth rides the upper arm a little, so a raised arm lifts it
+    for s, tag in ((1, 'L'), (-1, 'R')):
+        near = smooth(0.15, 0.07, np.linalg.norm(co - v3(F.mirror(F.SHOULDER, s)), axis=1)) * 0.6
+        if near.any():
+            for b in list(w):
+                w[b] = w[b] * (1 - near)
+            w[f'upperarm.{tag}'] = w.get(f'upperarm.{tag}', 0.0) + near
     return w
 
 
@@ -791,13 +998,18 @@ def prop_weight_regions(co: np.ndarray, attr, names: list[str], mesh: str | None
 # The tail carries a rigid, upright blade: the plan's lifts (up to 26° per bone in win) tip it forward over the back into
 # the quills, so the tail is calm (a sword's sway, not a wag), calmest in the clips that lift it most; the strike keeps
 # its full swing; the low, drooping clips keep more (the blade leans back, away from the quills).
-_TAIL_CALM = {'idle_happy': 0.15, 'pet': 0.2, 'hop': 0.12, 'celebrate': 0.12, 'win': 0.1, 'battle_idle': 0.15,
+_TAIL_CALM = {'idle_happy': 0.15, 'pet': 0.2, 'hop': 0.12, 'celebrate': 0.12,
               'step_fwd': 0.15, 'step_back': 0.15, 'strafe_l': 0.18, 'strafe_r': 0.18, 'sidestep_l': 0.15,
               'sidestep_r': 0.15, 'cast': 0.2, 'shove': 0.3, 'idle_sad': 0.5, 'idle_tired': 0.5, 'idle_sick': 0.5,
-              'hit': 0.5, 'hit_heavy': 0.5, 'ko': 0.6, 'sit_down': 1.0, 'sit': 1.0, 'sleep': 1.0}
+              'ko': 0.6, 'sit_down': 1.0, 'sit': 1.0, 'sleep': 1.0}
 CLIP_CALM = {
     '*': {'ear': 0.7, 'tail': 0.35},
-    'strike': {'ear': 0.4, 'tail': 1.0},
+    'strike': {'ear': 0.4, 'tail': 1.0, 'capeL': 1.7, 'capeC': 0.7, 'capeR': 0.9},
+    'walk': {'ear': 0.7, 'tail': 0.35, 'cape': 1.6},
+    'hit': {'ear': 0.7, 'tail': 0.5, 'cape': 1.5},
+    'hit_heavy': {'ear': 0.7, 'tail': 0.5, 'cape': 1.5},
+    'battle_idle': {'ear': 0.7, 'tail': 1.0},
+    'win': {'ear': 0.7, 'tail': 1.0},
     **{clip: {'ear': 0.7, 'tail': k} for clip, k in _TAIL_CALM.items()},
 }
 

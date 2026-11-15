@@ -141,6 +141,14 @@ export interface FilmTex {
 export interface FilmGlow {
   strength: number
   tint: readonly [number, number, number] | null
+  /** Nov 14 (opt-in): the twinkle's share of film.glow.twinkleAmp (parts.ts GlowSpec); absent = 1, as before. */
+  twinkle?: number
+}
+
+/** A glow's own twinkle share, or null for the shared twinkle (absent or 1: every shader stays as it was). */
+export function glowTwinkleShare(glow: FilmGlow | null | undefined): number | null {
+  const t = glow?.twinkle
+  return typeof t === 'number' && t !== 1 ? t : null
 }
 
 export interface FilmOptions {
@@ -230,7 +238,7 @@ export function filmMaterial(kind: Kind, tex: FilmTex, opts: FilmOptions = {}): 
   m.userData.hdrMax = f.hdrMax
   // cards and the tuft read shared strip tiles: they never glow (the pipeline's notes)
   const glow = opts.glow && tex.orm && opts.glow.strength > 0 && kind !== 'card' && kind !== 'lock' ? opts.glow : null
-  if (glow) m.userData.glow = { strength: glow.strength, tint: glow.tint }
+  if (glow) m.userData.glow = { strength: glow.strength, tint: glow.tint, ...(glowTwinkleShare(glow) !== null ? { twinkle: glow.twinkle } : {}) }
   let edge: readonly [number, number] | null = null
   if (kind === 'card') {
     m.alphaTest = f.cardAlphaTest
@@ -310,7 +318,7 @@ uniform vec3 filmGlowTint;`,
 // the glow: the ORM map's alpha, twinkling slowly with a phase per texel cell
 float filmPhase = fract( sin( dot( floor( vRoughnessMapUv * ${g.cells.toFixed(1)} ), vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ) * 6.2831853;
 vec3 filmGlow = ${glow.tint ? 'filmGlowTint' : 'diffuseColor.rgb'} * texture2D( roughnessMap, vRoughnessMapUv ).a * filmGlowStrength
-  * ( 1.0 + filmTwinkle * sin( filmTime * ${(g.twinkleHz * 2 * Math.PI).toFixed(4)} + filmPhase ) );
+  * ( 1.0 + filmTwinkle${glowTwinkleShare(glow) !== null ? ` * ${glowTwinkleShare(glow)!.toFixed(4)}` : ''} * sin( filmTime * ${(g.twinkleHz * 2 * Math.PI).toFixed(4)} + filmPhase ) );
 totalEmissiveRadiance += filmGlow;`,
         )
     }
@@ -327,7 +335,7 @@ totalEmissiveRadiance += filmGlow;`,
 #include <opaque_fragment>`,
     )
   }
-  m.customProgramCacheKey = () => `film-${kind}-r${minRough}-${edge ? `fade${edge[0]}_${edge[1]}` : ''}-${maxLum}-${f.hdrMax}-${glow ? (glow.tint ? 'glow-tint' : 'glow') : ''}-${coatMask ? `coat${coatMask.gain}-${coatMask.max}` : ''}-${edge ? f.cardCoverage.join('_') : ''}`
+  m.customProgramCacheKey = () => `film-${kind}-r${minRough}-${edge ? `fade${edge[0]}_${edge[1]}` : ''}-${maxLum}-${f.hdrMax}-${glow ? (glow.tint ? 'glow-tint' : 'glow') : ''}${glowTwinkleShare(glow) !== null ? `-tw${glowTwinkleShare(glow)}` : ''}-${coatMask ? `coat${coatMask.gain}-${coatMask.max}` : ''}-${edge ? f.cardCoverage.join('_') : ''}`
   return m
 }
 

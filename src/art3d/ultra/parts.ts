@@ -96,6 +96,11 @@ export function partVisible(name: string, active: string | null, variants?: Vari
 export interface GlowSpec {
   strength: number
   tint: readonly [number, number, number] | null
+  /**
+   * Nov 14 (Wishlume, opt-in): the twinkle's share (0..1) of film.glow.twinkleAmp. Absent = 1, as before. A large glowing
+   * area (a lantern's paper) shows the per-cell twinkle as a fine square stipple, so its sidecar sets 0.
+   */
+  twinkle?: number
 }
 
 /** sRGB (0–1) to linear, as three's colour management does for a hex colour. */
@@ -111,13 +116,15 @@ function linear(c: number): number {
 export function glowOf(sidecar: unknown, maxStrength: number): GlowSpec | null {
   const g = (sidecar as { glow?: unknown } | null)?.glow
   if (!g || typeof g !== 'object') return null
-  const { strength, tint } = g as { strength?: unknown; tint?: unknown }
+  const { strength, tint, twinkle } = g as { strength?: unknown; tint?: unknown; twinkle?: unknown }
   if (typeof strength !== 'number' || !Number.isFinite(strength) || strength <= 0 || strength > maxStrength) return null
-  if (tint === null || tint === undefined) return { strength, tint: null }
+  // an optional twinkle share in [0, 1] (absent or unusable: the shared twinkle, as before)
+  const tw = typeof twinkle === 'number' && Number.isFinite(twinkle) && twinkle >= 0 && twinkle <= 1 ? { twinkle } : {}
+  if (tint === null || tint === undefined) return { strength, tint: null, ...tw }
   const hex = typeof tint === 'string' ? /^#?([0-9a-f]{6})$/i.exec(tint.trim()) : null
   if (!hex) return null
   const n = parseInt(hex[1]!, 16)
-  return { strength, tint: [linear(((n >> 16) & 255) / 255), linear(((n >> 8) & 255) / 255), linear((n & 255) / 255)] }
+  return { strength, tint: [linear(((n >> 16) & 255) / 255), linear(((n >> 8) & 255) / 255), linear((n & 255) / 255)], ...tw }
 }
 
 /** The sidecar's `fins: { soft: true }`: fins (the mane's fin locks) take received shadows instead of staying flat. */

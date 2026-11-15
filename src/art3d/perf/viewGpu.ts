@@ -5,7 +5,7 @@ import { ao } from 'three/addons/tsl/display/GTAONode.js'
 import { bloom } from 'three/addons/tsl/display/BloomNode.js'
 import { dof } from 'three/addons/tsl/display/DepthOfFieldNode.js'
 import { ART } from '../../data/tuning.ts'
-import { FILM_TWINKLE, studioEnvironmentScene, type FilmGlow } from './content.ts'
+import { FILM_TWINKLE, glowTwinkleShare, studioEnvironmentScene, type FilmGlow } from './content.ts'
 import { levelFlags, setCoverage, type Level, type PerfView, type ViewOptions } from './view.ts'
 
 /**
@@ -181,7 +181,9 @@ export async function createWebGPUView(opts: ViewOptions): Promise<PerfView> {
       if (glow && mat.roughnessMap) {
         // the ORM map's alpha, on the base colour or the tint, twinkling slowly with a phase per texel cell
         const phase = fract(sin(dot(floor(uv().mul(G.cells)), vec2(12.9898, 78.233))).mul(43758.5453)).mul(6.2831853)
-        const twinkle = float(1).add(twinkleU.mul(sin(time.mul(G.twinkleHz * 2 * Math.PI).add(phase))))
+        // a glow's own twinkle share (Nov 14, opt-in; absent = the shared twinkle, as before)
+        const share = glowTwinkleShare(glow)
+        const twinkle = float(1).add((share !== null ? twinkleU.mul(share) : twinkleU).mul(sin(time.mul(G.twinkleHz * 2 * Math.PI).add(phase))))
         const tint = glow.tint ? vec3(glow.tint[0], glow.tint[1], glow.tint[2]) : diffuseColor.rgb
         glowNode = tint.mul(texture(mat.roughnessMap).a).mul(glow.strength).mul(twinkle) as unknown as Node<'vec3'>
         // the material's own emissive (a fin's faint translucency) plus the glow

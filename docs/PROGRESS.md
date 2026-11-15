@@ -2,6 +2,78 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Every monster in 3D, batches 3 and 4 (2026-11-15) · v1.25.0
+
+The owner, Nov 13, after v1.24.0: "Good for now" (and Cobblemaw "looks amazing"). Then: "Do the next 10 2 at a time. Do not move onto the next two until the two you are working on are completely finished." So the ten breeds went two at a time, each pair completely finished before the next, and all ship together (BUILD_PLAN "Batches 3 and 4"; ART_2_DETAIL §9.8).
+
+**Live:**
+- **11 new high-detail monsters** in Lab → 3D Gallery and Battle 3D (the 🐾 chips), each at its true size beside Puddlepup:
+  - **on two legs:** Quillion (with Champion), Grumblestone, Gloomgrin, Plumdrake (Stormcloud), Pluckrex, and Pluckrex (grown) as its own look;
+  - **floating:** Wishlume (Beacon), Ashwraith (Lantern-bearer), Zipwisp (Prism), Mirrorkin (Obsidian), Frostlance.
+- **On the ranch** these breeds now show their 3D model in the live portrait too, by v1.24.0's rule (Pluckrex switches to its grown look at Prime). Settings → Graphics → Monsters: Classic still brings back the drawings.
+- **New moves for the new shapes:** Quillion's fencer lunge and salute, Grumblestone's two-fisted slam, Gloomgrin's airborne pounce, Plumdrake's wing gust, Pluckrex's headbutt (young) and charge (grown), Wishlume's lantern pulse, Ashwraith's cloth lash, Zipwisp's spark ram, Mirrorkin's glass beam pose and bow, and Frostlance's rolling tusk ram and corkscrew win.
+- **Steady glow where it's big:** Wishlume's paper and Mirrorkin's glass glow evenly, without the fine square shimmer the shared twinkle drew on large glowing areas.
+
+**Done**
+- **Two body plans finished and in use:** the biped plan (`plans/biped.py`) and the floater plan (`plans/floater.py`), each with all 32 clips and the opt-in knobs these breeds needed (RECIPE.md).
+- **Four more plans, tools only** (nothing ships with them yet): the shelled plan (`plans/shelled.py`, for Moatshell and Reefclaw), the blob plan (`plans/blob.py`, for Bloatoad and Scrollopus), and then the construct and serpent plans (`plans/construct.py` for Lootlid, `plans/serpent.py` for Coilfang), sharing `plans/kin.py`. Each has a stand-in recipe that builds.
+- **Pipeline:**
+  - the opt-in `glow.twinkle` (recipe → sidecar → `parts.ts` `glowOf`, WebGL and WebGPU);
+  - `assertFinite` now also stops a ship on NaN or zero-length normals and tangents (all 45 shipped files passed);
+  - `ko_ground`, `EYE_PARENTS` and `FACE_RATIO_LIMITS` in `build_ultra.py`.
+- **The game:** 11 lines in `src/art/ultraLooks.ts`; `ultraLooks.test.ts` checks each new look's files, clips, variants and budgets.
+- **Review:** every look had three fresh-eyes rounds against its pictures and a polish pass that the session checked; none raised a copy concern under the owner's Nov 13 rule ("can look like other things. They just shouldn't be exact").
+- **Checks:**
+  - `npm run verify` green (1,441 tests);
+  - Battle 3D, headless on the PC's GPU: all 11 looks in 7 pairings (Pluckrex against its grown form, a floater against a biped, Frostlance against Puddlepup), each loaded at its true size with no errors;
+  - e2e: 42 passed, with every 3D spec (Gallery, models, ranch) green. Two specs fail the same way on v1.24.0 on this PC, so they aren't from this release: the Sound Lab check (the song stops before its last step; 2 of 2 on both versions, back to back) and Echo Stones under load (its test robot misses the tune; it passed here once on a quiet PC).
+
+| Look | Triangles | Joints | Download | Lite |
+|---|---|---|---|---|
+| Quillion | 63k | 37 | 4.5 MB | 1.2 MB |
+| Grumblestone | 62k | 21 | 3.6 MB | 1.1 MB |
+| Gloomgrin | 67k | 41 | 3.9 MB | 1.2 MB |
+| Plumdrake | 68k | 43 | 4.2 MB | 1.2 MB |
+| Pluckrex | 66k | 26 | 3.6 MB | 1.1 MB |
+| Pluckrex (grown) | 69k | 32 | 3.8 MB | 1.1 MB |
+| Wishlume | 89k | 16 | 4.9 MB | 1.2 MB |
+| Ashwraith | 80k | 46 | 4.1 MB | 1.3 MB |
+| Zipwisp | 53k | 19 | 4.5 MB | 1.5 MB |
+| Mirrorkin | 71k | 19 | 3.5 MB | 0.9 MB |
+| Frostlance | 77k | 16 | 2.1 MB | 0.5 MB |
+
+(MB = 1,048,576 bytes; downloaded when viewed, never precached.)
+
+**Decided along the way** (tell me if you'd like any changed):
+- **Frostlance's size:** its height follows the card (about 0.9 × Puddlepup's), its length the pictures (about 1.2 m; the card's 2.2 × Puddlepup's length would be about 3.2 m and look nothing like them). Moatshell, coming next, follows the same rule.
+- **Frostlance's tusk** comes from the forehead, as in every picture (the card says "upper lip").
+- **Pluckrex's mouth** uses Hearthwing's mouth pink, which its own palette can't mix.
+- **Plumdrake's Stormcloud** has no crackle of light yet (allowed now; not built).
+- **No fur cards** on any of the 11: on pale fluff they read as glass shards, so fluff, wisps and sparks are sculpted.
+
+**Known issues** (taste items for the owner's look):
+- **Quillion:** the quills on the crown and back comb like an urchin from behind; the face sculpt; the cape's weave and folds don't show at game size; a sock line at the feet; a tiny notch on the flank by the cape's edge; the lunge stance looks modest from the strike camera.
+- **Grumblestone:** the plates are fairly even and pillowy (the chest still reads as hex tiles); the face sculpt; the granite flecks; no grimace when hit (the face is painted); stretch on the steep cheek plates.
+- **Gloomgrin:** pillowy cobble stone; upright ears; long hands; no runes on the forearm fronts or shoulders; flat ear insides; the eyes lean beige at 64 px; the forehead rune's core is a little light.
+- **Plumdrake:** the ruff reads as layered leaves; the crest is cones; a long, flat snout in profile with bulging eyes; an opaque wing membrane; small claws; the folded wing looks like a board when hit; no Stormcloud crackle; a glossy inside of the mouth; faint ruff mottling up close.
+- **Pluckrex (both forms):**
+  - the face sculpt (the snout and the open mouth);
+  - the crest sits as a ring behind the head rather than a fan along the crown, and stays upright in the knock-out;
+  - the young's thin neck, flat belly and foot talons; a cottage-cheese belly texture;
+  - the grown's bracers look like tin cans, and it is about 3% over its size rule (the longer neck);
+  - olive pixels on the legs at 64 px (it needs a shared texture-packing change); stiff arms in the sidesteps.
+- **Wishlume:** marbled paper rather than fibres; sprig leaves rather than a fan; the size of the cap's loop; a mild win; the flame isn't distinct at game size; a faint halo on the far rim; one face for every move.
+- **Ashwraith:** the eyes are still dim at 64 px; head-on, the front curls read as a comb of pale hooks; the strike's lash reaches only belly height; the collar slab and a box fold; no frayed fringe; spikes in the hood tip's curl; strap-like strips; a sheen on the dark face.
+- **Zipwisp:** looped-noodle fur up close; the wings trade a clean three-quarter view for less sweep from the side; the tail shows less from the side; 15 sparks; a jittery speed in short moves.
+- **Mirrorkin:** tube-like scrolls; a plain outer band on the frame; the brooch is hidden; straight cloak panels; slim gloves; the handle's vine reads as cracks; the glass is painted, not a real reflection; faint flecks on the lip bevel; blob gems on the Lite copy; one expression; 2.4% over its size rule.
+- **Frostlance:** soft rolls on the tusk; thorny fin fringes; narrow fluke lobes; the far fin peeks under the chin; the fluke tips show beside the head; the belly blooms in the big hit; small shoulders at the fin roots from the front; the Lite copy simplifies the fin shards; a slight facet on the lower body's outline at three-quarter.
+- **Hearthwing (from v1.23.0), found at this release:** its jaw moves part of the upper snout too. The same leak was fixed in Plumdrake. This is probably why its open mouth is hard to see in the cast (a v1.24.0 known issue). It needs a rebuild with the jaw fix; not done yet.
+- **Housekeeping:** the empty stray folders `C:\pv17` and `C:\art-review\` can be deleted by hand (a safety check stopped me).
+
+**Follow-ups (tools):** a shared texture-packing gutter or island grouping (Pluckrex's 64 px pixels); a per-look high-quality texture option (crest blocks); Hearthwing's jaw; a shared fix for glassy fur cards on pale fluff.
+
+**Next:** the owner looks at the 11 on the phone. Meanwhile batch 5 has started two at a time: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan).
+
 ## The upgrade round and Hearthwing's flight (2026-11-13) · v1.24.0
 
 The owner, Nov 12, after v1.23.0: "Do all of the upgrade. Bigger wings so it looks like it could actually fly (and it should in a special attack and in the ranch)." Later: "After you finish the updates for the 1st 10 pause and put them into the game I would like to see them."

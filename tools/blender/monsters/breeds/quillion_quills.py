@@ -29,8 +29,9 @@ from monsters.breeds import quillion_form as F
 PART_QUILL, PART_TAILQ, PART_BLADE, PART_CAPE, PART_COLLAR, PART_CLASP = 1.0, 2.0, 3.0, 4.0, 5.0, 6.0
 ATTRS = ('part', 'qt', 'qroot', 'qrand', 'qside')
 
-QUILL_SPACING = 0.025       # Poisson spacing of the roots on the mantle
+QUILL_SPACING = 0.03        # Poisson spacing of the roots on the mantle
 QUILL_BURY = 0.016          # how deep a root sinks into the skin
+QUILL_TEXEL_K = 0.75        # the quills' texel density (their gradient and grooves need few texels; build 1 gave them most of the atlas)
 _LAYOUT: dict = {}
 
 
@@ -66,7 +67,9 @@ def layout() -> dict:
     crown = smooth(0.7, 0.8, z)
     low = smooth(0.44, 0.3, z)
     fore = smooth(0.0, -0.09, P[:, 1]) * smooth(0.66, 0.74, z)     # the forehead's front rows sweep back over the head
-    elev = np.radians(30.0 + 24.0 * side + 4.0 * crown - 10.0 * low + 12.0 * fore) + np.radians(4.0) * rng.normal(0, 1, k).clip(-2, 2)
+    # round 2: the back's rows lie down like shingles toward the tail; the crown's rise from the brow and sweep back
+    # round 3: the outer rows splay for the sunburst silhouette (2-turnaround front)
+    elev = np.radians(15.0 + 30.0 * side + 8.0 * crown - 5.0 * low + 4.0 * fore) + np.radians(4.0) * rng.normal(0, 1, k).clip(-2, 2)
     d = norm(N * np.sin(elev)[:, None] + f * np.cos(elev)[:, None])
     # a little jitter round the flow
     jit = np.radians(9.0) * rng.normal(0, 1, k).clip(-2, 2)
@@ -74,12 +77,12 @@ def layout() -> dict:
     d = norm(d * np.cos(jit)[:, None] + across * np.sin(jit)[:, None])
     # lengths: long on the back and the crown, shorter at the hairline, the lower edge and by the neck
     hl = P[:, 1] - F.hairline_y(z)
-    L = (0.13 + 0.03 * smooth(0.4, 0.55, z) * smooth(0.8, 0.66, z) + 0.025 * side) * (1.0 - 0.18 * crown)
+    L = (0.165 + 0.03 * smooth(0.4, 0.55, z) * smooth(0.8, 0.66, z) + 0.02 * side) * (1.0 - 0.18 * crown)
     L = L * (0.72 + 0.28 * smooth(0.0, 0.07, hl))
     L = L * (0.78 + 0.22 * smooth(0.3, 0.4, z))
     L = L * (1.0 + 0.13 * rng.normal(0, 1, k).clip(-2, 2))
-    W = 0.054 * (1.0 + 0.12 * rng.normal(0, 1, k).clip(-2, 2)) * (0.85 + 0.15 * smooth(0.3, 0.42, z))
-    bend = np.radians(8.0 + 6.0 * rng.random(k))
+    W = 0.05 * (1.0 + 0.12 * rng.normal(0, 1, k).clip(-2, 2)) * (0.85 + 0.15 * smooth(0.3, 0.42, z))
+    bend = np.radians(9.0 + 6.0 * rng.random(k) + 30.0 * np.clip(crown + fore, 0, 1))
     # the root, sunk under the skin along the normal (found on the coarse body: the real skin is within a few mm)
     root = P - N * QUILL_BURY
     _LAYOUT.update({'P': P, 'N': N, 'root': root, 'D': d, 'F': f, 'L': L, 'W': W, 'bend': bend, 'rand': rng.random(k)})
@@ -100,7 +103,7 @@ def tail_layout() -> dict:
     e2 = np.cross(ax, e1)
     rng = np.random.default_rng(41)
     P, N, D, L, W = [], [], [], [], []
-    rows = ((0.22, 6, 0.0), (0.42, 7, 0.5), (0.6, 8, 0.0), (0.78, 8, 0.5), (0.93, 8, 0.0))
+    rows = ((0.3, 7, 0.0), (0.52, 8, 0.5), (0.74, 9, 0.0), (0.93, 9, 0.5))   # round 3: slender spikes, out under the hem
     for t, n, ph in rows:
         r = r1 + (r2 - r1) * t
         c = a + (b - a) * t
@@ -108,13 +111,13 @@ def tail_layout() -> dict:
             ang = 2 * math.pi * (i + ph) / n + 0.25 * rng.normal()
             nn = e1 * math.cos(ang) + e2 * math.sin(ang)
             p = c + nn * r
-            flare = math.radians(20.0 + 8.0 * t)
+            flare = math.radians(16.0 + 8.0 * t)
             d = ax * math.cos(flare) + nn * math.sin(flare)
             P.append(p)
             N.append(nn)
             D.append(d / np.linalg.norm(d))
-            L.append((0.1 + 0.08 * t) * (1.0 + 0.1 * rng.normal()))
-            W.append(0.034 + 0.006 * t)
+            L.append((0.12 + 0.07 * t) * (1.0 + 0.1 * rng.normal()))
+            W.append(0.03 + 0.006 * t)
     P, N, D = np.array(P), np.array(N), np.array(D)
     return {'tP': P, 'tN': N, 'troot': P - N * 0.012, 'tD': D, 'tL': np.array(L), 'tW': np.array(W),
             'tbend': np.radians(6.0) * np.ones(len(P)), 'trand': rng.random(len(P))}
@@ -142,17 +145,18 @@ def _quill_axis(root, d, n, L, bend, nseg):
 
 def _radius(t: np.ndarray, w: float) -> np.ndarray:
     """The clump's half-width along its length: full near the root, a long soft taper to the point."""
-    return 0.5 * w * (0.85 + 0.15 * smooth(0.0, 0.2, t)) * np.clip(1.0 - t, 0, 1) ** 0.62
+    # round 2: a flame-shaped clump: full from the root to the middle, then a long taper to the point
+    return 0.5 * w * (0.72 + 0.28 * smooth(0.0, 0.25, t)) * np.clip(1.0 - t ** 1.5, 0, 1) ** 0.9
 
 
-def quill_mesh(bm, root, d, n, L, W, bend, high: bool, rnd: float, flat: float = 0.6):
+def quill_mesh(bm, root, d, n, L, W, bend, high: bool, rnd: float, flat: float = 0.55, uvl=None, uv_off=(0.0, 0.0)):
     """Add one quill to `bm`; returns its new verts (in order) and each one's (qt, qside)."""
-    nsides = 20 if high else 6
+    nsides = 20 if high else 8      # polish: 8 sides (6 read faceted at the silhouette)
     across = np.cross(d, n)
     al = np.linalg.norm(across)
     across = across / al if al > 1e-6 else norm(np.cross(d, v3((0.0, 0.0, 1.0)))[None])[0]
     # rings along the length (the high clump has more toward the point); the tip is one vertex
-    t = np.linspace(0.0, 1.0, 19) ** 1.25 if high else np.array([0.0, 0.24, 0.52, 0.8, 1.0])
+    t = np.linspace(0.0, 1.0, 19) ** 1.25 if high else np.array([0.0, 0.3, 0.6, 0.84, 1.0])
     full, tf = _quill_axis(root, d, n, L, bend, 24)
     pts = np.stack([np.interp(t, tf, full[:, i]) for i in range(3)], axis=1)
     rad = _radius(t, W)
@@ -171,8 +175,8 @@ def quill_mesh(bm, root, d, n, L, W, bend, high: bool, rnd: float, flat: float =
             r = rad[i]
             if high:
                 # five strands in the clump: lobes that run to the point, a fine fibre groove on each
-                lobe = 0.13 * math.cos(5 * phi + rnd * 6.0) * (1.0 - 0.6 * t[i])
-                fib = 0.035 * math.cos(17 * phi + rnd * 11.0) * (1.0 - t[i])
+                lobe = 0.17 * math.cos(7 * phi + rnd * 6.0) * (1.0 - 0.5 * t[i])
+                fib = 0.05 * math.cos(23 * phi + rnd * 11.0) * (1.0 - t[i])
                 r = r * (1.0 + lobe + fib)
             p = pts[i] + ex * (cx * r) + ey * (cy * r * flat)
             ring.append(bm.verts.new(tuple(p)))
@@ -180,16 +184,29 @@ def quill_mesh(bm, root, d, n, L, W, bend, high: bool, rnd: float, flat: float =
         rings.append(ring)
     tip = bm.verts.new(tuple(pts[-1]))
     info.append((1.0, 0.0))
+    faces = []
     for i in range(len(rings) - 1):
         for k in range(nsides):
-            bm.faces.new((rings[i][k], rings[i][(k + 1) % nsides], rings[i + 1][(k + 1) % nsides], rings[i + 1][k]))
+            f = bm.faces.new((rings[i][k], rings[i][(k + 1) % nsides], rings[i + 1][(k + 1) % nsides], rings[i + 1][k]))
+            faces.append((f, ((i, k), (i, k + 1), (i + 1, k + 1), (i + 1, k))))
     for k in range(nsides):
-        bm.faces.new((rings[-1][k], rings[-1][(k + 1) % nsides], tip))
+        f = bm.faces.new((rings[-1][k], rings[-1][(k + 1) % nsides], tip))
+        faces.append((f, ((len(rings) - 1, k), (len(rings) - 1, k + 1), (len(t) - 1, k + 0.5))))
+    if uvl is not None:
+        # the low quill's own unwrap (build_ultra keeps it: own_uv): one tapered strip, u round the clump (each ring's
+        # own girth), v along the axis, in metres; the packer only scales and places it (one island a quill instead of
+        # smart-project's many slivers)
+        seg = np.linalg.norm(np.diff(pts, axis=0), axis=1)
+        vv = np.concatenate([[0.0], np.cumsum(seg)])
+        girth = [2 * math.pi * float(rad[i]) * (1 + flat) * 0.5 for i in range(len(t) - 1)] + [0.0]
+        for f, corners in faces:
+            for loop, (i, k) in zip(f.loops, corners):
+                loop[uvl].uv = (uv_off[0] + (k / nsides - 0.5) * girth[i], uv_off[1] + vv[i])
     # the root stays open: it is buried under the skin, never seen
     return info
 
 
-def _finish(bm, name: str, attrs: dict) -> bpy.types.Object:
+def _finish(bm, name: str, attrs: dict, texel_k: float = 1.0) -> bpy.types.Object:
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
@@ -198,6 +215,8 @@ def _finish(bm, name: str, attrs: dict) -> bpy.types.Object:
     C.link_obj(ob)
     for k, a in attrs.items():
         S.add_attr(ob, k, np.asarray(a, np.float64))
+    # each part's share of the atlas (bake.pack_atlas: texel_k per face); the quills' gradient needs few texels
+    me.attributes.new('texel_k', 'FLOAT', 'FACE').data.foreach_set('value', np.full(len(me.polygons), texel_k, np.float32))
     return ob
 
 
@@ -205,20 +224,24 @@ def quills_object(name: str, high: bool) -> bpy.types.Object:
     """Every mantle quill and the tail's ruff in one object (part 1 and 2)."""
     Lo = layout()
     bm = bmesh.new()
+    uvl = None if high else bm.loops.layers.uv.new('UVMap')
     part, qt, qroot, qrand, qside = [], [], [], [], []
     sets = [(PART_QUILL, Lo['root'], Lo['D'], Lo['N'], Lo['L'], Lo['W'], Lo['bend'], Lo['rand'], Lo['P']),
             (PART_TAILQ, Lo['troot'], Lo['tD'], Lo['tN'], Lo['tL'], Lo['tW'], Lo['tbend'], Lo['trand'], Lo['tP'])]
     for pid, R, D, N, L, W, B, RND, P in sets:
         for i in range(len(R)):
-            info = quill_mesh(bm, R[i], D[i], N[i], float(L[i]), float(W[i]), float(B[i]), high, float(RND[i]))
+            info = quill_mesh(bm, R[i], D[i], N[i], float(L[i]), float(W[i]), float(B[i]), high, float(RND[i]),
+                              uvl=uvl, uv_off=((i % 20) * 0.18 + pid * 4.0, (i // 20) * 0.24))
             for tq, sd in info:
                 part.append(pid)
                 qt.append(tq)
                 qroot.append(P[i])
                 qrand.append(RND[i])
                 qside.append(sd)
-    ob = _finish(bm, name, {'part': part, 'qt': qt, 'qroot': np.array(qroot), 'qrand': qrand, 'qside': qside})
+    ob = _finish(bm, name, {'part': part, 'qt': qt, 'qroot': np.array(qroot), 'qrand': qrand, 'qside': qside}, texel_k=QUILL_TEXEL_K)
     ob['prop'] = 'quills'
+    if not high:
+        ob['own_uv'] = True
     C.log(f'{name}: {len(Lo["root"])} + {len(Lo["troot"])} quills, {len(ob.data.polygons)} faces')
     return ob
 
@@ -232,13 +255,13 @@ def bezier(s: np.ndarray):
     return pos, norm(tan)
 
 
-BLADE_W = 0.017             # half-width at its widest (the hero: about 3 cm across)
-BLADE_T = 0.0072            # half-thickness at the root
+BLADE_W = 0.034             # half-width at the root (round 2: a broad sabre, not a needle)
+BLADE_T = 0.009             # half-thickness at the root
 
 
 def blade_section(s: np.ndarray):
     """Half-width, half-thickness and roundness along the blade (0 root .. 1 tip)."""
-    hw = BLADE_W * (0.85 + 0.15 * smooth(0.0, 0.2, s)) * (1.0 - smooth(0.35, 1.0, s) ** 1.15)
+    hw = BLADE_W * (0.9 + 0.1 * smooth(0.0, 0.15, s)) * (1.0 - smooth(0.25, 1.0, s) ** 1.1)
     ht = BLADE_T * np.clip(1.0 - s, 0, 1) ** 0.55 + 0.0006
     rnd = smooth(0.3, 0.0, s)
     return hw, ht, rnd
@@ -297,7 +320,7 @@ def blade_object(name: str, high: bool) -> bpy.types.Object:
     qside.append(0.0)
     for k in range(nsides):
         bm.faces.new((rings[0][(k + 1) % nsides], rings[0][k], base))
-    ob = _finish(bm, name, {'part': part, 'qt': qt, 'qroot': np.array(qroot), 'qrand': qrand, 'qside': qside})
+    ob = _finish(bm, name, {'part': part, 'qt': qt, 'qroot': np.array(qroot), 'qrand': qrand, 'qside': qside}, texel_k=1.2)
     ob['prop'] = 'blade'
     return ob
 

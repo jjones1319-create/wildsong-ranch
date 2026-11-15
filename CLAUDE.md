@@ -18,7 +18,7 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
    - Never use names, characters, monster designs, art, sprites, music, sound effects, UI text, logos or data from Monster Rancher / Monster Farm (Koei Tecmo) or any other franchise (Pokémon, Digimon, Dragon Quest…).
    - No series terms such as "errantry", "Rancher" or the original breed and item names, and no other games' item terms either (e.g. "TM", "HM", "Rare Candy", vitamin names).
    - No ripped or extracted game data.
-   - If a design or name starts to resemble something famous, change it.
+   - Resemblance is fine (the owner, Nov 13, 2026): a design may look like other things; it just must never be an exact or near-exact copy of a famous one. Reviews flag only near-exact copies; don't spend effort steering away from look-alikes.
    - Art and sound are generated in code or are CC0. Log every external asset in `CREDITS.md`.
    - Keep the disclaimer in Credits and the README: *"Unofficial fan-made game inspired by classic monster-raising sims. Not affiliated with or endorsed by Koei Tecmo. Monster Rancher is a trademark of KOEI TECMO GAMES CO., LTD."*
 2. **Phone first.**

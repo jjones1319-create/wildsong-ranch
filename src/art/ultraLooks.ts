@@ -81,6 +81,18 @@ export const ULTRA_LOOKS: Readonly<Record<UltraId, UltraLook>> = {
   petalphant: shipped('petalphant', 210),
   hearthwing: shipped('hearthwing', 150),
   'hearthwing-grown': shipped('hearthwing', 300, [], 'grown'),
+  // batches 3 and 4 (Nov 13–15), two at a time: the first biped and floater looks
+  quillion: shipped('quillion', 135, ['champion-quillion']),
+  grumblestone: shipped('grumblestone', 270),
+  gloomgrin: shipped('gloomgrin', 150),
+  plumdrake: shipped('plumdrake', 270, ['stormcloud-plumdrake']),
+  pluckrex: shipped('pluckrex', 150),
+  'pluckrex-grown': shipped('pluckrex', 225, [], 'grown'),
+  wishlume: shipped('wishlume', 135, ['beacon-wishlume']),
+  ashwraith: shipped('ashwraith', 165, ['lantern-bearer-ashwraith']),
+  zipwisp: shipped('zipwisp', 90, ['prism-zipwisp']),
+  mirrorkin: shipped('mirrorkin', 180, ['obsidian-mirrorkin']),
+  frostlance: shipped('frostlance', 135),
 }
 
 /** How tall a look stands beside Puddlepup, in percent (Puddlepup 100). */

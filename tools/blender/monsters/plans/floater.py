@@ -111,6 +111,21 @@ def chains(P: dict) -> list[dict]:
     return out
 
 
+def held_pulse(t: float, start: float, end: float, hold: float) -> float:
+    """A.pulse with its peak held flat for `hold` (0..1 of the clip) round the middle (Nov 14, Mirrorkin's strike_hold)."""
+    if hold <= 0.0:
+        return A.pulse(t, start, end)
+    mid = 0.5 * (start + end)
+    a, b = mid - 0.5 * hold, mid + 0.5 * hold
+    if t <= start or t >= end:
+        return 0.0
+    if t < a:
+        return math.sin(0.5 * math.pi * (t - start) / max(a - start, 1e-9))
+    if t > b:
+        return math.sin(0.5 * math.pi * (end - t) / max(end - b, 1e-9))
+    return 1.0
+
+
 def strike_style(P: dict) -> str:
     st = P.get('strike_style', 'pulse')
     if st not in STRIKE_STYLES:
@@ -162,7 +177,8 @@ def rig_specs(P: dict) -> list[BoneSpec]:
                           'head', radius=0.5 * P['head_r']))
     if P.get('arms'):
         for tag, s in SIDES:
-            a = {k: _mirror(v, s) for k, v in P['arms'].items()}
+            # Nov 14 (Wishlume): the documented 'parent' key is a bone name, not a point (it crashed the mirror)
+            a = {k: _mirror(v, s) for k, v in P['arms'].items() if k != 'parent'}
             par = P['arms'].get('parent', 'chest') if isinstance(P['arms'].get('parent'), str) else 'chest'
             specs.append(BoneSpec(f'upperarm.{tag}', tuple(a['shoulder']), tuple(a['elbow']), par, radius=0.06 * sk))
             specs.append(BoneSpec(f'forearm.{tag}', tuple(a['elbow']), tuple(a['hand']), f'upperarm.{tag}', connect=True, radius=0.06 * sk))
@@ -317,8 +333,20 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         if only and name not in only:
             return
         cb.begin(name, n, loop=loop, hold=hold, root_speed=root_speed)
+        # Nov 14 (Ashwraith; opt-in, absent = as before): `clip_bones` {clip: {bone: [(t0, t1, (x, y, z)[, (dx, dy, dz)])]}}
+        # adds each rotation (degrees) and offset (metres × size_k) to the clip's own pose, in a smooth bump from t0 to t1
+        # (a lash's coil and whip, a higher win, a flare)
+        extra = (P.get('clip_bones') or {}).get(name)
         for f in frames_of(n, step):
-            key(f, pose((f - 1) / n))
+            fr = pose((f - 1) / n)
+            if extra:
+                for b, items in extra.items():
+                    for it in items:
+                        k = A.pulse((f - 1) / n, it[0], it[1])
+                        fr.r(b, *(v * k for v in it[2]))           # keyed (as 0) outside the bump too
+                        if len(it) > 3:
+                            fr.o(b, *(mm(v) * k for v in it[3]))
+            key(f, fr)
         if shut is not None:
             eyes_shut(n, shut, step)
         for mk, f in markers:
@@ -404,7 +432,14 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 fr.r(f'hand.{tag}', curl, 0, -s * 0.5 * out / max(mm(0.1), 1e-4) * 10)
             if ARMS:
                 # a little arm: raise (−y on the left lifts it out and up), reach forward (−x), bend the elbow
-                fr.r(f'upperarm.{tag}', -fwd / max(mm(0.05), 1e-4) * 12, -s * (lift / max(mm(0.05), 1e-4) * 18 + out / max(mm(0.05), 1e-4) * 10), 0)
+                ap = float(P.get('arm_pitch', 0.0))
+                if ap:
+                    # Nov 14 (Ashwraith; opt-in, absent = as before): `arm_pitch` (0..1) turns that share of the raise
+                    # into a pitch up (−x), for little arms that reach forward out of a cloak (a −y turn only rolls them)
+                    k5 = max(mm(0.05), 1e-4)
+                    fr.r(f'upperarm.{tag}', -(fwd * 12 + ap * lift * 18) / k5, -s * ((1.0 - ap) * lift * 18 + out * 10) / k5, 0)
+                else:
+                    fr.r(f'upperarm.{tag}', -fwd / max(mm(0.05), 1e-4) * 12, -s * (lift / max(mm(0.05), 1e-4) * 18 + out / max(mm(0.05), 1e-4) * 10), 0)
                 fr.r(f'forearm.{tag}', -curl * 0.6, 0, 0)
 
     def jaw(fr: Frame, deg_: float) -> None:
@@ -536,6 +571,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     def glide(t: float, speed: float, lean: float, trail: float, rate: float = 2.0, back: bool = False, guard: bool = False) -> Frame:
         fr = Frame()
         sgn = -1 if back else 1
+        lean *= float(P.get('glide_lean', 1.0))       # Nov 14 (Wishlume; opt-in): a stronger lean into the glides
         hover(fr, t, pitch=sgn * lean, bob=0.6, rate=rate)
         bend(fr, -0.4 * sgn * lean, 0, 0)
         squash(fr, 1.0 + 0.04 * speed, axis='y')
@@ -618,6 +654,10 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         hands(fr, t, lift=mm(0.08) * k, fwd=-mm(0.04) * k, out=mm(0.05) * k, curl=-20 * k)
         chain_pose(fr, t, trail=-25 * k, sway=10, tail_wag=6, spread=15 * k)
         jaw(fr, 10 * k)
+        # Nov 14 (Zipwisp; opt-in, absent = as before): `hit_bones` / `hit_heavy_bones` {bone: (x, y, z) degrees} added
+        # with the knock, e.g. a low bolt tail lifted so the body's tip back doesn't drive it into the ground
+        for b, v in (P.get('hit_bones') or {}).items():
+            fr.r(b, *(a * k for a in v))
         return fr
 
     def p_hit_heavy(t: float) -> Frame:
@@ -628,8 +668,18 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         bend(fr, -10 * k, -10 * k, -18 * k)
         squash(fr, 1.0 - 0.16 * A.pulse(t, 0.0, 0.25) + 0.06 * A.pulse(t, 0.25, 0.55))
         hands(fr, t, lift=mm(0.1) * k, fwd=-mm(0.06) * k, out=mm(0.08) * k, curl=-30 * k)
-        chain_pose(fr, t, trail=-40 * k, sway=16, tail_wag=10, spread=25 * k)
+        # Nov 14 (Wishlume; opt-in, absent = as before): `hit_heavy_chain_hang` (0..1) turns hanging trailing chains back
+        # against the body's tip and tilt and halves their forward fling, so a tassel lags and droops under gravity
+        # instead of standing out along the body's axis like a bottle brush
+        hang = float(P.get('hit_heavy_chain_hang', 0.0))
+        chain_pose(fr, t, trail=-40 * k * (1.0 - 0.5 * hang), sway=16, tail_wag=10, spread=25 * k)
+        if hang:
+            for m in CH:
+                if m['kind'] in TRAILING and hangs[m['name']]:
+                    fr.r(m['bones'][0], 55 * k * hang, 10 * k * hang, 0)
         jaw(fr, 16 * k)
+        for b, v in (P.get('hit_heavy_bones') or {}).items():
+            fr.r(b, *(a * k for a in v))
         return fr
 
     lift_tab = P.get('ko_lift') or []
@@ -657,6 +707,26 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         squash(fr, 1.0 - 0.06 * fall)
         hands(fr, t, lift=-mm(0.04) * fall, out=-mm(0.03) * fall, drift=0.0)
         chain_pose(fr, t, trail=10 * fall, sway=2, tail_wag=0, lift=-10 * fall)
+        # Nov 14 (Wishlume; opt-in, absent = as before): `ko_arm` (x, y, z degrees) turns the little arm underneath (the
+        # right) out of the way, so the body doesn't lie propped on it; `ko_chain_hang` (0..1) turns hanging trailing
+        # chains back against the roll, so a tassel droops to the ground instead of standing out sideways
+        if ARMS and P.get('ko_arm'):
+            fr.r('upperarm.R', *(v * fall for v in P['ko_arm']))
+        hang = float(P.get('ko_chain_hang', 0.0))
+        if hang:
+            for m in CH:
+                if m['kind'] in TRAILING and hangs[m['name']]:
+                    fr.r(m['bones'][0], 0, KO_ROLL * fall * hang, 0)
+        # Nov 14 (Zipwisp; opt-in, absent = as before): `ko_bones` {bone: (x, y, z) degrees} added as it falls, so a
+        # rigid side part (a spark wing, a bolt tail) underneath folds out of the ground instead of piercing it
+        for b, v in (P.get('ko_bones') or {}).items():
+            fr.r(b, *(a * fall for a in v))
+        # Nov 14 (Zipwisp; opt-in, absent = as before): `ko_scale` {bone: s} scales a bone toward s as it falls
+        # (crackling sparks on their own prop bone fizzle out)
+        fizz = A.step_ease(t, 0.3, 0.75)
+        for b, sc in (P.get('ko_scale') or {}).items():
+            k_ = 1.0 + (float(sc) - 1.0) * fizz
+            fr.scl[b] = (k_, k_, k_)
         return fr
 
     def p_win(t: float) -> Frame:
@@ -668,6 +738,16 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         hands(fr, t, lift=mm(0.14), out=mm(0.07), curl=-15, rate=3.0)
         chain_pose(fr, t, trail=-12 * air + 20 * A.pulse(t, 0.42, 0.82), sway=20, rate=2.0, tail_wag=26, flap=30 * A.wave(t, 6.0))
         jaw(fr, 18)
+        # Nov 14 (Zipwisp; opt-in, absent = as before): `win_bones` {bone: (x, y, z) degrees}, held through the jump and
+        # the spin (wings flared up), and `win_scale` {bone: s}, with the jump only (sparks bursting out while it is up, so
+        # the low ones never reach the ground)
+        if P.get('win_bones') or P.get('win_scale'):
+            up = max(air, A.pulse(t, 0.42, 0.86))
+            for b, v in (P.get('win_bones') or {}).items():
+                fr.r(b, *(a * up for a in v))
+            for b, sc in (P.get('win_scale') or {}).items():
+                k_ = 1.0 + (float(sc) - 1.0) * air
+                fr.scl[b] = (k_, k_, k_)
         return fr
 
     # ---- strike: 24 frames, impact at 13 (every style)
@@ -675,9 +755,21 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         fr = Frame()
         ant = A.pulse(t, 0.0, 0.42)
         go = A.pulse(t, 0.3, 0.75)
+        # Nov 14 (Mirrorkin; opt-in, absent = as before): `strike_hold` (0..1 of the clip) holds the drive's peak (and
+        # the pulse's swell) flat round `impact` for that long, so a beam has a clear, still source (0.1: about 2.5 frames)
+        hold = float(P.get('strike_hold', 0.0))
+        if hold > 0.0:
+            go = held_pulse(t, 0.3, 0.75, hold)
         if style == 'ram':
             # draws back and squashes, then darts at the target stretched out, the front (a tusk, a spark) leading
-            hover(fr, t, dy=mm(0.08) * ant - mm(0.32) * go, dz=mm(0.02) * go, pitch=-8 * ant + (2 if swimmer else 6) * go, bob=0.0)
+            # Nov 14 (Zipwisp; opt-in, absent = as before): `ram_yaw` turns it that many degrees toward its left as it
+            # darts, so the face shows in the in-game strike shot (taken from 70 degrees)
+            # Nov 14 (Frostlance; opt-in, absent = as before): `ram_roll` degrees of roll about the body's long axis while it
+            # darts (a spiralling thrust), easing over `ram_roll_span` (0..1 of the clip; default (0.3, 0.52), so a full turn
+            # is upright again by the impact)
+            spin_ = float(P.get('ram_roll', 0.0)) * A.step_ease(t, *P.get('ram_roll_span', (0.3, 0.52)))
+            hover(fr, t, dy=mm(0.08) * ant - mm(0.32) * go, dz=mm(0.02) * go, pitch=-8 * ant + (2 if swimmer else 6) * go,
+                  roll=spin_, yaw=float(P.get('ram_yaw', 0.0)) * go, bob=0.0)
             squash(fr, 1.0 - 0.12 * ant + 0.2 * go, axis='y')
             bend(fr, -6 * ant + 2 * go, 0, 0)
             hands(fr, t, fwd=-mm(0.06) * go, lift=mm(0.02))
@@ -707,9 +799,15 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         elif style == 'pulse':
             # gathers (squashed small, tipping back toward the light by pulse_tilt), then bursts: a quick swell and a
             # tip toward the target, as a beam leaves the core (socket_core)
-            hover(fr, t, dy=-mm(0.03) * go, pitch=-6 * ant + 8 * go, roll=tilt_k * (ant - go), bob=0.0)
-            swell = A.pulse(t, 0.45, 0.62)
-            squash(fr, 1.0 - 0.08 * ant + 0.18 * swell)
+            # Nov 14 (Wishlume; opt-in, absent = as before): `pulse_lean` more degrees of forward tip at the burst,
+            # `pulse_stretch` scales its tall stretch (the even swell stays), `pulse_yaw` turns it that many degrees toward
+            # its left at the burst (the in-game strike shot is taken from 70 degrees, so the face stays in view)
+            # `pulse_push` (metres at Puddlepup's size) more forward travel at the burst
+            hover(fr, t, dy=-mm(0.03 + float(P.get('pulse_push', 0.0))) * go, pitch=-6 * ant + (8 + float(P.get('pulse_lean', 0.0))) * go,
+                  roll=tilt_k * (ant - go),
+                  yaw=float(P.get('pulse_yaw', 0.0)) * go, bob=0.0)
+            swell = A.pulse(t, 0.45, 0.62) if hold <= 0.0 else held_pulse(t, 0.45 - 0.5 * hold, 0.62 + 0.5 * hold, hold)
+            squash(fr, 1.0 - 0.08 * ant + 0.18 * float(P.get('pulse_stretch', 1.0)) * swell)
             fr.scl['hover'] = tuple(v * (1.0 + 0.1 * swell) for v in fr.scl['hover'])
             bend(fr, -4 * ant + 6 * go, 0, 0)
             hands(fr, t, lift=mm(0.06) * ant + mm(0.03) * go, fwd=mm(0.1) * go, out=mm(0.05) * ant - mm(0.04) * go, curl=-25 * go)
@@ -730,6 +828,13 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             hands(fr, t, lift=mm(0.14) * (ant + go), fwd=mm(0.06) * go, out=mm(0.03), curl=-30 * ant)
             chain_pose(fr, t, trail=-40 * ant - 70 * go, sway=8, tail_wag=6, lift=30 * go, spread=10 * ant)
             jaw(fr, 16 * go)
+        # Nov 14 (Zipwisp; opt-in, absent = as before): `strike_bones` {bone: (x, y, z) degrees} added with the strike's
+        # drive (any style), e.g. spark wings swept back as it darts; `strike_windup_bones` the same with the wind-up
+        # (it tilts back and spreads its wings before the dart)
+        for b, v in (P.get('strike_bones') or {}).items():
+            fr.r(b, *(a * go for a in v))
+        for b, v in (P.get('strike_windup_bones') or {}).items():
+            fr.r(b, *(a * ant for a in v))
         return fr
 
     def p_cast(t: float) -> Frame:
