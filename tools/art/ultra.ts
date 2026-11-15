@@ -12,7 +12,7 @@
  *   <breed>.lite.glb                      the Lite copy: ≤ 12k triangles in all (the membranes kept to a quarter, props
  *                                         capped at 2.4k, the body takes the rest), no cards or tuft, 1024² WebP, the same skeleton
  *                                         and clips (≤ 1.5 MB; committed). --lite-only rebuilds just this from the last ship
- *   <breed>_{base,normal,orm}.{ktx2,webp} the 2048² body atlas (KTX2 = ETC1S everywhere, toktx; WebP for comparison)
+ *   <breed>_{base,normal,orm}.{ktx2,webp} the 2048² body atlas (KTX2 = ETC1S, the normal map and BASE_UASTC looks' colour UASTC; toktx; WebP for comparison)
  *   <breed>_<short>_base.{ktx2,webp}      each variant's colour map on the same UVs (normal and ORM are shared)
  *   <breed>_<short>_orm.{ktx2,webp}       a variant's own ORM map, when its recipe bakes one (VARIANT_ORM)
  *   <breed>.webp.glb                      the WebP comparison copy (local only)
@@ -36,6 +36,7 @@ import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer
 import { embedTextures, promoteColours, type Format } from './ultra-embed.ts'
 import { DEFAULT_LAYOUT, padAtlas, type Layout } from './ultra-pad.ts'
 import { lookOverlaps, UV_OVERLAP_MAX } from './ultra-uv.ts'
+import { describeRepairs, repairTangents } from './ultra-tangents.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..')
@@ -81,6 +82,11 @@ const KTX_ARGS: Record<'base' | 'normal' | 'orm', string[]> = {
   normal: ['--encode', 'uastc', '--uastc_quality', '2', '--uastc_rdo_l', '1.0', '--zcmp', '18', '--assign_oetf', 'linear', '--target_type', 'RGB'],
   orm: ['--encode', 'etc1s', '--clevel', '4', '--qlevel', '255', '--assign_oetf', 'linear', '--target_type', 'RGB'],
 }
+/** Looks whose colour maps ship as UASTC (RDO + zstd, as the normal map) instead of ETC1S, at full size (Nov 15,
+ *  opt-in per look; every other look stays ETC1S, byte for byte). Scrollopus: its small dark ink dots on violet skin
+ *  stepped into ETC1S's 4×4 blocks (diamonds above the brow, grey smears with a pale halo by the tassel). */
+const BASE_UASTC = new Set(['scrollopus'])
+const BASE_UASTC_ARGS = ['--encode', 'uastc', '--uastc_quality', '2', '--uastc_rdo_l', '1.0', '--zcmp', '18', '--assign_oetf', 'srgb', '--target_type', 'RGBA']
 
 export interface TexFile { ktx2: string; webp: string; px: number; ktx2Bytes: number; webpBytes: number; ktx2Px?: number }
 
@@ -96,13 +102,13 @@ function checkToktx(): void {
 }
 
 /** `alpha`: keep the map's alpha (the ORM's glow mask, for a breed whose sidecar has `glow`); the colour map always keeps it. */
-function encode(png: string, map: 'base' | 'normal' | 'orm', stem: string, alpha = false): TexFile {
+function encode(png: string, map: 'base' | 'normal' | 'orm', stem: string, alpha = false, uastcBase = false): TexFile {
   const webp = `${stem}.webp`
   const ktx2 = `${stem}.ktx2`
   const keepsAlpha = map === 'base' || alpha
   execFileSync(FFMPEG, ['-v', 'error', '-y', '-i', png, ...(keepsAlpha ? ['-vf', WEBP_ALPHA_FLOOR] : []), '-c:v', 'libwebp', '-quality', String(WEBP_Q[map]),
     '-compression_level', '6', ...(keepsAlpha ? ['-pix_fmt', 'yuva420p'] : []), join(OUT_DIR, webp)])
-  const args = alpha ? KTX_ARGS[map].map((a) => (a === 'RGB' ? 'RGBA' : a)) : KTX_ARGS[map]
+  const args = map === 'base' && uastcBase ? BASE_UASTC_ARGS : alpha ? KTX_ARGS[map].map((a) => (a === 'RGB' ? 'RGBA' : a)) : KTX_ARGS[map]
   const px = pngWidth(png)
   let src = png
   if (map === 'normal' && px > NORMAL_KTX_PX) {
@@ -182,6 +188,13 @@ export function assertFinite(doc: Document, what: string): void {
     if (![...node.getTranslation(), ...node.getRotation(), ...node.getScale()].every(Number.isFinite)) bad.push(`node ${node.getName()}: its transform`)
   }
   if (bad.length) throw new Error(`${what} has NaN or infinite numbers (${bad.join('; ')}): look at the recipe's shapes (a negative number to a fractional power, a division by zero, a face shrunk to nothing) and build again`)
+}
+
+/** Nov 15: rebuild zero-length tangents (finite, so assertFinite passes them, but one blanks the review's raw-material
+ *  frame and can give black bloom frames) rather than refuse to ship, and say how many (tools/art/ultra-tangents.ts). */
+function fixTangents(doc: Document, what: string): void {
+  const r = repairTangents(doc)
+  if (Object.keys(r).length) console.log(`${what}: repaired zero-length tangents (${describeRepairs(r)})`)
 }
 
 function trianglesByMesh(doc: Document): Record<string, number> {
@@ -284,14 +297,14 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
     else console.log(line)
   }
   const body = {
-    base: encode(join(padded, 'atlas_base.png'), 'base', `${breed}_base`),
+    base: encode(join(padded, 'atlas_base.png'), 'base', `${breed}_base`, false, BASE_UASTC.has(breed)),
     normal: encode(join(padded, 'atlas_normal.png'), 'normal', `${breed}_normal`),
     orm: encode(join(padded, 'atlas_orm.png'), 'orm', `${breed}_orm`, glow),
   }
   const textures: Record<string, Record<string, TexFile>> = { body }
   for (const vid of vids) {
     const short = shortOf(vid)
-    textures[vid] = { base: encode(join(padded, `atlas_${short}.png`), 'base', `${breed}_${short}_base`) }
+    textures[vid] = { base: encode(join(padded, `atlas_${short}.png`), 'base', `${breed}_${short}_base`, false, BASE_UASTC.has(breed)) }
     const vo = variantOrmOf(side.variants[vid], short)
     if (vo) textures[vid]!.orm = encode(join(padded, `atlas_${vo.name}.png`), 'orm', `${breed}_${vo.name}`, vo.alpha)
     const { atlas: _atlas, ...entry } = side.variants[vid]!
@@ -306,11 +319,13 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
   for (const format of ['webp', 'ktx2'] as const) {
     doc = await io.read(srcGlb)
     assertFinite(doc, srcGlb)
+    fixTangents(doc, `${breed} (${format}, before compressing)`)
     const variantFiles = Object.fromEntries(Object.entries(textures).filter(([k]) => k !== 'body').map(([k, s]) => [k, { ...s.base!, ...(s.orm ? { orm: s.orm } : {}) }]))
     if (!promoteColours(doc) && hasColours) throw new Error('no _COLOR_BASE on the cards: re-export with build_ultra.py --stages export')
     embedTextures(doc, OUT_DIR, body, variantFiles, format)
     // no prune: it would drop the unused-looking UVs, tangents and colour sets
     await COMPRESS(doc)
+    fixTangents(doc, `${breed} (${format})`)
     assertFinite(doc, `${breed} (${format})`)
     glb = await io.writeBinary(doc)
     glbBytes[format] = glb.byteLength
@@ -441,7 +456,9 @@ async function shipLite(io: NodeIO, breed: string, srcGlb: string, padded: strin
   simplified.lo_body = simplifyMesh(doc, 'lo_body', Math.max(1000, bodyTarget))
   for (const [n, s] of Object.entries(simplified)) console.log(`lite: ${n} ${s.from} → ${s.to} triangles (error limit ${s.error})`)
   embedTextures(doc, dir, body, variantFiles, 'webp')
+  fixTangents(doc, `${breed} Lite (before compressing)`)
   await COMPRESS(doc)
+  fixTangents(doc, `${breed} Lite`)
   assertFinite(doc, `${breed} Lite`)
   const glb = await io.writeBinary(doc)
   const file = `${breed}.lite.glb`

@@ -665,7 +665,7 @@
   "sheen": 0.25
  },
  "litePropsTris": 3200,
- "build": "9023a3d504",
+ "build": "49ff0984e5",
  "buildStats": {
   "cards": {
    "total": 0,
@@ -815,7 +815,7 @@
  },
  "lite": {
   "file": "plumdrake.lite.glb",
-  "build": "d3ca833eeb",
+  "build": "639893cde9",
   "bytes": 1233108,
   "triangles": 11791,
   "trianglesByMesh": {

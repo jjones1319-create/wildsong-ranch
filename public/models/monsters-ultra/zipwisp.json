@@ -669,7 +669,7 @@
   "tint": null,
   "twinkle": 0
  },
- "build": "c246877e02",
+ "build": "2f3bacc939",
  "buildStats": {
   "cards": {
    "total": 0,
@@ -817,7 +817,7 @@
  },
  "lite": {
   "file": "zipwisp.lite.glb",
-  "build": "68dcde5433",
+  "build": "f80f34b854",
   "bytes": 1535016,
   "triangles": 11735,
   "trianglesByMesh": {

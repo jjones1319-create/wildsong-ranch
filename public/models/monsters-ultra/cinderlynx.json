@@ -688,7 +688,7 @@
   "strength": 1,
   "tint": null
  },
- "build": "56fd72b81b",
+ "build": "0240bdff9c",
  "buildStats": {
   "cards": {
    "total": 3040,
@@ -844,7 +844,7 @@
  },
  "lite": {
   "file": "cinderlynx.lite.glb",
-  "build": "7a1281e290",
+  "build": "8539d1698a",
   "bytes": 1291816,
   "triangles": 11825,
   "trianglesByMesh": {

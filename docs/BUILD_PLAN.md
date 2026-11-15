@@ -696,7 +696,13 @@ Ten more breeds, two at a time, with the same review process as batches 1 and 2.
 - [x] 5. Mirrorkin and Frostlance (Nov 14–15).
 - [x] 6. Docs, tests (`npm run verify` 1,441 green; e2e; Battle 3D with every new look), PROGRESS, v1.25.0, commit, deploy, phone checklist (Nov 15).
 
-**Batch 5 started Nov 15** (the owner, Nov 14: *"start the next 6 in pairs of two again right after these finish"*), while the owner's look at v1.25.0 is pending: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan, the first of batch 6). The four new plans (`plans/shelled.py`, `blob.py`, `construct.py`, `serpent.py`, with the shared `plans/kin.py`) and their stand-ins shipped as tools in v1.25.0; no look uses them yet.
+### Batch 5, two at a time (v1.26.0 so far)
+Started Nov 15 (the owner, Nov 14: *"start the next 6 in pairs of two again right after these finish"*), while the owner's look at v1.25.0 was pending: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan, the first of batch 6). The four plans (`plans/shelled.py`, `blob.py`, `construct.py`, `serpent.py`, with the shared `plans/kin.py`) and their stand-ins shipped as tools in v1.25.0. The owner, Nov 15: *"stop after pair 7 and upload them to the phone"*, so the first four shipped in v1.26.0 and pair 8 waits for the owner's go. The lessons are in ART_2_DETAIL §9.9, the known issues in PROGRESS v1.26.0.
+- [x] 1. Moatshell (Porcelain) and Reefclaw (Abyss), the shelled plan's first pair; `claw_keep_up`, `shell_turn`, `ko_settle_meshes` (Nov 15).
+- [x] 2. Bloatoad (Party) and Scrollopus, the blob plan's first pair; the blob knobs, `BASE_UASTC` for Scrollopus (Nov 15).
+- [x] 3. The zero-length tangent repair at ship, and the five shipped looks that carried one re-shipped (Cinderlynx, Cobblemaw, Plumdrake, Rammerjack, Zipwisp).
+- [x] 4. Docs, tests (`npm run verify`; e2e; Battle 3D with the new looks), PROGRESS, v1.26.0, commit, deploy, phone checklist (Nov 15).
+- [ ] 5. Lootlid (the construct plan) and Coilfang (the serpent plan, from B6): pair 8, waiting for the owner.
 
 ## LATER (after v1.0)
 

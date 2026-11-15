@@ -394,6 +394,8 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     ko_roll = float(P.get('ko_roll', KO_ROLL))
     lift_tab = P.get('ko_lift') or []
     strike_yaw = float(P.get('strike_yaw', 0.0))   # degrees toward its left at the drive (the 70-degree strike shot)
+    claw_keep = float(P.get('claw_keep_up', 0.0))  # Nov 15, opt-in: the share of a claw's raise its forearm takes back
+    shell_turn = bool(P.get('shell_turn', False))   # Nov 15, opt-in: body() turns the shell by its pitch, roll and yaw
 
     def mm(v: float) -> float:
         """An absolute offset in Puddlepup's metres, at this breed's size."""
@@ -513,6 +515,10 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             if low < CLEAR:
                 dz += CLEAR - low
         fr.o('hips', dx, dy, dz)
+        if shell_turn and (pitch or roll or yaw):
+            # Nov 15 (Reefclaw; opt-in, absent = as before): the shell really turns. The rotation below sits after the
+            # `return` in tip_need, so it never ran: no clip pitched, rolled or turned the shell (hit read as idle)
+            fr.r('hips', pitch, roll, yaw)
         fr.drop = max(fr.drop, -dz)
         fr.shell = (dz, pitch, roll, yaw)
 
@@ -610,6 +616,10 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         fr.turn(c['arm'], lift_ax, raise_)                   # lifted about its own horizontal, then
         fr.turn(c['arm'], (0, 0, 1), s * out)                # swung about the vertical
         fr.r(c['forearm'], 0, 0, -s * bend)
+        if claw_keep:
+            # Nov 15 (Reefclaw; opt-in, absent = as before): a claw held upright at rest keeps its attitude as the arm
+            # lifts (the forearm takes back `claw_keep_up` of the raise), so a big raise no longer tips it over the face
+            fr.turn(c['forearm'], lift_ax, -claw_keep * raise_)
         cd = c['tip'] - c['wrist']
         ch = Vector((cd.x, cd.y, 0.0))
         fr.r(c['claw'], 0, 0, 0)

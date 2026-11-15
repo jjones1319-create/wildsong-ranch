@@ -775,6 +775,36 @@ None of the 11 uses fur cards (see "Alpha cards" below). Wishlume is above the 6
 - Plumdrake's Stormcloud crackle of light is allowed under the new rule but isn't built.
 - Mirrorkin's glass has two arched window reflections.
 
+### 9.9 Batch 5, pairs 6 and 7 (Nov 15, v1.26.0)
+Batch 5 ran two at a time as before: Moatshell and Reefclaw on the shelled plan, then Bloatoad and Scrollopus on the blob plan. The owner, Nov 15: *"stop after pair 7 and upload them to the phone"*, so these four ship now and pair 8 (Lootlid, Coilfang) waits. Each look had three fresh-eyes rounds and a polish pass. Moatshell, Reefclaw and Bloatoad ended at "partly / partly", Scrollopus at "partly / YES at 64 px"; the taste items are in PROGRESS v1.26.0.
+
+| Look | Plan | Triangles | Joints | Variants | Download | Lite |
+|---|---|---|---|---|---|---|
+| Moatshell | shelled | 73k | 26 | Porcelain | 5.6 MB | 1.4 MB |
+| Reefclaw | shelled | 73k | 33 | Abyss | 5.0 MB | 1.3 MB |
+| Bloatoad | blob | 73k | 24 | Party | 3.7 MB | 0.9 MB |
+| Scrollopus | blob | 81k | 47 | none | 6.2 MB (UASTC colour) | 1.2 MB |
+
+**Lessons** (into RECIPE.md and the later pairs' briefs):
+- **`shell_turn`, a dead-code bug:** the shelled plan's `body()` worked out each clip's shell pitch, roll and yaw, but the rotation sat after a `return` inside `tip_need`, so it never ran. No clip turned the shell: hit and hit_heavy read as idle, the strike had no twist, idle didn't rock. The floor clearance already assumed the turn. The fix is opt-in (`shell_turn: True`, both shelled looks use it), so the stand-in's clips stay key-identical. Check that a clip really moves the body in the in-game shots, not only that the plan computes it.
+- **The review tool frames by the body-only `restHeight`.** `art:ultra-review` and `art:lineup` scale and frame by the sidecar's `restHeight`, which leaves out props: Reefclaw's raised claw was cropped at the top of the frame, and the lineup showed Moatshell (whose flag and keep are props) oversized. The game fits every visible mesh, so in-game sizes are right. Reviewers were told; framing by `restHeightWithProps` when it is more than 15% taller is a follow-up.
+- **Zero-length tangents:** a sliver triangle can export a tangent of length 0. It is finite, so `assertFinite` passed it, but one such tangent blanks the raw-material review frame and can give black bloom frames on renderers without a guard. Six shipped looks carried one. `tools/art/ultra.ts` now rebuilds them at ship (from the UV direction round the vertex, made perpendicular to the normal, keeping the handedness; `tools/art/ultra-tangents.ts`), and `tools/art/ultra-fix-tangents.ts` repaired the five already shipped (12 bytes a file, new `build` tags).
+- **ETC1S blockiness on small dots:** ETC1S codes the colour map in 4 × 4 blocks with a small palette, so Scrollopus's small dark ink dots on violet skin turned into diamonds and grey smears with a pale halo. Recipe changes didn't hide it. The fix is per look: `BASE_UASTC` in `tools/art/ultra.ts` ships that look's colour maps as UASTC (RDO + zstd, as the normal map), at about 2 MB more. Every other look stays ETC1S, byte for byte. Use it only when a look's colour detail is small, dark and high-contrast.
+- **See-through mouths, and the cut plus pocket:** an opening jaw on a sealed mesh only stretches the skin. Bloatoad's painted mouth line stretched into a black "bristle comb", and a separate mouth cup behind the lips left grey wedges of background at the corners and a band in the knock-out. What worked: cut the game mesh along the mouth line after the decimation (each edge crossing the line is split on it, so each lip ends in one smooth curve), then grow a pocket from the cut's own edges, in and up into the roof and down into the floor, closed by a back wall. Each pocket vertex copies the weights of its two lip vertices, so no pose opens a gap. Cutting before the decimation let its smoothing pull the lips apart into a beaded zipper.
+- **The film material flattens real highlights:** it keeps every body and prop texel at roughness ≥ 0.3 (`film.minRoughness`, so baked hooves don't read as chrome), caps the clear coat at 0.5 and caps lit brightness. A genuinely wet or glossy spot on a bright colour (Bloatoad's sac on peach) loses its highlight, so the sheen is painted into the colour map. As with metal (§9.8), paint the highlight rather than rely on the material.
+- **The `lib/anim.py` scale-mapping trap:** `ClipBuilder.scale` maps a world-axis scale onto the bone's rest axes through their absolute values. On a bone tilted 12°, a scale of 1 keys about 1.19 on two axes, so Bloatoad's leaning squash chain stood every clip 19% taller and deeper than its rest (the sidestep's "bowling pin"). Bloatoad's rig now stands the chain straight up and the sac bone level. Keep any bone a clip scales axis-aligned; a shared fix changes existing clips, so it waits for a dry run over every look.
+- **Smaller ones:**
+  - **Tentacle skin fields:** blending each tentacle by its gap to its own skin (a softmax) stops a lifted tentacle dragging its fused neighbour into a sheet; a field that extends the first segment behind the root without a limit claims the far side's skin (Scrollopus caps it at 15 cm).
+  - **Ground contact for prop limbs:** a crab's legs and claws, and a castle wall, are props, so the knock-out settle needs `ko_settle_meshes` to measure them, or the roll drives them through the floor.
+  - **Ground tentacles sinking:** `asin(need / distance)` gives only about 40% of the lift a tentacle needs when its root sits high above a steep run; `ground_lift_exact` turns it by the exact angle.
+  - **Squat bodies and stretch:** a squat body stretched in the air or by a front-to-back knock reads as a bowling pin or grows taller; Bloatoad squashes wide and low instead (`hop_stretch`, `hit_squash`, `sidestep_stretch`, `hit_heavy_*`).
+
+**What the pipeline gained** (every change opt-in, with the stand-ins' clips key-identical):
+- **The shelled plan's knobs:** `claw_keep_up`, `shell_turn`.
+- **The blob plan's knobs:** `ground_lift_exact`, `ink_lift`, `ink_turn`, `ink_curl`, `strike_scale`, `strike_windup_scale`, `hop_stretch`, `hit_squash`, `sidestep_stretch`, `hit_heavy_pitch`, `hit_heavy_lift`, `hit_heavy_stretch`.
+- **`build_ultra.py`:** `ko_settle_meshes`.
+- **`tools/art/ultra.ts`:** the zero-length tangent repair at ship, and `BASE_UASTC`.
+
 ## 10. What approval changed in the other docs
 Puddlepup's Ultra look was approved on Nov 7, 2026. Applied the same day:
 - **ART_2_PLAN:**

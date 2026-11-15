@@ -351,7 +351,18 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     ko_roll = float(P.get('ko_roll', KO_ROLL))
     lift_tab = P.get('ko_lift') or []
     strike_yaw = float(P.get('strike_yaw', 0.0))   # degrees toward its left at the drive (the 70-degree strike shot)
+    LIFT_EXACT = bool(P.get('ground_lift_exact', False))     # Nov 15 (Scrollopus), opt-in: ground_lift's exact turn
     hop_k = float(P.get('hop', 1.0))
+    HOP_STRETCH = float(P.get('hop_stretch', 1.0))
+    # Nov 15 (Bloatoad), opt-in: hit_squash > 0 squashes the light hit wide and low (about z) instead of the knock
+    # front to back (whose kept volume stretched a squat body 7% taller); sidestep_stretch [1] scales the sidestep's
+    # mid-hop stretch, its head-back bend and roll; hit_heavy_pitch / _lift / _stretch [1] scale the heavy hit's
+    # backward pitch, its rise and its stretch (a squat body's belly pushed through the arms' roots)
+    HIT_SQUASH = float(P.get('hit_squash', 0.0))
+    SIDESTEP_K = float(P.get('sidestep_stretch', 1.0))
+    HH_PITCH = float(P.get('hit_heavy_pitch', 1.0))
+    HH_LIFT = float(P.get('hit_heavy_lift', 1.0))
+    HH_STRETCH = float(P.get('hit_heavy_stretch', 1.0))
 
     def mm(v: float) -> float:
         return v * sk
@@ -562,7 +573,18 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             need = p.z - posed_z(fr, p) + mm(0.004)
             d = (p - r0).length
             if need > 0 and d > 1e-4:
-                best = max(best, math.asin(min(1.0, need / d)))
+                if LIFT_EXACT:
+                    # (Nov 15, Scrollopus; opt-in) the turn that really raises the point by `need`: a root high above
+                    # its ground run (a steep descent) needs much more than asin(need / d)
+                    q = p - r0
+                    d0 = m['dirs'][0]
+                    dh = Vector((d0.x, d0.y, 0.0))
+                    dh = dh.normalized() if dh.length > 1e-3 else Vector((q.x, q.y, 0.0)).normalized()
+                    A_, B_ = max(1e-4, q.x * dh.x + q.y * dh.y), max(0.0, -q.z)
+                    R_ = math.hypot(A_, B_)
+                    best = max(best, math.atan2(B_, A_) + math.asin(max(-1.0, min(1.0, (need - B_) / R_))))
+                else:
+                    best = max(best, math.asin(min(1.0, need / d)))
         if best > 0:
             d = m['dirs'][0]
             dh = Vector((d.x, d.y, 0.0))
@@ -744,13 +766,15 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         chain_pose(fr, t, sway=6, wag=6)
         return fr
 
-    def hop_pose(fr: Frame, t: float, air: float, crouch: float, up: float, roll: float = 0.0, yaw: float = 0.0) -> None:
+    def hop_pose(fr: Frame, t: float, air: float, crouch: float, up: float, roll: float = 0.0, yaw: float = 0.0,
+                 stretch_k: float = 1.0) -> None:
         """A squash-and-stretch hop: crouched (squashed wide), then up (stretched tall), the feet and the tentacles
-        leaving the ground with the body."""
-        body(fr, dz=up, pitch=-4 * air + 3 * crouch, roll=roll, yaw=yaw)
-        squash(fr, 1.0 - 0.16 * crouch + 0.14 * air)
-        bend(fr, pitch=-8 * air + 6 * crouch)
-        feet(fr, lift=0.85 * up, tuck_=0.3 * air)
+        leaving the ground with the body. stretch_k scales the airborne stretch, lean-back and tuck (the sidestep's)."""
+        body(fr, dz=up, pitch=-4 * air * stretch_k + 3 * crouch, roll=roll, yaw=yaw)
+        # Nov 15 (Bloatoad), opt-in: hop_stretch [1] scales the stretch in the air (a squat body read as a bowling pin)
+        squash(fr, 1.0 - 0.16 * crouch + 0.14 * HOP_STRETCH * air * stretch_k)
+        bend(fr, pitch=-8 * air * stretch_k + 6 * crouch)
+        feet(fr, lift=0.85 * up, tuck_=0.3 * air * stretch_k)
         tents(fr, t, roles=('ground',), curl=10 * crouch + 20 * air, sway=4)
         gestures(fr, t, lift=20 * air - 6 * crouch, sway=6)
         chain_pose(fr, t, sway=6, trail=-12 * air, wag=10, lift=10 * air)
@@ -845,7 +869,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         fr = Frame()
         air = A.pulse(t, 0.15, 0.92)
         crouch = A.pulse(t, 0.0, 0.3) + 0.7 * A.pulse(t, 0.82, 1.0)
-        hop_pose(fr, t, air, crouch, mm(0.07) * air, roll=side * 14 * air)
+        hop_pose(fr, t, air, crouch, mm(0.07) * air, roll=side * 14 * air * SIDESTEP_K, stretch_k=SIDESTEP_K)
         inflate(fr, 0.1)
         tongue(fr)
         jaw(fr, 0)
@@ -913,7 +937,11 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         k = A.pulse(t, 0.0, 0.8)
         dy = mm(0.05) * k
         body(fr, dy=dy, pitch=-10 * k, yaw=-8 * k)
-        squash(fr, 1.0 - 0.14 * A.pulse(t, 0.0, 0.35) + 0.05 * A.pulse(t, 0.35, 0.7), axis='y')
+        if HIT_SQUASH > 0.0:
+            # squashed wide and low on the impact, a small rebound after
+            squash(fr, 1.0 - HIT_SQUASH * A.pulse(t, 0.0, 0.6) + 0.3 * HIT_SQUASH * A.pulse(t, 0.6, 0.85))
+        else:
+            squash(fr, 1.0 - 0.14 * A.pulse(t, 0.0, 0.35) + 0.05 * A.pulse(t, 0.35, 0.7), axis='y')
         bend(fr, pitch=-8 * k, yaw=-6 * k)
         inflate(fr, 0.25 * A.pulse(t, 0.0, 0.5))
         tongue(fr)
@@ -928,9 +956,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     def p_hit_heavy(t: float) -> Frame:
         fr = Frame()
         k = A.pulse(t, 0.0, 0.62)
-        dy, up = mm(0.14) * k, mm(0.06) * k
-        body(fr, dy=dy, dz=up, pitch=-32 * k, roll=-10 * k)
-        squash(fr, 1.0 - 0.15 * A.pulse(t, 0.0, 0.25) + 0.08 * A.pulse(t, 0.25, 0.55))
+        dy, up = mm(0.14) * k, mm(0.06) * k * HH_LIFT
+        body(fr, dy=dy, dz=up, pitch=-32 * k * HH_PITCH, roll=-10 * k)
+        squash(fr, 1.0 - 0.15 * A.pulse(t, 0.0, 0.25) + 0.08 * HH_STRETCH * A.pulse(t, 0.25, 0.55))
         bend(fr, pitch=-10 * k, yaw=-12 * k)
         inflate(fr, 0.3 * A.pulse(t, 0.0, 0.4))
         tongue(fr, out=0.12 * k, droop=10 * k)
@@ -1089,12 +1117,22 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             tongue(fr)
             jaw(fr, 12 * aim)
             feet(fr)
-            tent(fr, m, t, lift=80 * up, curl=-20 * up + 50 * aim, turn=-s * 12 * up)
+            # Nov 15 (Scrollopus), opt-in: ink_lift [80], ink_turn [12] (degrees swung toward the front after the
+            # lift) and ink_curl [(-20, 50)] (the curl with the rise and at the aim), for an arm rooted further back;
+            # all 0 lets a recipe pose the arm itself through strike_windup_bones / strike_bones
+            il, it_ = float(P.get('ink_lift', 80.0)), float(P.get('ink_turn', 12.0))
+            ic0, ic1 = P.get('ink_curl', (-20.0, 50.0))
+            tent(fr, m, t, lift=il * up, curl=ic0 * up + ic1 * aim, turn=-s * it_ * up)
         tents(fr, t, roles=('ground',), curl=6 + 10 * go, sway=4, skip=skip)
         gestures(fr, t, lift=12 + 10 * ant, sway=6, skip=skip)
         chain_pose(fr, t, sway=6, trail=16 * go - 8 * ant, wag=8)
         K.add_bones(P, 'strike_bones', fr, go)
         K.add_bones(P, 'strike_windup_bones', fr, ant)
+        # Nov 15 (Bloatoad), opt-in: strike_scale {bone: s} scales a bone toward s with the drive (the sac full as the
+        # tongue lashes, the attack picture); absent = as before
+        K.scale_bones(P, 'strike_scale', fr, go)
+        # (and strike_windup_scale with the wind-up: the sac full before the lash too)
+        K.scale_bones(P, 'strike_windup_scale', fr, ant)
         return fr
 
     def p_cast(t: float) -> Frame:

@@ -230,9 +230,10 @@ def measured_body_width(P: dict, roll_deg: float) -> float | None:
     return float((np.abs(co[m, 0]) * math.sin(r) + (hz - co[m, 2]) * math.cos(r)).max())
 
 
-def posed_lowest(arm, m: A.ClipMeta | None = None, frame: int = 1) -> float | None:
+def posed_lowest(arm, m: A.ClipMeta | None = None, frame: int = 1, names: tuple = ('lo_body',)) -> float | None:
     """The lowest point of lo_body (metres) at rest (m None) or at a clip's frame, evaluated like the game (from the
-    rest pose; NLA tracks muted), then the armature is left at rest with its tracks on again."""
+    rest pose; NLA tracks muted), then the armature is left at rest with its tracks on again. Nov 15 (Reefclaw; opt-in,
+    default as before): `names` adds other game meshes to the measure (a crab's legs and claws are props)."""
     body = bpy.data.objects.get('lo_body')
     ad = arm.animation_data
     if body is None or ad is None:
@@ -245,17 +246,22 @@ def posed_lowest(arm, m: A.ClipMeta | None = None, frame: int = 1) -> float | No
     R.reset_pose(arm)
     bpy.context.scene.frame_set(frame)
     bpy.context.view_layer.update()
-    ev = body.evaluated_get(bpy.context.evaluated_depsgraph_get())
-    me = ev.to_mesh()
-    co = np.empty(len(me.vertices) * 3, np.float32)
-    me.vertices.foreach_get('co', co)
-    ev.to_mesh_clear()
+    low = np.inf
+    for ob in [bpy.data.objects.get(n) for n in names]:
+        if ob is None or ob.type != 'MESH':
+            continue
+        ev = ob.evaluated_get(bpy.context.evaluated_depsgraph_get())
+        me = ev.to_mesh()
+        co = np.empty(len(me.vertices) * 3, np.float32)
+        me.vertices.foreach_get('co', co)
+        ev.to_mesh_clear()
+        low = min(low, float(co[2::3].min()))
     ad.action = None
     for tr in ad.nla_tracks:
         tr.mute = False
     R.reset_pose(arm)
     bpy.context.scene.frame_set(1)
-    return float(co[2::3].min())
+    return low
 
 
 def settle_ko(cb, plan, arm, P: dict, clips: list) -> list:
@@ -271,7 +277,10 @@ def settle_ko(cb, plan, arm, P: dict, clips: list) -> list:
         clips[i] = plan.make_clips(cb, P, ['ko'])[0]
 
     i = next((k for k, m in enumerate(clips) if m.name == 'ko'), None)
-    rest = posed_lowest(arm)
+    # Nov 15 (Reefclaw; opt-in, absent = lo_body alone, as before): P['ko_settle_meshes'] measures these game meshes
+    # too, so prop legs and claws never sink through the floor as it rolls (the lift pivots it over them)
+    names = tuple(P.get('ko_settle_meshes') or ('lo_body',))
+    rest = posed_lowest(arm, names=names)
     if rest is not None and P.get('ko_ground') is not None:
         # Nov 14 (Wishlume; opt-in): a floater whose lo_body hovers at rest (its tassel is a prop) lies with its lowest
         # point this high off the ground, not at its rest pose's lowest point (which floats)
@@ -281,7 +290,7 @@ def settle_ko(cb, plan, arm, P: dict, clips: list) -> list:
     tol = 0.003 * float(P.get('size_k', 1.0))
     for _ in range(2):
         ko = clips[i]
-        err = posed_lowest(arm, ko, 1 + ko.frames) - rest
+        err = posed_lowest(arm, ko, 1 + ko.frames, names) - rest
         C.log(f'clips: ko lies {err * 1000:+.0f} mm off the ground (body_width {P["body_width"]:.3f} m)')
         if abs(err) < tol:
             break
@@ -289,14 +298,14 @@ def settle_ko(cb, plan, arm, P: dict, clips: list) -> list:
         remake(i)
     ko = clips[i]
     sink = [(f - 1) / ko.frames for f in range(1, ko.frames + 2, 2)]
-    lows = [posed_lowest(arm, ko, 1 + int(round(t * ko.frames))) for t in sink]
+    lows = [posed_lowest(arm, ko, 1 + int(round(t * ko.frames)), names) for t in sink]
     lift = [max(0.0, rest - lo) for lo in lows]
     if max(lift) > tol:
         # widen each dip a little so the lift eases in and out
         soft = [max(lift[max(0, k - 1):k + 2]) for k in range(len(lift))]
         P['ko_lift'] = [[round(t, 4), round(d, 4)] for t, d in zip(sink, soft)]
         remake(i)
-        after = max(rest - posed_lowest(arm, clips[i], 1 + int(round(t * ko.frames))) for t in sink)
+        after = max(rest - posed_lowest(arm, clips[i], 1 + int(round(t * ko.frames)), names) for t in sink)
         C.log(f'clips: ko fall lifted up to {max(lift) * 1000:.0f} mm; the deepest frame now {after * 1000:+.0f} mm into the ground')
     return clips
 

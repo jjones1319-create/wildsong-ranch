@@ -700,7 +700,7 @@
   "scale": 1
  },
  "litePropsTris": 4000,
- "build": "25517099e0",
+ "build": "10a041cd2b",
  "buildStats": {
   "cards": {
    "total": 1512,
@@ -836,7 +836,7 @@
  },
  "lite": {
   "file": "rammerjack.lite.glb",
-  "build": "572690f1d5",
+  "build": "58177985de",
   "bytes": 1055292,
   "triangles": 11774,
   "trianglesByMesh": {

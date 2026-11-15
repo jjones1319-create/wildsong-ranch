@@ -93,6 +93,11 @@ export const ULTRA_LOOKS: Readonly<Record<UltraId, UltraLook>> = {
   zipwisp: shipped('zipwisp', 90, ['prism-zipwisp']),
   mirrorkin: shipped('mirrorkin', 180, ['obsidian-mirrorkin']),
   frostlance: shipped('frostlance', 135),
+  // batch 5 (Nov 15), two at a time: the first shelled and blob looks
+  moatshell: shipped('moatshell', 165, ['porcelain-moatshell']),
+  reefclaw: shipped('reefclaw', 180, ['abyss-reefclaw']),
+  bloatoad: shipped('bloatoad', 180, ['party-bloatoad']),
+  scrollopus: shipped('scrollopus', 165),
 }
 
 /** How tall a look stands beside Puddlepup, in percent (Puddlepup 100). */

@@ -2,6 +2,68 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Every monster in 3D, batch 5 shells and blobs (2026-11-15) · v1.26.0
+
+The owner, Nov 15, while batch 5 was under way: *"stop after pair 7 and upload them to the phone."* So pairs 6 and 7 (the first four looks of batch 5) ship now, and pair 8 (Lootlid and Coilfang) waits for the owner's word (BUILD_PLAN "Batch 5"; ART_2_DETAIL §9.9).
+
+**Live:**
+- **4 new high-detail monsters** in Lab → 3D Gallery and Battle 3D (the 🐾 chips), each at its true size beside Puddlepup:
+  - **in a shell:** Moatshell (with Porcelain), a tortoise carrying its castle, and Reefclaw (with Abyss), a six-legged crab with one big coral claw;
+  - **soft and squashy:** Bloatoad (with Party), a toad with a throat sac that balloons, and Scrollopus, an octopus scholar holding a scroll, a quill and a book.
+- **On the ranch** these four breeds now show their 3D model in the live portrait too, by v1.24.0's rule. Settings → Graphics → Monsters: Classic still brings back the drawings.
+- **New moves for the new shapes:** Moatshell braces and fires a volley from its tower; Reefclaw rears its big claw and sweeps it across; Bloatoad fills its sac and lashes its tongue, and its cast swells it like a balloon; Scrollopus flicks ink from a raised tentacle, and its cast holds its scroll, quill and book aloft like a lecture.
+- **Five earlier looks re-shipped with a tiny repair** (Cinderlynx, Cobblemaw, Plumdrake, Rammerjack, Zipwisp): each carried one broken surface direction (a "zero-length tangent") that could flash a black frame of glow on some phones. The look is the same; a phone fetches these five once more the next time it shows them.
+
+**Done**
+- **Two more body plans in use:** the shelled plan (`plans/shelled.py`: Moatshell, Reefclaw) and the blob plan (`plans/blob.py`: Bloatoad, Scrollopus), shipped as tools in v1.25.0, now each with the opt-in knobs these breeds needed (RECIPE.md). Every knob is off unless a recipe turns it on, and each builder checked the plan's stand-in recipe still makes key-identical clips:
+  - shelled: `claw_keep_up` (a claw held upright keeps its attitude as the arm lifts) and `shell_turn` (the shell really pitches, rolls and turns: before it, the turn sat after a `return` and never ran, so no clip turned the shell);
+  - blob: `ground_lift_exact` (ground tentacles lift by the exact angle, so they no longer sink about 1 cm into the floor), `ink_lift`, `ink_turn`, `ink_curl`, `strike_scale`, `strike_windup_scale`, `hop_stretch`, `hit_squash`, `sidestep_stretch`, `hit_heavy_pitch`, `hit_heavy_lift`, `hit_heavy_stretch`;
+  - `build_ultra.py`: `ko_settle_meshes` (the knock-out settle also measures prop legs and claws, so they don't sink through the floor as it rolls).
+- **Zero-length tangent repair** (pipeline): a sliver triangle can export a tangent of length 0. It is a finite number, so `assertFinite` let it through, but it blanks the review's raw-material frame and can give black bloom frames.
+  - `tools/art/ultra.ts` now rebuilds any such tangent at ship (the Ultra, WebP and Lite copies, before and after compression) and says how many it fixed (`tools/art/ultra-tangents.ts`).
+  - `node tools/art/ultra-fix-tangents.ts [--dry] [look …]` repairs files already shipped without rebuilding them; it changed 12 bytes in each affected file and bumped the five sidecars' `build` tags. A dry run over every shipped file now reports all clean.
+  - `src/art/ultraTangents.test.ts` covers the repair.
+- **`BASE_UASTC`** (pipeline, opt-in per look, in `tools/art/ultra.ts`): a look in this set ships its colour maps as UASTC (sharper, no 4 × 4 block steps) instead of ETC1S. Only Scrollopus is in it: its small dark ink dots stepped into ETC1S blocks (diamonds above the brow, grey smears by the tassel). It costs Scrollopus about 2 MB (6.2 MB rather than about 4.0 MB). Every other look's files are byte for byte as before.
+- **The game:** 4 lines in `src/art/ultraLooks.ts`; `ultraLooks.test.ts` checks each new look's files, clips, variants and budgets.
+- **Review:** every look had three fresh-eyes rounds against its pictures and a polish pass that the session checked. Final verdicts: Moatshell, Reefclaw and Bloatoad "partly / partly"; Scrollopus "partly / YES at 64 px". None raised a copy concern.
+- **Checks:**
+  - `npm run verify` green (1,491 tests);
+  - Battle 3D, headless on the PC's GPU: the four new looks and a re-shipped one (Zipwisp) in 5 pairings (Moatshell against Reefclaw both ways, Bloatoad against Scrollopus, Zipwisp against Bloatoad, Scrollopus against Puddlepup), each loaded at its true size with no errors;
+  - e2e: 44 passed, with every 3D spec (Gallery, models) green. The same two specs as v1.25.0 failed, both known on this PC and not from this release: the Sound Lab check (`sound.spec.ts:125`) and Echo Stones under load.
+
+| Look | Triangles | Joints | Download | Lite |
+|---|---|---|---|---|
+| Moatshell | 73k | 26 | 5.6 MB | 1.4 MB |
+| Reefclaw | 73k | 33 | 5.0 MB | 1.3 MB |
+| Bloatoad | 73k | 24 | 3.7 MB | 0.9 MB |
+| Scrollopus | 81k | 47 | 6.2 MB | 1.2 MB |
+
+(MB = 1,048,576 bytes; downloaded when viewed, never precached. None of the four uses fur cards or glow.)
+
+**Decided along the way** (tell me if you'd like any changed):
+- **Reefclaw has six legs** and a big right claw with a moving pincer, as in its pictures (the plan's sketch said four stubby legs).
+- **Moatshell's size** follows v1.25.0's rule: the height from the card, the length from the pictures (1.10 m tall with its flag, 1.26 m long). Its castle, flag, door and eyelids are rigid parts.
+- **Bloatoad's mouth** is a real cut with a dark pocket behind the lips, so an open mouth never shows the background (approved in round 2).
+- **Scrollopus has eight tentacles:** five low ones on the ground (one is the ink arm) and three holding the scroll, the quill and the book. Its colour map uses the sharper format (`BASE_UASTC`, approved in round 3).
+- **No squint in the win** for these four: their blinks close both lids evenly, so a happy squint isn't possible yet.
+
+**Known issues** (taste items for the owner's look):
+- **Moatshell:** small and seen from the front, the head and the castle keep merge (the card gives them the same colour, #C9A66B); the moss could be denser; the eye sockets look deep in profile; the wall blocks rise steeply at the shoulders; the flag looks satin; Porcelain's round door and arrow slits are thinner; the knock-out lifts it up to about 9 cm mid-fall; the top of the hind leg stretches when seen from below; no win squint; the Lite copy is near its 1.5 MB cap (1.44 MB).
+- **Reefclaw:** the barnacles still look grey-teal in the game's light (the card's #BDE7E0 comes out about #75888A–#97ADAB, darkened by the crevice shading); the arm-socket collars read as rings; the belly is still the biggest shape; the coral fronds are smooth (only the palm is porous); at 64 px the big claw reads as a waving hand; the eyes glance sideways; the visors are pointed; the strike is a low poke rather than a wide sweep; eating misses the mouth; the knock-out lifts mid-roll; no win squint; an arm and a leg touch at the strike's impact.
+- **Bloatoad:** the sac's shine is subtle (the game's material keeps roughness above a floor and caps the coat, so its wet look is painted); faint pink flecks along a seam on the Lite copy at 3× zoom; the tongue tip is about 1.5× thick from the side; fine fold lines on the belly; the mouth is a flat-ish ledge; the toes end in balls; from behind it reads as an onion; the head is narrow and a little plastic; the knock-out reads as an egg with feet; glitter in the warts; the eyelids look like caps.
+- **Scrollopus:** the forehead spots are slightly polygonal at extreme close-up; fewer and matter suckers than in its picture; an orange-peel skin; the book barely rises in the win; a small stretch under the head in the knock-out; lilac shows under the quill arm's wrap; the brows read a touch worried; the scroll is yellowish; the spectacle rims lean lemon.
+- **Hearthwing (from v1.25.0):** its jaw still moves part of the upper snout; not rebuilt yet.
+- **Housekeeping:** the stray folders `C:\lab15` (review pictures) and `C:\art-review\` (old shape previews) can be deleted by hand; I didn't delete anything outside the project.
+
+**Follow-ups (tools, not done yet):**
+- `lib/anim.py` `ClipBuilder.scale` maps a world-axis scale onto a bone's axes through their absolute values, so a scale of 1 on a tilted bone comes out above 1 (12° of tilt gave 1.19). Bloatoad worked round it in its own rig (its squash chain now stands straight up). Other looks that scale tilted bones may be distorted; fixing it changes existing clips, so it needs a dry run over every look.
+- The review tool (`art:ultra-review`, and `art:lineup`) frames by the body-only `restHeight`, so tall props get cropped (Reefclaw's raised claw) and the lineup shows Moatshell oversized; the game fits every mesh. Frame by `restHeightWithProps` when it is more than 15% taller.
+- Hearthwing's jaw weight leak (measured in v1.25.0).
+- An atlas packer gutter option (Pluckrex's 64 px pixels).
+- The two flaky e2e specs (the Sound Lab check and Echo Stones under load).
+
+**Next:** the owner looks at the four on the phone. Pair 8 (Lootlid on the construct plan, Coilfang on the serpent plan) waits for the owner's go.
+
 ## Every monster in 3D, batches 3 and 4 (2026-11-15) · v1.25.0
 
 The owner, Nov 13, after v1.24.0: "Good for now" (and Cobblemaw "looks amazing"). Then: "Do the next 10 2 at a time. Do not move onto the next two until the two you are working on are completely finished." So the ten breeds went two at a time, each pair completely finished before the next, and all ship together (BUILD_PLAN "Batches 3 and 4"; ART_2_DETAIL §9.8).
