@@ -272,7 +272,7 @@ ART_2_DETAIL §5.1 also has a **High** column (≤ 40,000 triangles, ≤ 3.5 MB)
 
 ## 4. Body plans, rigs and batches
 
-The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below. The biped plan `plans/biped.py` (Nov 12: IK legs and arms, all 32 clips, eight strike styles) and the floater plan `plans/floater.py` (Nov 12: a hover root, all 32 clips, six strike styles) shipped with B3 and B4 in v1.25.0, each grown with opt-in knobs by its breeds (RECIPE.md). The shelled and blob plans (`plans/shelled.py`, `plans/blob.py`; written Nov 14) shipped with B5's first four looks in v1.26.0, each grown with opt-in knobs by its breeds (RECIPE.md). The construct and serpent plans (`plans/construct.py`, `plans/serpent.py`) followed (Nov 15): their rigs and all 32 clips are tested on stand-ins. All four share their posing machinery in `plans/kin.py`. Each other plan is written when its first batch starts.
+The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ultra plan `tools/blender/monsters/plans/quadruped.py`, whose options (RECIPE.md) cover the long necks, hooves, hocks, manes, trunks and wings below. The biped plan `plans/biped.py` (Nov 12: IK legs and arms, all 32 clips, eight strike styles) and the floater plan `plans/floater.py` (Nov 12: a hover root, all 32 clips, six strike styles) shipped with B3 and B4 in v1.25.0, each grown with opt-in knobs by its breeds (RECIPE.md). The shelled and blob plans (`plans/shelled.py`, `plans/blob.py`; written Nov 14) shipped with B5's first four looks in v1.26.0, each grown with opt-in knobs by its breeds (RECIPE.md). The construct and serpent plans (`plans/construct.py`, `plans/serpent.py`; written Nov 15) and the avian and insect plans (`plans/avian.py`, `plans/insect.py`; written Nov 17, each with a stand-in recipe) shipped with the last ten looks in v1.27.0, each grown with opt-in knobs by its breeds (RECIPE.md). All six share their posing machinery in `plans/kin.py`. With v1.27.0 every breed has its look, so every plan is written.
 
 | Plan | Breeds (looks) | Rig notes | Batch |
 |---|---|---|---|
@@ -281,10 +281,10 @@ The Batch column is §8's batches (B1–B7). The quadrupeds are built on the Ult
 | floater (`plans/floater.py`, shipped in v1.25.0) | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance | a hover root, a short squash chain, optional little arms or floating hands, trailing chains (tassel, wisps, zigzag tail, handle), fins and a fluke (Frostlance) | B4 |
 | shelled (`plans/shelled.py`, shipped in v1.26.0) | Moatshell, Reefclaw | a rigid shell, head and neck, four stubby legs planted by IK, a tuck into the shell, a flag or tail chain, a turret's volley socket. Crab option: six legs, two claws (one big) with moving pincers, eye stalks with visors (Reefclaw) | B5 |
 | blob (`plans/blob.py`, shipped in v1.26.0) | Bloatoad, Scrollopus | a squash chain for the body, four short legs planted by IK, a throat sac and a stretching tongue (Bloatoad), six to eight tentacle chains that rest on the ground, hold props or stay free (Scrollopus) | B5 |
-| serpent (`plans/serpent.py`, written) | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline (each bone's heading and rise along the body: slither waves, a cobra's S, an Archimedean coil-sit for sit and sleep), head and jaw, a forked tongue, a crest. For Aurelwyrm, which floats (hooks for now): `float`, ribbon-fin chains, whiskers, antler props | B6 |
-| avian | Galeheron, Paladove (young, grown) | long legs, a neck chain, head, beak, two wings (four on grown Paladove), tail and crest plumes | B6 |
-| insect | Nibblegrub (and its cocoon), Velvesper | a segment chain with tiny legs, antennae; moth wings (Velvesper) | B7 |
-| construct (`plans/construct.py`, written for Lootlid) | Gearhoot, Lootlid | Gearhoot (hooks for now): a head on a turning neck with a beak, gear-feather wing chains, a spinner for the turning key, a monocle prop. Lootlid: a box body whose lid is the jaw (a separate rigid shell on the hinge), stubby legs planted by IK, a sliding tongue chain | B7 (Gearhoot), B5 (Lootlid) |
+| serpent (`plans/serpent.py`, shipped in v1.27.0) | Coilfang, Aurelwyrm | a 12–16-bone spine moved along a spline (each bone's heading and rise along the body: slither waves, a cobra's S, an Archimedean coil-sit for sit and sleep), head and jaw, a forked tongue, a crest. Coilfang: 20 spine bones, a feather crest, the `lunge` strike. Aurelwyrm floats: modelled in the air with a hover bob in its clips, ribbon-fin chains, whiskers, antler props | B6 |
+| avian (`plans/avian.py`, shipped in v1.27.0) | Galeheron, Paladove (young, grown) | long legs planted by IK (thigh, drumstick, an upright tarsus, flat toes; the heel lifts and the head bobs), a neck chain, head, a beak whose lower half is the jaw, two wings (four on grown Paladove: `more_wings`, following the upper pair), tail and crest plumes, halo and shield props; the four flying clips; strikes peck, buffet, gust, kick, beam | B6 |
+| insect (`plans/insect.py`, shipped in v1.27.0) | Nibblegrub (and its cocoon), Velvesper | a pivot with front and rear segment chains (a crawler's travelling hump), six tiny legs moved by angle, antennae springs; a hover form with two pairs of moth wings beating about the long axis and folding back to land (Velvesper hovers upright, on per-wing beat and fold axes); strikes roll, chomp, spray, dust, flutter, beam. The cocoon form (`form: 'cocoon'`: a hang point, two shell halves with bulge bones over an inner core, a twig prop; clips idle, wriggle, split and blink) makes Nibblegrub's cocoon, which never battles: it ships outside the looks registry as a Gallery-only extra (`ULTRA_EXTRAS`; the owner, Nov 18: *"yes have a 3D cocoon as well"*) | B7 |
+| construct (`plans/construct.py`, shipped in v1.27.0) | Gearhoot, Lootlid | Gearhoot ('neck' mode): a head on a turning neck with a beak, gear-feather wing chains, a spinner for the turning key, a monocle prop. Lootlid: a box body whose lid is the jaw (a separate rigid shell on the hinge), stubby rigid post legs (`legs_ride`), a sliding tongue chain | B7 (Gearhoot), B5 (Lootlid) |
 
 ## 5. The clip contract
 
@@ -417,7 +417,7 @@ Each P is one milestone in the CLAUDE.md workflow:
 6. the phone checklist, then stop.
 
 **The owner's roadmap (Nov 2026)** regroups what follows into four steps:
-1. **Every monster in 3D:** the batches of 5 below (they replace P3–P9). Each batch is one milestone with a minor version bump (batch 1: v1.23.0).
+1. **Every monster in 3D:** the batches of 5 below (they replace P3–P9). Each batch is one milestone with a minor version bump (batch 1: v1.23.0). Done in v1.27.0: every breed has its look.
 2. **The walkable 3D farm:** P10, with P2's Waterfall Stand folded in. The ranch, the Monster Card and the cups switch to the Ultra monsters here.
 3. **3D event scenes.**
 4. **The 3D duel as the real battle.**
@@ -473,9 +473,9 @@ Each batch ends with a lineup sheet and the owner's verdict on the phone.
 | **B2** (v1.23.0, with B1; both upgraded in v1.24.0) | Stripeneck, Petalphant, Cobblemaw, Hearthwing (young and grown) |
 | **B3** (v1.25.0, two at a time): the biped plan | Quillion, Grumblestone, Gloomgrin, Pluckrex (young and grown), Plumdrake |
 | **B4** (v1.25.0, with B3): the floater plan | Wishlume, Ashwraith, Zipwisp, Mirrorkin, Frostlance |
-| **B5** (Nov 15, two at a time, with Coilfang from B6): the shelled and blob plans | Moatshell, Reefclaw, Bloatoad, Scrollopus shipped in v1.26.0; Lootlid (and Coilfang) wait for the owner's go |
-| **B6** | Coilfang, Aurelwyrm, Galeheron, Paladove (young and grown) |
-| **B7** | Nibblegrub and its cocoon, Velvesper, Gearhoot |
+| **B5** (Nov 15–17, two at a time, with Coilfang from B6): the shelled and blob plans, and the construct plan's first | Moatshell, Reefclaw, Bloatoad, Scrollopus shipped in v1.26.0; Lootlid (with Coilfang) shipped in v1.27.0 |
+| **B6** (v1.27.0, two at a time): the serpent and avian plans | Coilfang, Aurelwyrm, Galeheron, Paladove (young and grown) |
+| **B7** (v1.27.0, with B6): the insect plan and the second construct | Nibblegrub and its cocoon (a Gallery-only extra), Velvesper, Gearhoot |
 
 **P10–P12 · The farm and battles** (§7.2, §7.3).
 - **P10:** the farm (roadmap step 2, with Waterfall Stand from P2).

@@ -1,0 +1,886 @@
+{
+ "look": "paladove-grown",
+ "tier": "ultra",
+ "plan": "avian",
+ "version": 2,
+ "heightUnits": 240,
+ "restHeight": 1.7983,
+ "bounds": {
+  "min": [
+   -0.473,
+   -0.446,
+   0.135
+  ],
+  "max": [
+   0.4698,
+   0.445,
+   1.7983
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "chest",
+  "socket_mouth": "jaw",
+  "socket_core": "chest",
+  "socket_foot_L": "toe.L",
+  "socket_foot_R": "toe.R",
+  "socket_wing_L": "wing.L.2",
+  "socket_paw_L": "wing.L.2",
+  "socket_wing_R": "wing.R.2",
+  "socket_paw_R": "wing.R.2",
+  "socket_wingb_L": "wingb.L.2",
+  "socket_wingb_R": "wingb.R.2",
+  "socket_tail": "tail.2",
+  "socket_crest": "crest.2",
+  "socket_halo": "prop.halo",
+  "socket_shield": "prop.shield"
+ },
+ "springs": [
+  {
+   "kind": "crest",
+   "chain": [
+    "crest.1",
+    "crest.2"
+   ]
+  },
+  {
+   "kind": "plume",
+   "chain": [
+    "tail.1",
+    "tail.2"
+   ]
+  }
+ ],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_props": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "Baked face (the young form's, grown): big glossy blue lenses in soft white down, faint warm brows, a peach-pink blush; a gold beak whose lower half opens on the jaw (a rose mouth inside). Blinking squashes each lens onto its lid line and sinks it: a closed lid painted on the face, a curved dark lash line.",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.05,
+   "closedXYZ": [
+    0.96,
+    0.05,
+    0.12
+   ]
+  },
+  "eyeColor": "#4A6FA5"
+ },
+ "variants": {},
+ "palette": {
+  "body": "#F7F4EE",
+  "belly": "#FFFFFF",
+  "accent": "#E3B448",
+  "eye": "#4A6FA5"
+ },
+ "atlas": {
+  "strip": 0,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0,
+   0,
+   0.86
+  ],
+  "size": 2.3,
+  "head": {
+   "target": [
+    0,
+    -0.15,
+    1.24
+   ],
+   "size": 0.85
+  },
+  "clips": [
+   [
+    "cast",
+    0.55
+   ],
+   [
+    "win",
+    0.5
+   ],
+   [
+    "hit",
+    0.3
+   ],
+   [
+    "fly",
+    0.25
+   ],
+   [
+    "sleep",
+    0.5
+   ]
+  ]
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.378,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.2518,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.3866,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.3265,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    -1
+   ]
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.7182,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "strafe_l": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.3436,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ]
+  },
+  "strafe_r": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.3436,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "sidestep_l": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "sidestep_r": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "fly_takeoff": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "leap",
+     "t": 0.3333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "beat",
+     "t": 0.2
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly_cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.6,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.8
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 1.3667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "fly_land": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 1.8365,
+ "normal": {
+  "scale": 0.8
+ },
+ "body": {
+  "sheen": 0.25
+ },
+ "litePropsTris": 7200,
+ "glow": {
+  "strength": 1.6,
+  "tint": null,
+  "twinkle": 0
+ },
+ "build": "07bdde11b2",
+ "buildStats": {
+  "cards": {
+   "total": 0,
+   "layers": []
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {
+   "body": 6224
+  },
+  "sourceTriangles": 2943140,
+  "uvOverlapTexels": {
+   "lo_body": 3,
+   "lo_eyes": 0,
+   "lo_props": 1
+  }
+ },
+ "files": {
+  "glb": "paladove-grown.glb",
+  "glbWebp": "paladove-grown.webp.glb",
+  "lite": "paladove-grown.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "paladove-grown_base.ktx2",
+    "webp": "paladove-grown_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "paladove-grown_normal.ktx2",
+    "webp": "paladove-grown_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "paladove-grown_orm.ktx2",
+    "webp": "paladove-grown_orm.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 82324,
+  "trianglesByMesh": {
+   "lo_body": 50000,
+   "lo_eyes": 624,
+   "lo_props": 31700
+  },
+  "vertices": 63163,
+  "cards": 0,
+  "cardLayers": 0,
+  "joints": 38,
+  "animations": 36,
+  "animationBytes": 339796,
+  "download": {
+   "glb": 3572772,
+   "glbKtx2": 3572772,
+   "glbWebp": 2843600,
+   "ktx2": {
+    "body": 1679822,
+    "variants": 0
+   },
+   "webp": {
+    "body": 950652,
+    "variants": 0
+   },
+   "totalKtx2": 3572772,
+   "totalWebp": 2843600
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 466959,
+     "webp": 189596
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 865687,
+     "webp": 551246
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 347176,
+     "webp": 209810
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "paladove-grown.lite.glb",
+  "build": "3880e1e03a",
+  "bytes": 1213672,
+  "triangles": 11868,
+  "trianglesByMesh": {
+   "lo_body": 4260,
+   "lo_eyes": 624,
+   "lo_props": 6984
+  },
+  "simplified": {
+   "lo_props": {
+    "from": 31700,
+    "to": 6984
+   },
+   "lo_body": {
+    "from": 50000,
+    "to": 4260
+   }
+  },
+  "joints": 38,
+  "animations": 36,
+  "atlasPx": 1024,
+  "textureBytes": 264772,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

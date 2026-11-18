@@ -716,6 +716,10 @@ def stage_build(recipe, out: Path, quick: bool, body_tris: int) -> dict:
         pack_opts = {'keep_faces': 'own_uv'} if own_any else {}
         if getattr(recipe, 'ATLAS_ANGLE', None):
             pack_opts['angle_deg'] = float(recipe.ATLAS_ANGLE)        # smart-project's angle limit (default 62°)
+        if getattr(recipe, 'ATLAS_MARGIN', None):
+            # Nov 17 (Coilfang; opt-in, absent = 0.003 as before): a wider gutter between the islands, so a bright island
+            # (a gold crest) doesn't bleed into its neighbours at the small mip levels
+            pack_opts['pack_margin'] = float(recipe.ATLAS_MARGIN)
         BK.pack_atlas(lows, 'UVMap', atlas_strip(recipe), density=getattr(recipe, 'ATLAS_DENSITY', None), **pack_opts)
         if uv_smooth > 0:
             S.set_positions(lo_body, body_co)
@@ -1124,8 +1128,12 @@ def review_frame(recipe, mn, mx, P: dict) -> dict:
     """The review framing: the recipe's REVIEW, else from the body's bounds and the head."""
     rv = getattr(recipe, 'REVIEW', None)
     if rv:
-        return {'centre': [float(v) for v in rv['centre']], 'size': float(rv['size']),
-                'head': {'target': [float(v) for v in rv['head'][0]], 'size': float(rv['head'][1])}}
+        out = {'centre': [float(v) for v in rv['centre']], 'size': float(rv['size']),
+               'head': {'target': [float(v) for v in rv['head'][0]], 'size': float(rv['head'][1])}}
+        if rv.get('clips'):
+            # Nov 17 (Lootlid; opt-in, absent = as before): more clips for both review sheets, [(clip, t), ...]
+            out['clips'] = [[str(c), float(t)] for c, t in rv['clips']]
+        return out
     ext = max(mx.x - mn.x, mx.y - mn.y, mx.z - mn.z)
     hc, hr = Vector(P['head_c']), P['head_r']
     return {'centre': [0.0, round((mn.y + mx.y) / 2, 4), round(mx.z * 0.5, 4)], 'size': round(ext * 1.28, 4),
@@ -1169,6 +1177,12 @@ def stage_rig(recipe, plan, out: Path) -> dict:
                 j = names.index(nm)
                 W2[:, hi] += W2[:, j]
                 W2[:, j] = 0.0
+        # Nov 17 (insect plan; opt-in, absent = as before): a plan whose belly lies on the floor (a caterpillar) names the
+        # bone that takes the root's heat weights, so no belly skin stays pinned to the root (it would stay down in a hop)
+        to = getattr(plan, 'ROOT_HEAT_TO', None)
+        if to in names and 'root' in names:
+            W2[:, names.index(to)] += W2[:, names.index('root')]
+            W2[:, names.index('root')] = 0.0
         # mane chains and prop bones move only what the recipe's weight regions give them: their heat weights go to the
         # parent (tip first, down the chain), unless the recipe's KEEP_HEAT names the chain
         chains = {m['name'] for m in (P.get('manes') or [])} | {'prop'}
@@ -1684,6 +1698,8 @@ def stage_review(recipe, out: Path, quick: bool) -> list[Path]:
     if Pr.get('wings') or Pr.get('trunk'):
         # batch 2: the wings wide open and the trunk raised, and the bud open
         poses += [('cast', 0.5), ('idle_happy', 0.3)]
+    # Nov 17 (Lootlid; opt-in, absent = as before): the recipe's REVIEW['clips'] [(clip, t), ...]
+    poses += [(c, float(t), f'{c}_{int(round(float(t) * 100))}') for c, t in ((getattr(recipe, 'REVIEW', None) or {}).get('clips') or [])]
     if Pr.get('wings') and 'fly' in clips:
         # Nov 12: the flight clips (framed wider: the working wings span about 2.5 x the standing height)
         poses += [('fly', 0.2, 'fly_downstroke'), ('fly', 0.6, 'fly_upstroke'), ('fly_takeoff', 0.25, 'fly_takeoff_crouch'),

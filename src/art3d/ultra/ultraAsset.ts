@@ -2,7 +2,7 @@ import { AnimationClip, AnimationMixer, Box3, BufferGeometry, Mesh, MeshStandard
 import type { Material, SkinnedMesh } from 'three'
 import type { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
-import { buildTagOf, ULTRA_LOOKS, ultraLook, versionedUrl, type UltraId, type UltraLook } from '../../art/ultraLooks.ts'
+import { buildTagOf, galleryLook, ULTRA_LOOKS, versionedUrl, type UltraId, type UltraLook } from '../../art/ultraLooks.ts'
 import type { BreedId } from '../../data/types.ts'
 import { filmMaterial } from '../perf/content.ts'
 import { ART } from '../../data/tuning.ts'
@@ -100,13 +100,13 @@ async function loadFallback(loader: GLTFLoader, look: UltraLook): Promise<UltraA
 }
 
 /**
- * A registry look's model (a breed, or a grown form): the Ultra file, or with `lite` its Lite copy (the Ultra file if
- * it has none); either way its fallback model (Puddlepup's Art 2.0 one) if neither loads. A look outside the registry
- * loads Puddlepup.
+ * A registry look's model (a breed, or a grown form), or a Gallery extra's (src/art/ultraLooks.ts ULTRA_EXTRAS): the
+ * Ultra file, or with `lite` its Lite copy (the Ultra file if it has none); either way its fallback model (Puddlepup's
+ * Art 2.0 one) if neither loads. Any other id loads Puddlepup.
  * The sidecar comes first (revalidated every time) for the build tags.
  */
 export async function loadUltraAsset(loader: GLTFLoader, id: UltraId, lite: boolean): Promise<UltraAsset> {
-  const look = ultraLook(id) ?? ULTRA_LOOKS.puddlepup!
+  const look = galleryLook(id) ?? ULTRA_LOOKS.puddlepup!
   const meta = await fetchJson<UltraMeta>(`${BASE}${look.meta}`)
   try {
     if (!meta) throw new Error(`${look.meta} is missing`)

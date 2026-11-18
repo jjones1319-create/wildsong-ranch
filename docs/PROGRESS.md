@@ -2,6 +2,97 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## Every monster in 3D, batches 5–7 (2026-11-18) · v1.27.0
+
+The owner, Nov 17: *"Finish the last sets of 2 to finish out the last ones; then I'll give notes and fixes on all of them."* So the last looks went in four pairs, each pair completely finished before the next, and all ship together: Lootlid and Coilfang (pair 8), Aurelwyrm and Gearhoot (pair 9), Galeheron and Paladove young and grown (pair 10), then Nibblegrub, its cocoon and Velvesper (pair 11). The owner, Nov 18: *"yes have a 3D cocoon as well"*, so the cocoon joined pair 11. With this release **every breed has its 3D look**, and the "every monster in 3D" rollout is complete (BUILD_PLAN "Batches 5–7"; ART_2_DETAIL §9.10).
+
+**Live:**
+- **10 new high-detail models** in Lab → 3D Gallery, and the 9 battle looks among them in Battle 3D (the 🐾 chips), each at its true size beside Puddlepup:
+  - **boxes and clockwork:** Lootlid (with Gilded), a treasure chest on four peg legs whose lid is its mouth, with a tongue and a hoard of coins inside, and Gearhoot (with Silver), a brass clockwork owl with a monocle and a wind-up key;
+  - **long and legless:** Coilfang (with Imperial), a snake with a golden feather crest, and Aurelwyrm (with Sunsoul), a golden dragon that floats, with ribbon fins, whiskers and antlers;
+  - **birds:** Galeheron (with Dawnwing), a tall blue-and-white heron with an S-shaped neck and swept-back crest plumes; Paladove, a round white chick with a golden halo; and Paladove (grown) as its own look, a four-winged dove-knight with a halo, armour and a round shield;
+  - **bugs:** Nibblegrub (with Syrup), a yellow caterpillar with pink cheeks on six stubby legs, and Velvesper (with Moonlit), a fluffy moth that hovers upright on two pairs of wings.
+- **Nibblegrub's cocoon** is in the Gallery only, right after Nibblegrub: a silk cocoon hanging from a twig, with warm dusk colours glowing through. It has its own buttons: 🙂 Idle (it sways), 🐛 Wriggle (bulges push out under the silk), 🦋 Split open (the halves swing open and stay open; tap it again to watch once more, or Idle to close it up) and 😌 Blink. It never battles, so it has no Battle 3D chip and no ranch portrait.
+- **On the ranch** these 8 breeds now show their 3D model in the live portrait too, by v1.24.0's rule (Paladove switches to its grown look at Prime), so **every monster on the ranch is now 3D**. Settings → Graphics → Monsters: Classic still brings back the drawings.
+- **Three more fliers:** Galeheron and both Paladoves take off for their ranged Specials and Signatures in Battle 3D, fly a lap on the ranch about once a minute (as Hearthwing does), and have the flying moves in the Gallery.
+- **New moves for the new shapes:** Lootlid rests with its lid cracked open and its tongue over the rim, and spits a burst of coins with its lid wide; Coilfang draws its neck back and lunges with its mouth wide; Aurelwyrm rears up to strike, its ribbons trailing; Gearhoot's key turns as it moves, winds faster in its cast and win and stops when it sleeps; Galeheron sweeps one great wingbeat forward; Paladove buffets with both wings, and the grown one flings its wings wide and fires a beam from its breast; Nibblegrub curls into a ball and rolls into its target; Velvesper sweeps its wings down in a puff of dust, lands and folds them like a cape to sit and sleep, and lies back on its spread wings when knocked out.
+
+**Done**
+- **Four more body plans in use:** the construct plan (`plans/construct.py`: Lootlid, Gearhoot) and the serpent plan (`plans/serpent.py`: Coilfang, Aurelwyrm), shipped as tools in v1.25.0, and two new ones written Nov 17: the avian plan (`plans/avian.py`: Galeheron, Paladove young and grown; long legs planted step by step, a bobbing head, two or four wings, the four flying clips) and the insect plan (`plans/insect.py`: Nibblegrub and Velvesper; a crawler's travelling hump, a hoverer's moth wings, and a cocoon form with its own clips). Each new plan has a stand-in recipe that builds (`_avian_test_ultra.py`: a heron, or a four-winged knight; `_insect_test_ultra.py`: a caterpillar, a moth or a cocoon). Every knob below is off unless a recipe turns it on, and each builder checked the stand-ins still make key-identical clips:
+  - construct: `tongue_lid`, `tongue_hang` and `hold_open` (Lootlid's lid held open with its tongue over the rim), `legs_ride`, `gait_carry` and `gait_lift` (rigid post legs); a spinner's `clips` speeds and `wing_tuck` (Gearhoot);
+  - serpent: `roll_fix`, `ko_head_roll`, `hit_heavy_roll`, `hit_heavy_head_roll`, `sleep_neck`, `rear`, the `lunge` strike with its keys, `Shape.ph_max` and `win_squint` (Coilfang); Aurelwyrm needed no shared change;
+  - avian: `buffet` and `beam` (Paladove's strikes);
+  - insect: `probes`, `roll_curl`, `roll_bones` and `arch` (Nibblegrub), the shell halves' `bulge` (the cocoon's wriggle), and per wing `beat_axis`, `fold_axis` and `fold_beat`, plus `ko_wing_bias` (Velvesper's upright hover);
+  - `build_ultra.py`: `ATLAS_MARGIN` (a wider gap between texture islands, so Coilfang's gold crest doesn't bleed into its neighbours at small sizes), `REVIEW['clips']` (extra key frames on both review sheets) and `ROOT_HEAT_TO` (the insect plan: a belly lying on the floor isn't pinned to the root bone).
+- **`BASE_UASTC_MAIN`** (pipeline, opt-in per look, in `tools/art/ultra.ts`): a look in this set ships only its main colour map as UASTC (sharper, no 4 × 4 block steps); its variants' maps stay ETC1S. Galeheron (the soft blue-to-white blend down its neck stair-stepped) and Velvesper (its wings' bands and speckle stair-stepped up close) use it. Every other look ships byte for byte as before: a test re-ship of Coilfang matched all 12 of its files' hashes.
+- **The cocoon in the review tools:** `tools/art/ultra-serve.ts` reads any look ending in `-cocoon` as a cocoon (its `cocoon-` reference pictures; whole-body shots framed by the recipe's own centre and size, because its body is a hidden core), and `tools/art/ultra-review.ts` leaves out the battle-clip shots for it and crops the three-view cocoon turnaround.
+- **The game:**
+  - 9 lines in `src/art/ultraLooks.ts`;
+  - `ULTRA_EXTRAS`, for Gallery-only models that never battle: Nibblegrub's cocoon (148 units tall, listed after Nibblegrub, its own four clips, no variants). It stays out of the looks registry, so no Battle 3D chip or ranch portrait picks it; `ultraAsset.ts` loads it like a look;
+  - the Gallery (`gallery3d.ts`, `LabGallery3D.tsx`) plays an extra's own clips: looping (idle, wriggle), held on their last pose (split, until another move or the same one again) or once, with its buttons and a hint (`src/data/text/gallery3d.ts`);
+  - `ultraLooks.test.ts` checks each new look's files, clips, variants and budgets, and the extras; `e2e/gallery3d.spec.ts` has a cocoon test (its own buttons, Split open stays open, Idle closes it, its true size beside Puddlepup).
+- **Review:** every look had three fresh-eyes rounds against its pictures and a polish pass that the session checked in the in-game shots. Final verdicts: Lootlid, Gearhoot, Paladove (young) and Nibblegrub "partly / YES at 64 px"; Coilfang, Aurelwyrm, Galeheron, Paladove (grown), the cocoon and Velvesper "partly / partly". None raised a copy concern.
+- **Checks:**
+  - `npm run verify` green (1,597 tests in 136 files; the build checks OK);
+  - e2e: 45 passed, with every 3D spec green, including the new cocoon test in the Gallery (it draws, shows only its own moves, and splits open and stays open). The same two specs as v1.25.0 and v1.26.0 failed, both known on this PC and not from this release: the Sound Lab check (`sound.spec.ts:125`) and Echo Stones under load.
+
+| Look | Triangles | Joints | Download | Lite |
+|---|---|---|---|---|
+| Lootlid | 67k | 21 | 5.2 MB | 1.2 MB |
+| Coilfang | 69k | 31 | 4.1 MB | 1.1 MB |
+| Aurelwyrm | 78k | 52 | 4.5 MB | 1.4 MB |
+| Gearhoot | 61k | 25 | 4.0 MB | 1.0 MB |
+| Galeheron | 85k | 46 | 6.5 MB | 1.4 MB |
+| Paladove | 58k | 27 | 3.0 MB | 0.9 MB |
+| Paladove (grown) | 82k | 38 | 3.4 MB | 1.2 MB |
+| Nibblegrub | 67k | 28 | 3.2 MB | 0.8 MB |
+| Nibblegrub's cocoon | 53k | 14 | 2.1 MB | 0.4 MB |
+| Velvesper | 63k | 33 | 6.1 MB | 1.2 MB |
+
+(MB = 1,048,576 bytes; downloaded when viewed, never precached. None uses fur cards. These glow: Lootlid's coin glints, Gearhoot's monocle, both Paladoves' halos, the cocoon's core, and Velvesper's crescents and eyespots.)
+
+**Decided along the way** (tell me if you'd like any changed):
+- **Nibblegrub's cocoon shows only in the Gallery.** It never battles (a cocooned monster is locked) and the game has no cocoon picture today, so it isn't a battle look and has no Battle 3D chip or ranch portrait. It has no variants. Its size is 148 units, just under Puddlepup's 150 (0.95 m to the top of the core, 1.38 m with its twig and leaves).
+- **The Gallery shows every look and its secret variants** whether or not you've found them in the game, as it always has, and now the cocoon too. If you'd rather the cocoon (or the secrets) stayed hidden until found, say so and I'll gate them.
+- **Velvesper hovers upright**, as in all its pictures, its wings swept back 24° and both pairs beating together; it lands to sit and sleep.
+- **Nibblegrub has 3 pairs of legs**, as its card says (its pictures show 4).
+- **Sharper colour maps cost download size:** Galeheron's main colour map as UASTC adds about 2 MB (it ships at 6.5 MB; its build before the switch was 4.5 MB). With its Dawnwing map sharp too it would have been 8.4 MB, over the 8 MB budget, so only the main map is. Velvesper's costs about 2 MB (it ships at 6.1 MB; its build before the switch was 3.9 MB), to keep its soft wing bands free of blocks. Coilfang tried sharp colour maps too and went back (8.1 MB with both, over the budget).
+- **Paladove (young) flies too**, as the bird plan does by default. Say if its little wings shouldn't carry it.
+- **Gearhoot** is built on the construct plan (a head on a turning neck) rather than the bird plan, and its monocle is solid teal glass that glows.
+- **Aurelwyrm floats** all the time: it is modelled in the air, with a gentle bob.
+- **Coilfang's raised neck** is a forward curve with its crest flared, not a true S: the serpent plan can't bend a bone back on itself without its direction flipping.
+- **Lootlid's strike** keeps the lid wide and spits coins through the impact, as in its attack picture (round 1's review), and its legs are rigid posts, so they no longer bend or tear out of the box.
+
+**Known issues** (taste items for the owner's look, and the small defects left):
+- **Lootlid:** the gold looks matte (its middle colour is #A8842E against the picture's #F5B143); Gilded reads as lacquered pine with rusty bronze; the wood grain is faint; the tongue is a narrow hose rather than the picture's broad, grooved one; the feet skid about half a stride in the run and the dash; sit and sleep no longer lower the box (its legs are rigid posts); the Lite copy's rivets have few sides.
+- **Coilfang:** up close the crest reads as folded leaf blades, and as a tuft from behind; the head looks stacked (a throat bulb, a jaw rim, the eyes perched on top); at rest it stands in an L rather than its picture's coil; it clenches rather than gasps when hit; the wind-up is a Z rather than a C; the win can only narrow its eyes; it is small at 64 px because the snake is long.
+- **Aurelwyrm:** the ruff reads as stiff straw quills rather than feather locks; the cheeks and throat are rounder than in the pictures; the antlers are smooth (no velvet) and look like a rake in profile; the scale shimmer is subtle (painted only); Sunsoul's body is a flat cream-white; the tail fan's tips are sharp, and one small tip still folds up near the roots; the fan stands up in the knock-out; it is small at 64 px (a long body: from the front it reads as a pale grub under a red flame).
+- **Gearhoot:** the neck reads as a lidded jar (a bright dome, a smooth rim); its plain eye bulges past the head in three-quarter view; no V-shaped helm plate or heart-shaped face disc; the head is long in profile; a smooth egg outline; spool legs rather than engraved cuffs; the brow rivets read as short ovals; a few far feathers go thin when exactly edge-on; small dark specks along the collar seam up close.
+- **Galeheron:** the breast reads as shard-like vanes and the toes as smooth sticks; the plumes are slab-like and the crown lumpy; the folded wing is narrow in three-quarter view, with banding; from the side the flying wings are edge-on hairlines; the Lite copy's side swirl is a bit blocky; a faint dark edge along the top of the wing; one front crest plume is thin when edge-on; in the strike the head bends about 85° against the neck (watch the throat); 85k triangles, over the 60–80k aim but under the cap.
+- **Paladove (young):** a tall egg rather than a round puffball, with no wispy outline; the folded wings don't show from the front and meet like a sash from behind; the flat, low lids look stern; the crest is a stiff ring.
+- **Paladove (grown):** stacked tiers from behind; flat, card-like wings; a spiky crown crest; sleepy dark eyes; no rivets on the armour plates; the shoulder plates read as rings in profile; faint streaks on the collar and flecks in the ruff; the Lite copy's body is coarser, to keep the shield and the halo round.
+- **Both Paladoves:** built taller than the size rule (0.90 m and 1.80 m; the crests count); the halo casts a streak of shadow on the crown while asleep (the game casts shadows for all of a look's props as one); the feet dip a little in the step and strafe swings (the plan's clips).
+- **Nibblegrub:** the body's rolls look like discs and its top line is straight; a tall snout and bar-like brows; a small "o" when it chews and a gasp in the win; a collar at the base of each antenna, and the antenna bulbs read tan at 64 px; no visible velvet sheen; the belly stretches in the walks and the strike (underneath); a tiny pink fleck at one end of a lash line.
+- **Nibblegrub's cocoon:** the glow is paint, with no bright hot spot; arcs like wood grain; a faint crosshatch on the band at the tip; split open, the core reads mostly orange; a few fibres may shimmer; a shading ring on the floor under the tip.
+- **Velvesper:** the ruff is faceted like shards; the body stacks like a snowman; long tube legs with prong claws; cone-shaped cheeks; a brown wash at the wing roots in three-quarter view; no raised scale texture on the wings; Moonlit's shimmer is sparse; the fur is greyer than the picture's lavender. Left after the polish pass: dozens of tiny faces deep between the fur clumps carry no texture (none shows in any shot), and a soft crown halo appears in the raw debug view only, never in the game.
+- **Hearthwing (from v1.25.0):** its jaw still moves part of the upper snout; not rebuilt yet.
+- **Bloatoad (found after v1.26.0):** in Battle 3D's moves panel its three Near-range move names overflow their column (a layout issue that was there before).
+- **Housekeeping:** the stray folders `C:\lab15`, `C:\pv17` and `C:\art-review\` are still there and can be deleted by hand; I didn't delete anything outside the project.
+
+**Follow-ups (tools, not done yet):**
+- `lib/anim.py` `ClipBuilder.scale` (from v1.26.0): a scale of 1 on a tilted bone comes out above 1. The avian and insect plans never scale a bone because of it. Fixing it changes existing clips, so it needs a dry run over every look.
+- The review tool (`art:ultra-review`, and `art:lineup`) still frames by the body-only `restHeight`; only the cocoon frames by its recipe's own centre and size. Frame by `restHeightWithProps` when it is more than 15% taller.
+- Heat weights: on Galeheron, Blender's heat solve fails on the body and on the first fallback proxy (a 15 mm voxel, every bone left empty), and works only on the coarsest (22 mm). Find out why before a breed with finer parts needs it.
+- A few faces in deep creases are missed by the bake and ship black (Velvesper; none show in the shots). The pipeline's padding should fill them.
+- A bake cage per mesh in `lib/bake.py`: Galeheron's bake rays crossed between parts (the shared code wasn't changed).
+- Shadows per part: the runtime casts shadows for a look's whole props mesh, so Paladove's halo streaks its crown while asleep.
+- A shared rule for Lite rivets in `tools/art/ultra.ts` (Lootlid's have few sides).
+- Hearthwing's jaw weight leak (measured in v1.25.0).
+- The atlas gutter option now exists (`ATLAS_MARGIN`, opt-in); Pluckrex's 64 px pixels wait for a rebuild with it.
+- The two flaky e2e specs (the Sound Lab check and Echo Stones under load).
+
+**Next:** the owner looks at all of them on the phone, then gives notes and fixes on all of them, as they asked.
+
 ## Every monster in 3D, batch 5 shells and blobs (2026-11-15) · v1.26.0
 
 The owner, Nov 15, while batch 5 was under way: *"stop after pair 7 and upload them to the phone."* So pairs 6 and 7 (the first four looks of batch 5) ship now, and pair 8 (Lootlid and Coilfang) waits for the owner's word (BUILD_PLAN "Batch 5"; ART_2_DETAIL §9.9).

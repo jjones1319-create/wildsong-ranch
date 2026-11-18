@@ -12,7 +12,7 @@
  *   <breed>.lite.glb                      the Lite copy: ≤ 12k triangles in all (the membranes kept to a quarter, props
  *                                         capped at 2.4k, the body takes the rest), no cards or tuft, 1024² WebP, the same skeleton
  *                                         and clips (≤ 1.5 MB; committed). --lite-only rebuilds just this from the last ship
- *   <breed>_{base,normal,orm}.{ktx2,webp} the 2048² body atlas (KTX2 = ETC1S, the normal map and BASE_UASTC looks' colour UASTC; toktx; WebP for comparison)
+ *   <breed>_{base,normal,orm}.{ktx2,webp} the 2048² body atlas (KTX2 = ETC1S, the normal map and BASE_UASTC looks' colour UASTC, BASE_UASTC_MAIN looks' main colour map only; toktx; WebP for comparison)
  *   <breed>_<short>_base.{ktx2,webp}      each variant's colour map on the same UVs (normal and ORM are shared)
  *   <breed>_<short>_orm.{ktx2,webp}       a variant's own ORM map, when its recipe bakes one (VARIANT_ORM)
  *   <breed>.webp.glb                      the WebP comparison copy (local only)
@@ -86,6 +86,10 @@ const KTX_ARGS: Record<'base' | 'normal' | 'orm', string[]> = {
  *  opt-in per look; every other look stays ETC1S, byte for byte). Scrollopus: its small dark ink dots on violet skin
  *  stepped into ETC1S's 4×4 blocks (diamonds above the brow, grey smears with a pale halo by the tassel). */
 const BASE_UASTC = new Set(['scrollopus'])
+/** Looks whose main colour map only ships as UASTC; their variants' colour maps stay ETC1S (Nov 18, opt-in per look;
+ *  every other look ships byte for byte as before). Galeheron: the sky-blue / white blend down its neck stair-stepped
+ *  in ETC1S's 4×4 blocks; with its Dawnwing map UASTC too (BASE_UASTC) the look came to 8.4 MB, over its 8 MB budget. */
+const BASE_UASTC_MAIN = new Set(['galeheron', 'velvesper'])   // Velvesper (Nov 18): its wings' bands and speckle stair-stepped up close
 const BASE_UASTC_ARGS = ['--encode', 'uastc', '--uastc_quality', '2', '--uastc_rdo_l', '1.0', '--zcmp', '18', '--assign_oetf', 'srgb', '--target_type', 'RGBA']
 
 export interface TexFile { ktx2: string; webp: string; px: number; ktx2Bytes: number; webpBytes: number; ktx2Px?: number }
@@ -297,7 +301,7 @@ export async function shipUltra(breed: string, look: string): Promise<{ problems
     else console.log(line)
   }
   const body = {
-    base: encode(join(padded, 'atlas_base.png'), 'base', `${breed}_base`, false, BASE_UASTC.has(breed)),
+    base: encode(join(padded, 'atlas_base.png'), 'base', `${breed}_base`, false, BASE_UASTC.has(breed) || BASE_UASTC_MAIN.has(breed)),
     normal: encode(join(padded, 'atlas_normal.png'), 'normal', `${breed}_normal`),
     orm: encode(join(padded, 'atlas_orm.png'), 'orm', `${breed}_orm`, glow),
   }

@@ -138,12 +138,25 @@ def tongue_of(P: dict) -> dict | None:
 
 def spinners(P: dict) -> list[dict]:
     """Parts that turn about their own axis (a wind-up key, gears): {'name', 'head', 'tail' (the axis), 'parent':
-    'hips', 'rate': turns a second} → bone spin.<name>."""
+    'hips', 'rate': turns a second} → bone spin.<name>. Nov 17 (Gearhoot; opt-in, absent = as before): 'clips'
+    {clip: rate factor} turns that clip at rate × factor, one-shots included (0 holds it still); see spin_turns()."""
     out = []
     for sp in P.get('spinners') or []:
         out.append({'name': sp['name'], 'bone': f"spin.{sp['name']}", 'head': _v(sp['head']), 'tail': _v(sp['tail']),
-                    'parent': sp.get('parent', 'hips'), 'rate': float(sp.get('rate', 0.5))})
+                    'parent': sp.get('parent', 'hips'), 'rate': float(sp.get('rate', 0.5)),
+                    'clips': {k: float(v) for k, v in (sp.get('clips') or {}).items()}})
     return out
+
+
+def spin_turns(sp: dict, clip: str, n: int, loop: bool) -> int:
+    """Whole turns a spinner makes over a clip of n frames: rate × the clip's length in a loop (at least one, so it
+    closes), none in a one-shot. A clip in the spinner's opt-in 'clips' {clip: factor} (Nov 17, Gearhoot: the key
+    winds faster in cast and win) turns at rate × factor, one-shots included (whole turns, so it ends where it began;
+    a factor of 0 holds it still)."""
+    k = (sp.get('clips') or {}).get(clip)
+    if k is None:
+        return max(1, round(sp['rate'] * n / A.FPS)) if loop else 0
+    return 0 if k <= 0 else max(1, round(sp['rate'] * k * n / A.FPS))
 
 
 def chains(P: dict) -> list[dict]:
@@ -309,6 +322,13 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     lift_tab = P.get('ko_lift') or []
     strike_yaw = float(P.get('strike_yaw', 0.0))
     hop_k = float(P.get('hop', 1.0))
+    TH = P.get('tongue_hang')                       # Nov 17 (Lootlid; opt-in): see tongue()
+    HOLD = dict(P.get('hold_open') or {})           # Nov 17 (Lootlid; opt-in): see hold_pose()
+    RIDE = dict(P.get('legs_ride') or {})           # Nov 17 (Lootlid; opt-in): see ride_legs()
+    CARRY = float(P.get('gait_carry', 0.0))         # Nov 17 (Lootlid; opt-in): see ride_legs()
+    # Nov 17 (Gearhoot; opt-in, absent = True, as before): `wing_tuck` False drops a wing's negative flaps (sad, sleep,
+    # sit, ko fold it inward), which would push a rigid wing of plates into the body
+    TUCK = bool(P.get('wing_tuck', True))
 
     def mm(v: float) -> float:
         return v * sk
@@ -397,16 +417,27 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             fr = pose(t)
             # the spinners (a wind-up key, gears) turn a whole number of times in a loop, so it closes; still otherwise
             for sp in SPIN:
-                turns = max(1, round(sp['rate'] * n / A.FPS)) if loop else 0
+                turns = spin_turns(sp, name, n, loop)
                 fr.r(sp['bone'], 0, 0, 0)
                 fr.turn(sp['bone'], sp['tail'] - sp['head'], 360.0 * turns * t)
+            ho = HOLD.get(name)
+            if ho:
+                hold_pose(fr, ho, t)
             out = getattr(fr, 'tongue_out', 0.0)
             if LID and TG and out > 0 and 'head' in fr.rot:
-                # the tongue only comes out under an open lid
-                need = -40.0 * min(1.0, 3.0 * out)
+                # the tongue only comes out under an open lid (Nov 17, Lootlid; opt-in, absent = as before: 40°):
+                # `tongue_lid` is that least opening in degrees (a long lid hinged at the back clears the tongue at 14°)
+                need = -float(P.get('tongue_lid', 40.0)) * min(1.0, 3.0 * out)
                 if fr.rot['head'][0] > need:
                     fr.rot['head'][0] = need
             K.clip_bump(P, name, t, fr, sk)
+            if CARRY and name in GAIT_CLIPS:
+                ride_legs(fr, CARRY, carry=True)
+                if name in RIDE:
+                    # a gait listed in `legs_ride` also blends toward rigid after the carry (its feet skid that share)
+                    ride_legs(fr, float(RIDE[name]))
+            elif RIDE:
+                ride_legs(fr, ride_share(name))
             K.key_frame(cb, rig, f, fr)
         if shut is not None:
             K.eyes_shut(cb, CLOSED, n, shut, step)
@@ -456,12 +487,87 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         step = TG['reach'] * max(0.0, out) / max(1, n - 1)
         # the droop bends the part that is out over the box's lip (a root pitched down would sink into the box)
         hang = droop * min(1.0, 2.0 * out)
+        if TH:
+            # Nov 17 (Lootlid; opt-in, absent = as below): each bone's share of the droop (the root's of `droop`), and
+            # the droop only once the tongue is out past the lip (`out`: the slide at which the last bone's head is past it)
+            o0 = float(TH.get('out', 0.0))
+            g = C.smoothstep(o0 - 0.1, o0, max(0.0, out)) if o0 > 0 else 1.0
+            sh = list(TH['shares']) + [0.0] * n
+            for i, b in enumerate(TG['bones']):
+                fr.o(b, *(TG['dir'] * (step if i > 0 else 0.0)))
+                if i == 0:
+                    fr.r(b, sh[0] * droop, 0, wag)
+                else:
+                    fr.r(b, -curl * (1.0 if i == n - 1 else 0.4) + sh[i] * hang * g, 0, 0.5 * wag)
+            return
         for i, b in enumerate(TG['bones']):
             fr.o(b, *(TG['dir'] * (step if i > 0 else 0.0)))
             if i == 0:
                 fr.r(b, 0.1 * droop, 0, wag)
             else:
                 fr.r(b, -curl * (1.0 if i == n - 1 else 0.4) + hang * 0.6 * i / max(1, n - 1), 0, 0.5 * wag)
+
+    def hold_pose(fr: Frame, ho: dict, t: float) -> None:
+        """Nov 17 (Lootlid; opt-in `hold_open` {clip: {...}}, absent = as before): a clip's lid held open `mouth` (a
+        share of lid_max) on top of its own motion, the tongue slid a further `tongue` of its reach, `bones` {bone:
+        (x, y, z)} turned (the tongue's last bone hanging over the lip), the tongue's tip wagged `wag` degrees."""
+        if LID:
+            fr.r('head', -lid_max * float(ho.get('mouth', 0.0)), 0, 0)
+        extra = float(ho.get('tongue', 0.0))
+        if TG and extra:
+            n = len(TG['bones'])
+            step = TG['reach'] * extra / max(1, n - 1)
+            for i, b in enumerate(TG['bones']):
+                if i:
+                    fr.o(b, *(TG['dir'] * step))
+            fr.tongue_out = getattr(fr, 'tongue_out', 0.0) + extra
+            if ho.get('wag'):
+                fr.r(TG['bones'][-1], 0, 0, float(ho['wag']) * A.wave(t, float(ho.get('rate', 1.0))))
+        for b, v in (ho.get('bones') or {}).items():
+            fr.r(b, *v)
+
+    GAIT_CLIPS = ('walk', 'run', 'dash', 'step_fwd', 'step_back', 'strafe_l', 'strafe_r')
+
+    def ride_share(name: str) -> float:
+        if name in RIDE:
+            return float(RIDE[name])
+        return 0.0 if name in GAIT_CLIPS else float(RIDE.get('*', 0.0))
+
+    def ride_legs(fr: Frame, s: float, carry: bool = False) -> None:
+        """Rigid legs (Nov 17, Lootlid; opt-in `legs_ride` {clip: share, '*': every clip but the gaits}; absent = as
+        before): each planted foot's goal moved `s` of the way to where it would be if its leg turned with the body (no
+        bend at the hip), the body raised (× s) so no such foot goes under the floor. A stubby rigid post then never
+        swings out of its box: a dip or a crouch is cancelled, a tilt pivots on the lowest foot. Legs on the hips only.
+        `carry` (the gaits, opt-in `gait_carry` share): the steps kept, each foot's goal carried `s` of the body's own
+        move from rest (its bob, drop, roll: a stubby post can't bend to soak them up), the body raised likewise."""
+        if s <= 0.0 or not fr.ik:
+            return
+        M = rig.fk(fr.rots(), fr.loc)
+        Mi = M['root'].inverted()
+        goals = []
+        for lg in LEGS:
+            g = fr.ik.get((lg['upper'], lg['lower'], lg['foot']))
+            if g is not None and 'root_target' in g:
+                goals.append((lg, g, Mi @ (M[lg['parent']] @ lg['rest_ankle'])))
+        if not goals:
+            return
+        if carry:
+            want = [(lg, g, g['root_target'] + (r - lg['rest_ankle']) * s) for lg, g, r in goals]
+            lift = max(0.0, max(lg['rest_ankle'].z - a.z for lg, _g, a in want))
+            if lift > 0.0:
+                fr.o('hips', 0.0, 0.0, lift)
+            for lg, g, a in want:
+                a = a + Vector((0.0, 0.0, s * lift))
+                a.z = max(a.z, lg['rest_ankle'].z)
+                g['root_target'] = a
+            return
+        lift = s * max(0.0, max(lg['rest_ankle'].z - r.z for lg, _g, r in goals))
+        if lift > 0.0:
+            fr.o('hips', 0.0, 0.0, lift)
+        for lg, g, r in goals:
+            a = g['root_target'].lerp(r + Vector((0.0, 0.0, lift)), s)
+            a.z = max(a.z, lg['rest_ankle'].z)
+            g['root_target'] = a
 
     def plant(fr: Frame, lg: dict, d: Vector | None = None, pitch: float = 0.0) -> None:
         a = lg['rest_ankle'] + (d if d is not None else Vector())
@@ -496,7 +602,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                 if m['kind'] == 'tassel':
                     fr.r(b, trail * share * k, 0, sway * share * k * A.wave(t - lag, rate))
                 elif m['kind'] == 'wing':
-                    fr.r(b, 0, -m['side'] * flap * (1.0 if i == 0 else 0.5) * k, 0)
+                    fr.r(b, 0, -m['side'] * (flap if TUCK else max(0.0, flap)) * (1.0 if i == 0 else 0.5) * k, 0)
                 elif m['kind'] in ('antenna', 'tuft'):
                     fr.r(b, 0.5 * sway * share * k * A.wave(t - lag, rate, 0.25), 0, sway * share * k * A.wave(t - lag, rate))
                 else:
@@ -639,6 +745,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         """Diagonal pairs (two legs a side) or tripods, each foot planted while the root carries the body; the body
         rocks and bobs, and a lid flaps a little at each step."""
         n, _s, duty, lift_k = GAITS[kind]
+        # Nov 17 (Lootlid; opt-in `gait_lift`, absent = 1): the swing foot's lift scaled (a rigid post lifts its foot
+        # only by swinging, so a stubby one shuffles)
+        lift_k *= float(P.get('gait_lift', 1.0))
         stride = stride_of(kind)
         fr = Frame()
         bob = mm(0.008) * (0.5 - 0.5 * math.cos(4 * math.pi * t))

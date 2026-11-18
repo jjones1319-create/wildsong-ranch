@@ -255,6 +255,7 @@ class Shape:
         self.head_tw = 0.0
         self.head_level = None       # degrees: the head's elevation set outright (ko lays it on the ground)
         self.guard = True
+        self.ph_max = 1.4            # the most elevation any bone takes (radians; the lunge's wind-up leans the neck back past it)
 
 
 def _rz(a: float):
@@ -286,6 +287,12 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     lift_tab = P.get('ko_lift') or []
     strike_yaw = float(P.get('strike_yaw', 0.0))
     HZ = float(_v(P['hip']).z)
+    # Nov 17 (Coilfang; each opt-in, absent = as before): `roll_fix` makes a twist roll the forward bones and the head the
+    # same way as the tail's (+ toward the monster's left, as Shape documents; they rolled the other way, wringing the skin
+    # at the anchor in hit_heavy and ko); `lunge` the strong Fang Snap (p_strike)
+    ROLL = -1.0 if P.get('roll_fix') else 1.0
+    LUNGE = P.get('lunge') if isinstance(P.get('lunge'), dict) else None
+    REAR = float(P.get('rear', 0.0))
 
     def mm(v: float) -> float:
         return v * sk
@@ -378,7 +385,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         fr = Frame()
         aim = np.array([sh.aim * nw.get(i, 0.0) * AIM_DTH[i] for i in range(NB)]) * sh.coil
         th = TH0 + np.radians(sh.dth + sh.yaw) + sh.coil * COIL_DTH + aim
-        ph = np.clip(PH0 + np.radians(sh.dph) + sh.coil * COIL_DPH, -1.4, 1.4)
+        ph = np.clip(PH0 + np.radians(sh.dph) + sh.coil * COIL_DPH, -sh.ph_max, sh.ph_max)
         anchor = Vector(sh.anchor)
         if centre_coil and sh.coil:
             anchor -= Vector((COIL_CENTRE.x, COIL_CENTRE.y, 0.0)) * sh.coil
@@ -399,7 +406,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
                     own = Vector((math.cos(ph[i]) * math.cos(th[i]), math.cos(ph[i]) * math.sin(th[i]), math.sin(ph[i]))) * sgn
                 th_own = th[i] if b['fwd'] else th[i] + math.pi
                 d_ph = (ph[i] - PH0[i]) * sgn
-                R = K.axis_m(own, sh.tw[i]) @ K.axis_m(_pitch_axis(th_own), math.degrees(d_ph)) @ _rz(th[i] - TH0[i])
+                R = K.axis_m(own, sh.tw[i] * (ROLL if b['fwd'] else 1.0)) @ K.axis_m(_pitch_axis(th_own), math.degrees(d_ph)) @ _rz(th[i] - TH0[i])
                 W[b['name']] = R
                 p = p + own * b['L']
                 ends[b['name']] = p
@@ -413,7 +420,7 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         if sh.guard and base.z + HEAD_L * math.sin(ph_h) < HEAD_FLOOR:
             ph_h = math.asin(max(-1.0, min(1.0, (HEAD_FLOOR - base.z) / max(HEAD_L, 1e-4))))
         hdir = Vector((math.cos(ph_h) * math.cos(th_h), math.cos(ph_h) * math.sin(th_h), math.sin(ph_h)))
-        W['head'] = K.axis_m(hdir, sh.head_tw + sh.head[2]) @ K.axis_m(_pitch_axis(th_h), math.degrees(ph_h - HEAD_PH0)) @ _rz(th_h - HEAD_TH0)
+        W['head'] = K.axis_m(hdir, sh.head_tw * ROLL + sh.head[2]) @ K.axis_m(_pitch_axis(th_h), math.degrees(ph_h - HEAD_PH0)) @ _rz(th_h - HEAD_TH0)
         for b in [o['name'] for o in ORDER] + ['head']:
             par = PARENT.get(b, last_neck) if b != 'head' else last_neck
             fr.mat[b] = W[par].transposed() @ W[b]
@@ -472,6 +479,17 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         first = [i for i in BODY_IDX if SMID[i] > NECK_END][:2]
         for k, i in enumerate(first):
             sh.dph[i] += rise * (0.25 if k == 0 else 0.1)
+        if REAR and rise > 0 and not sh.coil:
+            # Nov 17 (Coilfang; opt-in `rear`, metres per 20 degrees of rise): a neck already upright at rest can't rise,
+            # so the front of the body rears instead: the anchor lifts, the forward bone from it tips up the same, and
+            # the tail's first bone slopes back down to the ground
+            h = mm(REAR) * rise / 20.0
+            sh.anchor = sh.anchor + Vector((0.0, 0.0, h))
+            i_h = IDX['hips']
+            sh.dph[i_h] += math.degrees(math.asin(min(0.9, h / ORDER[i_h]['L'])))
+            t1 = [i for i in BODY_IDX if not ORDER[i]['fwd']][:1]
+            for i in t1:
+                sh.dph[i] += math.degrees(math.asin(min(0.9, h / ORDER[i]['L'])))
 
     def look(sh: Shape, pitch: float = 0.0, yaw: float = 0.0, tilt: float = 0.0) -> None:
         sh.head[0] += pitch
@@ -580,8 +598,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     def p_sleep(t: float) -> Frame:
         sh = Shape(NB)
         sh.coil, sh.aim = 1.0, 0.5
+        drop = float(P.get('sleep_neck', 0.85))           # Nov 17 (opt-in): the share of the neck's rise it lays down
         for i in NECK:                       # the neck comes down to lie along the coil, the head resting on it
-            sh.dph[i] -= 0.85 * math.degrees(PH0[i])
+            sh.dph[i] -= drop * math.degrees(PH0[i])
         neck(sh, rise=2 * A.wave(t, 1.0))
         look(sh, pitch=8)
         return finish(solve(sh), t, flare=-15, sway=1)
@@ -728,9 +747,10 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
         wave(sh, t, 18 * k, 0.4 * S_TOT, cycles=0.0, phase=0.25)
         neck(sh, rise=36 * k, yaw=-26 * k, s_curve=10 * k)
         look(sh, pitch=-30 * k, tilt=-12 * k)
+        roll = float(P.get('hit_heavy_roll', 55.0))       # Nov 17 (opt-in): the front's and the head's roll
         for i in range(NB):                  # the front rolls, showing its belly (the hit picture)
-            sh.tw[i] = 55 * k * max(0.0, 1.0 - SMID[i] / max(0.6 * S_TOT, 1e-4))
-        sh.head_tw = 25 * k
+            sh.tw[i] = roll * k * max(0.0, 1.0 - SMID[i] / max(0.6 * S_TOT, 1e-4))
+        sh.head_tw = float(P.get('hit_heavy_head_roll', 25.0)) * k
         tail_tip(sh, t, rattle=20 * k, lift=25 * k, rate=4.0)
         hang = float(P.get('hit_heavy_chain_hang', 0.0))
         fr = finish(solve(sh), t, jaw_deg=22 * k, flare=-25 * k, sway=14, trail=-25 * k * (1.0 - 0.5 * hang))
@@ -755,9 +775,9 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
             tw = float(P.get('ko_twist', 140.0))
             for i in range(NB):
                 sh.tw[i] = tw * fall * min(1.0, 0.4 + SMID[i] / max(0.5 * S_TOT, 1e-4))
-            sh.head_tw = 0.6 * tw * fall
+            sh.head_tw = float(P.get('ko_head_roll', 0.6 * tw)) * fall
         else:
-            sh.head_tw = 70 * fall
+            sh.head_tw = float(P.get('ko_head_roll', 70.0)) * fall
         sh.head_level = -6.0 * fall + math.degrees(HEAD_PH0) * (1 - fall)
         fr = solve(sh)
         hang = float(P.get('ko_chain_hang', 0.0))
@@ -785,7 +805,58 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     # ---- strike: 24 frames, impact at 13 (t = 0.5) in every style
     TAIL_IDX = [i for i in range(NB) if not ORDER[i]['fwd']]
 
+    def wrap(a: float) -> float:
+        return (a + math.pi) % (2 * math.pi) - math.pi
+
+    def p_lunge(t: float) -> Frame:
+        """Nov 17 (Coilfang; opt-in `lunge` dict, keys each optional): the Fang Snap as a real strike. The wind-up draws
+        the neck back into an S (its lower bones at `wind_low` [70] degrees of rise, its upper ones leaning back to
+        `wind_high` [112]), the head cocked up `head_up` [12] degrees, the anchor drawn back `back` [0.06] m, the body's
+        front coiling `coil` [0.25] tighter; then the drive shoots the neck out nearly level (`elev` [16] degrees at its
+        base, `elev_rise` [14] more toward the head) and straight ahead, the body's front straightening `straight` [0.55]
+        over its first `front` [0.3] of the length, the anchor sliding `slide` [0.22] m forward and lifting `lift` [0]
+        m, the head level (`head_drive` [-3] degrees), the mouth open `jaw` [44] (`jaw_wind` [8] in the wind-up), the
+        crest laid back `crest_back` [20]; held from frame 12 to about 16 (`impact` 13), then back to rest. More keys:
+        `crest_wind` [25] the crest's flare in the wind-up (negative lays it back), `wave` [10] and `drive_wave` [0] the
+        body's S in the wind-up and through the drive, `ph_max` [2.1] the most rise (radians) a neck bone takes in the
+        wind-up, `squint` [0] how far the eyes narrow in the wind-up (keyed in the strike clip), `squint_drive` [0] how
+        far they stay narrowed through the drive, `wind_elev` [none] each neck bone's rise in the wind-up (degrees, from
+        the body to the head; in place of the wind_low..wind_high ramp: a Z, e.g. [35, 118, 148, 60])."""
+        Lg = LUNGE
+        sh = Shape(NB)
+        sh.ph_max = float(Lg.get('ph_max', 2.1))
+        drive = A.step_ease(t, 0.3, 0.47) * (1.0 - A.step_ease(t, 0.64, 0.97))
+        wind = A.pulse(t, 0.0, 0.46) * (1.0 - drive)
+        n = max(1, len(NECK_ORDER))
+        lo_w, hi_w = float(Lg.get('wind_low', 70.0)), float(Lg.get('wind_high', 112.0))
+        el, er = float(Lg.get('elev', 16.0)), float(Lg.get('elev_rise', 14.0))
+        w_list = Lg.get('wind_elev')
+        for j, i in enumerate(NECK_ORDER):
+            u = j / max(1, n - 1)
+            w_el = math.radians(float(w_list[min(j, len(w_list) - 1)]) if w_list else lo_w + (hi_w - lo_w) * u)
+            d_el = math.radians(el + er * u)
+            sh.dph[i] += math.degrees((w_el - PH0[i]) * wind + (d_el - PH0[i]) * drive)
+            sh.dth[i] += math.degrees(wrap(FRONT - TH0[i])) * drive + strike_yaw * drive / n
+        span = max(float(Lg.get('front', 0.3)) * S_TOT, 1e-4)
+        for i in BODY_IDX:
+            f = max(0.0, 1.0 - (SMID[i] - NECK_END) / span) if SMID[i] > NECK_END else 0.0
+            off = math.degrees(wrap(FRONT - TH0[i]))
+            sh.dth[i] += off * f * (float(Lg.get('straight', 0.55)) * drive - float(Lg.get('coil', 0.25)) * wind)
+        sh.anchor = Vector((0.0, mm(float(Lg.get('back', 0.06))) * wind - mm(float(Lg.get('slide', 0.22))) * drive,
+                            mm(float(Lg.get('lift', 0.0))) * drive))
+        sh.head_level = math.degrees(HEAD_PH0) + float(Lg.get('head_up', 12.0)) * wind + float(Lg.get('head_drive', -3.0)) * drive
+        wave(sh, t, float(Lg.get('wave', 10.0)) * wind + float(Lg.get('drive_wave', 0.0)) * drive, 0.4 * S_TOT, cycles=0.0, phase=0.25)
+        tail_tip(sh, t, rattle=10 * wind, lift=12 * wind, rate=8.0)
+        jaw_deg = float(Lg.get('jaw', 44.0)) * drive + float(Lg.get('jaw_wind', 8.0)) * wind
+        fr = finish(solve(sh), t, jaw_deg=jaw_deg, flare=float(Lg.get('crest_wind', 25.0)) * wind - float(Lg.get('crest_back', 20.0)) * drive, sway=4,
+                    trail=12 * drive)
+        K.add_bones(P, 'strike_bones', fr, drive)
+        K.add_bones(P, 'strike_windup_bones', fr, wind)
+        return fr
+
     def p_strike(t: float) -> Frame:
+        if style == 'lunge' and LUNGE:
+            return p_lunge(t)
         sh = Shape(NB)
         ant = A.pulse(t, 0.0, 0.42)
         go = A.pulse(t, 0.28, 0.72)
@@ -873,14 +944,24 @@ def make_clips(cb: A.ClipBuilder, P: dict, only: list[str] | None = None) -> lis
     clip('step_back', 24, lambda t: p_slither(t, 'step_back', back=True, guard_w=1.0), root_speed=slither_speed('step_back'),
          markers=slither_marks('step_back'))
     clip('dash', 20, lambda t: p_slither(t, 'dash'), root_speed=slither_speed('dash'), markers=slither_marks('dash'))
-    clip('strike', 24, p_strike, loop=False, markers=[('impact', 13)], faces=[(1, 'angry'), (20, 'neutral')])
+    squint = float(LUNGE.get('squint', 0.0)) if (LUNGE and style == 'lunge') else 0.0
+    sq_drive = float(LUNGE.get('squint_drive', 0.0)) if (LUNGE and style == 'lunge') else 0.0
+
+    def strike_shut(t: float) -> float:
+        drive = A.step_ease(t, 0.3, 0.47) * (1.0 - A.step_ease(t, 0.64, 0.97))
+        return max(squint * A.pulse(t, 0.0, 0.46) * (1.0 - drive), sq_drive * drive)
+    clip('strike', 24, p_strike, loop=False, markers=[('impact', 13)], faces=[(1, 'angry'), (20, 'neutral')],
+         shut=strike_shut if (squint or sq_drive) else None)
     clip('cast', 36, p_cast, loop=False, markers=[('release', 20)], faces=[(1, 'strain'), (28, 'neutral')])
     clip('shove', 24, p_shove, loop=False, markers=[('impact', 10)])
     clip('hit', 15, p_hit, loop=False, faces=[(1, 'surprised'), (12, 'neutral')], shut=lambda t: 0.85 * A.pulse(t, 0.0, 0.7))
     clip('hit_heavy', 24, p_hit_heavy, loop=False, faces=[(1, 'strain'), (18, 'neutral')], shut=lambda t: 0.9 * A.pulse(t, 0.0, 0.75))
     clip('ko', 36, p_ko, loop=False, hold=True, faces=[(1, 'strain'), (20, 'dizzy')],
          shut=lambda t: max(0.8 * A.pulse(t, 0.0, 0.3), A.step_ease(t, 0.35, 0.6)))
-    clip('win', 60, p_win, markers=[('land', 22)], faces=[(1, 'happy')])
+    # Nov 17 (opt-in `win_squint` [0]): the eyes narrow into a happy squint through the jump
+    win_sq = float(P.get('win_squint', 0.0))
+    clip('win', 60, p_win, markers=[('land', 22)], faces=[(1, 'happy')],
+         shut=(lambda t: win_sq * A.pulse(t, 0.0, 0.9)) if win_sq else None)
     clip('strafe_l', 24, lambda t: p_strafe(t, 1), root_speed=slither_speed('strafe'), markers=[('step', 1), ('step', 13)])
     clip('strafe_r', 24, lambda t: p_strafe(t, -1), root_speed=slither_speed('strafe'), markers=[('step', 1), ('step', 13)])
     clip('sidestep_l', 8, lambda t: p_sidestep(t, 1), loop=False, root_speed=SIDESTEP_DISTANCE / (8 / A.FPS), markers=[('land', 8)])

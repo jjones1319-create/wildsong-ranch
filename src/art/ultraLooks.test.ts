@@ -8,7 +8,8 @@ import { ART } from '../data/tuning.ts'
 import { BREED_IDS } from '../data/types.ts'
 import { SECRETS } from '../data/secrets.ts'
 import { hasGrownForm } from './monster/render.ts'
-import { buildTagOf, isUltraId, looksFromQuery, ULTRA_IDS, ULTRA_LOOKS, ultraHeightPct, ultraIdFor, ultraVariant, versionedUrl } from './ultraLooks.ts'
+import { GALLERY3D_TEXT } from '../data/text/gallery3d.ts'
+import { buildTagOf, GALLERY_IDS, galleryLook, isGalleryId, isUltraId, looksFromQuery, ULTRA_EXTRAS, ULTRA_IDS, ULTRA_LOOKS, ultraExtra, ultraHeightPct, ultraIdFor, ultraVariant, versionedUrl } from './ultraLooks.ts'
 
 /**
  * Art 2.1 Ultra registry (src/art/ultraLooks.ts): every breed listed has shipped, with what Battle 3D and the 3D Gallery
@@ -221,6 +222,115 @@ describe('the Ultra registry (Art 2.1)', () => {
           for (const c of DUEL_REQUIRED_CLIPS) expect(anims.has(c), `${p} lacks ${c}`).toBe(true)
           if (side.lite?.file && typeof side.lite.build === 'string' && p.endsWith(side.lite.file)) expect(side.lite.build).toBe(sha10(p))
         }
+      })
+    })
+  }
+})
+
+describe('Gallery extras (ULTRA_EXTRAS: models that never battle, shown only in the 3D Gallery)', () => {
+  it('stay out of the registry (no Battle 3D chip, no ranch portrait), each listed right after its look', () => {
+    const ids = Object.keys(ULTRA_EXTRAS)
+    // the Gallery lists the registry in order with the extras slotted in
+    expect(GALLERY_IDS.filter((id) => !ultraExtra(id))).toEqual(ULTRA_IDS)
+    expect(GALLERY_IDS.length).toBe(ULTRA_IDS.length + ids.length)
+    expect(new Set(GALLERY_IDS).size).toBe(GALLERY_IDS.length)
+    for (const id of ids) {
+      const x = ULTRA_EXTRAS[id]!
+      expect(x.id).toBe(id)
+      expect(isUltraId(id), `${id} is in ULTRA_LOOKS`).toBe(false)
+      expect(isGalleryId(id)).toBe(true)
+      expect(galleryLook(id)).toBe(x)
+      expect(BREED_IDS).toContain(x.breed)
+      expect(isUltraId(x.after), `${id} follows ${x.after}, which is not a registry look`).toBe(true)
+      // right after its look (after any other extra of the same look)
+      const at = GALLERY_IDS.indexOf(id)
+      const from = GALLERY_IDS.indexOf(x.after)
+      expect(at).toBeGreaterThan(from)
+      for (const between of GALLERY_IDS.slice(from + 1, at)) expect(ultraExtra(between)?.after).toBe(x.after)
+      expect(x.glb).toBe(`models/monsters-ultra/${id}.glb`)
+      expect(x.meta).toBe(`models/monsters-ultra/${id}.json`)
+      expect(x.lite.glb).toBe(`models/monsters-ultra/${id}.lite.glb`)
+      // its moves, named for the buttons; loops and holds are among them
+      expect(new Set(x.clips).size).toBe(x.clips.length)
+      for (const c of [...x.loops, ...x.holds]) expect(x.clips).toContain(c)
+      for (const c of x.clips) expect((GALLERY3D_TEXT.clips as Record<string, string>)[c], `no button words for ${c}`).toBeTruthy()
+      expect(GALLERY3D_TEXT.extras[x.kind].name('Nibblegrub')).toBeTruthy()
+    }
+  })
+
+  it("Nibblegrub's cocoon: after Nibblegrub, 148 units tall, idle, wriggle, split (held open) and blink, no variants", () => {
+    const c = ULTRA_EXTRAS['nibblegrub-cocoon']!
+    expect(GALLERY_IDS[GALLERY_IDS.indexOf('nibblegrub') + 1]).toBe('nibblegrub-cocoon')
+    expect(c.breed).toBe('nibblegrub')
+    expect(c.heightUnits).toBe(148)
+    expect(ultraHeightPct(c)).toBeCloseTo(98.67, 2)
+    expect([...c.clips]).toEqual(['idle', 'wriggle', 'split', 'blink'])
+    expect([...c.loops]).toEqual(['idle', 'wriggle'])
+    expect([...c.holds]).toEqual(['split'])
+    expect(c.variants).toEqual([])
+    expect(GALLERY3D_TEXT.extras[c.kind].name('Nibblegrub')).toBe("Nibblegrub's cocoon")
+    // Battle 3D and the ranch never pick it
+    expect(ultraIdFor('nibblegrub', false)).toBe(isUltraId('nibblegrub') ? 'nibblegrub' : null)
+    expect(ultraIdFor('nibblegrub', true)).toBe(isUltraId('nibblegrub') ? 'nibblegrub' : null)
+    expect(looksFromQuery('?a=nibblegrub-cocoon&b=nibblegrub-cocoon')).toEqual(['puddlepup', 'puddlepup'])
+    expect(ultraVariant('nibblegrub-cocoon', 'syrup-nibblegrub')).toBeNull()
+  })
+
+  it('the helpers: extras by own id only, registry looks still themselves', () => {
+    expect(ultraExtra('puddlepup')).toBeNull()
+    expect(ultraExtra('toString')).toBeNull()
+    expect(ultraExtra(null)).toBeNull()
+    expect(isGalleryId('toString')).toBe(false)
+    expect(isGalleryId('puddlepup')).toBe(true)
+    expect(galleryLook('puddlepup')).toBe(ULTRA_LOOKS.puddlepup)
+    expect(galleryLook('not-a-look')).toBeNull()
+  })
+
+  for (const id of Object.keys(ULTRA_EXTRAS)) {
+    const x = ULTRA_EXTRAS[id]!
+    describe(id, () => {
+      const glbPath = join(PUBLIC, x.glb)
+      const metaPath = join(PUBLIC, x.meta)
+      const litePath = join(PUBLIC, x.lite.glb)
+      const side = () => JSON.parse(readFileSync(metaPath, 'utf8')) as Sidecar & { clips?: Record<string, { loop?: boolean; hold?: boolean; markers?: { name: string; t: number }[] }> }
+
+      it('has its files in public/ and a sidecar that parses, with its height and a build tag that matches the file', () => {
+        for (const p of [glbPath, metaPath, litePath]) expect(existsSync(p), p).toBe(true)
+        const s = side()
+        expect(s.heightUnits).toBe(x.heightUnits)
+        expect(Object.keys(s.variants ?? {})).toEqual([...x.variants])
+        if (typeof s.build === 'string') expect(s.build).toBe(sha10(glbPath))
+        if (s.lite?.file) expect(join(PUBLIC, x.glb.slice(0, x.glb.lastIndexOf('/') + 1), s.lite.file)).toBe(litePath)
+        if (typeof s.lite?.build === 'string') expect(s.lite.build).toBe(sha10(litePath))
+      })
+
+      it('its sidecar and both files hold exactly its moves; its loops loop and its held moves hold', () => {
+        const s = side()
+        const listed = s.clips ?? {}
+        expect(new Set(Object.keys(listed))).toEqual(new Set(x.clips))
+        for (const c of x.clips) {
+          expect(listed[c]?.loop === true, `${id}.json ${c} loop`).toBe(x.loops.includes(c))
+          expect(listed[c]?.hold === true, `${id}.json ${c} hold`).toBe(x.holds.includes(c))
+        }
+        for (const f of [glbPath, litePath]) {
+          const anims = new Set((glbJson(f).animations ?? []).map((a) => a.name))
+          for (const c of x.clips) expect(anims.has(c), `${f} lacks the ${c} clip`).toBe(true)
+        }
+        if (id === 'nibblegrub-cocoon') expect(listed.split?.markers?.some((m) => m.name === 'split'), 'the split clip has its split marker').toBe(true)
+      })
+
+      it('its film entries (glow, normal, body sheen, when it has them) are usable', () => {
+        const s = side() as Sidecar & { body?: { sheen?: unknown } }
+        if (s.glow !== undefined) expect(glowOf(s, ART.ultra.film.glow.maxStrength)).not.toBeNull()
+        if ((s.normal as { scale?: unknown } | undefined)?.scale !== undefined) expect(normalScaleOf(s)).not.toBeNull()
+        if (s.body?.sheen !== undefined) expect(bodySheenOf(s)).not.toBeNull()
+      })
+
+      it('fits the Ultra budget (≤ 100k triangles, ≤ 8 MB) and its Lite copy the Lite one (≤ 12k triangles, ≤ 1.5 MB)', () => {
+        expect(triangles(glbJson(glbPath))).toBeLessThanOrEqual(100_000)
+        expect(statSync(glbPath).size).toBeLessThanOrEqual(8 * MB)
+        expect(triangles(glbJson(litePath))).toBeLessThanOrEqual(12_000)
+        expect(statSync(litePath).size).toBeLessThanOrEqual(1.5 * MB)
       })
     })
   }

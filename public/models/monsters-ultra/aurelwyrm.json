@@ -1,0 +1,913 @@
+{
+ "look": "aurelwyrm",
+ "tier": "ultra",
+ "plan": "serpent",
+ "version": 2,
+ "heightUnits": 225,
+ "restHeight": 1.4785,
+ "bounds": {
+  "min": [
+   -0.4201,
+   -1.3226,
+   0.2078
+  ],
+  "max": [
+   0.4961,
+   1.8812,
+   1.4785
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "hips",
+  "socket_mouth": "jaw",
+  "socket_core": "hips",
+  "socket_tail": "tail.15",
+  "socket_paw_L": "head",
+  "socket_paw_R": "head",
+  "socket_whiskerL": "whiskerL.3",
+  "socket_whiskerR": "whiskerR.3",
+  "socket_dorsal1": "dorsal1.2",
+  "socket_dorsal2": "dorsal2.2",
+  "socket_dorsal3": "dorsal3.2",
+  "socket_dorsal4": "dorsal4.2",
+  "socket_dorsal5": "dorsal5.2",
+  "socket_flankL1": "flankL1.2",
+  "socket_flankL2": "flankL2.2",
+  "socket_flankR1": "flankR1.2",
+  "socket_flankR2": "flankR2.2",
+  "socket_tailfin": "tailfin.3"
+ },
+ "springs": [
+  {
+   "kind": "tail",
+   "chain": [
+    "tail.14",
+    "tail.15"
+   ]
+  },
+  {
+   "kind": "whisker",
+   "chain": [
+    "whiskerL.1",
+    "whiskerL.2",
+    "whiskerL.3"
+   ]
+  },
+  {
+   "kind": "whisker",
+   "chain": [
+    "whiskerR.1",
+    "whiskerR.2",
+    "whiskerR.3"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "dorsal1.1",
+    "dorsal1.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "dorsal2.1",
+    "dorsal2.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "dorsal3.1",
+    "dorsal3.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "dorsal4.1",
+    "dorsal4.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "dorsal5.1",
+    "dorsal5.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "flankL1.1",
+    "flankL1.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "flankL2.1",
+    "flankL2.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "flankR1.1",
+    "flankR1.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "flankR2.1",
+    "flankR2.2"
+   ]
+  },
+  {
+   "kind": "ribbon",
+   "chain": [
+    "tailfin.1",
+    "tailfin.2",
+    "tailfin.3"
+   ]
+  }
+ ],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_fins": "fin",
+  "lo_props": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "Baked face: almond glossy lenses with a heavy gold upper lid, a large warm brown iris with an amber ring, a round pupil and two catchlights, a dark lash line, a soft cream brow, a small kind smile under a cream muzzle. Blinking scales the blink bones: each lens squashes down and sinks, showing the closed lid sculpted under it.",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.04,
+   "closedXYZ": [
+    0.97,
+    0.04,
+    0.12
+   ]
+  },
+  "eyeColor": "#6B2D0F"
+ },
+ "variants": {
+  "sunsoul-aurelwyrm": {
+   "textures": "sunsoul-aurelwyrm",
+   "colorAttribute": "COLOR_1",
+   "eyeColor": "#8A5A12",
+   "palette": {
+    "body": "#FFF6E0",
+    "belly": "#FFFFFF",
+    "accent": "#E8B923",
+    "eye": "#8A5A12"
+   },
+   "holder": "__variant_sunsoul-aurelwyrm"
+  }
+ },
+ "palette": {
+  "body": "#F2C14E",
+  "belly": "#FFF4D6",
+  "accent": "#D64545",
+  "eye": "#6B2D0F"
+ },
+ "atlas": {
+  "strip": 0,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0,
+   0.42,
+   0.9
+  ],
+  "size": 3.8,
+  "head": {
+   "target": [
+    0,
+    -1.1,
+    1.42
+   ],
+   "size": 0.7
+  }
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "idle_happy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "idle_tired": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "tired"
+    }
+   ]
+  },
+  "idle_sad": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sad"
+    }
+   ]
+  },
+  "idle_sick": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sick"
+    }
+   ]
+  },
+  "sleep": {
+   "loop": true,
+   "hold": false,
+   "seconds": 5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "sleepy"
+    }
+   ]
+  },
+  "eat": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "pet": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "look_around": {
+   "loop": true,
+   "hold": false,
+   "seconds": 3,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "hop": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.6667
+    }
+   ],
+   "faces": []
+  },
+  "celebrate": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    },
+    {
+     "name": "land",
+     "t": 1.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "walk": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1,
+   "rootSpeed": 0.7121,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.5333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "run": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.311,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "sit_down": {
+   "loop": false,
+   "hold": true,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "sit": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "dizzy": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "battle_idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 1.3333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "step_fwd": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.7587,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "step_back": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.6069,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    -1
+   ]
+  },
+  "dash": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.6667,
+   "rootSpeed": 1.6569,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.3667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    0,
+    0,
+    1
+   ]
+  },
+  "strike": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.4333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "angry"
+    },
+    {
+     "t": 0.6667,
+     "face": "neutral"
+    }
+   ]
+  },
+  "cast": {
+   "loop": false,
+   "hold": false,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "release",
+     "t": 0.6667
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.9333,
+     "face": "neutral"
+    }
+   ]
+  },
+  "shove": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "impact",
+     "t": 0.3333
+    }
+   ],
+   "faces": []
+  },
+  "hit": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.5,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "surprised"
+    },
+    {
+     "t": 0.4,
+     "face": "neutral"
+    }
+   ]
+  },
+  "hit_heavy": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6,
+     "face": "neutral"
+    }
+   ]
+  },
+  "ko": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "strain"
+    },
+    {
+     "t": 0.6667,
+     "face": "dizzy"
+    }
+   ]
+  },
+  "win": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.7333
+    }
+   ],
+   "faces": [
+    {
+     "t": 0.0333,
+     "face": "happy"
+    }
+   ]
+  },
+  "strafe_l": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.6069,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ]
+  },
+  "strafe_r": {
+   "loop": true,
+   "hold": false,
+   "seconds": 0.8,
+   "rootSpeed": 0.6069,
+   "markers": [
+    {
+     "name": "step",
+     "t": 0.0333
+    },
+    {
+     "name": "step",
+     "t": 0.4333
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ]
+  },
+  "sidestep_l": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "sidestep_r": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2667,
+   "rootSpeed": 3.5,
+   "markers": [
+    {
+     "name": "land",
+     "t": 0.2667
+    }
+   ],
+   "faces": [],
+   "rootDir": [
+    -1,
+    0,
+    0
+   ],
+   "rootDistance": 0.9333
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 1.6806,
+ "normal": {
+  "scale": 1.2
+ },
+ "body": {
+  "sheen": 0
+ },
+ "litePropsTris": 3400,
+ "build": "1861611be6",
+ "buildStats": {
+  "cards": {
+   "total": 0,
+   "layers": []
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {},
+  "sourceTriangles": 1990384,
+  "uvOverlapTexels": {
+   "lo_body": 0,
+   "lo_eyes": 0,
+   "lo_fins": 0,
+   "lo_props": 0
+  }
+ },
+ "files": {
+  "glb": "aurelwyrm.glb",
+  "glbWebp": "aurelwyrm.webp.glb",
+  "lite": "aurelwyrm.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "aurelwyrm_base.ktx2",
+    "webp": "aurelwyrm_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "aurelwyrm_normal.ktx2",
+    "webp": "aurelwyrm_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "aurelwyrm_orm.ktx2",
+    "webp": "aurelwyrm_orm.webp",
+    "px": 2048
+   }
+  },
+  "sunsoul-aurelwyrm": {
+   "base": {
+    "ktx2": "aurelwyrm_sunsoul_base.ktx2",
+    "webp": "aurelwyrm_sunsoul_base.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 77531,
+  "trianglesByMesh": {
+   "lo_body": 54102,
+   "lo_eyes": 624,
+   "lo_fins": 9600,
+   "lo_props": 13204,
+   "__variant_sunsoul-aurelwyrm": 1
+  },
+  "vertices": 50240,
+  "cards": 0,
+  "cardLayers": 0,
+  "joints": 52,
+  "animations": 32,
+  "animationBytes": 531968,
+  "download": {
+   "glb": 4672840,
+   "glbKtx2": 4672840,
+   "glbWebp": 3355408,
+   "ktx2": {
+    "body": 2175483,
+    "variants": 633861
+   },
+   "webp": {
+    "body": 1194124,
+    "variants": 297806
+   },
+   "totalKtx2": 4672840,
+   "totalWebp": 3355408
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 668306,
+     "webp": 339740
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 900101,
+     "webp": 536286
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 607076,
+     "webp": 318098
+    }
+   },
+   "sunsoul-aurelwyrm": {
+    "base": {
+     "px": 2048,
+     "ktx2": 633861,
+     "webp": 297806
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_fins": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "__variant_sunsoul-aurelwyrm": [
+    "POSITION",
+    "TEXCOORD_0"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "aurelwyrm.lite.glb",
+  "build": "c7c03b9d11",
+  "bytes": 1495984,
+  "triangles": 11826,
+  "trianglesByMesh": {
+   "lo_body": 5576,
+   "lo_eyes": 624,
+   "lo_fins": 2327,
+   "lo_props": 3298,
+   "__variant_sunsoul-aurelwyrm": 1
+  },
+  "simplified": {
+   "lo_fins": {
+    "from": 9600,
+    "to": 2327
+   },
+   "lo_props": {
+    "from": 13204,
+    "to": 3298
+   },
+   "lo_body": {
+    "from": 54102,
+    "to": 5576
+   }
+  },
+  "joints": 52,
+  "animations": 32,
+  "atlasPx": 1024,
+  "textureBytes": 398128,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

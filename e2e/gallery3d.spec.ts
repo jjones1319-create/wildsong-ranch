@@ -14,7 +14,7 @@ declare global {
     __gallery3d?: {
       ready: boolean
       phase: string
-      stats(): { look: string; clip: string | null; triangles: number; kind: string | null; flies?: boolean; liftM?: number } | null
+      stats(): { look: string; clip: string | null; triangles: number; kind: string | null; flies?: boolean; liftM?: number; heightsM?: number[] } | null
       show(look: string): void
       snapshot(): string | null
     }
@@ -64,9 +64,10 @@ test.describe('3D Gallery (Art 2.1)', () => {
     await expect(page.getByRole('heading', { name: '3D Gallery' })).toBeVisible()
     await page.waitForFunction(() => window.__gallery3d?.phase === 'ready', undefined, { timeout: 180_000 })
 
-    // a look from the chips: the last one listed (Puddlepup when it is the only one)
+    // a look from the chips: the last battle look listed (Puddlepup when it is the only one), not a Gallery-only extra
+    // such as Nibblegrub's cocoon, which has no strike
     const chips = page.getByRole('group', { name: 'Monster' }).getByRole('button')
-    const pick = chips.last()
+    const pick = chips.filter({ hasNotText: /cocoon/i }).last()
     await pick.click()
     await expect(pick).toHaveAttribute('aria-pressed', 'true')
     await page.waitForFunction(() => window.__gallery3d?.phase === 'ready', undefined, { timeout: 180_000 })
@@ -104,6 +105,47 @@ test.describe('3D Gallery (Art 2.1)', () => {
     // its flying clips play and it rises off the floor
     await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 5_000 }).toMatch(/^fly/)
     await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.liftM ?? 0, { timeout: 5_000 }).toBeGreaterThan(0.3)
+    expect(await drawnShare(page)).toBeGreaterThan(0.02)
+    expect(errors).toEqual([])
+  })
+
+  test("Nibblegrub's cocoon (a Gallery extra) draws, shows only its own moves, and splits open and stays open", async ({ page }) => {
+    test.setTimeout(240_000)
+    const errors = collectErrors(page)
+    await page.setViewportSize({ width: 412, height: 915 })
+    await page.goto(`${BASE}?backend=webgl#lab/gallery3d`)
+    await page.waitForFunction(() => window.__gallery3d?.phase === 'ready', undefined, { timeout: 180_000 })
+    // picked from its chip, listed right after Nibblegrub's
+    const chips = page.getByRole('group', { name: 'Monster' }).getByRole('button')
+    const names = await chips.allTextContents()
+    expect(names[names.indexOf('Nibblegrub') + 1]).toBe("Nibblegrub's cocoon")
+    const pick = chips.filter({ hasText: "Nibblegrub's cocoon" })
+    await pick.click()
+    await expect(pick).toHaveAttribute('aria-pressed', 'true')
+    await page.waitForFunction(() => window.__gallery3d?.phase === 'ready' && window.__gallery3d.stats()?.look === 'nibblegrub-cocoon', undefined, { timeout: 180_000 })
+    expect((await page.evaluate(() => window.__gallery3d!.stats()))?.triangles ?? 0).toBeGreaterThan(5_000)
+    expect(await drawnShare(page)).toBeGreaterThan(0.02)
+    // its own moves, not the duel set
+    expect(await page.locator('.gallery3d__moves [data-clip]').evaluateAll((els) => els.map((e) => e.getAttribute('data-clip')))).toEqual(['idle', 'wriggle', 'split', 'blink'])
+    // it splits open and holds there (no settling back into idle)
+    const split = page.locator('.gallery3d__moves [data-clip="split"]')
+    await split.click()
+    await expect(split).toHaveAttribute('aria-pressed', 'true')
+    await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 5_000 }).toBe('split')
+    await page.waitForTimeout(4_000)
+    expect((await page.evaluate(() => window.__gallery3d!.stats()))?.clip).toBe('split')
+    await expect(split).toHaveAttribute('aria-pressed', 'true')
+    // and it plays again from its button; Idle closes it up
+    await split.click()
+    expect((await page.evaluate(() => window.__gallery3d!.stats()))?.clip).toBe('split')
+    await page.locator('.gallery3d__moves [data-clip="idle"]').click()
+    await expect.poll(async () => (await page.evaluate(() => window.__gallery3d!.stats()))?.clip, { timeout: 5_000 }).toBe('idle')
+    // beside Puddlepup, both at true size (148 units to its 150)
+    await page.locator('label.toggle').filter({ hasText: 'Stand beside Puddlepup' }).click()
+    await expect(page.getByRole('switch', { name: /Stand beside Puddlepup/ })).toBeChecked()
+    await page.waitForFunction(() => window.__gallery3d?.phase === 'ready' && window.__gallery3d.stats()?.heightsM?.length === 2, undefined, { timeout: 180_000 })
+    const [cocoonM, pupM] = (await page.evaluate(() => window.__gallery3d!.stats()))!.heightsM!
+    expect(cocoonM! / pupM!).toBeCloseTo(148 / 150, 2)
     expect(await drawnShare(page)).toBeGreaterThan(0.02)
     expect(errors).toEqual([])
   })

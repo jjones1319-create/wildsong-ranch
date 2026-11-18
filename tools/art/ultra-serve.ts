@@ -115,8 +115,15 @@ export const GROWN_SUFFIX = '-grown'
 export const isGrown = (look: string): boolean => look.endsWith(GROWN_SUFFIX)
 /** The breed a look belongs to: `hearthwing-grown` → `hearthwing`; any other look is its own breed. */
 export const baseBreed = (look: string): string => (isGrown(look) ? look.slice(0, -GROWN_SUFFIX.length) : look)
+/**
+ * Nov 18 (Nibblegrub's cocoon; opt-in, every other look as before): a cocoon look ends with -cocoon (`nibblegrub-cocoon`,
+ * recipe breeds/nibblegrub_cocoon_ultra.py). It ships outside the looks registry with only the cocoon's clips, and its
+ * pictures are `cocoon-1-hero.png` and `cocoon-2-turnaround.png` in its breed's folder.
+ */
+export const COCOON_SUFFIX = '-cocoon'
+export const isCocoon = (look: string): boolean => look.endsWith(COCOON_SUFFIX)
 /** The reference pictures' name prefix: a grown form's are `grown-1-hero.png`, `grown-2-turnaround.png`, … in its breed's folder. */
-export const refPrefix = (look: string): string => (isGrown(look) ? 'grown-' : '')
+export const refPrefix = (look: string): string => (isGrown(look) ? 'grown-' : isCocoon(look) ? 'cocoon-' : '')
 
 /**
  * The breed's reference folder, chatgpt/monsters/<nn>-<breed>/ (reference only: never shipped), or null. A grown form
@@ -127,6 +134,7 @@ export function refDir(breed: string): string | null {
   if (!existsSync(root)) return null
   const dirs = readdirSync(root)
   const hit = dirs.find((d) => d.replace(/^\d+-/, '') === breed) ?? (isGrown(breed) ? dirs.find((d) => d.replace(/^\d+-/, '') === baseBreed(breed)) : undefined)
+    ?? (isCocoon(breed) ? dirs.find((d) => d.replace(/^\d+-/, '') === breed.slice(0, -COCOON_SUFFIX.length)) : undefined)
   return hit ? join(root, hit) : null
 }
 
@@ -137,13 +145,18 @@ const r2 = (v: number) => Math.round(v * 100) / 100
  * pose, and the studio. Proportional to the rest height and the body's centre; a 1 m Puddlepup gets exactly the
  * framing the P1 sheets used (target [0, 0.02, 0.5], 1.75; head [0, −0.42, 0.76], 0.98; ko [0, −0.1, 0.35], 2.1).
  */
-export function framing(side: UltraSide) {
+export function framing(side: UltraSide, look?: string) {
   const h = side.restHeight
   const [, y0] = side.bounds.min as [number, number, number]
   const [, y1] = side.bounds.max as [number, number, number]
   const cy = (y0 + y1) / 2
   const length = y1 - y0
-  const body = { target: [0, r2(cy - 0.08 * h), r2(0.507 * h)] as [number, number, number], frame: r2(Math.max(1.775 * h, 1.2 * length)) }
+  let body = { target: [0, r2(cy - 0.08 * h), r2(0.507 * h)] as [number, number, number], frame: r2(Math.max(1.775 * h, 1.2 * length)) }
+  // Nov 18 (a cocoon look; opt-in, every other look as before): its body is the hidden core, while the shell, the stalk
+  // and the twig (props) set its size, so the whole-body shots use the recipe's REVIEW centre and size (the sidecar's
+  // review) instead of the core's height (the leaves and an opened half ran out of the frame)
+  const rv = side.review
+  if (look && isCocoon(look) && rv?.centre && rv.size) body = { target: rv.centre as [number, number, number], frame: rv.size }
   const head = side.review?.head
     ? { target: side.review.head.target as [number, number, number], frame: side.review.head.size }
     : { target: [0, r2(y0 + 0.14 * length), r2(0.77 * h)] as [number, number, number], frame: r2(h) }

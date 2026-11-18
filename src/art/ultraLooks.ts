@@ -41,19 +41,15 @@ export interface UltraLook {
 
 const DIR = 'models/monsters-ultra/'
 
+/** The pipeline's file names for a look (or an extra) by its id. */
+function filesOf(id: string): Pick<UltraLook, 'glb' | 'meta' | 'lite'> {
+  return { glb: `${DIR}${id}.glb`, meta: `${DIR}${id}.json`, lite: { glb: `${DIR}${id}.lite.glb` } }
+}
+
 /** A shipped look, by the pipeline's file names: one line in ULTRA_LOOKS. */
 function shipped(breed: BreedId, heightUnits: number, variants: readonly string[] = [], stage: 'young' | 'grown' = 'young'): UltraLook {
   const id = stage === 'grown' ? `${breed}-grown` : breed
-  return {
-    id,
-    breed,
-    stage,
-    glb: `${DIR}${id}.glb`,
-    meta: `${DIR}${id}.json`,
-    heightUnits,
-    variants,
-    lite: { glb: `${DIR}${id}.lite.glb` },
-  }
+  return { id, breed, stage, ...filesOf(id), heightUnits, variants }
 }
 
 /**
@@ -98,6 +94,86 @@ export const ULTRA_LOOKS: Readonly<Record<UltraId, UltraLook>> = {
   reefclaw: shipped('reefclaw', 180, ['abyss-reefclaw']),
   bloatoad: shipped('bloatoad', 180, ['party-bloatoad']),
   scrollopus: shipped('scrollopus', 165),
+  // batch 5's last and batch 6 (Nov 17–18): the first construct, the serpents, then the birds
+  lootlid: shipped('lootlid', 135, ['gilded-lootlid']),
+  coilfang: shipped('coilfang', 150, ['imperial-coilfang']),
+  aurelwyrm: shipped('aurelwyrm', 225, ['sunsoul-aurelwyrm']),
+  galeheron: shipped('galeheron', 255, ['dawnwing-galeheron']),
+  paladove: shipped('paladove', 120),
+  'paladove-grown': shipped('paladove', 240, [], 'grown'),
+  // batch 7 (Nov 18): the first insect and the second construct (Nibblegrub's cocoon is a Gallery extra, below)
+  nibblegrub: shipped('nibblegrub', 120, ['syrup-nibblegrub']),
+  velvesper: shipped('velvesper', 165, ['moonlit-velvesper']),
+  gearhoot: shipped('gearhoot', 150, ['silver-gearhoot']),
+}
+
+/**
+ * Gallery-only extras: a shipped model that is not a battle look (its file holds its own few clips, not the duel set),
+ * so it stays out of ULTRA_LOOKS (the Battle 3D chips, the ranch portraits and the duel checks) and shows only in the
+ * Lab → 3D Gallery, right after the look it belongs to. Its files are named by its id, as a look's are, and load the
+ * same way (the sidecar, then the film renderer's model at its build-tagged URL); src/art/ultraLooks.test.ts checks
+ * them, their clips and the same budgets.
+ */
+export interface UltraExtra extends UltraLook {
+  /** What it is: names it in the Gallery (src/data/text/gallery3d.ts `extras`). */
+  kind: 'cocoon'
+  /** The registry look it follows in the Gallery's list. */
+  after: UltraId
+  /** Its move buttons, in order: every clip its file holds (`blink` plays over whatever is playing). */
+  clips: readonly string[]
+  /** The clips that loop (its sidecar's `loop`); the rest play once. */
+  loops: readonly string[]
+  /** The clips that play once and hold their last pose (its sidecar's `hold`) until another move, or the same again. */
+  holds: readonly string[]
+}
+
+/**
+ * The extras (the owner, Nov 18: "a 3D cocoon"). Nibblegrub's cocoon: it wriggles, and splits open and stays open
+ * (the moment it becomes a Velvesper); its sidecar's heightUnits, no variants.
+ */
+export const ULTRA_EXTRAS: Readonly<Record<string, UltraExtra>> = {
+  'nibblegrub-cocoon': {
+    id: 'nibblegrub-cocoon',
+    breed: 'nibblegrub',
+    // between its forms; Nibblegrub has no grown one (the cocoon becomes a Velvesper)
+    stage: 'young',
+    ...filesOf('nibblegrub-cocoon'),
+    heightUnits: 148,
+    variants: [],
+    kind: 'cocoon',
+    after: 'nibblegrub',
+    clips: ['idle', 'wriggle', 'split', 'blink'],
+    loops: ['idle', 'wriggle'],
+    holds: ['split'],
+  },
+}
+
+/** A Gallery extra by id, or null (never a registry look). */
+export function ultraExtra(id: string | null | undefined): UltraExtra | null {
+  return id && Object.prototype.hasOwnProperty.call(ULTRA_EXTRAS, id) ? ULTRA_EXTRAS[id]! : null
+}
+
+/** The Gallery's list: the registry's looks in order (Puddlepup first), each extra right after the look it follows. */
+export const GALLERY_IDS: readonly string[] = (() => {
+  const extras = Object.values(ULTRA_EXTRAS)
+  const out: string[] = []
+  for (const id of Object.keys(ULTRA_LOOKS)) {
+    out.push(id)
+    for (const x of extras) if (x.after === id) out.push(x.id)
+  }
+  // an extra whose look isn't listed (yet) comes last
+  for (const x of extras) if (!out.includes(x.id)) out.push(x.id)
+  return out
+})()
+
+/** Whether the Gallery can show this id: a registry look or an extra. */
+export function isGalleryId(id: string | null | undefined): id is string {
+  return isUltraId(id) || ultraExtra(id) !== null
+}
+
+/** What the Gallery shows for an id: a registry look, an extra, or null. */
+export function galleryLook(id: string | null | undefined): UltraLook | UltraExtra | null {
+  return isUltraId(id) ? ULTRA_LOOKS[id]! : ultraExtra(id)
 }
 
 /** How tall a look stands beside Puddlepup, in percent (Puddlepup 100). */

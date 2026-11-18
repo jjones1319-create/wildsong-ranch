@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { isUltraId, ULTRA_IDS, ULTRA_LOOKS, ultraVariant, type UltraId } from '../../../art/ultraLooks.ts'
+import { GALLERY_IDS, galleryLook, isGalleryId, ULTRA_IDS, ULTRA_LOOKS, ultraExtra, ultraVariant, type UltraId } from '../../../art/ultraLooks.ts'
 import type { Gallery3D, GalleryStats } from '../../../art3d/gallery/gallery3d.ts'
-import { FLY_CLIPS, GALLERY_CLIPS, GALLERY_LOOPS, type GalleryMove } from '../../../art3d/ultra/clips.ts'
+import { FLY_CLIPS, GALLERY_CLIPS, GALLERY_LOOPS } from '../../../art3d/ultra/clips.ts'
 import { BREED_BY_ID } from '../../../data/breeds.ts'
 import { SECRETS } from '../../../data/secrets.ts'
 import { GALLERY3D_TEXT as T } from '../../../data/text/gallery3d.ts'
@@ -17,11 +17,12 @@ const G = ART.gallery3d
 interface GalleryHook {
   ready: boolean
   phase: Phase
-  /** A look id: a breed, or a grown form (`hearthwing-grown`). */
+  /** A look id: a breed, a grown form (`hearthwing-grown`), or a Gallery extra (`nibblegrub-cocoon`). */
   show(look: string, variant?: string | null, compare?: boolean): void
-  play(clip: GalleryMove): void
+  /** A move button's clip (a Gallery extra: one of its own). */
+  play(clip: string): void
   /** Review only: hold a move at a share of its length; null plays on. */
-  pose(clip: GalleryMove | null, t?: number): void
+  pose(clip: string | null, t?: number): void
   turn(yawDeg: number, pitchDeg?: number): void
   zoom(k: number): void
   stats(): GalleryStats | null
@@ -41,16 +42,28 @@ type Phase = 'starting' | 'loading' | 'ready' | 'failed' | 'error'
 /** Remembered while the app is open, so coming back shows the same monster. */
 let lastShown: { look: UltraId; variant: string | null; compare: boolean } = { look: 'puddlepup', variant: null, compare: false }
 
-/** A look's name for the chips and the stage: the breed's, "(grown)" for a grown form. */
+/** A look's name for the chips and the stage: the breed's, "(grown)" for a grown form, an extra's own ("Nibblegrub's cocoon"). */
 function lookName(id: UltraId): string {
+  const extra = ultraExtra(id)
+  if (extra) return T.extras[extra.kind].name(BREED_BY_ID[extra.breed].name)
   const look = ULTRA_LOOKS[id] ?? ULTRA_LOOKS.puddlepup!
   return T.lookName(BREED_BY_ID[look.breed].name, look.stage === 'grown')
 }
 
+/** Whether a move loops on this look (a Gallery extra: its own loops). */
+function loops(look: UltraId, clip: string): boolean {
+  const extra = ultraExtra(look)
+  return extra ? extra.loops.includes(clip) : GALLERY_LOOPS.has(clip)
+}
+
+/** A move button's words (an unknown clip shows its name). */
+const clipLabel = (c: string): string => (T.clips as Readonly<Record<string, string>>)[c] ?? c
+
 /**
  * Lab → 3D Gallery (docs/ART_2_DETAIL.md §9.3): every finished Ultra breed (src/art/ultraLooks.ts) in the film look,
  * drag to turn, pinch or the buttons to zoom, its moves, its variants, and Puddlepup beside it at true scale. The 3D
- * code loads with the screen (a lazy chunk); Lite effects show the lighter models.
+ * code loads with the screen (a lazy chunk); Lite effects show the lighter models. Gallery-only extras (ULTRA_EXTRAS:
+ * Nibblegrub's cocoon) follow their look in the list, with their own moves.
  */
 export function LabGallery3DScreen() {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -58,7 +71,7 @@ export function LabGallery3DScreen() {
   const [phase, setPhase] = useState<Phase>('starting')
   const [sel, setSel] = useState(lastShown)
   const [held, setHeld] = useState<string[]>([])
-  const [clip, setClip] = useState<GalleryMove>('idle')
+  const [clip, setClip] = useState<string>('idle')
   // a look that flies shows its flying moves too
   const [flies, setFlies] = useState(false)
   const [stats, setStats] = useState<GalleryStats | null>(null)
@@ -98,7 +111,7 @@ export function LabGallery3DScreen() {
       setStats(s)
       // a move that settled back into idle on its own: the Idle button lights again; up in the air after a take-off or
       // a breath, the Fly button
-      if (s.clip && /idle/.test(s.clip)) setClip((c) => (GALLERY_LOOPS.has(c) ? c : 'idle'))
+      if (s.clip && /idle/.test(s.clip)) setClip((c) => (loops(s.look, c) ? c : 'idle'))
       else if (s.clip === 'fly') setClip((c) => (c === 'fly_takeoff' || c === 'fly_cast' ? 'fly' : c))
     }, 500)
     return () => {
@@ -134,7 +147,7 @@ export function LabGallery3DScreen() {
     }
   }, [sel.look, sel.variant, sel.compare, retry, phase === 'starting' || phase === 'error'])
 
-  const play = (c: GalleryMove) => {
+  const play = (c: string) => {
     gallery.current?.play(c)
     if (c !== 'blink') setClip(c)
   }
@@ -148,7 +161,7 @@ export function LabGallery3DScreen() {
         return phase
       },
       show: (id, variant = null, compare = false) => {
-        const look = isUltraId(id) ? id : 'puddlepup'
+        const look = isGalleryId(id) ? id : 'puddlepup'
         setSel({ look, variant: ultraVariant(look, variant), compare })
       },
       play,
@@ -198,8 +211,11 @@ export function LabGallery3DScreen() {
 
   // a look that left the registry since (the remembered one) shows Puddlepup
   const name = lookName(sel.look)
-  const look = ULTRA_LOOKS[sel.look]
+  const look = galleryLook(sel.look)
+  const extra = ultraExtra(sel.look)
   const variants = (look?.variants ?? []).filter((id) => held.includes(id))
+  // an extra's own moves (the cocoon's idle, wriggle, split, blink); a look's: the Gallery's, and its flying ones
+  const moves: readonly string[] = extra ? extra.clips : [...GALLERY_CLIPS, ...(flies ? FLY_CLIPS : [])]
   const busy = phase !== 'ready'
 
   return (
@@ -249,15 +265,16 @@ export function LabGallery3DScreen() {
         <>
           <p class="field__label small">{T.moves}</p>
           <div class="chips gallery3d__moves" role="group" aria-label={T.moves}>
-            {[...GALLERY_CLIPS, ...(flies ? FLY_CLIPS : [])].map((c) => (
+            {moves.map((c) => (
               <button key={c} type="button" data-clip={c} aria-pressed={c !== 'blink' && c === clip} class={`chip ${c !== 'blink' && c === clip ? 'chip--on' : ''}`} disabled={busy} onClick={() => play(c)}>
-                {T.clips[c]}
+                {clipLabel(c)}
               </button>
             ))}
           </div>
+          {extra && extra.holds.length > 0 && <p class="small muted">{T.extras[extra.kind].hint}</p>}
           <p class="field__label small">{T.breed}</p>
           <Chips
-            options={ULTRA_IDS.map((id) => ({ value: id, label: lookName(id) }))}
+            options={GALLERY_IDS.map((id) => ({ value: id, label: lookName(id) }))}
             value={sel.look}
             onChange={(id) => setSel((s) => ({ look: id, variant: null, compare: id === 'puddlepup' ? false : s.compare }))}
             label={T.breed}

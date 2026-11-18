@@ -3,19 +3,20 @@ import type { AnimationAction, Mesh, Object3D } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
-import { ULTRA_LOOKS, ultraHeightPct, type UltraId } from '../../art/ultraLooks.ts'
+import { galleryLook, ultraExtra, ultraHeightPct, type UltraId } from '../../art/ultraLooks.ts'
 import { ART } from '../../data/tuning.ts'
 import { buildStudio, setFilmClock } from '../perf/content.ts'
 import { createDynRes, type DynRes } from '../perf/dynres.ts'
 import { createView, type Backend, type Level, type PerfView } from '../perf/view.ts'
-import { FLY_CLIPS, GALLERY_LOOPS, resolveClipName, type FlyClip, type GalleryMove } from '../ultra/clips.ts'
+import { FLY_CLIPS, GALLERY_LOOPS, resolveClipName, type FlyClip } from '../ultra/clips.ts'
 import { breathPlan, landingPlan, liftAt, takeoffPlan, type FlightPlan, type FlyStep, type FlyTimes } from '../ultra/flight.ts'
 import { blinkClipOf, flyTimesOf, NO_AO_LAYER, heldVariants, loadUltraAsset, makeUltraModel, wingspanOf, type UltraAsset, type UltraKind, type UltraModel } from '../ultra/ultraAsset.ts'
 
 /**
  * Lab → 3D Gallery: one finished Ultra breed on a turntable in the film look (the Art 2.1 renderer of Battle 3D and the
  * review sheets), its moves on buttons, its variants, and Puddlepup beside it at true scale. Drag turns it, a pinch or
- * the buttons zoom. Lite effects load the breed's Lite file.
+ * the buttons zoom. Lite effects load the breed's Lite file. A Gallery extra (Nibblegrub's cocoon, ULTRA_EXTRAS) stands
+ * there the same way, with its own clips: the ones its entry loops, holds, or plays once.
  */
 
 const G = ART.gallery3d
@@ -33,7 +34,7 @@ export interface GalleryOptions {
 }
 
 export interface GalleryShow {
-  /** The look: a breed, or a grown form (`hearthwing-grown`). */
+  /** The look: a breed, a grown form (`hearthwing-grown`), or a Gallery extra (`nibblegrub-cocoon`). */
   look: UltraId
   variant: string | null
   /** Puddlepup beside it, both at true scale. */
@@ -54,6 +55,8 @@ export interface GalleryStats {
   flies: boolean
   liftM: number
   spanM: number
+  /** Each stand's fitted height (m), the shown look first: two beside Puddlepup, both at true size. */
+  heightsM: number[]
 }
 
 export interface Gallery3D {
@@ -62,13 +65,13 @@ export interface Gallery3D {
   /**
    * Play a move on the shown breed: idle and walk loop; the rest play once and settle back into idle. A look that
    * flies: take off (then hover), fly, breathe in the air (taking off first from the floor) and land; a ground move
-   * in the air lands first.
+   * in the air lands first. A Gallery extra: its own clips, looping, holding their last pose, or settling back.
    */
-  play(clip: GalleryMove): void
+  play(clip: string): void
   /** Whether the shown look flies (its sidecar and file have the flying clips). */
   flies(): boolean
   /** Review only: hold the shown breed in a move at a share of its length (0–1), at that moment's height; null lets it play on. */
-  pose(clip: GalleryMove | null, t?: number): void
+  pose(clip: string | null, t?: number): void
   /** Turn the turntable (degrees) and tilt the camera (degrees). */
   turn(yawDeg: number, pitchDeg: number): void
   /** Zoom by a factor (>1 closer), or back to the fitted view with 0. */
@@ -93,6 +96,9 @@ interface Stand {
   current: string
   /** A one-shot's settle-back time (mixer seconds), or 0. */
   backAt: number
+  /** Its moves that loop, and those that play once and hold their last pose (a Gallery extra's own; else the Gallery's). */
+  loops: ReadonlySet<string>
+  holds: ReadonlySet<string>
   blink: string | null
   nextBlink: number
   blinks: number
@@ -177,7 +183,8 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
   let frozen = false
 
   function makeStand(asset: UltraAsset, id: UltraId, variant: string | null): Stand {
-    const look = ULTRA_LOOKS[id]
+    const look = galleryLook(id)
+    const extra = ultraExtra(id)
     const heightM = (ART.duel.monsterHeightM * (look ? ultraHeightPct(look) : 100)) / 100
     const u = makeUltraModel(asset, variant, heightM)
     // a look that flies: measured with its wings open before it is placed
@@ -191,7 +198,7 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     const actions = new Map<string, AnimationAction>()
     for (const c of clips) actions.set(c.name, mixer.clipAction(c))
     const s: Stand = {
-      look: id, asset, u, root, mixer, actions, current: '', backAt: 0, blink: blinkClipOf(asset), nextBlink: G.blinkGapsSec[0]!, blinks: 1, triangles: countTriangles(u.model),
+      look: id, asset, u, root, mixer, actions, current: '', backAt: 0, loops: extra ? new Set(extra.loops) : GALLERY_LOOPS, holds: new Set(extra?.holds ?? []), blink: blinkClipOf(asset), nextBlink: G.blinkGapsSec[0]!, blinks: 1, triangles: countTriangles(u.model),
       fly, flight: null, flyStep: 0, lift: 0, queued: null,
     }
     playOn(s, 'idle')
@@ -201,7 +208,8 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
   function playOn(s: Stand, name: string): void {
     const clip = resolveClipName((n) => s.actions.has(n), name)
     if (!clip) return
-    const loop = GALLERY_LOOPS.has(name)
+    const loop = s.loops.has(name)
+    const held = s.holds.has(name)
     const next = s.actions.get(clip)!
     const prev = s.actions.get(s.current)
     next.reset()
@@ -212,8 +220,9 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
     next.play()
     if (prev && prev !== next) prev.crossFadeTo(next, G.fadeSec, false)
     s.current = clip
-    // a one-shot holds its last pose a moment (the ko longer), then settles back into idle
-    s.backAt = loop ? 0 : s.mixer.time + next.getClip().duration + (name === 'ko' ? G.koHoldSec : G.holdSec)
+    // a one-shot holds its last pose a moment (the ko longer), then settles back into idle; a held one (the cocoon's
+    // split) stays there until another move, or the same again
+    s.backAt = loop || held ? 0 : s.mixer.time + next.getClip().duration + (name === 'ko' ? G.koHoldSec : G.holdSec)
   }
 
   /** A flight's clip (ultra/flight.ts): the flight decides what follows, not the settle-back. */
@@ -480,7 +489,7 @@ export async function createGallery3D(o: GalleryOptions): Promise<Gallery3D> {
       const s = stands[0]
       return {
         backend: v.backend, fps: 1000 / avg, dpr: dyn.dpr(), level: dyn.level(), look: shown?.look ?? 'puddlepup', kind: s?.asset.kind ?? null, triangles: s?.triangles ?? 0, clip: s?.current || null,
-        flies: !!s?.fly, liftM: +(s?.lift ?? 0).toFixed(3), spanM: +(s?.fly?.spanM ?? 0).toFixed(2),
+        flies: !!s?.fly, liftM: +(s?.lift ?? 0).toFixed(3), spanM: +(s?.fly?.spanM ?? 0).toFixed(2), heightsM: stands.map((x) => +x.u.size.height.toFixed(3)),
       }
     },
     snapshot() {

@@ -696,13 +696,23 @@ Ten more breeds, two at a time, with the same review process as batches 1 and 2.
 - [x] 5. Mirrorkin and Frostlance (Nov 14–15).
 - [x] 6. Docs, tests (`npm run verify` 1,441 green; e2e; Battle 3D with every new look), PROGRESS, v1.25.0, commit, deploy, phone checklist (Nov 15).
 
-### Batch 5, two at a time (v1.26.0 so far)
-Started Nov 15 (the owner, Nov 14: *"start the next 6 in pairs of two again right after these finish"*), while the owner's look at v1.25.0 was pending: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan, the first of batch 6). The four plans (`plans/shelled.py`, `blob.py`, `construct.py`, `serpent.py`, with the shared `plans/kin.py`) and their stand-ins shipped as tools in v1.25.0. The owner, Nov 15: *"stop after pair 7 and upload them to the phone"*, so the first four shipped in v1.26.0 and pair 8 waits for the owner's go. The lessons are in ART_2_DETAIL §9.9, the known issues in PROGRESS v1.26.0.
+### Batch 5, two at a time (v1.26.0)
+Started Nov 15 (the owner, Nov 14: *"start the next 6 in pairs of two again right after these finish"*), while the owner's look at v1.25.0 was pending: Moatshell and Reefclaw (the shelled plan), then Bloatoad and Scrollopus (the blob plan), then Lootlid (the construct plan) and Coilfang (the serpent plan, the first of batch 6). The four plans (`plans/shelled.py`, `blob.py`, `construct.py`, `serpent.py`, with the shared `plans/kin.py`) and their stand-ins shipped as tools in v1.25.0. The owner, Nov 15: *"stop after pair 7 and upload them to the phone"*, so the first four shipped in v1.26.0 and pair 8 waited for the owner's go. The lessons are in ART_2_DETAIL §9.9, the known issues in PROGRESS v1.26.0.
 - [x] 1. Moatshell (Porcelain) and Reefclaw (Abyss), the shelled plan's first pair; `claw_keep_up`, `shell_turn`, `ko_settle_meshes` (Nov 15).
 - [x] 2. Bloatoad (Party) and Scrollopus, the blob plan's first pair; the blob knobs, `BASE_UASTC` for Scrollopus (Nov 15).
 - [x] 3. The zero-length tangent repair at ship, and the five shipped looks that carried one re-shipped (Cinderlynx, Cobblemaw, Plumdrake, Rammerjack, Zipwisp).
 - [x] 4. Docs, tests (`npm run verify`; e2e; Battle 3D with the new looks), PROGRESS, v1.26.0, commit, deploy, phone checklist (Nov 15).
-- [ ] 5. Lootlid (the construct plan) and Coilfang (the serpent plan, from B6): pair 8, waiting for the owner.
+- [x] 5. Lootlid (the construct plan) and Coilfang (the serpent plan, from B6): pair 8, shipped in v1.27.0 (below).
+
+### Batches 5–7, the last pairs (v1.27.0)
+The owner, Nov 17: *"Finish the last sets of 2 to finish out the last ones; then I'll give notes and fixes on all of them."* So the last ten looks went in four pairs, each completely finished before the next, with one release at the end. The owner, Nov 18: *"yes have a 3D cocoon as well"*, so Nibblegrub's cocoon joined pair 11 as a Gallery-only extra. Every look had three fresh-eyes rounds and a defect-only polish pass. With this, every breed has its Ultra look and the rollout is complete. The lessons are in ART_2_DETAIL §9.10, the known issues in PROGRESS v1.27.0.
+- [x] 1. Pair 8: Lootlid (Gilded; the construct plan's first) and Coilfang (Imperial; the serpent plan's first); `tongue_lid`, `tongue_hang`, `hold_open`, `legs_ride`, `gait_carry`, `gait_lift`, the serpent `lunge` and twist knobs, `ATLAS_MARGIN`, `REVIEW['clips']` (Nov 17).
+- [x] 2. The avian and insect plans (`plans/avian.py`, `plans/insect.py`) with their stand-ins (a heron or a knight; a caterpillar, a moth or a cocoon), and `ROOT_HEAT_TO` (Nov 17).
+- [x] 3. Pair 9: Aurelwyrm (Sunsoul; the serpent plan, floating) and Gearhoot (Silver; the construct plan's neck mode); the spinner's `clips` and `wing_tuck` (Nov 17–18).
+- [x] 4. Pair 10: Galeheron (Dawnwing), Paladove young and grown, the avian plan's first; `buffet`, `beam`, and `BASE_UASTC_MAIN` for Galeheron (Nov 18).
+- [x] 5. Pair 11: Nibblegrub (Syrup), its cocoon and Velvesper (Moonlit), the insect plan's first; `probes`, `roll_curl`, `roll_bones`, `arch`, the shell `bulge`, the per-wing beat and fold axes, `ko_wing_bias`, and `BASE_UASTC_MAIN` for Velvesper; the cocoon in `art:ultra-review` (Nov 18).
+- [x] 6. The game: the registry lines, `ULTRA_EXTRAS` (the cocoon in Lab → 3D Gallery only, after Nibblegrub, with its own clips), the Gallery's loop and hold clips; `ultraLooks.test.ts` and a cocoon e2e test.
+- [x] 7. Docs, tests (`npm run verify`; e2e; Battle 3D with the new looks), PROGRESS, v1.27.0, commit, deploy, phone checklist (Nov 18).
 
 ## LATER (after v1.0)
 

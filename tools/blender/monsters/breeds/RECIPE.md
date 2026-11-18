@@ -14,7 +14,7 @@ tall** (Puddlepup: 150 units, 0.986 m), so every breed stands at true relative s
 |---|---|
 | `ID` | the breed id, e.g. `'tumblefox'` (bone rig `<ID>_rig`, files `<ID>.glb`) |
 | `LOOK` | `f'{ID}-ultra'` (the out folder `tools/blender/out/<LOOK>/`) |
-| `PLAN` | `'quadruped'` (`plans/quadruped.py`), `'biped'` (`plans/biped.py`: see *Biped plan* below), `'floater'` (`plans/floater.py`: see *Floater plan*), `'shelled'` (`plans/shelled.py`: see *Shelled plan*), `'blob'` (`plans/blob.py`: see *Blob plan*), `'construct'` (`plans/construct.py`: see *Construct plan*) or `'serpent'` (`plans/serpent.py`: see *Serpent plan*) |
+| `PLAN` | `'quadruped'` (`plans/quadruped.py`), `'biped'` (`plans/biped.py`: see *Biped plan* below), `'floater'` (`plans/floater.py`: see *Floater plan*), `'shelled'` (`plans/shelled.py`: see *Shelled plan*), `'blob'` (`plans/blob.py`: see *Blob plan*), `'construct'` (`plans/construct.py`: see *Construct plan*), `'serpent'` (`plans/serpent.py`: see *Serpent plan*), `'avian'` (`plans/avian.py`: see *Avian plan*) or `'insect'` (`plans/insect.py`: see *Insect plan*) |
 | `HEIGHT_UNITS` | the breed's height in game units (CONTENT); sets the model's size (above) |
 | `PALETTE` | `{'body', 'belly', 'accent', 'eye'}` hex colours (more keys allowed). The shape preview paints with it |
 | `VARIANTS` | `{variant_id: paint}`, **0..N entries** (`{}` = no variant). Id `'<short>-<ID>'`, e.g. `'songheart-puddlepup'`, `'town-crier-tumblefox'`; `<short>` is the id minus `-<ID>`, hyphens kept (`town-crier`). `paint` has at least `body, belly, accent, eye`, and optionally `'props': ['bell', ...]` (props only this variant wears, below). There is no `VARIANT_ID` any more |
@@ -60,6 +60,7 @@ tall** (Puddlepup: 150 units, 0.986 m), so every breed stands at true relative s
 **Sidecar and review**
 - `FACE_NOTE`: the sidecar's `face.note` for the runtime [a generic note: baked face, lenses, blink bones].
 - `REVIEW = {'centre': (x, y, z), 'size': metres framed, 'head': ((x, y, z), size)}` [from the body's bounds]. It is also written to the sidecar (`review`) for `ultra-review.ts` and the lineup.
+  - `'clips': [(clip, t), ...]` (Nov 17, Lootlid; opt-in, absent = as before): more key frames on both review sheets (the Blender poses sheet and `art:ultra-review`, shot at az 35°), e.g. a cast for a breed without wings or a trunk. Passed to the sidecar's `review.clips`, so it needs the rig stage.
 - `preview_colours(co, vn)` → n×3 linear RGB per body vertex, for the shape preview only [PALETTE body, belly where `zones` says `belly` / `bib`, the carved `lash` dark].
 
 ## Quadruped plan options (keys of `rig_p()`; every default is Puddlepup's)
@@ -501,8 +502,14 @@ For machines and furniture that move as rigid parts: Lootlid now; Gearhoot later
 - `'neck'` (a Gearhoot hook): `neck` points → `neck.1..N` from `chest`, `head` to `head_tip`, and a `jaw` (a beak) with `'jaw_open': True` (as the other plans'). `look()` turns the neck far, as an owl does.
 
 **Options:**
-- `tongue` `{'points': [p0 … pN] (inside the box), 'parent': 'hips', 'reach'}` → `tongue.1..N`, unconnected, as the blob plan's. The bones slide out along it, and the part that is out droops over the lip (`droop`). The lid is held at least 40° open whenever the tongue is out. Model it as a prop mesh skinned with `U.chain_weights` in `prop_weight_regions`. `socket_tongue` sits at its tip.
+- `tongue` `{'points': [p0 … pN] (inside the box), 'parent': 'hips', 'reach'}` → `tongue.1..N`, unconnected, as the blob plan's. The bones slide out along it, and the part that is out droops over the lip (`droop`). The lid is held at least 40° open whenever the tongue is out; `tongue_lid` [40°] (Nov 17, Lootlid; opt-in, absent = as before, the stand-in key-identical in both modes) sets that least opening (a lid 0.6 m long hinged at the back clears the tongue at 14°). Model it as a prop mesh skinned with `U.chain_weights` in `prop_weight_regions`. `socket_tongue` sits at its tip.
+  - `tongue_hang` (Nov 17, Lootlid; opt-in, absent = as before) `{'shares': (root, bone 2, …), 'out': o}`: each bone's share of a clip's droop (the root's of `droop`, the others' of the hang), and the droop only once the tongue is out to `o` (eased in over the 0.1 before it), so it bends where its last bone has passed the lip instead of sinking into the box. Lootlid `(0, 0, 1.9)`, 0.42.
+- `hold_open` (Nov 17, Lootlid; opt-in, absent = as before) `{clip: {'mouth', 'tongue', 'bones', 'wag', 'rate'}}`: that clip's lid held open `mouth` (a share of `lid_max`) on top of its own motion, the tongue slid a further `tongue` of its reach, `bones` {bone: (x, y, z)} turned throughout, the last tongue bone wagged `wag` degrees at `rate`. Lootlid holds the hero's look (the lid cracked 14°, the tongue hanging over the front lip) in idle, look_around, battle_idle, the strafes and the sidesteps, and lets the tongue out over the lip in idle_happy, pet, sit and dizzy.
+- `legs_ride` (Nov 17, Lootlid; opt-in, absent = as before) `{clip: share, '*': share}` (`'*'` covers every clip but the gaits): rigid legs. Each planted foot's goal moves `share` of the way to where the foot would be if its leg turned with the body, and the body rises so no such foot goes under the floor. A stubby rigid post never bends at its hip: a dip or a crouch is cancelled and a tilt pivots on the lowest foot. For legs parented to `hips`. A gait named in it is carried first (below), then blended that share toward rigid (its feet skid that share). Lootlid `{'*': 1.0, 'run': 0.5, 'dash': 0.6}`.
+  - `gait_carry` [0] (opt-in): the same for the gaits (walk, run, dash, the steps, the strafes), keeping their steps: each foot's goal is carried `share` of the body's own move from rest (its bob, drop and roll), and the body rises likewise. `gait_lift` [1] (opt-in) scales the swing foot's lift. Lootlid: `gait_carry` 1, `gait_lift` 0.3, `stride` 0.8 (a post swings at most 13° walking, 10° running or dashing); `ko_bones` take 20° off ko's 30° leg splay.
 - `spinners` `[{'name', 'head', 'tail' (its axis), 'parent': 'hips', 'rate': turns a second}]` → `spin.<name>`: a wind-up key or gears that turn a whole number of times in every loop and rest in the one-shots. `socket_<name>`.
+  - A spinner's `clips` {clip: factor} (Nov 17, Gearhoot; opt-in): that clip turns at rate × factor, one-shots included (whole turns), and 0 stills it. Gearhoot's key winds 3× in cast and win and stops in sleep.
+  - `wing_tuck` False (Nov 17, Gearhoot; opt-in): no negative wing flaps (sad, sleep, sit and ko fold a wing inward, into a body of rigid plates).
 - `chains`: kinds `tassel`, `tail`, `antenna`, `tuft` and `wing` (a Gearhoot hook: gear-feather wings that flap about the body's long axis; no springs). `props` [parent `hips`] (a coin hoard inside the box).
 - `sink` [measured: the body's lowest vertex owned by `hips`], `sit_drop` [measured: where the legs, coming down with the body, would meet the ground]: how far sit and sleep lower the body. Stubby legs give a squat with the feet splayed. `hop`, `stride` [1].
 - `heat` [none]: a list of bones to keep heat weights for. Otherwise every moving part is skinned by the recipe: `head`, `jaw`, the legs, the tongue, the spinners and the chains.
@@ -533,6 +540,7 @@ For machines and furniture that move as rigid parts: Lootlid now; Gearhoot later
 - **Lootlid:** `HEIGHT_UNITS` 135 (0.9 × Puddlepup's height).
   - The lid and the box are separate shells. The eyes and the keyhole plate are on the lid; the gold bands are split with them.
   - A 3-bone tongue prop lying on a coin-hoard prop inside. There are no teeth: the card says goofy, never menacing.
+  - As built (Nov 17): `lid_max` 45°, `tongue_lid` 14°, strike `'spit'` (the round 1 review: the card's attack keeps the lid wide through the impact), `hold_open` and `tongue_hang` as above. The legs are rigid props, each on its thigh with its cuff and a thin top cap (the post pivots just under the box and runs on up into it; the short shin and the foot carry no skin). Round 3: the lid is a real hollow shell (3.5 cm walls, a thicker front for the eyes) with a gold lip round its opening, and its sides open when it lifts (no cheeks: a chest is hollow, as in 1-hero); a gold flange on the box's rim closes the shut lid's seam; `clip_bones` slide the tongue out and hang it over the lip in cast, strike, hit and win's jump. The rest pose stays closed (the turnaround's views); the idles show the hero's open look. Polish pass: `legs_ride`, `gait_carry`, `gait_lift` and `stride` as above, with each post running 8.5 cm up into the box (its hidden top narrowed), so a turned post never shows its cut top; the sidesteps hold the hero's look; `clip_bones` hang the tongue over the lip in hit_heavy too. Checked over every frame of every clip, not just the review frames.
   - strike `'chomp'` (Lid Chomp) or `'tongue'`; cast `'spit'` (Coin Toss: the attack picture's burst of coins); ko `'roll'`.
 
 ## Serpent plan (`PLAN = 'serpent'`, `plans/serpent.py`; batch 5, Nov 15)
@@ -576,6 +584,14 @@ For long, legless monsters: Coilfang now; Aurelwyrm later, through the `float` o
   - `'flat'` doesn't twist; the head lies on its side.
   - `body_width` and `ko_lift`: the anchor's height, settled exactly by the build.
 - The per-clip knobs: as the shelled plan's (`clip_bones` rotations add a local bend on a spine bone).
+- Nov 17 (Coilfang), each opt-in (absent = as before; the stand-in's clips are key-identical in both modes):
+  - `roll_fix` [False]: a twist (hit_heavy's, ko's) rolls the forward bones and the head the same way as the tail's, + toward the monster's left as `Shape` says. Without it they roll opposite ways and wring the skin at the anchor.
+  - `ko_head_roll` [0.6 × `ko_twist`; 70 for 'flat'], `hit_heavy_roll` [55], `hit_heavy_head_roll` [25]: the rolls in degrees. With `roll_fix`, a negative value rolls the top away from the three-quarter camera, so the belly and the face turn toward it.
+  - `sleep_neck` [0.85]: the share of the neck's rest rise that sleep lays down. Less leaves the head resting on the coil instead of buried in it (Coilfang 0.6).
+  - `rear` [0 m]: for a neck already upright at rest, which can't rise further. Every positive neck rise outside the coil also lifts the anchor this much per 20 degrees, tips the forward bone from it up and slopes the tail's first bone back to the ground: battle_idle's raised front, the hiss, hit_heavy (Coilfang 0.09).
+  - `lunge` [none]: a dict for the 'lunge' strike. It draws the neck back into an S that leans past upright, then shoots it out nearly level and straight ahead with the head level, the body's front straightening and sliding forward, the mouth wide. The pose is held from frame 12 to about 16. Keys `wind_low`, `wind_high`, `head_up`, `back`, `coil`, `elev`, `elev_rise`, `straight`, `front`, `slide`, `lift`, `head_drive`, `jaw`, `jaw_wind`, `crest_back`, `crest_wind`, `wave`, `drive_wave`, `ph_max`, `squint`, `squint_drive`, `wind_elev` (a per-bone rise list for the wind-up: a Z neck, e.g. Coilfang's [35, 118, 148, 60]); the defaults are in `p_lunge`'s docstring. `Shape.ph_max` [1.4 rad] is the elevation cap, raised for this wind-up only (`ph_max` [2.1]). `squint` keys the eyes narrowing in the wind-up.
+  - `win_squint` [0]: the eyes narrow into a happy squint through win's jump.
+  - Make an upright neck lean a little forward all the way up. A vertical bone's heading is undefined: neighbours flipped between +90° and −90°, and the coil-sit twisted the neck through it.
 
 **Clips:** the same 32 names, lengths, markers and faces as every plan.
 - **Ranch life:**
@@ -604,6 +620,187 @@ For long, legless monsters: Coilfang now; Aurelwyrm later, through the `float` o
   - Size: `HEIGHT_UNITS` 150 (coiled, 1 × Puddlepup's height). Its pictures agree with the card's length, 3.5 × Puddlepup's (≈ 3.3 m snout to tail tip): the turnaround's path measures about 3.3 × its height.
   - A golden feather crest (a `crest` chain, or a few for a fan), two fangs in the head's mesh, a forked tongue prop.
   - strike `'lunge'` (Fang Snap) or `'squeeze'` (Coil Squeeze); cast `'hiss'` (Venom Mist); ko `'belly'`; `strike_yaw` ≈ 15.
+  - As built (Nov 17):
+    - 20 spine bones (4 neck, the hips, 15 tail bones getting shorter toward the tip), so the coil's tight inner turns stay smooth.
+    - The whole skin is weighted by the recipe (no heat weights): its place along the body.
+    - The fangs are props on `head`. In the head mesh, the voxel union would fuse them to the lower lip just behind them, which the jaw's cut must keep apart.
+    - The crest is 27 feathers on the mirrored chains `crestL` / `crestR`.
+    - It uses the Nov 17 knobs above.
+
+## Avian plan (`PLAN = 'avian'`, `plans/avian.py`; batch 6, Nov 17)
+For birds on two legs: Galeheron, and Paladove (young and grown). The stand-in `breeds/_avian_test_ultra.py` is a heron with every heron option on; `WS_AVIAN_FORM=knight` makes it a stout four-winged dove-knight with a halo and a shield (grown Paladove's options). It is not a breed and is never shipped or registered.
+
+**`rig_p()`, required** (model it standing, wings folded):
+- `hip`: the pelvis. `hips` (parent `root`) runs from it to the body's middle.
+- `chest`: the shoulders, where the neck and the wings start (the build's ko measure reads it).
+- `neck`: `[p0 … pN]` from the shoulders to the back of the head, giving `neck.1..N` (Galeheron's S: 3 bones; Paladove: 1).
+- `head_c`, `head_r`, `head_tip`, and `jaw` `{'head', 'tail'}`: the beak's lower half (`'jaw_open': True`, the lower beak by `U.rigid` in `body_weight_regions`).
+- `legs`: the left leg `{'hip', 'knee', 'ankle', 'toe', 'toe_tip'?}`, mirrored. Bones: `thigh` (inside the body), `shin` (the drumstick), `tarsus` (the long bare part) and `toe`. Skin the shin, tarsus and toe with `U.segment_weights` (the stand-in's `body_weight_regions`).
+- `wings`: the main pair, a wing spec as the biped's (`lib/ultra.py` `wing_points`: `shoulder`, `elbow`, `wrist`, `fingers`, `attach`, `spread`, `name` ['wing'], `parent` ['chest']), folded at rest. The open pose comes from `spread` through the biped's `wing_spread_quats` (imported, not copied). Wings and plumes are props (`build_props`, skinned with `U.segment_weights` / `U.chain_weights` in `prop_weight_regions`), so `heatless` lists them.
+
+**How it moves:**
+- The feet are planted by IK: the tarsus stays upright, the toes flat, and the heel lifts at toe-off. Root motion carries a planted foot back under the body; the swinging foot folds its toes only once it is well off the ground.
+- The head holds still and thrusts forward each step (a bird's head-bob); the neck makes an S and the head stays level as it reaches.
+- Sitting (sit_down, sit, sleep) folds the tarsi back and lowers the body onto them. `roost_plan` measures the legs' thickness on lo_body and limits the fold and the drop, so the heel and the folded knee stay a shin's thickness off the ground (`sit_fold` [75°] is the most it folds).
+- Every clip keys every wing bone on every frame (an untouched wing stays at rest), and no clip scales a bone (the `ClipBuilder.scale` `abs()` trap on tilted bones).
+
+**Options:**
+- `more_wings` []: more pairs, each a wing spec with its own `name` (grown Paladove's lower pair `'wingb'`) and `follow` [0.75]: how much of the main pair's opening and beat it copies.
+- `chains` [parent `head`]: kinds `plume`, `crest` and `tassel` (no heat weights unless `heat: True`; skin them with `U.chain_weights`) and `tail`. `mirror: True` makes a left/right pair. Crests flare in idle_happy, battle_idle, strike, cast and win, and lie flat when sad, tired or ko; plumes trail when it moves.
+- `props` `{'name', 'parent', 'head', 'tail'}`: a halo on `head`, a shield on `wing.L.2` (it follows the forearm), skinned with `U.rigid`. `socket_<prop>`.
+- `fly` [True]: the four flying clips (`FLY_CLIPS`), made when the rig has wings:
+  - fly_takeoff 24 (`leap` at 0.36), fly 24 looped (`beat` at 0.2), fly_cast 48 (`release` at 0.48) and fly_land 24 (`land` at 0.7). Each plays in place: the root stays put with a small bob, and the game raises the monster.
+  - The game flies any look whose file holds all four (`src/art3d/ultra/flight.ts`: the flying families' ranged techniques take off). This follows Hearthwing's precedent.
+  - `fly_pitch` [22°]: how far the body tips forward in level flight (14 suits a stout bird).
+- `strike_style` ['peck']. Every style is 24 frames with `impact` at 13:
+  - `'peck'`: the neck draws back into an S, then the beak darts forward and down (Beak Jab).
+  - `'buffet'`: the wings rear up and back, then sweep forward and strike together (Wing Buffet).
+  - `'gust'`: the wings spread wide, then one great downbeat sweeps forward with the beak open (Gust Feather; Galeheron's attack picture).
+  - `'kick'`: a hop with the wings flaring, one foot kicking out at the target (Lightning Stride).
+  - `'beam'`: the wings flung wide and the breast thrust at the target; the beam leaves `socket_core` (Dawnbreak Beam; grown Paladove's attack picture).
+- `cast_style` ['gust']. Each is 36 frames with `release` at 20:
+  - `'gust'`: the wings raised high, then a great beat that sends the wind.
+  - `'beam'`: up on its toes with the wings wide, then the breast thrusts.
+  - `'call'`: the head thrown back, then a call with the beak wide (Mending Hymn).
+- `ko_style` ['roll']: `'roll'` falls onto its side; `'back'` falls onto its back (`ko_pitch` [95°]) and kicks once. Either way the wings lie splayed and limp, the legs fold and the neck goes down onto the ground. `body_width` and `ko_lift` are settled by the build.
+- `guard_wings` [0.3]: how far battle_idle holds the wings open (the silhouette reads from the 35° battle camera). `hop` [1]: the hop's height. `strike_yaw`, `stride` [1] (× the gaits' stride) and `sleep_turn` [110°] (how far the head turns back to sleep).
+- The per-clip knobs, as every plan's: `clip_bones`, `hit_bones`, `hit_heavy_bones`, `strike_bones`, `strike_windup_bones`, `ko_bones`, `ko_scale`, `win_bones`, `win_scale`, `ko_chain_hang` and `hit_heavy_chain_hang`.
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan, plus the four flying ones.
+- **Ranch life:**
+  - idle: a ruffle and a glance.
+  - idle_happy, idle_tired, idle_sad (a slow sway) and idle_sick.
+  - sleep: roosting, the head turned back onto the back, breathing.
+  - eat: two pecks at the ground.
+  - pet, look_around, hop, celebrate.
+- **Moving:**
+  - walk, run, dash, the steps and strafe use the planted IK gait with the head-bob.
+  - sidestep is a quick sideways hop.
+- **Battle:**
+  - battle_idle: the wings held a little open.
+  - strike, cast, shove (a body bump with the wings).
+  - hit: the wings fly open. hit_heavy: knocked off its feet, the legs flung up.
+  - ko and win (a hop, then the wings spread high in a victory beat).
+- **Groups and sockets:**
+  - CLIP_CALM groups: `neck`, each chain by its name or kind, each wing by its name (kind `wing`), and `leg` (thigh, shin, tarsus, toe).
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the first pair's wrists, where a wing beat's effect starts), plus `socket_core` (the breast), `socket_foot_L` / `_R`, `socket_wing_L` / `_R`, `socket_<wing name>_L` / `_R`, `socket_<chain>` and `socket_<prop>`.
+
+**Joints:** root, hips, chest, the neck, head, jaw, 2 blink bones, 8 leg bones, each wing (2 + one per finger, × 2 sides), the chains and the props. The heron stand-in has 36 and the knight 40. Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Galeheron | ≈ 34–38 (a 3-bone neck, 2 fingers a wing, a crest pair × 2, a tail fan of 1–3 plumes) |
+| Paladove (young) | ≈ 22–26 (a 1-bone neck, small wings with 1 finger, a head tuft, a short tail) |
+| Paladove (grown) | ≈ 38–42 (four wings with 2 fingers, the halo and shield props, a crest, a tail pair) |
+
+**Per breed:**
+- **Galeheron:**
+  - Size: `HEIGHT_UNITS` 255 (1.7 × Puddlepup's height).
+  - The long S-neck (3 bones), a long dagger beak with the lower half as `jaw`, streaming crest plumes (`crest`, `mirror`), and a tail fan of plumes.
+  - strike `'peck'` (Beak Jab) or `'gust'` (Gust Feather); cast `'gust'` (Wind Spear, Downdraft); ko `'roll'`; `strike_yaw` ≈ 12. It flies (Tempest Dive and Squall Line read well as flights).
+- **Paladove (young):**
+  - Size: `HEIGHT_UNITS` 120 (0.8 × Puddlepup's height).
+  - A round puffball: a 1-bone neck hidden in the down, small wings, short legs (a short tarsus), a small golden beak.
+  - strike `'buffet'` (Wing Buffet); cast `'beam'` (Halo Spark); ko `'roll'`; `hop` ≈ 0.6. `fly` stays on unless the owner's review says the little wings shouldn't carry it.
+- **Paladove (grown)** (`paladove-grown`, see *Grown forms*):
+  - Size: `HEIGHT_UNITS` 240 (1.6 × Puddlepup's height).
+  - A stout, upright dove-knight: `wings` plus `more_wings` `[{'name': 'wingb', 'follow': 0.75, …}]` (four wings), a `halo` prop on `head`, a `shield` prop on `wing.L.2`, breastplate plates in the body's mesh.
+  - strike `'beam'` (Dawnbreak Beam) or `'buffet'`; cast `'beam'` or `'call'` (Mending Hymn); ko `'back'`; `hop` ≈ 0.6; `fly_pitch` ≈ 14.
+
+## Insect plan (`PLAN = 'insect'`, `plans/insect.py`; batch 7, Nov 17)
+For bugs: Nibblegrub (a caterpillar on six stubby legs) and Velvesper (a moth hovering on two pairs of big wings). The stand-in `breeds/_insect_test_ultra.py` is a caterpillar; `WS_INSECT_FORM=hover` makes it a moth and `WS_INSECT_FORM=cocoon` the hanging cocoon. It is not a breed and is never shipped or registered.
+
+**`rig_p()`, required** (model a crawler lying on the ground; model a hoverer hovering, its wings open):
+- `form` ['crawl']: `'crawl'`, `'hover'` or `'cocoon'` (see *The cocoon* below).
+- `hip`: the body's pivot. `body` (parent `root`) carries everything: it bobs, leans, turns and falls.
+- `front`: `[hip, F1 … Fk]`, the segments ahead of the pivot to the back of the head (`chest`, `front.1..`). `rear`: `[hip, R1 … Rm]`, the segments behind it to the tail's end (`hips`, `rear.1..`; without `rear` a short `hips` is made under the pivot). Put the points on the body's centre line.
+- `chest`: a point on the first front segment (the build's ko measure reads it).
+- `head_c`, `head_r`, `head_tip`: `head` runs from the last front point to `head_tip` (on the face's surface), with a `jaw` (`'jaw_open': True`, the mouth by `U.rigid`).
+- `radius`: the body's half thickness (a crawler's ground clearance).
+- `ROOT_HEAT_TO = 'body'` (the plan sets it): a crawler's belly lies beside the root bone, which would take its heat weights and pin the belly to the floor in a hop. The build gives them to `body` (`build_ultra.py`, opt-in).
+
+**How it moves:**
+- A crawler humps along: an arch runs from the tail to the head (head to tail stepping back), each segment pitched to follow its slope, so the body lies on the ground before and after it. The legs paddle in pairs.
+- The ground guard lifts the whole body by just enough that no segment joint goes below the lower of its rest height and `radius`, the head tip and the antenna tips stay above the ground, and the head's ball stays `head_reach` [`head_r`] above it (Nibblegrub's big cheeks reach further: give the farthest the head's skin reaches from `head_c`).
+- A hoverer bobs, its wings beating a whole number of times each clip (`beat` [3] a second, `flap` [30°] each side), its legs dangling; it lands for sit, sit_down and sleep (its lowest foot comes down to 1 cm), its wings folding back over its body like a roof.
+- No clip scales a bone (the `ClipBuilder.scale` `abs()` trap on tilted bones).
+
+**Options:**
+- `legs`: the left legs front to back as `{'hip', 'knee', 'foot', 'parent'}` ['chest'], mirrored to `leg<i>.{L,R}` and `shin<i>.{L,R}` and moved by angle (tiny legs don't need planting). They get no heat weights: skin them with `U.segment_weights` in `body_weight_regions`.
+- `moth_wings`: the left wings as `{'name', 'points': [root, mid, tip], 'parent'` ['chest']`, 'lag'` [0]`, 'fold'` [70°]`}`, mirrored to `<name>L.1, .2` / `<name>R.1, .2`. They beat about the body's long axis (the outer bone a little behind) and fold back over the body. Make them props (flat paddles, the stand-in's `_paddle`) skinned with `U.segment_weights`. Not `wings`: the build and the shape preview read that key as the quadruped/biped wing and would want flying clips, so an insect has no flying clips (Velvesper's hover is its normal state).
+  - An upright hoverer (Nov 18, Velvesper; each opt-in, absent = as before, the stand-in's clips key-identical in all three forms): per wing, `beat_axis` [(0, 1, 0)] is the axis the beat turns about (+ = the power stroke), `fold_axis` [(0, 0, 1)] the axis the fold (+) and the sweep (−) turn about, and `fold_beat` [25] the beat added when folded (the default droops a level moth's folded wings over its sides). The axes are world-aligned at rest with X = 0, mirrored for the right wing. Velvesper hovers upright, its wings in an upright plane swept 24° back, so it beats about its upright long axis (`beat_axis` (0, 0.25, −1): forward, dipping a little) and folds straight back about it (`fold_axis` (0, 0, 1), `fold_beat` 0). A tilted fold axis swings a hindwing's lower lobe in across the other one behind the abdomen.
+  - Both pairs on one beat axis: put each hindwing's bone root on the forewing's root's vertical line, with its mesh a few cm behind, and cancel the plan's hind phase offset with `lag` −0.08. The two pairs then beat as one surface and never cut through each other where they overlap.
+- `chains` [parent `head`]: kinds `antenna` (springs that perk up and droop; no heat weights unless `heat: True`; skin them with `U.chain_weights`), `tassel` and `tail`. `mirror: True` makes a left/right pair.
+- `props`, as every plan's. `chew` [1]: the always-chewing cheeks of a crawler (× the jaw's chew). `hop` [1], `strike_yaw`.
+- `strike_style` (24 frames, `impact` at 13), default `'roll'` for a crawler and `'dust'` for a hoverer:
+  - `'roll'`: curls into a ball (the antennae laid back) and rolls into the target (Wriggle Roll, Tumbleweed Roll). `roll_curl` [100] (Nov 18, Nibblegrub; opt-in) is how far it curls: a fat body folds into itself at a full curl (Nibblegrub 100). `roll_bones` {bone: (x, y, z)} (Nov 18, opt-in) adds rotations × the curl, so a recipe shapes its own ball (Nibblegrub: a lighter front curl, the head lifted to look out of the front, a deeper rear curl, the opening underneath).
+  - `'chomp'`: rears back with the mouth wide, then lunges and snaps shut on the impact (Nibble, Chomp, Mandible Snap).
+  - `'spray'`: rears with the head drawn back, then spits forward from `socket_mouth`.
+  - `'dust'`: the wings rise high and back, then sweep down and forward in one great beat; the dust leaves the wing tips (`socket_paw`) on the impact (Dust Puff).
+  - `'flutter'`: darts forward on a flurry of beats and bumps the target (Wing Flutter).
+  - `'beam'`: braces, the front lifting and the antennae flaring, and the head thrusts at the impact.
+- `cast_style` (36 frames, `release` at 20), default `'spray'` for a crawler and `'glow'` for a hoverer:
+  - `'spray'`: rears up high, then thrusts forward at `release` (Silk Spray).
+  - `'glow'`: rises with the wings spread wide and slow, then one great downbeat; the glow leaves `socket_core` (Moonbeam Dart, Dusk Nova).
+  - `'dust'`: beats harder and harder, sweeping forward at `release` (Drowsy Dust).
+- `ko_style`, default `'back'` for a crawler and `'flat'` for a hoverer:
+  - `'back'`: onto its back (`ko_roll` [170°]), the ends curling up and the legs wiggling, then still.
+  - `'roll'`: onto its side (`ko_roll` [80°]), curled.
+  - `'flat'`: it drifts down flat on its belly, the wings spread on the ground (their tips 1 cm up), the legs splayed.
+  - `body_width` and `ko_lift` are settled by the build. A hoverer's rest pose floats, so give `ko_ground: 0.0` (its lowest point lies on the ground), as Wishlume does.
+  - `ko_wing_bias` [none] (Nov 18, Velvesper; opt-in): the flat ko's beat in degrees, used instead of the measured one, which assumes the default level beat axis. Velvesper lies back onto its spread wings with `ko_bones` `{'body': (−78, 0, 0)}` and `ko_wing_bias` 20. Give the props to `ko_settle_meshes` too, so the wings never sink.
+- The per-clip knobs, as every plan's: `clip_bones`, `hit_bones`, `hit_heavy_bones`, `strike_bones`, `strike_windup_bones`, `ko_bones`, `ko_scale`, `win_bones` and `win_scale`.
+- `arch` [1] (Nov 18, Nibblegrub; opt-in): scales the crawl's travelling hump (Nibblegrub 1.3, so the walk doesn't read level).
+- `probes` [] (Nov 18, Nibblegrub; opt-in): more ground-guard points `[(bone, (x, y, z), lowest z)]` (rest positions), so a pitch or a paddle doesn't push a big jowl's bottom, the belly or a broad foot's toes into the ground (the guard otherwise probes only the joints, the head and the chain tips). Note that `CLIP_CALM` scales rotations after the guard has lifted the body: calming a bone the lift depends on (a tuck, a curl) can put parts back under the ground.
+
+**Clips:** the same 32 names, lengths, markers and faces as every plan.
+- **Ranch life:**
+  - idle: chewing, a glance, the tail end curling a little.
+  - idle_happy (a wide chew, bouncing), idle_tired (a yawn), idle_sad and idle_sick (a shiver).
+  - sleep: a crawler curls into a loose crescent; a hoverer lands, its wings folded up.
+  - eat: dips and munches.
+  - pet, look_around, hop, celebrate.
+- **Moving:**
+  - walk, run, dash, the steps and strafe: the hump crawl, or the hoverer's glide (leaning in, banking to strafe, the legs trailing).
+  - sidestep is a quick sideways hop or dart.
+- **Scenes:** sit_down and sit: a crawler rears up its front, the head looking ahead; a hoverer lands. dizzy.
+- **Battle:**
+  - battle_idle: a crawler's front raised and bobbing; a hoverer's strong beats.
+  - strike, cast, shove (a head-butt, or a hoverer's banked body-check).
+  - hit and hit_heavy: both ends flung up, the wings flung back.
+  - ko and win (a hop, then a proud rear; a hoverer rises in a burst of beats, its wings held high).
+- **Groups and sockets:**
+  - CLIP_CALM groups: `front`, `rear`, `shell`, each chain by its name or kind, each wing by its name (kind `wing`) and `leg` (`leg<i>`, `shin<i>`).
+  - Sockets: the game's seven (`socket_paw_L` / `_R` at the first wings' tips on a hoverer, else at the front feet), plus `socket_core` (the pivot), `socket_<wing name>`, `socket_<chain>` and `socket_<prop>`.
+
+**The cocoon** (`form: 'cocoon'`): Nibblegrub's silk cocoon hanging from a twig. It is a **Gallery-only extra** (the owner, Nov 18: "yes have a 3D cocoon as well"): look `nibblegrub-cocoon` (`breeds/nibblegrub_cocoon_ultra.py`), shipped to `public/models/monsters-ultra/` like any look but listed in `ULTRA_EXTRAS` (`src/art/ultraLooks.ts`), not `ULTRA_LOOKS`, because a registered look must have every duel clip and a cocooned monster never battles.
+- Lab → 3D Gallery shows it right after Nibblegrub with its own moves (idle and wriggle loop; split plays once and holds open). `tools/art/ultra-serve.ts` and `ultra-review.ts` treat any look ending `-cocoon` as a cocoon (its `cocoon-*` reference pictures, no duel-clip shots, framing from the recipe's `REVIEW`).
+- The form makes only `COCOON_CLIPS`:
+  - idle 120: a slow pendulum from the hang point, the silk turning.
+  - wriggle 60: twitches from inside.
+  - split 48, held, `split` marker at 30: the shell halves `shell.L` / `shell.R` (`P['shell']`, hinged near the top) swing open.
+  - The build adds blink and warns about the missing star clips.
+- `hip` is the hang point; the `front` chain runs down through it and `head` is its lowest piece. The twig is a prop on `root`.
+- Make the shell halves their own meshes over an inner core: the stand-in's single skinned body stretches when they open.
+- `shell[i]['bulge']` (Nov 18, opt-in): `{'head', 'tail', 'deg'}` adds a bone `shell.<name>.bulge` under that half (its child, so it opens with it), still in idle and split and pushed out from inside in the wriggle (the left on the first and third push, the right on the second). Weight a soft patch of the half to it; with `CLIP_CALM` `{'wriggle': {'shell': 0}}` the seam stays shut and the wriggle reads as bulges under the silk, not a crack.
+- Nibblegrub's cocoon (Nov 18) is the look `nibblegrub-cocoon` (`breeds/nibblegrub_cocoon_ultra.py`): lo_body is the inner core (rigid on `chest` with a little of the lower bones, so it stays inside the shut shell), the two thick shell halves and the silk stalk and twig are props (`shell.L` / `shell.R`, `body`, `prop.twig`). `art:ultra-review` reads any look ending in `-cocoon` as a cocoon (opt-in, `tools/art/ultra-serve.ts` `isCocoon`): its breed's `cocoon-*.png` pictures, the three-view cocoon turnaround crops, and no duel-clip shots (its own frames come from `REVIEW['clips']`), and it frames the whole-body shots by `REVIEW` centre and size (its body is the hidden core).
+
+**Joints:** root, body, the front and rear segments, head, jaw, 2 blink bones, 2 per leg (× 2 sides), 2 per wing (× 2 sides) and the chains. The crawl stand-in has 26, the hover stand-in 33 and the cocoon 12. Estimates:
+
+| Breed | Estimate |
+|---|---|
+| Nibblegrub | ≈ 26 (2 front + 2 rear segments, 3 leg pairs, 2 antenna nubs × 2) |
+| Velvesper | ≈ 31–35 (a short body, 3 leg pairs, 2 wing pairs × 2 bones, 2 feathery antennae × 2) |
+
+**Per breed:**
+- **Nibblegrub:**
+  - Size: `HEIGHT_UNITS` 120 (0.8 × Puddlepup's height, 1.5 × its length).
+  - A round head and four plump segments: the pivot between the second and third, two front and two rear bones. Six stubby legs under the front segments, antenna nubs, big chewing cheeks (`head_reach` ≈ how far they reach from `head_c`).
+  - strike `'roll'` (Wriggle Roll) or `'chomp'` (Nibble, Chomp); cast `'spray'` (Silk Spray); ko `'back'`; `hop` ≈ 0.6.
+- **Velvesper:**
+  - Size: `HEIGHT_UNITS` 165 (1.1 × Puddlepup's height, a wingspan of about 2 ×), hovering a little above the ground.
+  - A small fuzzy body (1 front, 2 rear segments), two `moth_wings` pairs (the lower ones `lag` ≈ 0.04), six little legs dangling, two feathery antennae.
+  - strike `'flutter'` (Wing Flutter) or `'dust'` (Dust Puff); cast `'glow'` (Moonbeam Dart) or `'dust'` (Drowsy Dust); ko `'flat'` with `ko_ground: 0.0`.
 
 ## Coats without fur (skin, velvet, scales, stone)
 A recipe without `head_lock_params`, `body_lock_params`, `card_params` (or with `CARD_LAYERS = 0`) and `tuft_frames` builds a body with no locks, no cards and no tuft: the detail comes from the high source's carving and plates baked into the normal map and AO, and from `paint_sources` (and `body_material`'s per-pixel marks). Every step handles it: the build makes no `lo_cards` / `lo_tuft` (the sidecar's `meshes` lists only what exists; `buildStats.cards` is 0), the bake, rig and export skip them, `tools/art/ultra.ts` ships without colour sets to promote, and the Lite copy has nothing to drop. `flow` is not needed. The game treats every mesh as optional.
@@ -706,11 +903,13 @@ Keep each mark's numbers plain (lists and floats) so `make_marks` can return the
 - **Height**: the sidecar's `restHeight` (what the game scales by) is the body's; `restHeightWithProps` is always there too (the same value when no always-worn prop tops the body; variant-only props are left out), the build logs both when they differ, the shape preview prints the height with props against the size rule, and the lineup shows it.
 - `texel_k(co)` → k per lo_body face (from the face centres; or a FACE float attribute `texel_k` on any low part): that face's texel density × k, e.g. the head 1.6, the belly 0.7 (missing or ≤ 0 = 1). The faces are grouped by k in 0.1 steps and each group is smart-projected on its own, so no island straddles two densities; an own-UV island takes its faces' mean k. Without it the pack is as before. The atlas is still one 2048² map, so raising one part's k shrinks the rest.
 - `ATLAS_ANGLE = 75` [62]: smart-project's angle limit in degrees. A larger limit cuts fewer, larger islands (Hearthwing's scaled skin: hundreds of tiny islands, 34% of the atlas used); too large and islands fold over themselves (the packer then re-projects those faces, see No shared texels).
+- `ATLAS_MARGIN = 0.008` [0.003] (Nov 17, Coilfang; opt-in, read by build_ultra): the packer's gutter between islands (a share of the atlas). Wider gutters keep a bright island (a gold crest) from bleeding into its neighbours at the small mip levels (gold hairlines on the skin at clip distance). It costs a little texel density.
 - `ATLAS_DENSITY = {'lo_fins': 0.3}` for a breed with hundreds of fin locks or big plain membranes: they take less of the atlas and the body more.
 
 ## Bake coverage and review parity
 - **WebP copies keep the colour under transparent texels** (Nov 8): libwebp threw away the RGB wherever alpha was 0. A glow look's ORM has the glow mask in its alpha, which is 0 on about 97% of the atlas, so its WebP copy shipped with AO and roughness wrecked (Hearthwing grown: AO off by 53/255, a dark band across the throat on WebP phones). Every WebP with alpha (the colour maps, a glow look's ORM, the Lite) is now encoded with its alpha raised to at least 1/255 (`WEBP_ALPHA_FLOOR` in tools/art/ultra.ts). That keeps the colour and is invisible. The KTX2 maps were never affected.
 - **Normal map encoding** (Nov 8): the shipped KTX2 normal map is UASTC (RDO 1.0, zstd 18) at 1024², not ETC1S at 2048². ETC1S's 4×4 blocks showed as square steps on smooth and scaled skin. The half-size UASTC map measures closer to the 2048² source (mean angular error Hearthwing 2.0° vs 3.1°, Puddlepup 3.4° vs 4.0°) for about 0.2 MB more per look. A full-size UASTC map would add 2–3 MB and push Tumblefox past 8 MB. The colour and ORM maps stay ETC1S; the WebP copies and the Lite stay as they were. The sidecar's textures note `ktx2Px: 1024` for the normal map.
+- **UASTC colour maps, per look** (`tools/art/ultra.ts`, opt-in; every other look ships byte for byte as before): `BASE_UASTC` ships all of a look's colour maps (the main one and every variant's) as UASTC instead of ETC1S (Scrollopus, Nov 15: small dark dots stepped into ETC1S's 4×4 blocks); `BASE_UASTC_MAIN` (Nov 18) ships only the main colour map as UASTC, the variants' staying ETC1S (Galeheron: a soft sky-blue / white blend down the neck stair-stepped; both maps UASTC came to 8.4 MB, over the 8 MB budget; the main one only stays inside it). Each UASTC colour map adds about 2 MB of KTX2. Takes effect at the ship (`npm run art:ultra -- <breed>` without `--blender` re-ships from the last export).
 - **Held poses survive the export** (Nov 7): the glTF exporter drops a bone channel that stays constant through a clip (in NLA_TRACKS mode every channel counts as baked), so a held pose came out at rest in the game: every look's `sleep`, the lowered neck in idle_tired and idle_sad, Petalphant's bud. The export stage now nudges each constant, non-rest channel invisibly on one middle frame (`export.hold_constant_channels`, logged as `export: kept N held channels…`). Bones a clip doesn't key stay unkeyed. It then checks the .glb against the actions and stops in words if a keyed, non-rest channel is missing (`export check: …`).
 - **Review shots**: the turnaround and head shots show the true rest pose (`anim.rest_pose`: every NLA track muted). The poses sheet (and `art:ultra-review`) also shows strike's wind-up at 0.3 (`pose_strike_windup`). The in-game sheet names only the parts a breed has: cast (wings open / trunk raised) and idle_happy (bud open).
 - **Decimation** (Nov 7): after the low body's decimation the build logs how much of the voxel body it kept (its box per axis, its surface area). It stops in words if any axis keeps less than 90% (a keep mask that protects too much lets the collapse take whole regions: Cobblemaw's build 1 kept only the head and neck). It warns loudly below 80% of the area.
@@ -742,6 +941,8 @@ Shelled bones (`plans/shelled.py`): `root, hips, chest, neck.1..N, head, jaw, ey
 Blob bones (`plans/blob.py`): `root, body, hips, chest, head, jaw, eye.{L,R}`, plus `sac`, `tongue.1..N`, `leg<i>/shin<i>/foot<i>.{L,R}`, each tentacle and chain `<name>.i` and `prop.<name>`. Blob sockets add `socket_core`, `socket_sac`, `socket_tongue`, `socket_<tentacle>` and `socket_<chain>`.
 Construct bones (`plans/construct.py`): `root, hips, head` (the lid, or a head on `neck.1..N`), `eye.{L,R}`, plus `jaw` (the 'neck' mode), `tongue.1..N`, `leg<i>/shin<i>/foot<i>.{L,R}`, `spin.<name>`, each chain `<name>.i` and `prop.<name>`. Construct sockets add `socket_core`, `socket_tongue`, `socket_<spinner>` and `socket_<chain>`.
 Serpent bones (`plans/serpent.py`): `root, hips, spine.1..K, neck.1..N, head, jaw, tail.1..M, eye.{L,R}`, plus `tongue.1..N`, each chain `<name>.i` and `prop.<name>`. Serpent sockets add `socket_core` (the anchor), `socket_tongue` and `socket_<chain>`.
+Avian bones (`plans/avian.py`): `root, hips, chest, neck.1..N, head, jaw, eye.{L,R}`, plus `thigh/shin/tarsus/toe.{L,R}`, `<wing>.{L,R}.1`, `.2`, `.f1..fK` for each wing pair (`wing`, then `more_wings`' names), each chain `<name>.i` and `prop.<name>`. Avian sockets add `socket_core` (the breast), `socket_foot_L` / `_R`, `socket_wing_L` / `_R`, `socket_<wing>_L` / `_R`, `socket_<chain>` and `socket_<prop>`; clips add `fly_takeoff`, `fly`, `fly_cast` and `fly_land`.
+Insect bones (`plans/insect.py`): `root, body, chest, front.1..K, hips, rear.1..M, head, jaw, eye.{L,R}`, plus `leg<i>/shin<i>.{L,R}`, `<wing>L.1`, `.2` / `<wing>R.1`, `.2`, `shell.<name>` (the cocoon), each chain `<name>.i` and `prop.<name>`. Insect sockets add `socket_core` (the pivot), `socket_<wing>`, `socket_<chain>` and `socket_<prop>`.
 Meshes: `lo_body` body, `lo_eyes` eye, `lo_fins` fin, `lo_cards` card, `lo_tuft` lock, `lo_props` prop, `lo_props_<short>` prop (a variant's own; only those built).
 Per variant: bake pass and `atlas_<short>.png`, attribute `paint_<short>`, cards' colour `Col_<short>` → glTF `COLOR_1`, `COLOR_2`, … in `VARIANTS` order, holder mesh `__variant_<id>`, its own props `lo_props_<short>` (sidecar `variants[vid].meshes`), review sheet `variant_<short>.png`. The Lite copy (`<breed>.lite.glb`, ≤ 12k triangles in all): no cards, no tuft (unless `LITE_KEEP`); the membranes simplified to a quarter; props kept as they are up to 2.4k triangles in all, else simplified to fit; the body gets the rest. `npm run art:ultra -- <breed> --lite-only` rebuilds just it from the last ship.
 

@@ -1,0 +1,327 @@
+{
+ "look": "nibblegrub-cocoon",
+ "tier": "ultra",
+ "plan": "insect",
+ "version": 2,
+ "heightUnits": 148,
+ "restHeight": 0.947,
+ "bounds": {
+  "min": [
+   -0.2499,
+   -0.25,
+   0.0955
+  ],
+  "max": [
+   0.2499,
+   0.25,
+   0.947
+  ]
+ },
+ "bones": {
+  "root": "root",
+  "head": "head",
+  "hips": "hips",
+  "eyes": [
+   "eye.L",
+   "eye.R"
+  ]
+ },
+ "sockets": {
+  "socket_head": "head",
+  "socket_crown": "head",
+  "socket_back": "chest",
+  "socket_mouth": "jaw",
+  "socket_core": "body",
+  "socket_tail": "hips",
+  "socket_paw_L": "head",
+  "socket_paw_R": "head",
+  "socket_twig": "prop.twig"
+ },
+ "springs": [],
+ "meshes": {
+  "lo_body": "body",
+  "lo_eyes": "eye",
+  "lo_props": "prop"
+ },
+ "face": {
+  "mode": "baked",
+  "note": "The cocoon: no face shows (the eyes are hidden inside the core, for the build contract only).",
+  "eyeBones": [
+   "eye.L",
+   "eye.R"
+  ],
+  "blinkClip": "blink",
+  "blinkScale": {
+   "axis": "y",
+   "closed": 0.08,
+   "closedXYZ": [
+    1,
+    0.08,
+    1
+   ]
+  },
+  "eyeColor": "#3B2F2F"
+ },
+ "variants": {},
+ "palette": {
+  "body": "#F1E9DA",
+  "belly": "#D9CBB0",
+  "accent": "#F29E4C",
+  "eye": "#3B2F2F",
+  "glow": "#5B3F7A"
+ },
+ "atlas": {
+  "strip": 0,
+  "cells": 8,
+  "lockCells": [
+   0,
+   1
+  ],
+  "cardCells": [
+   2,
+   3,
+   4,
+   5,
+   6,
+   7
+  ]
+ },
+ "review": {
+  "centre": [
+   0,
+   0,
+   0.7
+  ],
+  "size": 1.95,
+  "head": {
+   "target": [
+    0,
+    -0.05,
+    0.55
+   ],
+   "size": 1.1
+  },
+  "clips": [
+   [
+    "idle",
+    0.25
+   ],
+   [
+    "wriggle",
+    0.2
+   ],
+   [
+    "wriggle",
+    0.5
+   ],
+   [
+    "split",
+    0.5
+   ],
+   [
+    "split",
+    0.7
+   ],
+   [
+    "split",
+    1
+   ]
+  ]
+ },
+ "clips": {
+  "idle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 4,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "wriggle": {
+   "loop": true,
+   "hold": false,
+   "seconds": 2,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  },
+  "split": {
+   "loop": false,
+   "hold": true,
+   "seconds": 1.6,
+   "rootSpeed": 0,
+   "markers": [
+    {
+     "name": "split",
+     "t": 1
+    }
+   ],
+   "faces": []
+  },
+  "blink": {
+   "loop": false,
+   "hold": false,
+   "seconds": 0.2333,
+   "rootSpeed": 0,
+   "markers": [],
+   "faces": []
+  }
+ },
+ "restHeightWithProps": 1.3848,
+ "normal": {
+  "scale": 0.9
+ },
+ "body": {
+  "sheen": 0.3
+ },
+ "litePropsTris": 7200,
+ "glow": {
+  "strength": 0.9,
+  "tint": null,
+  "twinkle": 0
+ },
+ "build": "8906fae0fa",
+ "buildStats": {
+  "cards": {
+   "total": 0,
+   "layers": []
+  },
+  "tuftLocks": 0,
+  "lyingLocks": {},
+  "sourceTriangles": 2417320,
+  "uvOverlapTexels": {
+   "lo_body": 0,
+   "lo_eyes": 0,
+   "lo_props": 3
+  }
+ },
+ "files": {
+  "glb": "nibblegrub-cocoon.glb",
+  "glbWebp": "nibblegrub-cocoon.webp.glb",
+  "lite": "nibblegrub-cocoon.lite.glb"
+ },
+ "textures": {
+  "body": {
+   "base": {
+    "ktx2": "nibblegrub-cocoon_base.ktx2",
+    "webp": "nibblegrub-cocoon_base.webp",
+    "px": 2048
+   },
+   "normal": {
+    "ktx2": "nibblegrub-cocoon_normal.ktx2",
+    "webp": "nibblegrub-cocoon_normal.webp",
+    "px": 2048,
+    "ktx2Px": 1024
+   },
+   "orm": {
+    "ktx2": "nibblegrub-cocoon_orm.ktx2",
+    "webp": "nibblegrub-cocoon_orm.webp",
+    "px": 2048
+   }
+  }
+ },
+ "texturesNote": "The .glb embeds everything with film-ready materials (KHR_texture_basisu, KHR_materials_clearcoat/sheen/specular; cards alphaMode MASK; a hidden __variant_<id> mesh per variant whose map is its colour atlas; for a variant also use its colorAttribute (COLOR_1, COLOR_2, …; three: geometry attribute color_1, color_2, …) as the cards' and tuft's colour). The same textures ship as separate files: KTX2 is ETC1S everywhere (three's KTX2Loader, transcoder in public/basis/); WebP is the fallback. Colour maps are sRGB with alpha in the bottom strip (the fur-card tiles); normal (tangent space, glTF TANGENT exported) and ORM (R AO, G roughness, B clearcoat mask) are linear and shared by every variant. Every mesh uses TEXCOORD_0; flipY = false. `build` is the first 10 hex of the .glb's sha1 (append it as ?v=<build> to bust caches); `lite` is the Lite copy (WebP textures embedded, EXT_texture_webp; no cards or tuft).",
+ "budget": {
+  "triangles": 53156,
+  "trianglesByMesh": {
+   "lo_body": 9000,
+   "lo_eyes": 96,
+   "lo_props": 44060
+  },
+  "vertices": 31423,
+  "cards": 0,
+  "cardLayers": 0,
+  "joints": 14,
+  "animations": 4,
+  "animationBytes": 6696,
+  "download": {
+   "glb": 2189928,
+   "glbKtx2": 2189928,
+   "glbWebp": 1629700,
+   "ktx2": {
+    "body": 1580104,
+    "variants": 0
+   },
+   "webp": {
+    "body": 1019882,
+    "variants": 0
+   },
+   "totalKtx2": 2189928,
+   "totalWebp": 1629700
+  },
+  "textures": {
+   "body": {
+    "base": {
+     "px": 2048,
+     "ktx2": 445220,
+     "webp": 133082
+    },
+    "normal": {
+     "px": 2048,
+     "ktx2Px": 1024,
+     "ktx2": 732324,
+     "webp": 637874
+    },
+    "orm": {
+     "px": 2048,
+     "ktx2": 402560,
+     "webp": 248926
+    }
+   }
+  },
+  "attributes": {
+   "lo_body.001": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_eyes": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ],
+   "lo_props": [
+    "JOINTS_0",
+    "WEIGHTS_0",
+    "POSITION",
+    "NORMAL",
+    "TEXCOORD_0",
+    "TANGENT"
+   ]
+  },
+  "problems": []
+ },
+ "lite": {
+  "file": "nibblegrub-cocoon.lite.glb",
+  "build": "26a4da7bd0",
+  "bytes": 461928,
+  "triangles": 11852,
+  "trianglesByMesh": {
+   "lo_body": 4772,
+   "lo_eyes": 96,
+   "lo_props": 6984
+  },
+  "simplified": {
+   "lo_props": {
+    "from": 44060,
+    "to": 6984
+   },
+   "lo_body": {
+    "from": 9000,
+    "to": 4772
+   }
+  },
+  "joints": 14,
+  "animations": 4,
+  "atlasPx": 1024,
+  "textureBytes": 252080,
+  "note": "The same skeleton, sockets and clips as the Ultra .glb; WebP textures embedded (EXT_texture_webp); no fur cards and no tuft; the body, the membranes (and props over 2.4k triangles) simplified so the whole model is at most 12k triangles.",
+  "problems": []
+ }
+}

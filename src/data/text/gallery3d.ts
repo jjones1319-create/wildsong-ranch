@@ -12,6 +12,13 @@ export const GALLERY3D_TEXT = {
   breed: 'Monster',
   /** A look's name in the chips: the breed's, and "(grown)" for a grown form shown as its own look. */
   lookName: (breedName: string, grown: boolean) => (grown ? `${breedName} (grown)` : breedName),
+  /** Gallery-only extras (src/art/ultraLooks.ts ULTRA_EXTRAS), by kind: its name in the chips, and a word on its moves. */
+  extras: {
+    cocoon: {
+      name: (breedName: string) => `${breedName}'s cocoon`,
+      hint: 'Once it splits open, it stays open. Tap Split open again to watch it once more!',
+    },
+  },
   look: 'Look',
   usual: 'Usual',
   beside: 'Stand beside Puddlepup',
@@ -32,8 +39,11 @@ export const GALLERY3D_TEXT = {
     blink: '😌 Blink',
     fly_takeoff: '🪽 Take off',
     fly: '🪽 Fly',
-    fly_cast: '🔥 Fly + breathe',
+    fly_cast: '✨ Fly + cast',
     fly_land: '🪽 Land',
+    // a Gallery extra's own moves (Nibblegrub's cocoon)
+    wriggle: '🐛 Wriggle',
+    split: '🦋 Split open',
   },
   stats: (fps: number, triangles: number, dpr: number, backend: string, level: string) => `${fps.toFixed(0)} fps · ${triangles.toLocaleString('en')} triangles · ${dpr.toFixed(2)}× · ${backend} · ${level}`,
 } as const

@@ -14,7 +14,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import type { Browser, Page } from '@playwright/test'
-import { BASE, framing, isGrown, launch, readSide, refDir, refPrefix, ROOT, savePng, startServer, stopServer, viewerPage, type UltraSide } from './ultra-serve.ts'
+import { BASE, framing, isCocoon, isGrown, launch, readSide, refDir, refPrefix, ROOT, savePng, startServer, stopServer, viewerPage, type UltraSide } from './ultra-serve.ts'
 
 const args = process.argv.slice(2)
 const breed = args.find((a) => !a.startsWith('--')) ?? 'puddlepup'
@@ -29,14 +29,14 @@ interface ShotOpts {
 const slug = (vid: string) => vid.replace(/[^a-z0-9-]+/gi, '_')
 
 function shotList(side: UltraSide): [string, ShotOpts][] {
-  const F = framing(side)
+  const F = framing(side, breed)
   const B: ShotOpts = { target: F.body.target, frame: F.body.frame, studio: F.studio }
   const HEAD: ShotOpts = { target: F.head.target, frame: F.head.frame, studio: F.studio }
   const variantShots: [string, ShotOpts][] = Object.entries(side.variants).flatMap(([vid, v]) => [
     [`variant_${slug(vid)}_34`, { ...B, az: 35, el: 14, variant: vid, colorAttribute: v.colorAttribute }],
     [`variant_${slug(vid)}_back`, { ...B, az: 160, el: 14, variant: vid, colorAttribute: v.colorAttribute }],
   ] as [string, ShotOpts][])
-  return [
+  const list: [string, ShotOpts][] = [
     ['turn_front', { ...B, az: 0, el: 6 }],
     ['turn_34', { ...B, az: 35, el: 14 }],
     ['turn_side', { ...B, az: 90, el: 4 }],
@@ -75,7 +75,18 @@ function shotList(side: UltraSide): [string, ShotOpts][] {
     ] as [string, ShotOpts][] : []),
     // Nov 12: a rig with the flight clips (plans/quadruped.py FLY_CLIPS) shows them, framed for wings about 2.5 x the height
     ...(hasFlight(side) ? flightShots(side, F) : []),
+    // Nov 17 (Lootlid; opt-in, absent = as before): the recipe's REVIEW['clips'] (the sidecar's review.clips)
+    ...extraClips(side).map(([c, t]) => [`clip_extra_${c}_${Math.round(t * 100)}`, { ...B, az: 35, el: 14, clip: c, t, size: 500 }] as [string, ShotOpts]),
   ]
+  // Nov 18 (a cocoon look; opt-in, every other look as before): it has only the cocoon's clips, so the duel clips'
+  // shots are left out (its own come from REVIEW['clips'])
+  return isCocoon(breed) ? list.filter(([, o]) => !o.clip || o.clip in (side.clips ?? {})) : list
+}
+
+/** The recipe's extra review clips, [clip, t] (build_ultra.py review_frame passes REVIEW['clips'] to the sidecar). */
+function extraClips(side: UltraSide): [string, number][] {
+  const c = (side.review as { clips?: unknown } | null | undefined)?.clips
+  return Array.isArray(c) ? c.filter((e): e is [string, number] => Array.isArray(e) && typeof e[0] === 'string' && typeof e[1] === 'number') : []
 }
 
 /** The flight clips (fly, fly_takeoff, fly_cast, fly_land): plans/quadruped.py adds them only to a rig with wings. */
@@ -147,7 +158,11 @@ const GROWN_TURN = {
   turnFront: [0.0, 0.2, 0.165, 0.58], turnSide: [0.16, 0.2, 0.335, 0.58], turnBack: [0.49, 0.2, 0.16, 0.58], turnWings: [0.64, 0.2, 0.36, 0.58],
 } as const satisfies Record<string, readonly [number, number, number, number]>
 type Crop = readonly [number, number, number, number]
-const TURN: { turnFront: Crop; turnSide: Crop; turnBack: Crop; turnWings?: Crop } = isGrown(breed) ? GROWN_TURN : CROP
+/** Nov 18: a cocoon's turnaround (cocoon-2-turnaround.png, 16:9): front, side and back, left to right. */
+const COCOON_TURN = {
+  turnFront: [0.01, 0.02, 0.33, 0.9], turnSide: [0.355, 0.02, 0.31, 0.9], turnBack: [0.655, 0.02, 0.335, 0.9],
+} as const satisfies Record<string, readonly [number, number, number, number]>
+const TURN: { turnFront: Crop; turnSide: Crop; turnBack: Crop; turnWings?: Crop } = isGrown(breed) ? GROWN_TURN : isCocoon(breed) ? COCOON_TURN : CROP
 /** A reference picture's file name: `grown-` first for a grown form (refPrefix). */
 const pic = (name: string) => `${refPrefix(breed)}${name}`
 
@@ -213,13 +228,14 @@ ${ref(pic('3-faces.png'), CROP.faceNeutral, 'Reference: neutral', D)}${shotOr('h
 ${ref(pic('4-details.png'), CROP.detailHead, 'Reference: head detail', D)}${ref(pic('4-details.png'), CROP.detailEye, 'Reference: eye', D)}
 </div>
 <h2>3 · Clips (key frames)</h2>
-<div class="row">
+${isCocoon(breed) ? '' : `<div class="row">
 ${shotOr('clip_battle_idle', 'battle_idle', 230)}${shotOr('clip_walk', 'walk', 230)}${shotOr('clip_strafe_l', 'strafe_l', 230)}${shotOr('clip_strafe_r', 'strafe_r', 230)}${shotOr('clip_sidestep_l', 'sidestep_l (mid-hop)', 230)}${shotOr('clip_sidestep_r', 'sidestep_r (mid-hop)', 230)}
 ${shotOr('clip_strike_windup', 'strike (wind-up)', 230)}${shotOr('clip_strike', 'strike (impact)', 230)}${shotOr('clip_hit', 'hit', 230)}${shotOr('clip_hit_heavy', 'hit_heavy', 230)}${shotOr('clip_ko', 'ko (end)', 230)}${shotOr('clip_win', 'win (airborne)', 230)}${shotOr('clip_blink', 'blink (closed)', 230)}
-</div>
+</div>`}
 ${hasWingsOrTrunk(side) ? `<div class="row">${shotOr('clip_cast', partLabels(side).cast, 230)}${shotOr('clip_idle_happy', partLabels(side).happy, 230)}${TURN.turnWings ? ref(pic('2-turnaround.png'), TURN.turnWings, 'Reference: wings spread', 230) : ''}</div>` : ''}
 ${hasFlight(side) ? `<div class="row">${shotOr('fly_front', 'fly: wings spread, front (mid-downstroke)', 230)}${shotOr('fly_side', 'fly: side (top of the stroke)', 230)}${shotOr('fly_top', 'fly: top of the upstroke', 230)}${shotOr('clip_fly', 'fly (mid-downstroke)', 230)}${shotOr('clip_fly_up', 'fly (upstroke)', 230)}</div>
 <div class="row">${shotOr('clip_fly_takeoff', 'fly_takeoff (crouch, wings up)', 230)}${shotOr('clip_fly_takeoff_leap', 'fly_takeoff (leap)', 230)}${shotOr('clip_fly_cast', 'fly_cast (release)', 230)}${shotOr('clip_fly_land', 'fly_land (flare)', 230)}${shotOr('clip_fly_land_touch', 'fly_land (touch down)', 230)}${shotOr('tail_tip', 'the tail tip (spade)', 230)}</div>` : ''}
+${extraClips(side).length ? `<div class="row">${extraClips(side).map(([c, t]) => shotOr(`clip_extra_${c}_${Math.round(t * 100)}`, `${c} (t ${t})`, 230)).join('')}</div>` : ''}
 <h2>4 · Variants (${vids.length})</h2>
 ${variantRows || '<p>No variants.</p>'}
 <h2>5 · Other side, formats and the Lite copy</h2>
