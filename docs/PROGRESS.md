@@ -2,6 +2,51 @@
 
 One entry per milestone: what was done, what comes next, and known issues. Newest first.
 
+## The 3D world, W0: groundwork (2026-11-18) · no app change
+
+The owner, Nov 18: *"We are going to make this into a 3d game completely. The first thing to do is to go to the city, you will actually be able to walk through and go to stores with your monsters. I want to use the city that is already built in the gloomvault open world."*
+
+Then:
+- You walk out of a city gate with A into the land around the town, and on to your ranch.
+- The ranch is large and free-roam, with farming, a river to fish and more.
+
+The owner's answers:
+- Gloamvault's hero is the stand-in keeper until a creator exists.
+- Upright and sideways both.
+- Stores open with A at the door.
+- The week stays the game's turn.
+- Weather stays, with more extreme weather later.
+
+The spec is `docs/WORLD_3D.md`. The roadmap is ART_2_PLAN step 2, which takes in P10's farm and P18's Tunewick, and BUILD_PLAN "The 3D world".
+
+**Live:** nothing changes in the app. W0 is tools, tests and docs.
+
+**Done**
+- **The snapshot** (`npm run world:import`): Gloamvault Open World 0.14.1 at `588c001`, 26 files, 14 MB, in `tools/world/gloamvault/`.
+  - It holds the land and town data, the Vale kit and its manifest, the hero's two bodies and clips, and the `npc-*` townsfolk (`npc-farmer` is the keeper's stand-in).
+  - The kit's Blender scripts are in `tools/blender/world/gvkit/`.
+  - `SOURCE.json` holds every file's sha256, and `tools/world/snapshot.test.ts` guards it. The build never reads the Gloamvault folder.
+- **The ground** (`tools/world/land/`): Gloamvault's `Land.cs` height path, water, places, roads and ground slots, ported to TypeScript.
+  - All of Gloamvault's own land assertions pass on it.
+  - The hash matches the C# bit for bit (reference values from the C# compiled with PowerShell), and the noise matches to 1e-5.
+  - 13 golden heights are frozen; the town stands at 3.917 m.
+  - `vite.config.ts` now runs `tools/world/**/*.test.ts` with the rest.
+- **The map** (`npm run world:map`): `art-review/world/map.png` (the Vale) and `map-north.png` (the town and the ranch site). They match Gloamvault's own map.
+- **The town check** (`npm run art:town`):
+  - Ashbrook was re-assembled in Blender from the snapshot alone: 113 buildings, 1,756 props, 10 stations, the ground, 729 road quads and the market slab, in about 17 s.
+  - `art-review/world/town-review.png` sets it beside Gloamvault's three town screenshots from the same cameras. Positions, facing, roofs, stalls, awnings, gates and walls match, so the transform for C1 is settled.
+- **The kit rebuilds on its own** (`npm run world:kit-check`): 189 pieces and 29,271 tris, identical to the snapshot.
+- **Docs:** `docs/WORLD_3D.md` (§10 has W0's results), the BUILD_PLAN section, the ART_2_PLAN roadmap (step 2), CLAUDE.md (the snapshot rule and the commands), and CREDITS (the source, and the CC0 Human Base Meshes under the bodies).
+
+**Next:** C1 Walk Tunewick, after the owner's go:
+- the town baked and shipped in Full and Lite;
+- the keeper on the stick with a follow camera and collision, upright and sideways;
+- a "Walk the streets" way in from Town.
+
+**Known issues**
+- **The plain colour decode looks bluer and harder than Gloamvault's town.** It has the sky's ambient and no grading, wear or painted detail; C1 builds the look.
+- **Gloamvault's agility course and shop signs are still in the layout.** They go when Tunewick is laid out (WORLD_3D §10).
+
 ## Every monster in 3D, batches 5–7 (2026-11-18) · v1.27.0
 
 The owner, Nov 17: *"Finish the last sets of 2 to finish out the last ones; then I'll give notes and fixes on all of them."* So the last looks went in four pairs, each pair completely finished before the next, and all ship together: Lootlid and Coilfang (pair 8), Aurelwyrm and Gearhoot (pair 9), Galeheron and Paladove young and grown (pair 10), then Nibblegrub, its cocoon and Velvesper (pair 11). The owner, Nov 18: *"yes have a 3D cocoon as well"*, so the cocoon joined pair 11. With this release **every breed has its 3D look**, and the "every monster in 3D" rollout is complete (BUILD_PLAN "Batches 5–7"; ART_2_DETAIL §9.10).

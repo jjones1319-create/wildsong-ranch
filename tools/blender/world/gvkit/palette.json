@@ -1,0 +1,51 @@
+{
+  "about": "The shared colour palette (tools/blender/README.md §Palette). Every hero, gear, weapon and part mesh carries COLOR_0 = (slot / 15, region / 15, 0, 1) per vertex: the client's toon material reads the slot and looks the colour up in a per-character palette of 16 entries, so one material and one draw call serve the whole assembled hero. `preview` holds the colours the review renders use; the game supplies real ones (species skin tones, class colours, the grade's trim, the element).",
+  "slots": [
+    { "id": 0, "name": "skin" },
+    { "id": 1, "name": "skin2", "note": "a second skin tone: lips, Draconid belly and throat, Orc and Halfling detail" },
+    { "id": 2, "name": "hair", "note": "hair, beards, brows" },
+    { "id": 3, "name": "iris" },
+    { "id": 4, "name": "sclera" },
+    { "id": 5, "name": "ink", "note": "pupils, mouth line, deep recesses, straps' shadow lines" },
+    { "id": 6, "name": "cloth1", "note": "the class's main colour" },
+    { "id": 7, "name": "cloth2", "note": "the class's second colour" },
+    { "id": 8, "name": "leather" },
+    { "id": 9, "name": "metal", "note": "the item's base metal" },
+    { "id": 10, "name": "trim", "note": "rims and studs, coloured by the item's grade (F grey … God white-gold)" },
+    { "id": 11, "name": "glow", "emissive": true, "note": "element lines and runes" },
+    { "id": 12, "name": "wood" },
+    { "id": 13, "name": "bone", "note": "horns, claws, tusks, teeth, nails, bone fittings" },
+    { "id": 14, "name": "gem", "emissive": true },
+    { "id": 15, "name": "cloth3", "note": "a third cloth: linings, sashes, tabards' charge" }
+  ],
+  "preview": {
+    "skin": "#d8a07a",
+    "skin2": "#b9735f",
+    "hair": "#4a2e1f",
+    "iris": "#3f7fb8",
+    "sclera": "#f2ece2",
+    "ink": "#1a1218",
+    "cloth1": "#2f6e9e",
+    "cloth2": "#c8a24a",
+    "leather": "#6b4428",
+    "metal": "#9aa3ad",
+    "trim": "#d6b25a",
+    "glow": "#7fe3ff",
+    "wood": "#7a5432",
+    "bone": "#e8dcc0",
+    "gem": "#ff5a8a",
+    "cloth3": "#8e2f3a"
+  },
+  "regions": [
+    { "id": 0, "name": "head", "note": "head, face, eyes, ears, scalp" },
+    { "id": 1, "name": "neck" },
+    { "id": 2, "name": "chest", "note": "chest, upper back, shoulders' caps" },
+    { "id": 3, "name": "belly", "note": "belly, lower back, pelvis" },
+    { "id": 4, "name": "upperArms" },
+    { "id": 5, "name": "forearms" },
+    { "id": 6, "name": "hands" },
+    { "id": 7, "name": "thighs" },
+    { "id": 8, "name": "shins" },
+    { "id": 9, "name": "feet" }
+  ]
+}

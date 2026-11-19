@@ -51,6 +51,11 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - **3D monsters are built here** (Art 2.0, from P1): `npm run art:monster -- <breed>` runs `tools/blender/monsters/build.py` headless (recipes in `breeds/`, rigs and clips in `plans/`, shared helpers in `tools/blender/lib/`), then `tools/art/optimize.ts` writes `public/models/monsters/<look>.glb` + `.json` within the §3.6 budgets. Always look at the Blender sheets in `tools/blender/out/<look>/review/` and the in-game sheets from `npm run art:review -- <look>` (in `art-review/`, gitignored) before calling a monster done; Claude can't see the phone, so the sheets and the owner's notes decide.
 - **Ultra monsters** (Art 2.1, `docs/ART_2_DETAIL.md`; approved Nov 7, 2026; built in batches of 5, ART_2_PLAN §6 and §8) follow `tools/blender/monsters/breeds/RECIPE.md`. KTX2 textures use `toktx` (installed in `C:\Program Files\KTX-Software\bin\`).
 - Scripts live in `tools/blender/`; scene bakes go to `public/baked/`, models to `public/models/`. Always render a contact-sheet PNG and look at it before using a bake. Long Blender runs go in the background with a log file.
+- **The 3D world** (`docs/WORLD_3D.md`, from Nov 18, 2026) builds Tunewick, the land and the ranch from the owner's other game, **Gloamvault Open World** (`C:\Users\jjones1\Desktop\Claude\Gloamvault Open World`, Unity).
+  - A pinned snapshot lives in `tools/world/gloamvault/`, and the Vale kit's Blender scripts in `tools/blender/world/gvkit/`.
+  - **Builds and tests never read the Gloamvault folder** (GitHub's runners can't see it); only review sheets may, and only when it's there.
+  - The ground is `tools/world/land/`, a port of its `Land.cs`. It has been the reference since W0.
+  - Only geometry and land come across. Names, places and keepers stay Wildsong's.
 
 ## Audio (Sound 2.0; spec `docs/SOUND_UPGRADE.md`)
 - **Originality applies to music too:** every melody, chord progression and rhythm is written for this game. Never quote or paraphrase another work, and never name another game or its music in code or docs; describe a style only in musical words (instruments, modes, tempos). The reference games' names must not appear in any committed file (a Vitest lint checks).
@@ -69,6 +74,11 @@ An **original**, phone-first monster-raising game: raise, train and battle monst
 - Sound (see the Audio section): `npm run audio:samples` · `npm run audio:analyze` · `npm run audio:check [-- --quick | --calibrate]` · `npm run audio:review`.
 - Art 2.0: `npm run art:monster -- <breed> [--quick] [--stages model,clips,export,review]` (Blender build + optimise) · `npm run art:optimize -- <look>` · `npm run art:review -- <look> [--no-build]` (in-game sheets in `art-review/`) · `npm run art:portraits` (the precached breed pictures in `public/portraits/`).
 - Art 2.1 Ultra (`tools/blender/monsters/breeds/RECIPE.md`): `npm run art:shape -- <breed>` (a one-minute flat-colour shape preview) · `npm run art:ultra -- <breed> [--blender] [--quick] [--stages build,bake,rig,clips,export]` (Blender `monsters/build_ultra.py` + ship the model, its Lite copy and the sidecar to `public/models/monsters-ultra/`) · `npm run art:ultra -- <breed> --lite-only` (just the Lite copy, from the last ship) · `npm run art:ultra-review -- <breed>` (film-look sheet in `art-review/<breed>-ultra/`) · `npm run art:lineup -- <breed…>` (true-size lineup in `art-review/lineup/`) · `node tools/art/ultra-uv.ts <breed…> [--shipped]` (counts shared UV texels) · `npm run perf:dev` (the Performance check page). **Always start a full build through the build-slot lock** (at most 2 at once): `tools/blender/slot.sh npm run art:ultra -- <breed> --blender > <log> 2>&1 &`.
+- The 3D world (`docs/WORLD_3D.md`):
+  - `npm run world:import [-- --check | --repin]`: the Gloamvault snapshot.
+  - `npm run world:map`: the land's map, written to `art-review/world/`.
+  - `npm run art:town [-- --stages layout,build,review,sheet] [--quick]`: Tunewick from Ashbrook in Blender. In W0 this is the comparison with Gloamvault's shots, `art-review/world/town-review.png`.
+  - `npm run world:kit-check`: the Vale kit rebuilt on its own and compared with the snapshot. It's a heavy build, so run it through `slot.sh`.
 - Battle 3D (`docs/BATTLE_3D.md`): `npm run art:arena` (the Guild arena: Blender build, bake and ship to `public/models/arenas/guild/`; run `py -I tools/blender/arenas/fetch.py` once first for the CC0 sources) · `npm run art:crown -- [--stages build,bake,export,review,ship,shots]` (the Crown Amphitheatre, `public/models/arenas/crown/`) · `npm run art:battle3d [-- --no-build] [--arena crown]` (a video per camera and stats.json in `art-review/battle3d/`).
 
 ## Architecture

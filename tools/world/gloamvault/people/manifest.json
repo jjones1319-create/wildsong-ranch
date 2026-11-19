@@ -1,0 +1,783 @@
+{
+  "npc-guard": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_guard_body",
+      "humanoid_guard_chest",
+      "humanoid_guard_legs",
+      "humanoid_guard_boots",
+      "humanoid_guard_gloves",
+      "humanoid_guard_helmet",
+      "humanoid_guard_hair",
+      "humanoid_guard_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#2f5ea8",
+      "#eef0f2",
+      "#c9a227"
+    ],
+    "colors": [
+      "#2f5ea8",
+      "#eef0f2",
+      "#c9a227",
+      "#e9e2cf",
+      "#b8825a",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#4a3426",
+      "#aab2bb",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#3e2a1d"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 4109,
+    "height": 2.173
+  },
+  "npc-villager": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_villager_body",
+      "humanoid_villager_outfit",
+      "humanoid_villager_hair"
+    ],
+    "shapes": {},
+    "palette": [
+      "#7a5230",
+      "#e6dcc4",
+      "#4f5b6b"
+    ],
+    "colors": [
+      "#7a5230",
+      "#e6dcc4",
+      "#4f5b6b",
+      "#e9e2cf",
+      "#d9a882",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#4a3426",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#6b4026"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3328,
+    "height": 1.805
+  },
+  "npc-villager-b": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_villagerb_body",
+      "humanoid_villagerb_robe",
+      "humanoid_villagerb_outfit",
+      "humanoid_villagerb_hair"
+    ],
+    "shapes": {},
+    "palette": [
+      "#5d6f9c",
+      "#f1ece2",
+      "#9a4524"
+    ],
+    "colors": [
+      "#5d6f9c",
+      "#f1ece2",
+      "#9a4524",
+      "#e9e2cf",
+      "#b8825a",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#5a3a26",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#9a4524"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3870,
+    "height": 1.812,
+    "boneScales": {
+      "shoulder": 0.94,
+      "upperArm": 0.95,
+      "lowerArm": 0.95,
+      "hand": 0.92,
+      "neck": 0.96
+    }
+  },
+  "npc-banker": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_banker_body",
+      "humanoid_banker_robe",
+      "humanoid_banker_outfit",
+      "humanoid_banker_hair",
+      "humanoid_banker_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#1f4d36",
+      "#c9a227",
+      "#7a1f2b"
+    ],
+    "colors": [
+      "#1f4d36",
+      "#c9a227",
+      "#7a1f2b",
+      "#e9e2cf",
+      "#e8c4a8",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#3b2a20",
+      "#7f858c",
+      "#d4af37",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#8b8985"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3908,
+    "height": 1.82
+  },
+  "npc-shopkeeper": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_shopkeeper_body",
+      "humanoid_shopkeeper_outfit",
+      "humanoid_shopkeeper_hair",
+      "humanoid_shopkeeper_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#6b2f3a",
+      "#f0ead8",
+      "#d9c8a0"
+    ],
+    "colors": [
+      "#6b2f3a",
+      "#f0ead8",
+      "#d9c8a0",
+      "#e9e2cf",
+      "#8a5a3c",
+      "#17121a",
+      "#3f3a36",
+      "#5f7a68",
+      "#4a3426",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#2a1d16"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3443,
+    "height": 1.814,
+    "boneScales": {
+      "shoulder": 0.95,
+      "upperArm": 0.96,
+      "lowerArm": 0.96,
+      "hand": 0.93
+    }
+  },
+  "npc-smith": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_smith_body",
+      "humanoid_smith_outfit",
+      "humanoid_smith_hair",
+      "humanoid_smith_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#9a6a3c",
+      "#4d5a66",
+      "#5a3520"
+    ],
+    "colors": [
+      "#9a6a3c",
+      "#4d5a66",
+      "#5a3520",
+      "#e9e2cf",
+      "#6b4531",
+      "#17121a",
+      "#2f2c2a",
+      "#8c8273",
+      "#3a2a1e",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#1f1b1e"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3598,
+    "height": 1.793,
+    "boneScales": {
+      "shoulder": 1.06,
+      "upperArm": 1.1,
+      "lowerArm": 1.1,
+      "hand": 1.08,
+      "upperChest": 1.06,
+      "chest": 1.04,
+      "neck": 1.06
+    }
+  },
+  "npc-priest": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_priest_body",
+      "humanoid_priest_robe",
+      "humanoid_priest_cowl",
+      "humanoid_priest_sandals",
+      "humanoid_priest_hair",
+      "humanoid_priest_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#ece7da",
+      "#9c8a62",
+      "#2f5b9a"
+    ],
+    "colors": [
+      "#ece7da",
+      "#9c8a62",
+      "#2f5b9a",
+      "#e9e2cf",
+      "#d9b08c",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#6a4a30",
+      "#7f858c",
+      "#d4af37",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#e2ddd3"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 4361,
+    "height": 1.805
+  },
+  "npc-farmer": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_farmer_body",
+      "humanoid_farmer_outfit",
+      "humanoid_farmer_hat",
+      "humanoid_farmer_hair",
+      "humanoid_farmer_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#5a4a34",
+      "#ddd0b2",
+      "#d9b65f"
+    ],
+    "colors": [
+      "#5a4a34",
+      "#ddd0b2",
+      "#d9b65f",
+      "#e9e2cf",
+      "#c4906a",
+      "#17121a",
+      "#8a5a2a",
+      "#8c8273",
+      "#4a3426",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#c69a5e"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3622,
+    "height": 1.909
+  },
+  "npc-innkeeper": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_innkeeper_body",
+      "humanoid_innkeeper_outfit",
+      "humanoid_innkeeper_hair",
+      "humanoid_innkeeper_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#f3efe6",
+      "#c9b48a",
+      "#5a4636"
+    ],
+    "colors": [
+      "#f3efe6",
+      "#c9b48a",
+      "#5a4636",
+      "#f6f0dc",
+      "#e3b394",
+      "#17121a",
+      "#3b3a40",
+      "#8c8273",
+      "#4a3426",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#a8502a"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3978,
+    "height": 1.805,
+    "boneScales": {
+      "chest": 1.08,
+      "upperChest": 1.06,
+      "shoulder": 1.04,
+      "upperArm": 1.05,
+      "lowerArm": 1.03,
+      "neck": 1.06
+    }
+  },
+  "npc-ranger": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_ranger_body",
+      "humanoid_ranger_outfit",
+      "humanoid_ranger_hood",
+      "humanoid_ranger_hair",
+      "humanoid_ranger_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#3d6338",
+      "#6e4f2f",
+      "#c9b27a"
+    ],
+    "colors": [
+      "#3d6338",
+      "#6e4f2f",
+      "#c9b27a",
+      "#e9e2cf",
+      "#c99a78",
+      "#17121a",
+      "#4a4136",
+      "#b9b096",
+      "#4a3424",
+      "#7f858c",
+      "#b9933f",
+      "#7fe3ff",
+      "#7a5532",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#2b3f27"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3826,
+    "height": 2.015
+  },
+  "npc-miner": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_miner_body",
+      "humanoid_miner_outfit",
+      "humanoid_miner_cap",
+      "humanoid_miner_hair",
+      "humanoid_miner_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#5a3b24",
+      "#7b8794",
+      "#8b3a26"
+    ],
+    "colors": [
+      "#5a3b24",
+      "#7b8794",
+      "#8b3a26",
+      "#efe8d8",
+      "#c08a66",
+      "#17121a",
+      "#3f3830",
+      "#8c8273",
+      "#3a2a1e",
+      "#6f747a",
+      "#b9933f",
+      "#ffd27a",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#2e2420"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 4089,
+    "height": 1.866
+  },
+  "npc-merchant": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_merchant_body",
+      "humanoid_merchant_outfit",
+      "humanoid_merchant_hat",
+      "humanoid_merchant_hair",
+      "humanoid_merchant_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#7a3b2a",
+      "#c8b98f",
+      "#5a4a3a"
+    ],
+    "colors": [
+      "#7a3b2a",
+      "#c8b98f",
+      "#5a4a3a",
+      "#e9e2cf",
+      "#c99a78",
+      "#17121a",
+      "#3a3330",
+      "#e6dcc4",
+      "#4a3426",
+      "#8a8f94",
+      "#b0803a",
+      "#7fe3ff",
+      "#6a4a2e",
+      "#e9e2cf",
+      "#9ff3ff",
+      "#2e4a3a"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3999,
+    "height": 1.917,
+    "boneScales": {
+      "chest": 1.04,
+      "upperChest": 1.03
+    }
+  },
+  "npc-woodcutter": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_woodcutter_body",
+      "humanoid_woodcutter_outfit",
+      "humanoid_woodcutter_hair",
+      "humanoid_woodcutter_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#6b5a3c",
+      "#d8cfae",
+      "#8a3a2a"
+    ],
+    "colors": [
+      "#6b5a3c",
+      "#d8cfae",
+      "#8a3a2a",
+      "#e9e2cf",
+      "#c08a66",
+      "#17121a",
+      "#3a3330",
+      "#8c8273",
+      "#5a3a24",
+      "#9aa0a6",
+      "#b9933f",
+      "#7fe3ff",
+      "#7a5532",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#4a3222"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 4222,
+    "height": 1.813,
+    "boneScales": {
+      "shoulder": 1.06,
+      "upperArm": 1.08,
+      "lowerArm": 1.08,
+      "hand": 1.06,
+      "upperChest": 1.05,
+      "chest": 1.04
+    }
+  },
+  "npc-lamplighter": {
+    "base": "humanoid",
+    "scale": 1,
+    "parts": [
+      "humanoid_lamplighter_body",
+      "humanoid_lamplighter_outfit",
+      "humanoid_lamplighter_cap",
+      "humanoid_lamplighter_hair",
+      "humanoid_lamplighter_props"
+    ],
+    "shapes": {},
+    "palette": [
+      "#2f3a4a",
+      "#8a7a5a",
+      "#ffd27a"
+    ],
+    "colors": [
+      "#2f3a4a",
+      "#8a7a5a",
+      "#ffd27a",
+      "#e9e2cf",
+      "#d9b08c",
+      "#17121a",
+      "#2a2622",
+      "#d6cfbf",
+      "#3a2a1e",
+      "#5f5a58",
+      "#b9933f",
+      "#ffd27a",
+      "#6a4a2e",
+      "#e3d6b4",
+      "#9ff3ff",
+      "#5a4a3a"
+    ],
+    "clips": "hero",
+    "clipMap": {
+      "Idle": "Idle_Relaxed",
+      "Move": "Walk",
+      "Attack1": "Attack_Light",
+      "Attack2": "Attack_Heavy",
+      "Hit": "Hit",
+      "Death": "Defeat",
+      "Flee": "Run",
+      "Walk": "Walk",
+      "Interact": "Interact",
+      "Talk": "Interact",
+      "Victory": "Victory",
+      "Cheer": "Victory"
+    },
+    "clipSpeed": 1,
+    "tris": 3652,
+    "height": 2.175
+  }
+}

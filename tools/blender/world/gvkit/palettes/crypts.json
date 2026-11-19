@@ -1,0 +1,40 @@
+{
+  "zone": "crypts",
+  "about": "The Crypts (Gravehollow F4–6): bone-white and sickly green over cold grey-green stone (11 §1, 07 §2.2). Written by tools/blender/env/build_kit_crypts.py.",
+  "names": [
+    "stone",
+    "darkStone",
+    "wood",
+    "darkWood",
+    "iron",
+    "ink",
+    "cloth1",
+    "cloth2",
+    "rope",
+    "brightMetal",
+    "brass",
+    "glow",
+    "moss",
+    "bone",
+    "gem",
+    "water"
+  ],
+  "colours": [
+    "#77867f",
+    "#46555a",
+    "#7a6650",
+    "#4a3e33",
+    "#545d62",
+    "#0d1315",
+    "#6a5878",
+    "#d6cfba",
+    "#7a6448",
+    "#b4bcbe",
+    "#a08a50",
+    "#8fe3a1",
+    "#3f8573",
+    "#dccfb2",
+    "#cfe6f2",
+    "#9cc6b3"
+  ]
+}

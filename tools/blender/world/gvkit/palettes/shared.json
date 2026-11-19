@@ -1,0 +1,40 @@
+{
+  "zone": "shared",
+  "about": "A neutral palette for reviewing the shared pieces (shr_). In game a shared piece takes the palette of the zone it stands in.",
+  "names": [
+    "stone",
+    "darkStone",
+    "wood",
+    "darkWood",
+    "iron",
+    "ink",
+    "cloth1",
+    "cloth2",
+    "rope",
+    "brightMetal",
+    "brass",
+    "glow",
+    "moss",
+    "bone",
+    "gem",
+    "water"
+  ],
+  "colours": [
+    "#8a8378",
+    "#5e5a55",
+    "#7a5634",
+    "#4b3424",
+    "#45454d",
+    "#1d1b1c",
+    "#7a2e2a",
+    "#a89a78",
+    "#9a8656",
+    "#b0b3ba",
+    "#d2a13c",
+    "#ffb347",
+    "#4f6b40",
+    "#ddd3bc",
+    "#7fd4ff",
+    "#2f4a50"
+  ]
+}

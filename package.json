@@ -37,7 +37,11 @@
     "art:shape": "node tools/art/shape.ts",
     "art:lineup": "node tools/art/lineup.ts",
     "art:arena": "node tools/blender/arenas/guild.ts",
-    "art:crown": "node tools/blender/arenas/crown.ts"
+    "art:crown": "node tools/blender/arenas/crown.ts",
+    "art:town": "node tools/blender/world/town.ts",
+    "world:import": "node tools/world/import-gloamvault.ts",
+    "world:map": "node tools/world/map.ts",
+    "world:kit-check": "node tools/world/kit-check.ts"
   },
   "dependencies": {
     "@preact/signals": "^2.11.3",

@@ -1,0 +1,4972 @@
+{
+  "zone": "vale",
+  "about": "The Vale (OPEN-WORLD-BRIEF §4): a green and gold open country — grass #6F9A44, leaf #5F8A3C, pine #2F5A3A, packed-earth roads #6B5538, plaster #E2D8C0 and thatch #B8945A on the town, field stone #8A8578, sand #C7B07A at the pond, water #4F8A96. Slot 12 is the ground's grass; slot 1 the roads. Conventions: tools/blender/env/kit_lib.py; build_kit_vale.py.",
+  "palette": [
+    "#8a8578",
+    "#6b5538",
+    "#9c7a4e",
+    "#5a4330",
+    "#4a4a52",
+    "#1e1b1a",
+    "#5f8a3c",
+    "#2f5a3a",
+    "#b8945a",
+    "#b0b3ba",
+    "#c7b07a",
+    "#ffb347",
+    "#6f9a44",
+    "#e2d8c0",
+    "#ff7a3a",
+    "#4f8a96"
+  ],
+  "shell": null,
+  "pieces": {
+    "vale_pine": {
+      "tris": 94,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.352,
+          0.0,
+          -1.253
+        ],
+        "max": [
+          1.415,
+          5.2,
+          1.26
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": false,
+      "canopy": 5.2
+    },
+    "vale_oak": {
+      "tris": 174,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.269,
+          -0.011,
+          -2.208
+        ],
+        "max": [
+          1.998,
+          5.136,
+          2.0
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 5.2
+    },
+    "vale_rock_small": {
+      "tris": 14,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.302,
+          -0.003,
+          -0.333
+        ],
+        "max": [
+          0.353,
+          0.384,
+          0.269
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_rock_big": {
+      "tris": 36,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.958,
+          0.007,
+          -0.729
+        ],
+        "max": [
+          1.077,
+          1.148,
+          0.791
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_grass_tuft": {
+      "tris": 6,
+      "budget": 8,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.122,
+          0.0,
+          -0.169
+        ],
+        "max": [
+          0.129,
+          0.386,
+          0.071
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true
+    },
+    "vale_reeds": {
+      "tris": 44,
+      "budget": 50,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.116,
+          0.0,
+          -0.13
+        ],
+        "max": [
+          0.26,
+          1.387,
+          0.174
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true
+    },
+    "vale_house_small": {
+      "tris": 242,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.35,
+          0.0,
+          -2.85
+        ],
+        "max": [
+          3.35,
+          5.1,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        5.0
+      ],
+      "door": [
+        -1.2,
+        0.0,
+        2.5
+      ],
+      "chimney": [
+        1.95,
+        5.1,
+        -0.95
+      ]
+    },
+    "vale_house_long": {
+      "tris": 306,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.85,
+          0.0,
+          -3.1
+        ],
+        "max": [
+          4.85,
+          5.6,
+          3.65
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        9.0,
+        5.5
+      ]
+    },
+    "vale_barn": {
+      "tris": 238,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.45,
+          0.0,
+          -3.45
+        ],
+        "max": [
+          4.45,
+          5.6,
+          3.45
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.0,
+        6.0
+      ]
+    },
+    "vale_smithy": {
+      "tris": 207,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.5,
+          0.0,
+          -3.0
+        ],
+        "max": [
+          3.5,
+          4.4,
+          3.0
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_0",
+          "kind": "fire",
+          "at": [
+            2.0,
+            0.9,
+            -1.0
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_0",
+          "kind": "glow",
+          "at": [
+            2.0,
+            0.85,
+            -1.05
+          ]
+        }
+      ],
+      "footprint": [
+        6.0,
+        5.0
+      ],
+      "open": true
+    },
+    "vale_well": {
+      "tris": 156,
+      "budget": 170,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.95,
+          0.0,
+          -1.0
+        ],
+        "max": [
+          0.95,
+          2.9,
+          1.0
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.0,
+        2.0
+      ]
+    },
+    "vale_shrine": {
+      "tris": 64,
+      "budget": 70,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.7,
+          0.0,
+          -0.7
+        ],
+        "max": [
+          0.7,
+          2.7,
+          0.7
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_1",
+          "kind": "candle",
+          "at": [
+            0.0,
+            1.1,
+            0.3
+          ]
+        }
+      ],
+      "fx": [],
+      "footprint": [
+        1.4,
+        1.4
+      ]
+    },
+    "vale_stall": {
+      "tris": 132,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.85,
+          0.0,
+          -1.2
+        ],
+        "max": [
+          1.85,
+          2.45,
+          1.5
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.6,
+        2.6
+      ]
+    },
+    "vale_fence": {
+      "tris": 48,
+      "budget": 50,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.1,
+          0.0,
+          -0.07
+        ],
+        "max": [
+          1.1,
+          1.15,
+          0.07
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 2.0
+    },
+    "vale_bridge": {
+      "tris": 264,
+      "budget": 280,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.5,
+          0.0,
+          -1.17
+        ],
+        "max": [
+          2.5,
+          1.3,
+          1.17
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 5.0,
+      "walkable": 0.58
+    },
+    "vale_campfire": {
+      "tris": 142,
+      "budget": 150,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.654,
+          0.015,
+          -0.612
+        ],
+        "max": [
+          0.658,
+          0.62,
+          0.653
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_2",
+          "kind": "fire",
+          "at": [
+            0.0,
+            0.4,
+            0.0
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_1",
+          "kind": "glow",
+          "at": [
+            0.0,
+            0.35,
+            0.0
+          ]
+        }
+      ]
+    },
+    "vale_hay_bale": {
+      "tris": 36,
+      "budget": 40,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.55,
+          0.0,
+          -0.512
+        ],
+        "max": [
+          0.55,
+          1.009,
+          0.512
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_scarecrow": {
+      "tris": 88,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.8,
+          0.0,
+          -0.331
+        ],
+        "max": [
+          0.8,
+          2.42,
+          0.331
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_signpost": {
+      "tris": 82,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.24,
+          0.0,
+          -0.22
+        ],
+        "max": [
+          1.24,
+          3.05,
+          1.24
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.48,
+        2.48
+      ],
+      "boards": [
+        {
+          "at": [
+            0.575,
+            2.46,
+            0.037
+          ],
+          "yaw": 0,
+          "size": [
+            0.85,
+            0.24
+          ]
+        },
+        {
+          "at": [
+            0.575,
+            2.46,
+            -0.037
+          ],
+          "yaw": 180,
+          "size": [
+            0.85,
+            0.24
+          ]
+        },
+        {
+          "at": [
+            -0.575,
+            2.06,
+            -0.037
+          ],
+          "yaw": 180,
+          "size": [
+            0.85,
+            0.24
+          ]
+        },
+        {
+          "at": [
+            -0.575,
+            2.06,
+            0.037
+          ],
+          "yaw": 0,
+          "size": [
+            0.85,
+            0.24
+          ]
+        },
+        {
+          "at": [
+            -0.037,
+            1.66,
+            0.575
+          ],
+          "yaw": 270,
+          "size": [
+            0.85,
+            0.24
+          ]
+        },
+        {
+          "at": [
+            0.037,
+            1.66,
+            0.575
+          ],
+          "yaw": 90,
+          "size": [
+            0.85,
+            0.24
+          ]
+        }
+      ]
+    },
+    "vale_rock_copper": {
+      "tris": 92,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.685,
+          0.019,
+          -0.598
+        ],
+        "max": [
+          0.809,
+          0.975,
+          0.758
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_rock_tin": {
+      "tris": 92,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.77,
+          0.019,
+          -0.61
+        ],
+        "max": [
+          0.761,
+          0.874,
+          0.687
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_rock_iron": {
+      "tris": 92,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.646,
+          0.019,
+          -0.613
+        ],
+        "max": [
+          0.69,
+          0.924,
+          0.741
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_rock_coal": {
+      "tris": 92,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.751,
+          0.019,
+          -0.686
+        ],
+        "max": [
+          0.768,
+          0.905,
+          0.687
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_rock_empty": {
+      "tris": 18,
+      "budget": 40,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.494,
+          0.025,
+          -0.579
+        ],
+        "max": [
+          0.84,
+          0.779,
+          0.549
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_stump": {
+      "tris": 94,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.402,
+          -0.03,
+          -0.344
+        ],
+        "max": [
+          0.48,
+          0.42,
+          0.479
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_fishing_spot": {
+      "tris": 108,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.985,
+          -0.052,
+          -0.96
+        ],
+        "max": [
+          0.984,
+          0.052,
+          0.96
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true,
+      "node": true,
+      "onWater": true
+    },
+    "vale_snare_spot": {
+      "tris": 54,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.33,
+          0.0,
+          -0.325
+        ],
+        "max": [
+          0.33,
+          0.56,
+          0.03
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true,
+      "node": true
+    },
+    "vale_berry_bush": {
+      "tris": 104,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.54,
+          0.03,
+          -0.509
+        ],
+        "max": [
+          0.571,
+          0.757,
+          0.434
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_mushrooms": {
+      "tris": 260,
+      "budget": 280,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.29,
+          0.0,
+          -0.26
+        ],
+        "max": [
+          0.32,
+          0.34,
+          0.3
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_herb_patch": {
+      "tris": 81,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.429,
+          0.0,
+          -0.297
+        ],
+        "max": [
+          0.224,
+          0.295,
+          0.274
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true,
+      "node": true
+    },
+    "vale_furnace": {
+      "tris": 120,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.9,
+          0.0,
+          -0.8
+        ],
+        "max": [
+          0.9,
+          2.64,
+          0.8
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_3",
+          "kind": "fire",
+          "at": [
+            0.0,
+            0.75,
+            0.85
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_2",
+          "kind": "glow",
+          "at": [
+            0.0,
+            0.72,
+            0.78
+          ]
+        }
+      ],
+      "node": true,
+      "footprint": [
+        1.8,
+        1.6
+      ]
+    },
+    "vale_anvil": {
+      "tris": 49,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.47,
+          0.0,
+          -0.33
+        ],
+        "max": [
+          0.45,
+          0.905,
+          0.33
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        1.0,
+        0.7
+      ]
+    },
+    "vale_altar": {
+      "tris": 156,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.017,
+          -0.015,
+          -0.96
+        ],
+        "max": [
+          1.062,
+          1.051,
+          1.04
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [
+        {
+          "name": "fx_3",
+          "kind": "glow",
+          "at": [
+            0.0,
+            0.98,
+            0.0
+          ]
+        }
+      ],
+      "node": true,
+      "footprint": [
+        2.5,
+        2.5
+      ]
+    },
+    "vale_rock_essence": {
+      "tris": 92,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.774,
+          0.019,
+          -0.659
+        ],
+        "max": [
+          0.878,
+          0.934,
+          0.602
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_bank": {
+      "tris": 418,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.5,
+          0.0,
+          -3.8
+        ],
+        "max": [
+          5.5,
+          9.45,
+          4.399
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        11.0,
+        8.0
+      ],
+      "door": [
+        0.0,
+        0.45,
+        3.45
+      ],
+      "chimney": [
+        2.95,
+        9.45,
+        -1.95
+      ]
+    },
+    "vale_store": {
+      "tris": 298,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_inn": {
+      "tris": 388,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.2,
+          0.0,
+          -3.75
+        ],
+        "max": [
+          5.2,
+          8.68,
+          4.25
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        10.0,
+        7.0
+      ]
+    },
+    "vale_chapel": {
+      "tris": 360,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.6,
+          0.0,
+          -5.5
+        ],
+        "max": [
+          3.6,
+          11.12,
+          5.55
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        11.0
+      ]
+    },
+    "vale_hall": {
+      "tris": 278,
+      "budget": 380,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -6.65,
+          0.0,
+          -3.55
+        ],
+        "max": [
+          6.65,
+          7.7,
+          3.75
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        13.0,
+        7.0
+      ]
+    },
+    "vale_house_tall": {
+      "tris": 264,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.25,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.25,
+          8.1,
+          3.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        6.0
+      ],
+      "door": [
+        -1.1,
+        0.12,
+        2.8
+      ],
+      "chimney": [
+        1.55,
+        8.15,
+        -1.15
+      ]
+    },
+    "vale_guardhouse": {
+      "tris": 208,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.5,
+          0.0,
+          -2.5
+        ],
+        "max": [
+          2.5,
+          6.0,
+          2.5
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        5.0
+      ]
+    },
+    "vale_palisade": {
+      "tris": 84,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.25
+        ],
+        "max": [
+          2.0,
+          2.877,
+          0.25
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 4.0,
+      "footprint": [
+        4.0,
+        0.5
+      ]
+    },
+    "vale_wall_tower": {
+      "tris": 106,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.95,
+          0.0,
+          -1.95
+        ],
+        "max": [
+          1.95,
+          7.8,
+          1.95
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        3.0
+      ]
+    },
+    "vale_gate_arch": {
+      "tris": 66,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.2,
+          3.32,
+          -0.75
+        ],
+        "max": [
+          4.2,
+          5.6,
+          0.75
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_4",
+          "kind": "lamp",
+          "at": [
+            0.0,
+            3.52,
+            0.0
+          ]
+        }
+      ],
+      "fx": [],
+      "footprint": [
+        8.0,
+        1.5
+      ],
+      "span": 8.0,
+      "no_collider": true
+    },
+    "vale_fountain": {
+      "tris": 216,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.78,
+          0.0,
+          -1.693
+        ],
+        "max": [
+          1.78,
+          2.28,
+          1.693
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.6,
+        3.6
+      ]
+    },
+    "vale_lamppost": {
+      "tris": 51,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.2,
+          0.0,
+          -0.2
+        ],
+        "max": [
+          0.2,
+          3.34,
+          0.2
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_5",
+          "kind": "lamp",
+          "at": [
+            0.0,
+            2.8,
+            0.0
+          ]
+        }
+      ],
+      "fx": []
+    },
+    "vale_barrel": {
+      "tris": 47,
+      "budget": 50,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.333,
+          0.0,
+          -0.361
+        ],
+        "max": [
+          0.37,
+          0.8,
+          0.361
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_crate": {
+      "tris": 22,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.362,
+          0.0,
+          -0.362
+        ],
+        "max": [
+          0.362,
+          0.712,
+          0.362
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_coop": {
+      "tris": 82,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.9
+        ],
+        "max": [
+          1.2,
+          1.572,
+          0.9
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        1.8
+      ]
+    },
+    "vale_minecart": {
+      "tris": 106,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.6
+        ],
+        "max": [
+          1.2,
+          0.95,
+          0.6
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        1.2
+      ]
+    },
+    "vale_mine_frame": {
+      "tris": 168,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.938,
+          -0.02,
+          -2.085
+        ],
+        "max": [
+          2.938,
+          4.803,
+          2.085
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.88,
+        4.17
+      ]
+    },
+    "vale_bush": {
+      "tris": 46,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.619,
+          -0.02,
+          -0.5
+        ],
+        "max": [
+          0.619,
+          0.872,
+          0.543
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_loot_sack": {
+      "tris": 51,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.275,
+          0.0,
+          -0.15
+        ],
+        "max": [
+          0.31,
+          0.45,
+          0.295
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_loot_bones": {
+      "tris": 58,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.27,
+          -0.001,
+          -0.197
+        ],
+        "max": [
+          0.205,
+          0.158,
+          0.272
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_loot_coins": {
+      "tris": 41,
+      "budget": 50,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.2,
+          0.0,
+          -0.194
+        ],
+        "max": [
+          0.25,
+          0.101,
+          0.193
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": []
+    },
+    "vale_workshop": {
+      "tris": 206,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.4,
+          -0.25,
+          -3.4
+        ],
+        "max": [
+          4.4,
+          5.4,
+          3.95
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.0,
+        6.0
+      ],
+      "open": true
+    },
+    "vale_workshop_slate": {
+      "tris": 246,
+      "budget": 280,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.4,
+          -0.25,
+          -3.58
+        ],
+        "max": [
+          4.4,
+          6.26,
+          3.95
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.0,
+        6.0
+      ],
+      "open": true
+    },
+    "vale_workbench": {
+      "tris": 124,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.0,
+          -0.003,
+          -0.45
+        ],
+        "max": [
+          1.0,
+          1.09,
+          0.58
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        2.0,
+        1.16
+      ]
+    },
+    "vale_tanning_rack": {
+      "tris": 58,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.76,
+          -0.011,
+          -0.983
+        ],
+        "max": [
+          0.76,
+          1.985,
+          0.059
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.52,
+        1.97
+      ]
+    },
+    "vale_spinning_wheel": {
+      "tris": 88,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.521,
+          -0.007,
+          -0.19
+        ],
+        "max": [
+          0.637,
+          1.257,
+          0.19
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.27,
+        0.38
+      ]
+    },
+    "vale_fletching_bench": {
+      "tris": 126,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.95,
+          -0.01,
+          -0.565
+        ],
+        "max": [
+          1.19,
+          1.405,
+          0.34
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        2.38,
+        1.13
+      ]
+    },
+    "vale_alchemy_table": {
+      "tris": 137,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.8,
+          0.0,
+          -0.4
+        ],
+        "max": [
+          0.8,
+          1.31,
+          0.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        1.6,
+        0.8
+      ]
+    },
+    "vale_range": {
+      "tris": 135,
+      "budget": 150,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.15,
+          0.0,
+          -0.6
+        ],
+        "max": [
+          0.9,
+          2.4,
+          0.62
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_6",
+          "kind": "fire",
+          "at": [
+            -0.35,
+            0.5,
+            0.66
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_4",
+          "kind": "glow",
+          "at": [
+            -0.35,
+            0.5,
+            0.58
+          ]
+        }
+      ],
+      "node": true,
+      "footprint": [
+        2.3,
+        1.24
+      ]
+    },
+    "vale_shop_arms": {
+      "tris": 316,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_shop_bows": {
+      "tris": 293,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          -0.006,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_shop_runes": {
+      "tris": 266,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_shop_larder": {
+      "tris": 307,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_shop_apothecary": {
+      "tris": 301,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.85,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.85,
+          5.3,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.0,
+        6.0
+      ]
+    },
+    "vale_wall_stone": {
+      "tris": 102,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.0,
+          0.0,
+          -1.0
+        ],
+        "max": [
+          2.25,
+          5.4,
+          1.0
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 4.0,
+      "footprint": [
+        4.5,
+        2.0
+      ]
+    },
+    "vale_wall_tower_stone": {
+      "tris": 144,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.5,
+          0.0,
+          -2.5
+        ],
+        "max": [
+          2.5,
+          8.05,
+          2.5
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        4.4,
+        4.4
+      ]
+    },
+    "vale_gate_tower": {
+      "tris": 184,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.85,
+          0.0,
+          -2.85
+        ],
+        "max": [
+          2.85,
+          12.2,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        5.0
+      ]
+    },
+    "vale_gate_arch_stone": {
+      "tris": 120,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.0,
+          4.42,
+          -1.4
+        ],
+        "max": [
+          4.0,
+          7.7,
+          1.4
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_7",
+          "kind": "lamp",
+          "at": [
+            0.0,
+            4.62,
+            0.0
+          ]
+        }
+      ],
+      "fx": [],
+      "footprint": [
+        8.0,
+        2.8
+      ],
+      "span": 8.0,
+      "no_collider": true
+    },
+    "vale_keep": {
+      "tris": 383,
+      "budget": 450,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -6.478,
+          0.0,
+          -6.478
+        ],
+        "max": [
+          6.478,
+          17.6,
+          6.478
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        12.96,
+        12.96
+      ]
+    },
+    "vale_church": {
+      "tris": 451,
+      "budget": 500,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -10.5,
+          0.0,
+          -4.55
+        ],
+        "max": [
+          10.4,
+          22.4,
+          4.55
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        21.0,
+        9.1
+      ]
+    },
+    "vale_guildhall": {
+      "tris": 379,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -6.45,
+          0.0,
+          -4.4
+        ],
+        "max": [
+          6.45,
+          12.3,
+          4.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        12.2,
+        8.1
+      ]
+    },
+    "vale_library": {
+      "tris": 292,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.85,
+          0.0,
+          -3.85
+        ],
+        "max": [
+          4.85,
+          10.8,
+          4.05
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        9.0,
+        7.0
+      ]
+    },
+    "vale_stables": {
+      "tris": 244,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.0,
+          0.0,
+          -3.3
+        ],
+        "max": [
+          5.0,
+          6.6,
+          3.8
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        9.0,
+        5.6
+      ]
+    },
+    "vale_watermill": {
+      "tris": 276,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.0,
+          0.0,
+          -5.0
+        ],
+        "max": [
+          5.8,
+          8.9,
+          4.152
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        9.2,
+        7.2
+      ]
+    },
+    "vale_tannery": {
+      "tris": 326,
+      "budget": 360,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.8,
+          -0.083,
+          -2.9
+        ],
+        "max": [
+          4.8,
+          5.5,
+          4.452
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.8,
+        5.0
+      ]
+    },
+    "vale_market_hall": {
+      "tris": 284,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.92,
+          0.0,
+          -3.15
+        ],
+        "max": [
+          4.92,
+          8.3,
+          3.15
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        9.44,
+        5.9
+      ]
+    },
+    "vale_market_cross": {
+      "tris": 88,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.386,
+          0.0,
+          -1.386
+        ],
+        "max": [
+          1.386,
+          4.5,
+          1.386
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        3.0
+      ]
+    },
+    "vale_stocks": {
+      "tris": 48,
+      "budget": 50,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.82,
+          0.0,
+          -0.65
+        ],
+        "max": [
+          0.82,
+          0.95,
+          0.07
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.64,
+        1.3
+      ]
+    },
+    "vale_low_wall": {
+      "tris": 20,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.0,
+          0.0,
+          -0.32
+        ],
+        "max": [
+          1.0,
+          0.98,
+          0.32
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 2.0,
+      "footprint": [
+        2.0,
+        0.64
+      ]
+    },
+    "vale_gravestone": {
+      "tris": 24,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.253,
+          -0.177,
+          -0.152
+        ],
+        "max": [
+          0.292,
+          0.769,
+          0.078
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.6,
+        0.3
+      ]
+    },
+    "vale_garden_plot": {
+      "tris": 136,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.54,
+          0.0,
+          -2.04
+        ],
+        "max": [
+          2.54,
+          1.704,
+          2.04
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        4.0
+      ]
+    },
+    "vale_cart": {
+      "tris": 86,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.558,
+          0.0,
+          -0.61
+        ],
+        "max": [
+          0.75,
+          0.969,
+          0.61
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.12,
+        1.22
+      ]
+    },
+    "vale_arena_stand": {
+      "tris": 121,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.484,
+          0.0,
+          -2.506
+        ],
+        "max": [
+          3.787,
+          6.5,
+          2.5
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.97,
+        5.0
+      ],
+      "ring": {
+        "radius": 19.5,
+        "segments": 20
+      }
+    },
+    "vale_arena_arch": {
+      "tris": 122,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.02,
+          0.0,
+          -0.72
+        ],
+        "max": [
+          3.02,
+          6.3,
+          0.72
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_8",
+          "kind": "fire",
+          "at": [
+            -2.7,
+            5.9,
+            0.0
+          ]
+        },
+        {
+          "name": "light_9",
+          "kind": "fire",
+          "at": [
+            2.7,
+            5.9,
+            0.0
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_5",
+          "kind": "glow",
+          "at": [
+            -2.7,
+            5.8,
+            0.0
+          ]
+        },
+        {
+          "name": "fx_6",
+          "kind": "glow",
+          "at": [
+            2.7,
+            5.8,
+            0.0
+          ]
+        }
+      ],
+      "footprint": [
+        6.0,
+        1.4
+      ],
+      "no_collider": true
+    },
+    "vale_arena_beast_gate": {
+      "tris": 123,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.0,
+          0.0,
+          -0.8
+        ],
+        "max": [
+          3.0,
+          4.6,
+          0.816
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        1.6
+      ]
+    },
+    "vale_tent": {
+      "tris": 160,
+      "budget": 180,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.38,
+          -0.04,
+          -1.986
+        ],
+        "max": [
+          1.365,
+          2.36,
+          1.986
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        4.0
+      ]
+    },
+    "vale_tent_large": {
+      "tris": 202,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.48,
+          -0.04,
+          -2.996
+        ],
+        "max": [
+          2.465,
+          3.58,
+          2.996
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        6.0
+      ]
+    },
+    "vale_toll_ruin": {
+      "tris": 574,
+      "budget": 600,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.6,
+          0.0,
+          -2.6
+        ],
+        "max": [
+          3.873,
+          4.0,
+          2.98
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.0,
+        6.0
+      ],
+      "door": {
+        "x": -1.0,
+        "width": 1.2
+      }
+    },
+    "vale_ruin_wall": {
+      "tris": 74,
+      "budget": 80,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.0,
+          0.0,
+          -0.382
+        ],
+        "max": [
+          2.0,
+          2.0,
+          0.385
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 4.0,
+      "footprint": [
+        4.0,
+        0.8
+      ]
+    },
+    "vale_drowned_chapel": {
+      "tris": 765,
+      "budget": 780,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -6.012,
+          -0.782,
+          -3.465
+        ],
+        "max": [
+          5.879,
+          9.164,
+          3.504
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        12.02,
+        7.01
+      ],
+      "waterline": 0.0,
+      "sunk": 0.6,
+      "door": {
+        "x": -1.2,
+        "width": 1.4
+      }
+    },
+    "vale_cave_mouth": {
+      "tris": 298,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.271,
+          -0.02,
+          -2.98
+        ],
+        "max": [
+          4.371,
+          5.764,
+          2.353
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.74,
+        5.96
+      ],
+      "opening": {
+        "at": [
+          0.0,
+          0.0,
+          1.3
+        ],
+        "width": 4.2,
+        "height": 3.8,
+        "depth": 1.8
+      }
+    },
+    "vale_keep_gate": {
+      "tris": 586,
+      "budget": 640,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -7.95,
+          0.0,
+          -3.15
+        ],
+        "max": [
+          7.95,
+          13.243,
+          3.45
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_10",
+          "kind": "fire",
+          "at": [
+            -2.75,
+            1.6,
+            2.75
+          ]
+        },
+        {
+          "name": "light_11",
+          "kind": "fire",
+          "at": [
+            2.75,
+            1.6,
+            2.75
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_7",
+          "kind": "glow",
+          "at": [
+            -2.75,
+            1.5,
+            2.75
+          ]
+        },
+        {
+          "name": "fx_8",
+          "kind": "glow",
+          "at": [
+            2.75,
+            1.5,
+            2.75
+          ]
+        }
+      ],
+      "footprint": [
+        15.9,
+        6.9
+      ],
+      "door": {
+        "at": [
+          0.0,
+          0.0,
+          1.42
+        ],
+        "width": 3.8,
+        "height": 5.4
+      }
+    },
+    "vale_wyvern_nest": {
+      "tris": 327,
+      "budget": 340,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.676,
+          -0.03,
+          -2.752
+        ],
+        "max": [
+          2.65,
+          1.146,
+          2.607
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.35,
+        5.5
+      ]
+    },
+    "vale_rock_steel": {
+      "tris": 82,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.714,
+          0.019,
+          -0.682
+        ],
+        "max": [
+          0.871,
+          0.948,
+          0.717
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        1.74,
+        1.43
+      ]
+    },
+    "vale_ash": {
+      "tris": 190,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.504,
+          -0.002,
+          -1.914
+        ],
+        "max": [
+          2.575,
+          6.763,
+          2.422
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 6.76,
+      "footprint": [
+        5.15,
+        4.84
+      ]
+    },
+    "vale_willow": {
+      "tris": 241,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.526,
+          -0.019,
+          -2.549
+        ],
+        "max": [
+          2.535,
+          4.68,
+          2.553
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 4.68,
+      "footprint": [
+        5.07,
+        5.11
+      ]
+    },
+    "vale_dead_tree": {
+      "tris": 134,
+      "budget": 150,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.439,
+          -0.064,
+          -0.964
+        ],
+        "max": [
+          1.093,
+          4.685,
+          1.109
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 4.69,
+      "footprint": [
+        2.88,
+        2.22
+      ]
+    },
+    "vale_bones": {
+      "tris": 96,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.665,
+          0.003,
+          -0.424
+        ],
+        "max": [
+          0.414,
+          0.227,
+          0.675
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.33,
+        1.35
+      ]
+    },
+    "vale_house_small_m": {
+      "tris": 242,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.35,
+          0.0,
+          -2.85
+        ],
+        "max": [
+          3.35,
+          5.1,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        5.0
+      ],
+      "door": [
+        1.2,
+        0.0,
+        2.5
+      ],
+      "chimney": [
+        -1.95,
+        5.1,
+        -0.95
+      ]
+    },
+    "vale_house_small_b": {
+      "tris": 242,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.35,
+          0.0,
+          -2.85
+        ],
+        "max": [
+          3.35,
+          5.1,
+          2.85
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        5.0
+      ],
+      "door": [
+        -1.2,
+        0.0,
+        2.5
+      ],
+      "chimney": [
+        1.95,
+        5.1,
+        -0.95
+      ]
+    },
+    "vale_house_tall_m": {
+      "tris": 264,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.25,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.25,
+          8.1,
+          3.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        6.0
+      ],
+      "door": [
+        1.1,
+        0.12,
+        2.8
+      ],
+      "chimney": [
+        -1.55,
+        8.15,
+        -1.15
+      ]
+    },
+    "vale_house_tall_b": {
+      "tris": 264,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.25,
+          0.0,
+          -3.25
+        ],
+        "max": [
+          3.25,
+          8.1,
+          3.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        6.0
+      ],
+      "door": [
+        -1.1,
+        0.12,
+        2.8
+      ],
+      "chimney": [
+        1.55,
+        8.15,
+        -1.15
+      ]
+    },
+    "vale_shophouse": {
+      "tris": 376,
+      "budget": 400,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.91,
+          0.0,
+          -4.3
+        ],
+        "max": [
+          2.91,
+          8.55,
+          4.0
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        8.0
+      ],
+      "door": [
+        1.55,
+        0.1,
+        3.05
+      ],
+      "chimney": [
+        1.8,
+        8.55,
+        -1.95
+      ]
+    },
+    "vale_shophouse_m": {
+      "tris": 376,
+      "budget": 400,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.91,
+          0.0,
+          -4.3
+        ],
+        "max": [
+          2.91,
+          8.55,
+          4.0
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.0,
+        8.0
+      ],
+      "door": [
+        -1.55,
+        0.1,
+        3.05
+      ],
+      "chimney": [
+        -1.8,
+        8.55,
+        -1.95
+      ]
+    },
+    "vale_sign_bow": {
+      "tris": 104,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.2
+        ],
+        "max": [
+          0.2,
+          3.3,
+          0.2
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        0.4
+      ],
+      "board": [
+        -0.7,
+        2.14,
+        0.0
+      ]
+    },
+    "vale_sign_flask": {
+      "tris": 104,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.2
+        ],
+        "max": [
+          0.2,
+          3.3,
+          0.2
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        0.4
+      ],
+      "board": [
+        -0.7,
+        2.14,
+        0.0
+      ]
+    },
+    "vale_sign_needle": {
+      "tris": 118,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.2
+        ],
+        "max": [
+          0.2,
+          3.3,
+          0.2
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        0.4
+      ],
+      "board": [
+        -0.7,
+        2.14,
+        0.0
+      ]
+    },
+    "vale_sign_loaf": {
+      "tris": 110,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.2,
+          0.0,
+          -0.2
+        ],
+        "max": [
+          0.2,
+          3.3,
+          0.2
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        0.4
+      ],
+      "board": [
+        -0.7,
+        2.14,
+        0.0
+      ]
+    },
+    "vale_kerb": {
+      "tris": 18,
+      "budget": 20,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.0,
+          0.0,
+          -0.15
+        ],
+        "max": [
+          1.0,
+          0.15,
+          0.15
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 2.0,
+      "footprint": [
+        2.0,
+        0.3
+      ],
+      "no_collider": true
+    },
+    "vale_cobbles": {
+      "tris": 106,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.492,
+          0.0,
+          -1.492
+        ],
+        "max": [
+          1.476,
+          0.105,
+          1.491
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        3.0
+      ],
+      "no_collider": true
+    },
+    "vale_quarry_face": {
+      "tris": 112,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.0,
+          0.0,
+          -1.5
+        ],
+        "max": [
+          3.0,
+          4.086,
+          1.867
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "span": 6.0,
+      "footprint": [
+        6.0,
+        3.0
+      ],
+      "ledges": [
+        [
+          1.5,
+          0.6
+        ],
+        [
+          3.0,
+          0.65
+        ]
+      ]
+    },
+    "vale_quarry_face_corner": {
+      "tris": 68,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.5,
+          0.0,
+          -1.5
+        ],
+        "max": [
+          1.5,
+          4.083,
+          1.529
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        3.0
+      ]
+    },
+    "vale_arena_crowd": {
+      "tris": 248,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.038,
+          3.0,
+          -2.22
+        ],
+        "max": [
+          3.038,
+          5.862,
+          0.17
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.97,
+        5.0
+      ],
+      "on": "vale_arena_stand"
+    },
+    "vale_arena_banner": {
+      "tris": 48,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.52,
+          2.3,
+          0.0
+        ],
+        "max": [
+          0.52,
+          4.3,
+          0.5
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.1,
+        0.6
+      ],
+      "mount": "wall"
+    },
+    "vale_bench": {
+      "tris": 26,
+      "budget": 30,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.75,
+          0.0,
+          -0.17
+        ],
+        "max": [
+          0.75,
+          0.5,
+          0.17
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.5,
+        0.34
+      ]
+    },
+    "vale_basket": {
+      "tris": 58,
+      "budget": 70,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.3,
+          0.0,
+          -0.26
+        ],
+        "max": [
+          0.3,
+          0.62,
+          0.26
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.6,
+        0.6
+      ]
+    },
+    "vale_sacks": {
+      "tris": 78,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.575,
+          0.0,
+          -0.357
+        ],
+        "max": [
+          0.581,
+          0.464,
+          0.488
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.16,
+        0.98
+      ]
+    },
+    "vale_firewood_stack": {
+      "tris": 88,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.74,
+          0.0,
+          -0.347
+        ],
+        "max": [
+          0.74,
+          0.92,
+          0.364
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.5,
+        0.7
+      ]
+    },
+    "vale_water_trough": {
+      "tris": 30,
+      "budget": 40,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.8,
+          0.0,
+          -0.3
+        ],
+        "max": [
+          0.8,
+          0.55,
+          0.308
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.6,
+        0.6
+      ]
+    },
+    "vale_dog": {
+      "tris": 99,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.17,
+          -0.002,
+          -0.448
+        ],
+        "max": [
+          0.346,
+          0.772,
+          0.43
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.69,
+        0.9
+      ],
+      "no_collider": true
+    },
+    "vale_cart_hand": {
+      "tris": 104,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.3,
+          0.0,
+          -1.16
+        ],
+        "max": [
+          0.3,
+          0.867,
+          0.9
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.6,
+        2.32
+      ]
+    },
+    "vale_yew": {
+      "tris": 228,
+      "budget": 280,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.987,
+          0.0,
+          -3.456
+        ],
+        "max": [
+          3.278,
+          6.131,
+          2.924
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 6.13,
+      "footprint": [
+        6.56,
+        6.91
+      ],
+      "node": true
+    },
+    "vale_yew_old": {
+      "tris": 457,
+      "budget": 520,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.204,
+          -0.124,
+          -3.99
+        ],
+        "max": [
+          4.439,
+          8.882,
+          3.9
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 8.88,
+      "footprint": [
+        9.0,
+        9.0
+      ],
+      "opening": [
+        0.0,
+        0.0,
+        1.6
+      ],
+      "hollow": 1.2
+    },
+    "vale_sawmill": {
+      "tris": 472,
+      "budget": 480,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -4.4,
+          -0.2,
+          -3.4
+        ],
+        "max": [
+          4.4,
+          5.0,
+          3.4
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        8.0,
+        6.0
+      ],
+      "open": true,
+      "saw": [
+        -0.6,
+        1.1,
+        -0.4
+      ],
+      "use": {
+        "at": [
+          -0.6,
+          0.0,
+          0.8
+        ],
+        "yaw": 180
+      }
+    },
+    "vale_woodcutter_hut": {
+      "tris": 387,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.4,
+          0.0,
+          -3.0
+        ],
+        "max": [
+          3.4,
+          4.96,
+          3.284
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.0,
+        5.0
+      ],
+      "door": [
+        -1.2,
+        0.0,
+        2.65
+      ],
+      "chimney": [
+        1.9,
+        4.95,
+        -2.65
+      ]
+    },
+    "vale_lumber_pile": {
+      "tris": 200,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.554,
+          0.0,
+          -0.75
+        ],
+        "max": [
+          1.577,
+          1.113,
+          0.75
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.15,
+        1.5
+      ]
+    },
+    "vale_fallen_trunk": {
+      "tris": 193,
+      "budget": 240,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.524,
+          -0.53,
+          -1.381
+        ],
+        "max": [
+          3.509,
+          2.23,
+          1.381
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.05,
+        2.76
+      ]
+    },
+    "vale_glade_stone": {
+      "tris": 122,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.776,
+          0.0,
+          -0.542
+        ],
+        "max": [
+          0.706,
+          2.659,
+          0.705
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.55,
+        1.41
+      ]
+    },
+    "vale_bird_nest": {
+      "tris": 174,
+      "budget": 190,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.294,
+          0.0,
+          -0.363
+        ],
+        "max": [
+          0.357,
+          0.263,
+          0.386
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.71,
+        0.77
+      ],
+      "no_collider": true
+    },
+    "vale_hunters_hide": {
+      "tris": 174,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.223,
+          -0.009,
+          -1.029
+        ],
+        "max": [
+          1.232,
+          2.4,
+          0.799
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.46,
+        2.06
+      ],
+      "walkable": 1.0
+    },
+    "vale_wagon": {
+      "tris": 422,
+      "budget": 440,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.1,
+          0.032,
+          -1.9
+        ],
+        "max": [
+          1.1,
+          2.7,
+          2.505
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.2,
+        5.01
+      ],
+      "hitch": [
+        0.0,
+        0.0,
+        2.95
+      ]
+    },
+    "vale_gallows": {
+      "tris": 96,
+      "budget": 100,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.45,
+          0.0,
+          -1.45
+        ],
+        "max": [
+          0.45,
+          4.0,
+          1.25
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.9,
+        2.9
+      ]
+    },
+    "vale_mushroom_ring": {
+      "tris": 418,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.334,
+          -0.005,
+          -1.345
+        ],
+        "max": [
+          1.198,
+          0.388,
+          1.273
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.67,
+        2.69
+      ],
+      "node": true,
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_reed_bed": {
+      "tris": 80,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.96,
+          -0.001,
+          -1.093
+        ],
+        "max": [
+          1.002,
+          1.561,
+          0.876
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true,
+      "footprint": [
+        2.0,
+        2.0
+      ]
+    },
+    "vale_lily_pads": {
+      "tris": 66,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.804,
+          0.01,
+          -1.09
+        ],
+        "max": [
+          1.138,
+          0.09,
+          0.874
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.2,
+        2.0
+      ]
+    },
+    "vale_stepping_stone": {
+      "tris": 16,
+      "budget": 30,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.415,
+          0.115,
+          -0.298
+        ],
+        "max": [
+          0.383,
+          0.527,
+          0.32
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.8,
+        0.7
+      ]
+    },
+    "vale_tor": {
+      "tris": 202,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.321,
+          0.0,
+          -1.481
+        ],
+        "max": [
+          2.446,
+          3.59,
+          1.814
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        4.4,
+        3.4
+      ]
+    },
+    "vale_outcrop": {
+      "tris": 54,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.613,
+          0.125,
+          -0.907
+        ],
+        "max": [
+          2.018,
+          1.997,
+          1.037
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.6,
+        2.4
+      ]
+    },
+    "vale_scree": {
+      "tris": 96,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.533,
+          0.018,
+          -0.945
+        ],
+        "max": [
+          1.32,
+          0.252,
+          1.071
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.6,
+        1.8
+      ]
+    },
+    "vale_cairn": {
+      "tris": 202,
+      "budget": 230,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.206,
+          0.083,
+          -1.204
+        ],
+        "max": [
+          1.159,
+          2.071,
+          1.228
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.2,
+        2.2
+      ]
+    },
+    "vale_drystone_wall": {
+      "tris": 214,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.5,
+          0.0,
+          -0.403
+        ],
+        "max": [
+          1.5,
+          0.949,
+          0.311
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        0.7
+      ]
+    },
+    "vale_pine_bent": {
+      "tris": 71,
+      "budget": 130,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.881,
+          -0.035,
+          -0.773
+        ],
+        "max": [
+          2.467,
+          3.486,
+          0.722
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 3.6,
+      "footprint": [
+        1.0,
+        1.0
+      ]
+    },
+    "vale_giant_trunk": {
+      "tris": 153,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.505,
+          -0.321,
+          -4.652
+        ],
+        "max": [
+          6.195,
+          19.792,
+          6.45
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.4,
+        3.4
+      ],
+      "canopy": 19.0
+    },
+    "vale_bridge_broken": {
+      "tris": 272,
+      "budget": 300,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.75,
+          -3.0,
+          -1.75
+        ],
+        "max": [
+          5.186,
+          1.95,
+          1.75
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        6.2,
+        3.5
+      ]
+    },
+    "vale_bridge_pier": {
+      "tris": 46,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.776,
+          -3.0,
+          -1.6
+        ],
+        "max": [
+          1.0,
+          1.292,
+          1.6
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.4,
+        3.4
+      ]
+    },
+    "vale_grass_short": {
+      "tris": 4,
+      "budget": 4,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.074,
+          0.0,
+          -0.112
+        ],
+        "max": [
+          0.071,
+          0.224,
+          0.09
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_grass_seed": {
+      "tris": 7,
+      "budget": 8,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.093,
+          0.0,
+          -0.11
+        ],
+        "max": [
+          0.111,
+          0.564,
+          0.108
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_flowers": {
+      "tris": 10,
+      "budget": 10,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.137,
+          0.0,
+          -0.105
+        ],
+        "max": [
+          0.112,
+          0.271,
+          0.154
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_fern": {
+      "tris": 21,
+      "budget": 26,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.445,
+          0.02,
+          -0.558
+        ],
+        "max": [
+          0.631,
+          0.513,
+          0.591
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_bracken": {
+      "tris": 20,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.641,
+          0.0,
+          -0.635
+        ],
+        "max": [
+          0.678,
+          0.902,
+          0.476
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true,
+      "doubleSided": true
+    },
+    "vale_leaf_litter": {
+      "tris": 13,
+      "budget": 14,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.919,
+          0.015,
+          -0.621
+        ],
+        "max": [
+          0.831,
+          0.02,
+          0.518
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_needle_litter": {
+      "tris": 12,
+      "budget": 12,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.836,
+          0.015,
+          -0.692
+        ],
+        "max": [
+          0.826,
+          0.02,
+          0.62
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_roots": {
+      "tris": 24,
+      "budget": 26,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.046,
+          -0.02,
+          -0.736
+        ],
+        "max": [
+          0.897,
+          0.2,
+          0.745
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_moss_stone": {
+      "tris": 20,
+      "budget": 24,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.218,
+          -0.02,
+          -0.194
+        ],
+        "max": [
+          0.2,
+          0.248,
+          0.211
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_branch": {
+      "tris": 22,
+      "budget": 22,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.861,
+          -0.006,
+          -0.298
+        ],
+        "max": [
+          0.857,
+          0.09,
+          0.096
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_oak_b": {
+      "tris": 160,
+      "budget": 220,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.285,
+          -0.03,
+          -1.643
+        ],
+        "max": [
+          2.395,
+          5.821,
+          1.602
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 5.82
+    },
+    "vale_pine_b": {
+      "tris": 98,
+      "budget": 120,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.042,
+          0.0,
+          -1.09
+        ],
+        "max": [
+          0.984,
+          6.4,
+          1.038
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": false,
+      "canopy": 6.4
+    },
+    "vale_ash_b": {
+      "tris": 190,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.155,
+          -0.002,
+          -1.819
+        ],
+        "max": [
+          2.937,
+          7.308,
+          1.886
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 7.31,
+      "footprint": [
+        6.31,
+        3.77
+      ]
+    },
+    "vale_yew_b": {
+      "tris": 232,
+      "budget": 280,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.912,
+          0.0,
+          -2.667
+        ],
+        "max": [
+          4.243,
+          5.364,
+          2.57
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "canopy": 5.36,
+      "footprint": [
+        8.49,
+        5.33
+      ],
+      "node": true
+    },
+    "vale_crate_b": {
+      "tris": 34,
+      "budget": 34,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.45,
+          0.0,
+          -0.3
+        ],
+        "max": [
+          0.45,
+          0.615,
+          0.309
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.9,
+        0.6
+      ]
+    },
+    "vale_barrel_b": {
+      "tris": 33,
+      "budget": 34,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.415,
+          0.0,
+          -0.391
+        ],
+        "max": [
+          0.401,
+          0.65,
+          0.419
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.85,
+        0.85
+      ]
+    },
+    "vale_bean_rows": {
+      "tris": 78,
+      "budget": 80,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.5,
+          -0.02,
+          -0.9
+        ],
+        "max": [
+          1.5,
+          1.602,
+          0.9
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.0,
+        1.8
+      ],
+      "no_collider": true
+    },
+    "vale_washing_line": {
+      "tris": 52,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.845,
+          0.0,
+          -0.12
+        ],
+        "max": [
+          1.845,
+          1.9,
+          0.072
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.8,
+        0.4
+      ],
+      "doubleSided": false,
+      "no_collider": true
+    },
+    "vale_woodshed": {
+      "tris": 90,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.42,
+          -0.009,
+          -0.86
+        ],
+        "max": [
+          1.42,
+          1.99,
+          0.82
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.6,
+        1.4
+      ]
+    },
+    "vale_privy": {
+      "tris": 36,
+      "budget": 40,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.68,
+          0.0,
+          -0.72
+        ],
+        "max": [
+          0.68,
+          2.18,
+          0.7
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.2,
+        1.2
+      ]
+    },
+    "vale_hen_run": {
+      "tris": 86,
+      "budget": 90,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.6,
+          0.0,
+          -1.1
+        ],
+        "max": [
+          1.6,
+          1.183,
+          1.1
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.2,
+        2.2
+      ]
+    },
+    "vale_hedge": {
+      "tris": 30,
+      "budget": 32,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.092,
+          -0.02,
+          -0.369
+        ],
+        "max": [
+          1.097,
+          0.881,
+          0.351
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.0,
+        0.75
+      ],
+      "span": 2.0
+    },
+    "vale_windmill": {
+      "tris": 166,
+      "budget": 230,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.65,
+          -0.005,
+          -2.809
+        ],
+        "max": [
+          1.65,
+          9.6,
+          1.77
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.6,
+        3.6
+      ],
+      "door": [
+        0.0,
+        0.0,
+        1.65
+      ]
+    },
+    "vale_windmill_sails": {
+      "tris": 68,
+      "budget": 80,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -5.4,
+          3.0,
+          1.62
+        ],
+        "max": [
+          5.4,
+          13.8,
+          1.92
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "doubleSided": true,
+      "no_collider": true
+    },
+    "vale_mill_wheel": {
+      "tris": 92,
+      "budget": 92,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          5.08,
+          -0.3,
+          -2.761
+        ],
+        "max": [
+          5.72,
+          5.5,
+          2.761
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "no_collider": true
+    },
+    "vale_beacon": {
+      "tris": 164,
+      "budget": 170,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.4,
+          0.0,
+          -1.331
+        ],
+        "max": [
+          1.4,
+          7.591,
+          1.331
+        ]
+      },
+      "parts": [],
+      "lights": [
+        {
+          "name": "light_12",
+          "kind": "fire",
+          "at": [
+            0.0,
+            7.3,
+            0.0
+          ]
+        }
+      ],
+      "fx": [
+        {
+          "name": "fx_9",
+          "kind": "glow",
+          "at": [
+            0.0,
+            7.5,
+            0.0
+          ]
+        }
+      ],
+      "footprint": [
+        3.0,
+        3.0
+      ]
+    },
+    "vale_keep_towers": {
+      "tris": 308,
+      "budget": 320,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -16.25,
+          0.0,
+          -5.45
+        ],
+        "max": [
+          16.25,
+          28.4,
+          5.45
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        32,
+        10
+      ]
+    },
+    "vale_rock_gold": {
+      "tris": 160,
+      "budget": 180,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.745,
+          0.019,
+          -0.649
+        ],
+        "max": [
+          0.73,
+          0.942,
+          0.721
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true
+    },
+    "vale_sand_heap": {
+      "tris": 66,
+      "budget": 110,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.925,
+          -0.123,
+          -0.734
+        ],
+        "max": [
+          0.771,
+          0.276,
+          0.826
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "node": true,
+      "footprint": [
+        1.8,
+        1.6
+      ]
+    },
+    "vale_balance_beam": {
+      "tris": 108,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.4,
+          -0.021,
+          -0.35
+        ],
+        "max": [
+          2.4,
+          0.5,
+          0.35
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        4.8,
+        0.7
+      ]
+    },
+    "vale_log_bridge": {
+      "tris": 94,
+      "budget": 200,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -3.98,
+          -0.019,
+          -0.517
+        ],
+        "max": [
+          3.701,
+          0.643,
+          0.534
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        7.4,
+        0.8
+      ],
+      "span": 3.7
+    },
+    "vale_climb_net": {
+      "tris": 280,
+      "budget": 420,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.364,
+          -0.029,
+          -1.65
+        ],
+        "max": [
+          1.351,
+          2.729,
+          1.65
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        2.6,
+        3.2
+      ]
+    },
+    "vale_crawl_pipe": {
+      "tris": 128,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -1.6,
+          -0.03,
+          -0.62
+        ],
+        "max": [
+          1.6,
+          1.07,
+          0.62
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        3.2,
+        1.3
+      ]
+    },
+    "vale_vault_wall": {
+      "tris": 100,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.255,
+          -0.001,
+          -1.303
+        ],
+        "max": [
+          0.255,
+          1.151,
+          1.303
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.6,
+        2.6
+      ]
+    },
+    "vale_wall_ladder": {
+      "tris": 260,
+      "budget": 260,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -2.838,
+          -0.012,
+          -0.28
+        ],
+        "max": [
+          2.838,
+          5.51,
+          0.28
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        5.6,
+        0.7
+      ]
+    },
+    "vale_rope_swing": {
+      "tris": 92,
+      "budget": 160,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.09,
+          -1.201,
+          -1.55
+        ],
+        "max": [
+          0.09,
+          5.251,
+          1.55
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.6,
+        3.0
+      ]
+    },
+    "vale_stile": {
+      "tris": 138,
+      "budget": 140,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.8,
+          0.0,
+          -0.5
+        ],
+        "max": [
+          0.8,
+          1.45,
+          0.34
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        1.6,
+        1.0
+      ]
+    },
+    "vale_palisade_gap": {
+      "tris": 78,
+      "budget": 150,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.137,
+          -0.143,
+          -1.123
+        ],
+        "max": [
+          0.219,
+          2.652,
+          1.126
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.5,
+        2.0
+      ]
+    },
+    "vale_hop_stone": {
+      "tris": 49,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.431,
+          -2.2,
+          -0.401
+        ],
+        "max": [
+          0.427,
+          0.0,
+          0.44
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.9,
+        0.9
+      ],
+      "hopTop": 0.45,
+      "waterTop": 0.2
+    },
+    "vale_course_flag": {
+      "tris": 30,
+      "budget": 60,
+      "role": "prop",
+      "bounds": {
+        "min": [
+          -0.18,
+          0.0,
+          -0.05
+        ],
+        "max": [
+          0.72,
+          2.62,
+          0.05
+        ]
+      },
+      "parts": [],
+      "lights": [],
+      "fx": [],
+      "footprint": [
+        0.8,
+        0.4
+      ],
+      "no_collider": true
+    }
+  },
+  "outdoor": true
+}

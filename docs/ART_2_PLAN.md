@@ -363,6 +363,7 @@ This is how every Ultra monster is made and checked, as run in batch 1 (Nov 7, 2
 - **Slacked:** it dips a toe, decides against it, and naps in the sun on the bank.
 
 ### 7.2 The farm (P10)
+*Since Nov 18, 2026 the farm is the walkable 3D ranch of `docs/WORLD_3D.md` §5, which keeps what this section asks for (seasons, weather, upgrades, keepsakes) and adds the rest.*
 - **The ranch home stage**, rebuilt at P2's quality: the run-down homestead of CONTENT §1 (barn, fence, path, the big tree, fields, hills, mountains).
   - Every season and weather (Sunny, Cloudy, Rain, Storm, Snow) as plate variants, with live rain, snow, lightning and drifting leaves.
   - The ranch upgrades show once bought (Cozy Barn, Training Yard, Tide Pool, Lantern Garden).
@@ -401,7 +402,7 @@ This is how every Ultra monster is made and checked, as run in batch 1 (Nov 7, 2
   - Turnip Sort's chute.
 
 ### 7.6 Places (P18)
-- **Tunewick** and its screens: the Shop, Market, Guild, Mailbox, the Odd Jobs board, Pell's Lab and the Shrine of Echoes.
+- **Tunewick** and its screens: the Shop, Market, Guild, Mailbox, the Odd Jobs board, Pell's Lab and the Shrine of Echoes. *Since Nov 18, 2026 this is the walkable city of `docs/WORLD_3D.md` §3.*
 - **Journeys** at the five mentor sites (CONTENT §7): the four-beat screen, and each site's own Trial arena.
 - **Expeditions** (CONTENT §8): the four node maps, with the monster on them.
 - **The credits roll.**
@@ -418,7 +419,7 @@ Each P is one milestone in the CLAUDE.md workflow:
 
 **The owner's roadmap (Nov 2026)** regroups what follows into four steps:
 1. **Every monster in 3D:** the batches of 5 below (they replace P3–P9). Each batch is one milestone with a minor version bump (batch 1: v1.23.0). Done in v1.27.0: every breed has its look.
-2. **The walkable 3D farm:** P10, with P2's Waterfall Stand folded in. The ranch, the Monster Card and the cups switch to the Ultra monsters here.
+2. **The 3D world** (the owner, Nov 18, 2026: *"We are going to make this into a 3d game completely"*; spec `docs/WORLD_3D.md`). You walk as a keeper with your monsters through Tunewick (built from Ashbrook, the town of the owner's other game, Gloamvault Open World) and into its stores. Then out of a gate into the land around it, along the road to a large, free-roam 3D ranch with farming, fishing and every drill as a real place. Its phases are W0 → C1–C3 (the city) → R1–R4 (the ranch) → K1 (the keeper creator); BUILD_PLAN "The 3D world" lists them. **It takes in P10's farm** (with P2's Waterfall Stand, now a waterfall on the ranch's brook) **and P18's Tunewick.**
 3. **3D event scenes.**
 4. **The 3D duel as the real battle.**
 
@@ -478,7 +479,7 @@ Each batch ends with a lineup sheet and the owner's verdict on the phone.
 | **B7** (v1.27.0, with B6): the insect plan and the second construct | Nibblegrub and its cocoon (a Gallery-only extra), Velvesper, Gearhoot |
 
 **P10–P12 · The farm and battles** (§7.2, §7.3).
-- **P10:** the farm (roadmap step 2, with Waterfall Stand from P2).
+- **P10:** the farm. *Moved into the 3D world (roadmap step 2, `docs/WORLD_3D.md` §5): the walkable ranch, phases R1–R4.*
 - **P11:** battles.
 - **P12:** visible attacks.
 
@@ -490,7 +491,7 @@ Each batch ends with a lineup sheet and the owner's verdict on the phone.
 **P16–P18 · Every other scene.**
 - **P16:** life moments (§7.4).
 - **P17:** Bonds and Odd Jobs (§7.5).
-- **P18:** places (§7.6).
+- **P18:** places (§7.6). *Tunewick moved into the 3D world (roadmap step 2, `docs/WORLD_3D.md` §3): the walkable city, phases C1–C3.*
 
 **P19 · Final polish.** It ends at v2.0.0.
 - A performance and size audit on the S25 Ultra and a mid-range profile.

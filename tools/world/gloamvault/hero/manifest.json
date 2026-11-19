@@ -1,0 +1,687 @@
+{
+  "species": {
+    "human": {
+      "key": null,
+      "boneScales": {
+        "root": 1
+      },
+      "skinTones": [
+        "#e8c4a8",
+        "#b8825a",
+        "#6b4531"
+      ],
+      "hairColors": [
+        "#1f1b1e",
+        "#3e2a1d",
+        "#6b4026",
+        "#9a4524",
+        "#c69a5e",
+        "#8b8985",
+        "#e2ddd3",
+        "#3d4a33"
+      ],
+      "eyeColors": [
+        "#5b3a22",
+        "#7a6a34",
+        "#4e7a3c",
+        "#3f7fb8",
+        "#7d8790"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "hair_crop",
+        "hair_shaggy",
+        "hair_long",
+        "hair_tied",
+        "hair_swept",
+        "hair_bun",
+        "brows_soft",
+        "brows_heavy",
+        "brows_arched"
+      ],
+      "presets": [
+        {
+          "id": "hum_a",
+          "name": "Weathered",
+          "face": {
+            "face_brow_heavy": 0.75,
+            "face_jaw_wide": 0.35,
+            "face_eye_narrow": 0.35,
+            "face_cheek_high": 0.25
+          },
+          "parts": [
+            "hair_crop",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 1,
+            "hair": 1,
+            "eye": 0
+          },
+          "partTris": 534
+        },
+        {
+          "id": "hum_b",
+          "name": "Open",
+          "face": {
+            "face_cheek_full": 0.6,
+            "face_eye_big": 0.55,
+            "face_jaw_narrow": 0.3,
+            "face_brow_raise": 0.35
+          },
+          "parts": [
+            "hair_shaggy",
+            "brows_soft"
+          ],
+          "tint": {
+            "skin": 0,
+            "hair": 4,
+            "eye": 1
+          },
+          "partTris": 786
+        },
+        {
+          "id": "hum_c",
+          "name": "Sharp",
+          "face": {
+            "face_jaw_narrow": 0.75,
+            "face_cheek_high": 0.75,
+            "face_nose_long": 0.4,
+            "face_chin_long": 0.3
+          },
+          "parts": [
+            "hair_tied",
+            "brows_arched"
+          ],
+          "tint": {
+            "skin": 2,
+            "hair": 0,
+            "eye": 2
+          },
+          "partTris": 420
+        }
+      ]
+    },
+    "dwarf": {
+      "key": "spc_dwarf_broad",
+      "boneScales": {
+        "root": 0.84,
+        "upperLeg": 0.85,
+        "lowerLeg": 0.85,
+        "shoulder": 1.15,
+        "chest": 1.1,
+        "upperChest": 1.1,
+        "hand": 1.15,
+        "head": 1.12,
+        "neck": 0.85
+      },
+      "skinTones": [
+        "#d9a98c",
+        "#a66a48",
+        "#7e6b63"
+      ],
+      "hairColors": [
+        "#1f1b1e",
+        "#3e2a1d",
+        "#6b4026",
+        "#9a4524",
+        "#c69a5e",
+        "#8b8985",
+        "#e2ddd3",
+        "#3d4a33"
+      ],
+      "eyeColors": [
+        "#b27a22",
+        "#4a2e1c",
+        "#5d6b78"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "spc_dwarf_beard",
+        "spc_dwarf_beard_forked",
+        "spc_dwarf_beard_short",
+        "spc_dwarf_beard_braided",
+        "spc_dwarf_braids",
+        "hair_crop",
+        "hair_shaggy",
+        "hair_long",
+        "hair_tied",
+        "hair_swept",
+        "hair_bun",
+        "brows_soft",
+        "brows_heavy",
+        "brows_arched"
+      ],
+      "presets": [
+        {
+          "id": "dwf_a",
+          "name": "Anvil",
+          "face": {
+            "face_jaw_wide": 0.8,
+            "face_brow_heavy": 0.8,
+            "face_nose_wide": 0.4
+          },
+          "parts": [
+            "spc_dwarf_beard",
+            "spc_dwarf_braids",
+            "hair_crop",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 1,
+            "hair": 3,
+            "eye": 0
+          },
+          "partTris": 1338
+        },
+        {
+          "id": "dwf_b",
+          "name": "Hearth",
+          "face": {
+            "face_cheek_full": 0.8,
+            "face_nose_wide": 0.5,
+            "face_eye_big": 0.2
+          },
+          "parts": [
+            "spc_dwarf_beard_short",
+            "hair_shaggy",
+            "brows_soft"
+          ],
+          "tint": {
+            "skin": 0,
+            "hair": 2,
+            "eye": 1
+          },
+          "partTris": 1110
+        },
+        {
+          "id": "dwf_c",
+          "name": "Flint",
+          "face": {
+            "face_eye_narrow": 0.7,
+            "face_brow_heavy": 0.5,
+            "face_nose_long": 0.4,
+            "face_jaw_narrow": 0.2
+          },
+          "parts": [
+            "spc_dwarf_beard_forked",
+            "hair_tied",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 2,
+            "hair": 5,
+            "eye": 2
+          },
+          "partTris": 900
+        }
+      ]
+    },
+    "elf": {
+      "key": "spc_elf_lean",
+      "boneScales": {
+        "root": 1.02,
+        "upperLeg": 1.08,
+        "lowerLeg": 1.08,
+        "neck": 1.1,
+        "head": 0.95,
+        "shoulder": 0.92,
+        "chest": 0.95,
+        "fingers": 1.1
+      },
+      "skinTones": [
+        "#f0e2d6",
+        "#d6b99f",
+        "#8c6a52"
+      ],
+      "hairColors": [
+        "#1f1b1e",
+        "#3e2a1d",
+        "#6b4026",
+        "#9a4524",
+        "#c69a5e",
+        "#8b8985",
+        "#e2ddd3",
+        "#3d4a33"
+      ],
+      "eyeColors": [
+        "#7a5aa8",
+        "#b4bcc6",
+        "#4f8a4a",
+        "#c9a033"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "spc_elf_ears",
+        "spc_elf_ears_long",
+        "hair_crop",
+        "hair_shaggy",
+        "hair_long",
+        "hair_tied",
+        "hair_swept",
+        "hair_bun",
+        "brows_soft",
+        "brows_heavy",
+        "brows_arched"
+      ],
+      "presets": [
+        {
+          "id": "elf_a",
+          "name": "Still",
+          "face": {
+            "face_chin_long": 0.6,
+            "face_nose_long": 0.3,
+            "face_jaw_narrow": 0.4
+          },
+          "parts": [
+            "spc_elf_ears",
+            "hair_long",
+            "brows_soft"
+          ],
+          "tint": {
+            "skin": 0,
+            "hair": 0,
+            "eye": 0
+          },
+          "partTris": 632
+        },
+        {
+          "id": "elf_b",
+          "name": "Wry",
+          "face": {
+            "face_brow_raise": 0.6,
+            "face_mouth_wide": 0.45,
+            "face_cheek_high": 0.4
+          },
+          "parts": [
+            "spc_elf_ears_long",
+            "hair_tied",
+            "brows_arched"
+          ],
+          "tint": {
+            "skin": 1,
+            "hair": 4,
+            "eye": 1
+          },
+          "partTris": 516
+        },
+        {
+          "id": "elf_c",
+          "name": "Hollow",
+          "face": {
+            "face_cheek_high": 0.85,
+            "face_brow_heavy": 0.4,
+            "face_eye_narrow": 0.3,
+            "face_jaw_narrow": 0.6
+          },
+          "parts": [
+            "spc_elf_ears",
+            "hair_swept",
+            "brows_arched"
+          ],
+          "tint": {
+            "skin": 2,
+            "hair": 7,
+            "eye": 2
+          },
+          "partTris": 554
+        }
+      ]
+    },
+    "orc": {
+      "key": "spc_orc_bulk",
+      "boneScales": {
+        "root": 1.12,
+        "upperLeg": 0.95,
+        "lowerLeg": 0.95,
+        "shoulder": 1.15,
+        "chest": 1.12,
+        "upperChest": 1.12,
+        "upperArm": 1.1,
+        "lowerArm": 1.12,
+        "hand": 1.15,
+        "head": 0.98,
+        "neck": 1.1
+      },
+      "skinTones": [
+        "#6f8a4d",
+        "#6c7566",
+        "#7a5238"
+      ],
+      "hairColors": [
+        "#1f1b1e",
+        "#3e2a1d",
+        "#6b4026",
+        "#9a4524",
+        "#c69a5e",
+        "#8b8985",
+        "#e2ddd3",
+        "#3d4a33"
+      ],
+      "eyeColors": [
+        "#c28a28",
+        "#8a3a24",
+        "#c9b230"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "spc_orc_tusks",
+        "spc_orc_tusks_big",
+        "spc_orc_tusks_small",
+        "spc_orc_ears",
+        "spc_orc_topknot",
+        "hair_crop",
+        "hair_shaggy",
+        "hair_long",
+        "hair_tied",
+        "hair_swept",
+        "hair_bun",
+        "brows_soft",
+        "brows_heavy",
+        "brows_arched"
+      ],
+      "presets": [
+        {
+          "id": "orc_a",
+          "name": "Brute",
+          "face": {
+            "face_jaw_wide": 0.8,
+            "face_chin_long": 0.3,
+            "face_brow_heavy": 0.6
+          },
+          "parts": [
+            "spc_orc_tusks_big",
+            "spc_orc_ears",
+            "spc_orc_topknot",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 0,
+            "hair": 0,
+            "eye": 0
+          },
+          "partTris": 430
+        },
+        {
+          "id": "orc_b",
+          "name": "Grim",
+          "face": {
+            "face_eye_narrow": 0.6,
+            "face_brow_heavy": 0.45,
+            "face_jaw_narrow": 0.2
+          },
+          "parts": [
+            "spc_orc_tusks_small",
+            "spc_orc_ears",
+            "hair_crop",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 1,
+            "hair": 5,
+            "eye": 1
+          },
+          "partTris": 702
+        },
+        {
+          "id": "orc_c",
+          "name": "Clan",
+          "face": {
+            "face_nose_wide": 0.8,
+            "face_cheek_high": 0.4,
+            "face_brow_raise": 0.2
+          },
+          "parts": [
+            "spc_orc_tusks",
+            "spc_orc_ears",
+            "hair_tied",
+            "brows_soft"
+          ],
+          "tint": {
+            "skin": 2,
+            "hair": 3,
+            "eye": 2
+          },
+          "partTris": 588
+        }
+      ]
+    },
+    "halfling": {
+      "key": "spc_halfling_round",
+      "boneScales": {
+        "root": 0.7,
+        "upperLeg": 0.9,
+        "lowerLeg": 0.9,
+        "head": 1.15,
+        "hand": 1.05,
+        "foot": 1.15,
+        "toes": 1.15,
+        "chest": 1.05,
+        "shoulder": 0.95
+      },
+      "skinTones": [
+        "#ebc59b",
+        "#c29068",
+        "#8a5a3c"
+      ],
+      "hairColors": [
+        "#1f1b1e",
+        "#3e2a1d",
+        "#6b4026",
+        "#9a4524",
+        "#c69a5e",
+        "#8b8985",
+        "#e2ddd3",
+        "#3d4a33"
+      ],
+      "eyeColors": [
+        "#5b3a22",
+        "#4e7a3c",
+        "#7a6a34"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "spc_halfling_feet",
+        "spc_halfling_curls",
+        "hair_crop",
+        "hair_shaggy",
+        "hair_long",
+        "hair_tied",
+        "hair_swept",
+        "hair_bun",
+        "brows_soft",
+        "brows_heavy",
+        "brows_arched"
+      ],
+      "presets": [
+        {
+          "id": "hlf_a",
+          "name": "Bright",
+          "face": {
+            "face_eye_big": 0.7,
+            "face_cheek_full": 0.4,
+            "face_brow_raise": 0.4
+          },
+          "parts": [
+            "spc_halfling_curls",
+            "spc_halfling_feet",
+            "brows_soft"
+          ],
+          "tint": {
+            "skin": 0,
+            "hair": 2,
+            "eye": 0
+          },
+          "partTris": 1320
+        },
+        {
+          "id": "hlf_b",
+          "name": "Shrewd",
+          "face": {
+            "face_eye_narrow": 0.6,
+            "face_mouth_wide": 0.45,
+            "face_chin_long": 0.2
+          },
+          "parts": [
+            "spc_halfling_curls",
+            "spc_halfling_feet",
+            "brows_arched"
+          ],
+          "tint": {
+            "skin": 1,
+            "hair": 1,
+            "eye": 1
+          },
+          "partTris": 1320
+        },
+        {
+          "id": "hlf_c",
+          "name": "Weathered",
+          "face": {
+            "face_brow_heavy": 0.45,
+            "face_cheek_high": 0.3,
+            "face_nose_long": 0.35
+          },
+          "parts": [
+            "spc_halfling_curls",
+            "spc_halfling_feet",
+            "brows_heavy"
+          ],
+          "tint": {
+            "skin": 2,
+            "hair": 5,
+            "eye": 2
+          },
+          "partTris": 1320
+        }
+      ]
+    },
+    "draconid": {
+      "key": "spc_draconid_ridge",
+      "boneScales": {
+        "root": 1.06,
+        "neck": 1.12,
+        "head": 1,
+        "chest": 1.08,
+        "upperChest": 1.08,
+        "shoulder": 1.05,
+        "lowerLeg": 0.97,
+        "hand": 1.08,
+        "foot": 1.1
+      },
+      "skinTones": [
+        "#b8432e",
+        "#3f7d6a",
+        "#4b4e5c"
+      ],
+      "hairColors": [],
+      "eyeColors": [
+        "#d6a628",
+        "#c27a1c",
+        "#c4daf0"
+      ],
+      "boneColors": [
+        "#e6dcc2",
+        "#2b2a30",
+        "#a8874a"
+      ],
+      "parts": [
+        "spc_draconid_tail",
+        "spc_draconid_horns",
+        "spc_draconid_horns_ram",
+        "spc_draconid_horns_crown",
+        "spc_draconid_crest",
+        "spc_draconid_claws_hand",
+        "spc_draconid_claws_foot"
+      ],
+      "presets": [
+        {
+          "id": "drc_a",
+          "name": "Ember",
+          "face": {
+            "face_jaw_wide": 0.5,
+            "face_mouth_wide": 0.4,
+            "face_brow_heavy": 0.3
+          },
+          "parts": [
+            "spc_draconid_horns_ram",
+            "spc_draconid_crest",
+            "spc_draconid_tail",
+            "spc_draconid_claws_hand",
+            "spc_draconid_claws_foot"
+          ],
+          "tint": {
+            "skin": 0,
+            "bone": 0,
+            "eye": 0
+          },
+          "partTris": 1344
+        },
+        {
+          "id": "drc_b",
+          "name": "Spire",
+          "face": {
+            "face_nose_long": 1.0,
+            "face_chin_long": 0.6,
+            "face_jaw_narrow": 0.4
+          },
+          "parts": [
+            "spc_draconid_horns",
+            "spc_draconid_crest",
+            "spc_draconid_tail",
+            "spc_draconid_claws_hand",
+            "spc_draconid_claws_foot"
+          ],
+          "tint": {
+            "skin": 1,
+            "bone": 2,
+            "eye": 1
+          },
+          "partTris": 1232
+        },
+        {
+          "id": "drc_c",
+          "name": "Old",
+          "face": {
+            "face_brow_heavy": 0.7,
+            "face_eye_narrow": 0.4,
+            "face_cheek_high": 0.3
+          },
+          "parts": [
+            "spc_draconid_horns_crown",
+            "spc_draconid_crest",
+            "spc_draconid_tail",
+            "spc_draconid_claws_hand",
+            "spc_draconid_claws_foot"
+          ],
+          "tint": {
+            "skin": 2,
+            "bone": 1,
+            "eye": 2
+          },
+          "partTris": 1392
+        }
+      ]
+    }
+  }
+}

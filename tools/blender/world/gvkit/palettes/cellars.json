@@ -1,0 +1,40 @@
+{
+  "zone": "cellars",
+  "about": "The Cellars (07 §2.2): brick ochre #7A5230 in mortar grey #5B5650, damp green #3F5A3A, lantern amber #E8A33C; warm browns and rust. Slot 0 is the walls' brick, slot 1 the mortar and the flagstone floor (its joints are ink), the earth floor borrows dark wood.",
+  "names": [
+    "stone",
+    "darkStone",
+    "wood",
+    "darkWood",
+    "iron",
+    "ink",
+    "cloth1",
+    "cloth2",
+    "rope",
+    "brightMetal",
+    "brass",
+    "glow",
+    "moss",
+    "bone",
+    "gem",
+    "water"
+  ],
+  "colours": [
+    "#7a5230",
+    "#5d5650",
+    "#7d5a36",
+    "#4e3520",
+    "#46444c",
+    "#26201c",
+    "#8e2f2a",
+    "#b39b6b",
+    "#a08a4a",
+    "#a3a4ab",
+    "#d4a03a",
+    "#e8a33c",
+    "#3f5a3a",
+    "#d9cfb4",
+    "#ff7a3a",
+    "#3a6066"
+  ]
+}

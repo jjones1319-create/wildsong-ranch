@@ -714,6 +714,52 @@ The owner, Nov 17: *"Finish the last sets of 2 to finish out the last ones; then
 - [x] 6. The game: the registry lines, `ULTRA_EXTRAS` (the cocoon in Lab → 3D Gallery only, after Nibblegrub, with its own clips), the Gallery's loop and hold clips; `ultraLooks.test.ts` and a cocoon e2e test.
 - [x] 7. Docs, tests (`npm run verify`; e2e; Battle 3D with the new looks), PROGRESS, v1.27.0, commit, deploy, phone checklist (Nov 18).
 
+## The 3D world (spec `docs/WORLD_3D.md`)
+The owner, Nov 18, 2026: *"We are going to make this into a 3d game completely. The first thing to do is to go to the city, you will actually be able to walk through and go to stores with your monsters. I want to use the city that is already built in the gloomvault open world."*
+
+Then:
+- *"you can walk up to an exit of the city and press A to exit into the world around here you can walk to your ranch"*
+- *"You should be able to freely roam your ranch, there will be farming land … a river to fish etc"*
+
+The owner's answers:
+- Gloamvault's hero is the keeper's stand-in until a creator exists.
+- Upright and sideways both.
+- Stores open with A at the door.
+- The week stays the game's turn.
+- Weather stays, with more extreme weather later.
+
+This roadmap step (ART_2_PLAN, step 2) takes in P10's farm and P18's Tunewick. Each phase starts in plan mode and ends with a stop and a phone checklist.
+
+### W0 · Groundwork (Nov 18; no change in the app)
+- [x] 1. The snapshot (`npm run world:import`): Gloamvault Open World 0.14.1 at `588c001` copied into `tools/world/gloamvault/`.
+  - It holds the land and town data, the Vale kit with its manifest, the hero's bodies and clips, and the `npc-*` townsfolk.
+  - Its Blender kit scripts go into `tools/blender/world/gvkit/`, with one `# WS:` patch that sends their outputs to `tools/blender/out/`.
+  - `SOURCE.json` holds every file's sha256, and `tools/world/snapshot.test.ts` keeps it honest. The build never reads the Gloamvault folder.
+- [x] 2. The height port `tools/world/land/` (`noise.ts`, `data.ts`, `land.ts`): Gloamvault's `Land.cs` height path, water, places and ground slots in TypeScript.
+  - `land.test.ts` holds Gloamvault's own `LandTests` and `W17LandTests` assertions.
+  - The hash matches the C# bit for bit (reference values from the C# itself), and the noise matches to 1e-5.
+  - A golden table of heights is frozen; the town plateau stands at 3.917 m.
+- [x] 3. The map (`npm run world:map` → `art-review/world/map.png`, `map-north.png`): it matches Gloamvault's own map, and the proposed ranch site is outlined.
+- [x] 4. The town check (`npm run art:town` → `art-review/world/town-review.png`): Ashbrook re-assembled in Blender from the snapshot (`tools/world/town-layout.ts`, `tools/blender/world/town.py`) and set beside Gloamvault's three town screenshots from the same cameras.
+  - Positions, facing, roofs, stalls, awnings, the gates and the walls all match.
+  - The hedgerow and oak by the north gate are newer than Gloamvault's shot.
+- [x] 5. The kit rebuilds on its own (`npm run world:kit-check`): 189 pieces and 29,271 triangles, identical to the snapshot, in under a minute.
+- [x] 6. Docs (WORLD_3D, this section, the ART_2_PLAN roadmap, CLAUDE.md, CREDITS, PROGRESS), `npm run verify`, commit and deploy. There's no version bump because nothing in the app changed.
+
+### Coming (each its own phase)
+- **C1 Walk Tunewick:**
+  - the town baked and shipped in Full and Lite;
+  - the keeper with the stick, a follow camera and collision, upright and sideways;
+  - a "Walk the streets" way in from Town (the list stays).
+- **C2 Stores and company:** doors with A, Wildsong's keepers at the doors, our signs, your monsters following, townsfolk.
+- **C3 Out the gates:** the land between the town and the ranch, gate prompts and quick travel.
+- **R1 The walkable ranch:** the herd living there, the drill spots, the waterfall, the house and bed.
+- **R2 Farming.**
+- **R3 Fishing.**
+- **R4 The ranch grows:** upgrades, keepsakes, bonds, foraging, seasons and weather.
+- **K1 The keeper creator and editor.**
+- **Later:** more extreme weather, interiors, more of the Vale.
+
 ## LATER (after v1.0)
 
 Sketch Stone (draw-to-seed) · local 2-player Versus · optional coach mini-games for drills · online friend leagues (would need a backend) · cloud sync · localization.

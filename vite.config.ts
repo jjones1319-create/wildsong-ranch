@@ -93,7 +93,8 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // tools/world: the 3D world's land port and snapshot (docs/WORLD_3D.md).
+    include: ['src/**/*.test.ts', 'tools/world/**/*.test.ts'],
     // The §26 sim tests play 40 whole lives per policy; give slower CI runners room.
     testTimeout: 60_000,
   },

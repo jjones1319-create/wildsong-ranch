@@ -45,4 +45,11 @@ The logo (`public/logo.svg`) and every icon generated from it were drawn for thi
 - Textures (stylised in our materials, then baked): Sandstone Blocks 08, Large Sandstone Blocks 01, Sandstone Blocks 04, White Sandstone Blocks 02, Marble 01 and Coast Sand 01 (Rob Tuytel: `sandstone_blocks_08`, `large_sandstone_blocks_01`, `sandstone_blocks_04`, `white_sandstone_blocks_02`, `marble_01`, `coast_sand_01`); Raked Dirt (Dario Barresi, Dimitrios Savva, `raked_dirt`); Stone Pavers and Clay Roof Tiles 02 (Amal Kumar: `stone_pavers`, `clay_roof_tiles_02`); Stone Floor (Dimitrios Savva, `stone_floor`); and, shared with the Guild arena and credited above, Rough Linen, Weathered Planks, Leafy Grass, Dry Ground Rocks, Bark Brown 02 and White Plaster Rough 01.
 - HDRI: the same Kloofendal 48d Partly Cloudy (Pure Sky) as the Guild arena.
 
+**The 3D world's source** (`docs/WORLD_3D.md`; in the repo since Nov 18, 2026, not shipped yet) is the owner's own game, **Gloamvault Open World**. Commit `588c001` is snapshotted in `tools/world/gloamvault/` (its `SOURCE.json` records every file):
+- the land and the town of Ashbrook, as data;
+- the Vale kit (`kit/kit_vale.glb`): buildings, props and trees built entirely by its Blender scripts, which are copied into `tools/blender/world/gvkit/`;
+- its hero (`hero/`) and townsfolk (`people/`).
+
+The hero and townsfolk bodies start from Blender Studio's **Human Base Meshes** bundle, CC0 1.0 (public domain; the Blender demo-files page, "Human Base Meshes" asset bundle), which Gloamvault's scripts decimated, rigged and reshaped. Nothing else in the snapshot came from outside.
+
 Every external asset added later must be CC0 and listed here with its source and license.

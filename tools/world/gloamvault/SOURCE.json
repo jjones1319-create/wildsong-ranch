@@ -1,0 +1,167 @@
+{
+  "about": "Wildsong's pinned snapshot of Gloamvault Open World (the owner's own game): docs/WORLD_3D.md. Re-run npm run world:import to refresh.",
+  "repo": "Gloamvault Open World",
+  "commit": "588c001ff68f7aef6f3510dde796ee88736de5f1",
+  "version": "0.14.1",
+  "imported": "2026-11-19",
+  "files": [
+    {
+      "path": "tools/world/gloamvault/land/vale.json",
+      "from": "content/world/land/vale.json",
+      "bytes": 456383,
+      "sha256": "b5da79deaf1652a04a907fbbf9cce2d74a4ce2f47001230b70c02b42e8d782c8"
+    },
+    {
+      "path": "tools/world/gloamvault/kit/kit_vale.glb",
+      "from": "client/public/models/env/kit_vale.glb",
+      "bytes": 2349556,
+      "sha256": "bd2dfd0ced75b6d61fe4c2a8b91f61c07b4b4512f27afe57437015439ba665cd"
+    },
+    {
+      "path": "tools/world/gloamvault/kit/vale.json",
+      "from": "client/public/models/env/vale.json",
+      "bytes": 79955,
+      "sha256": "5f2c7b5ecd24579ae20d71686935f3994f889d92ee8d958af74a735fdbeb8626"
+    },
+    {
+      "path": "tools/world/gloamvault/hero/hero_broad.glb",
+      "from": "client/public/models/hero/hero_broad.glb",
+      "bytes": 1358236,
+      "sha256": "ad05583a81932607052f3d201e34fcae0e25cfc7f9c0348903d4af9f5d01749d"
+    },
+    {
+      "path": "tools/world/gloamvault/hero/hero_slight.glb",
+      "from": "client/public/models/hero/hero_slight.glb",
+      "bytes": 1361560,
+      "sha256": "6761a0d3d0b668a1c9d5a4a52ee9da16fcf64ffe0c6702411a538710f49ff79f"
+    },
+    {
+      "path": "tools/world/gloamvault/hero/hero_clips.glb",
+      "from": "client/public/models/hero/hero_clips.glb",
+      "bytes": 1978188,
+      "sha256": "7050ab34a79c8d71a159b3ed680bad0bacc4171cdddd2689d0dfd9f778f00079"
+    },
+    {
+      "path": "tools/world/gloamvault/hero/manifest.json",
+      "from": "client/public/models/hero/manifest.json",
+      "bytes": 14837,
+      "sha256": "c63d8c232dbfdacc9fd1cceb910f6fb54ac015c4ea62a2d127579fb6b7ee4e7a"
+    },
+    {
+      "path": "tools/world/gloamvault/hero/clips.json",
+      "from": "client/public/models/hero/clips.json",
+      "bytes": 4574,
+      "sha256": "9e85ca8913519fa65ce6bf3abac0f7982c4b254cfb4660746fe1cd041a5c3585"
+    },
+    {
+      "path": "tools/world/gloamvault/people/humanoid.glb",
+      "from": "client/public/models/monsters/humanoid.glb",
+      "bytes": 6612604,
+      "sha256": "1082e0e0026021b5f00e2b81773ed9e88f786dbc409846fc11884e51711ca1fe"
+    },
+    {
+      "path": "tools/world/gloamvault/people/manifest.json",
+      "from": "client/public/models/monsters/manifest.json",
+      "bytes": 15428,
+      "sha256": "c523b2134d4e5deaf52093df74e0a59b76b36d8a3581e3752d557b5e1b26d45c",
+      "note": "the 14 npc-* entries only"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/build_kit_vale.py",
+      "from": "tools/blender/env/build_kit_vale.py",
+      "bytes": 270869,
+      "sha256": "bb5b7b3eb429a6475e5bfd39b37591347bf5fea2db4c4bc954a2a6309daccb98"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/kit_lib.py",
+      "from": "tools/blender/env/kit_lib.py",
+      "bytes": 64089,
+      "sha256": "1d93536c8f446518d27314208244062746aecdffcce371c8390e1deaa1c3a165"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/vale_town_pieces.py",
+      "from": "tools/blender/env/vale_town_pieces.py",
+      "bytes": 45109,
+      "sha256": "a974a26a3d49da2b4fff03f286fb0212750d720171cf8c386c318d3f668f0dae"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/vale_land_pieces.py",
+      "from": "tools/blender/env/vale_land_pieces.py",
+      "bytes": 14143,
+      "sha256": "71feef184de72133a2ca4c4996cc54dbd9fe019f50b99a78284ed8a103e7b610"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/vale_make_pieces.py",
+      "from": "tools/blender/env/vale_make_pieces.py",
+      "bytes": 3335,
+      "sha256": "71be0596e6d6fa61b1970e1f667c50773168d515638c70ebad959b424a3c7712"
+    },
+    {
+      "path": "tools/blender/world/gvkit/env/vale_agility_pieces.py",
+      "from": "tools/blender/env/vale_agility_pieces.py",
+      "bytes": 11584,
+      "sha256": "c050fd47ab85ecb9121e8985fe08f80c9e7b2a0588d76f232b529ad7034080ef"
+    },
+    {
+      "path": "tools/blender/world/gvkit/lib/common.py",
+      "from": "tools/blender/lib/common.py",
+      "bytes": 4569,
+      "sha256": "df0d26b9e4259ee0a86c6b7bb046c01f10d6dc3cc307dbe8922e5b2c42a1905e",
+      "note": "patched (# WS:): REPO → tools/blender/out/world/gvkit/"
+    },
+    {
+      "path": "tools/blender/world/gvkit/lib/toon.py",
+      "from": "tools/blender/lib/toon.py",
+      "bytes": 9802,
+      "sha256": "976e8147a57ad2b64f7d75e89be48f5d9a3d47b8a38cb6941bd36cb5a9f165cc"
+    },
+    {
+      "path": "tools/blender/world/gvkit/lib/export.py",
+      "from": "tools/blender/lib/export.py",
+      "bytes": 10132,
+      "sha256": "cc8860e8b660ac06dd21089e5fb62f2510735a2df49bbe996f3e10148f9d4283"
+    },
+    {
+      "path": "tools/blender/world/gvkit/lib/render.py",
+      "from": "tools/blender/lib/render.py",
+      "bytes": 9175,
+      "sha256": "b56fd009ef1d21e9ca89943ecb92e5fcd843d62ba8aec1e8a6b9f4ce55e211f3"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palette.json",
+      "from": "tools/blender/palette.json",
+      "bytes": 2515,
+      "sha256": "f64bea6a708b191285284e239c685e27fad78da917158e140dd1d269d51e78c5"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palettes/vale.json",
+      "from": "tools/blender/palettes/vale.json",
+      "bytes": 821,
+      "sha256": "98cf69b82439afc2fd93425cd3341fbafdd7402d09f13a17efcd44594d3bfe35"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palettes/shared.json",
+      "from": "tools/blender/palettes/shared.json",
+      "bytes": 651,
+      "sha256": "febd197b4867e9637df91767df123ca6892c94847c68fb0169be69012cb0e9cc"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palettes/cellars.json",
+      "from": "tools/blender/palettes/cellars.json",
+      "bytes": 787,
+      "sha256": "2048bc5d62177d8607ddf094c24d24abbe6c9765f527093c7d42ac938aad0489"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palettes/crypts.json",
+      "from": "tools/blender/palettes/crypts.json",
+      "bytes": 684,
+      "sha256": "da08c18b9173efb8782ffb2889c258ce2cd9451646515516acf4f160cc523986"
+    },
+    {
+      "path": "tools/blender/world/gvkit/palettes/vault.json",
+      "from": "tools/blender/palettes/vault.json",
+      "bytes": 1058,
+      "sha256": "4c873fc058fe709c47a4e1f3d09bab3ab6a2e7c8f44c51165794f688598b6abb"
+    }
+  ]
+}

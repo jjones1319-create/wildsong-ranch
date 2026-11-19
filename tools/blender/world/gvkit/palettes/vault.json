@@ -1,0 +1,40 @@
+{
+  "zone": "vault",
+  "about": "The Drowned Vault (07 §2.2): wet basalt, verdigris, brine foam and deep-lantern cyan, with the cult's brass; teal and brass, distinct from the Cellars' browns and the Crypts' bone and green (11 §1). Slot 0 the walls' lifted basalt, slot 1 the floors and paving (07's #23303A lifted so it reads at phone size), 10 brass (pipes, valves, lamps, trims), 11 the cyan of the cult lamps and anemones, 12 verdigris and weed, 13 brine foam (barnacles, salt tide-lines, shells), 14 pearl light, 15 the water (COLOR_0.A carries its opacity).",
+  "names": [
+    "stone",
+    "darkStone",
+    "wood",
+    "darkWood",
+    "iron",
+    "ink",
+    "cloth1",
+    "cloth2",
+    "rope",
+    "brightMetal",
+    "brass",
+    "glow",
+    "moss",
+    "bone",
+    "gem",
+    "water"
+  ],
+  "colours": [
+    "#4d6372",
+    "#34444e",
+    "#7a6e58",
+    "#463d31",
+    "#505a60",
+    "#0a1418",
+    "#2f7189",
+    "#c8693f",
+    "#8c7a55",
+    "#a3b6bc",
+    "#c99b45",
+    "#58d3e0",
+    "#3f8c7e",
+    "#a9c5cc",
+    "#d2fbf2",
+    "#1d4f5a"
+  ]
+}

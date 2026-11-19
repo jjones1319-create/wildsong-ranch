@@ -1,0 +1,40 @@
+{
+  "zone": "vale",
+  "about": "The Vale (OPEN-WORLD-BRIEF §4): a green and gold open country — grass #6F9A44, leaf #5F8A3C, pine #2F5A3A, packed-earth roads #6B5538, plaster #E2D8C0 and thatch #B8945A on the town, field stone #8A8578, sand #C7B07A at the pond, water #4F8A96. Slot 12 is the ground's grass; slot 1 the roads.",
+  "names": [
+    "stone",
+    "darkStone",
+    "wood",
+    "darkWood",
+    "iron",
+    "ink",
+    "cloth1",
+    "cloth2",
+    "rope",
+    "brightMetal",
+    "brass",
+    "glow",
+    "moss",
+    "bone",
+    "gem",
+    "water"
+  ],
+  "colours": [
+    "#8a8578",
+    "#6b5538",
+    "#9c7a4e",
+    "#5a4330",
+    "#4a4a52",
+    "#1e1b1a",
+    "#5f8a3c",
+    "#2f5a3a",
+    "#b8945a",
+    "#b0b3ba",
+    "#c7b07a",
+    "#ffb347",
+    "#6f9a44",
+    "#e2d8c0",
+    "#ff7a3a",
+    "#4f8a96"
+  ]
+}
